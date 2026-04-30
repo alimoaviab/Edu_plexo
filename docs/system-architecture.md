@@ -1,3 +1,4 @@
+
 # Multi-School SaaS Platform Architecture
 
 This repository is structured for a web-only, multi-school SaaS platform with two applications:

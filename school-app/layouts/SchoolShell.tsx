@@ -1,17 +1,20 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { colors, layout, spacing, typography } from "@edu/shared/design-system/tokens";
 
 const navItems = [
-  "Overview",
-  "Students",
-  "Teachers",
-  "Academic Class",
-  "Live Class",
-  "Homework",
-  "Attendance",
-  "Exam",
-  "Result",
-  "Setting",
-  "Fees"
+  { label: "Overview", href: "/admin/dashboard" },
+  { label: "Academy Year", href: "/admin/academy-year" },
+  { label: "Classes", href: "/admin/classes" },
+  { label: "Teachers", href: "/admin/teachers" },
+  { label: "Students", href: "/admin/students" },
+  { label: "Attendance", href: "/admin/attendance" },
+  { label: "Homework", href: "/admin/homework" },
+  { label: "Exams", href: "/admin/exams" },
+  { label: "Results", href: "/admin/results" },
+  { label: "Settings", href: "/admin/settings" }
 ];
 
 export function SchoolShell({
@@ -23,6 +26,8 @@ export function SchoolShell({
   title: string;
   eyebrow: string;
 }) {
+  const pathname = usePathname();
+
   return (
     <div
       style={{
@@ -44,22 +49,33 @@ export function SchoolShell({
       >
         <div style={{ ...typography.h3 }}>Academic Authority</div>
         <nav style={{ display: "grid", gap: spacing.xs }}>
-          {navItems.map((item) => (
-            <div
-              key={item}
-              style={{
-                ...typography.bodyMd,
-                minHeight: 40,
-                display: "flex",
-                alignItems: "center",
-                padding: `0 ${spacing.sm}px`,
-                borderRadius: 8,
-                background: item === "Overview" ? "rgba(255,255,255,0.12)" : "transparent"
-              }}
-            >
-              {item}
-            </div>
-          ))}
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                style={{ textDecoration: "none" }}
+              >
+                <div
+                  style={{
+                    ...typography.bodyMd,
+                    minHeight: 40,
+                    display: "flex",
+                    alignItems: "center",
+                    padding: `0 ${spacing.sm}px`,
+                    borderRadius: 8,
+                    background: isActive ? "rgba(255,255,255,0.12)" : "transparent",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    color: colors.onPrimary
+                  }}
+                >
+                  <span>{item.label}</span>
+                </div>
+              </Link>
+            );
+          })}
         </nav>
       </aside>
       <main style={{ padding: spacing.margin, maxWidth: layout.maxContentWidth, width: "100%" }}>
