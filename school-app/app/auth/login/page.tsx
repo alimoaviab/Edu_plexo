@@ -166,7 +166,7 @@ export default function LoginPage() {
             {/* Form */}
             <form className="space-y-md" onSubmit={handleSubmit}>
               <div>
-                <label className="block font-label-md text-on-surface mb-xs">
+                <label htmlFor="email" className="block font-label-md text-on-surface mb-xs">
                   Email Address
                 </label>
                 <div className="relative">
@@ -177,6 +177,7 @@ export default function LoginPage() {
                     mail
                   </span>
                   <input
+                    id="email"
                     name="email"
                     type="email"
                     value={formData.email}
@@ -189,7 +190,7 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block font-label-md text-on-surface mb-xs">
+                <label htmlFor="password" className="block font-label-md text-on-surface mb-xs">
                   Password
                 </label>
                 <div className="relative">
@@ -200,6 +201,7 @@ export default function LoginPage() {
                     lock
                   </span>
                   <input
+                    id="password"
                     name="password"
                     type="password"
                     value={formData.password}

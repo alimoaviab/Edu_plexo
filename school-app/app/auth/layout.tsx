@@ -1,6 +1,6 @@
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
     return (
-        <div className="h-screen overflow-hidden bg-surface">
+        <div className="min-h-screen bg-surface">
             {children}
         </div>
     );
