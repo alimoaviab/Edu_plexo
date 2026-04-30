@@ -34,7 +34,7 @@ export function AcademicYearTable({ years }: { years: AcademicYearRow[] }) {
             </thead>
             <tbody>
                 {years.map((year) => (
-                    <tr key={year._id} style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
+                    <tr key={year._id} className="academic-year-row" style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
                         <td style={{ padding: spacing.md, ...typography.bodyMd }}>{year.year}</td>
                         <td style={{ padding: spacing.md, ...typography.bodyMd }}>
                             {new Date(year.start_date).toLocaleDateString()}
@@ -88,6 +88,11 @@ export function AcademicYearTable({ years }: { years: AcademicYearRow[] }) {
                     </tr>
                 ))}
             </tbody>
+            <style jsx>{`
+                .academic-year-row:hover {
+                    background: ${colors.rowHover};
+                }
+            `}</style>
         </table>
     );
 }
