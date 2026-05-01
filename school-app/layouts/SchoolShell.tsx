@@ -3,19 +3,20 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { PageHeader } from "../components/ui";
 import { colors, layout, spacing, typography } from "@edu/shared/design-system/tokens";
 
 const navItems = [
-  { label: "Overview", href: "/admin/dashboard" },
-  { label: "Academic Years", href: "/admin/academic-years" },
-  { label: "Classes", href: "/admin/classes" },
-  { label: "Teachers", href: "/admin/teachers" },
-  { label: "Students", href: "/admin/students" },
-  { label: "Attendance", href: "/admin/attendance" },
-  { label: "Homework", href: "/admin/homework" },
-  { label: "Exams", href: "/admin/exams" },
-  { label: "Results", href: "/admin/results" },
-  { label: "Settings", href: "/admin/settings" }
+  { label: "Overview", href: "/admin/dashboard", icon: "dashboard" },
+  { label: "Academic Years", href: "/admin/academic-years", icon: "calendar_month" },
+  { label: "Classes", href: "/admin/classes", icon: "groups" },
+  { label: "Teachers", href: "/admin/teachers", icon: "badge" },
+  { label: "Students", href: "/admin/students", icon: "school" },
+  { label: "Attendance", href: "/admin/attendance", icon: "fact_check" },
+  { label: "Homework", href: "/admin/homework", icon: "assignment" },
+  { label: "Exams", href: "/admin/exams", icon: "quiz" },
+  { label: "Results", href: "/admin/results", icon: "leaderboard" },
+  { label: "Settings", href: "/admin/settings", icon: "settings" }
 ];
 
 export function SchoolShell({
