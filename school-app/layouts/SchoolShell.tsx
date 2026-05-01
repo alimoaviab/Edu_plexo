@@ -28,6 +28,7 @@ const navGroups: NavGroup[] = [
       { label: "Academic Years", href: "/admin/academic-years", icon: "calendar_month" },
       { label: "Classes", href: "/admin/classes", icon: "groups" },
       { label: "Subjects", href: "/admin/subjects", icon: "menu_book" },
+      { label: "Timetable", href: "/admin/timetable", icon: "schedule" },
       { label: "Attendance", href: "/admin/attendance", icon: "fact_check" },
       { label: "Homework", href: "/admin/homework", icon: "assignment" },
       { label: "Exams", href: "/admin/exams", icon: "quiz" },
@@ -39,6 +40,10 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Teachers", href: "/admin/teachers", icon: "badge" },
       { label: "Students", href: "/admin/students", icon: "school" },
+      { label: "Announcements", href: "/admin/announcements", icon: "campaign" },
+      { label: "Behavior", href: "/admin/behavior", icon: "gavel" },
+      { label: "Leave", href: "/admin/leave", icon: "event_available" },
+      { label: "Events", href: "/admin/events", icon: "event" },
     ],
   },
   {

@@ -9,6 +9,14 @@ const homeworkSchema = new Schema(
     subject: requiredString,
     title: requiredString,
     instructions: String,
+    attachment_urls: [{ type: String, trim: true }],
+    max_score: { type: Number, default: 100, min: 0 },
+    submission_type: {
+      type: String,
+      enum: ["online", "offline", "both"],
+      default: "both"
+    },
+    assigned_at: { type: Date, default: Date.now, index: true },
     due_at: { type: Date, required: true, index: true },
     status: {
       type: String,
@@ -25,6 +33,7 @@ const homeworkSchema = new Schema(
           enum: ["pending", "submitted", "late", "missing"],
           default: "pending"
         },
+        attachment_urls: [{ type: String, trim: true }],
         grade: Number,
         feedback: String
       }
@@ -36,5 +45,6 @@ const homeworkSchema = new Schema(
 homeworkSchema.index({ school_id: 1, class_id: 1, due_at: 1 });
 homeworkSchema.index({ school_id: 1, teacher_id: 1, created_at: -1 });
 homeworkSchema.index({ school_id: 1, "submissions.student_id": 1 });
+homeworkSchema.index({ school_id: 1, assigned_at: -1 });
 
 export const HomeworkModel = models.Homework || model("Homework", homeworkSchema);

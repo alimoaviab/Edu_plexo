@@ -22,7 +22,12 @@ export const roleAccessMatrix: Record<Role, RoleAccess> = {
     fees: ["view", "create", "update", "delete", "manage"],
     reports: ["view"],
     notifications: ["view", "create", "update"],
-    audit_logs: ["view"]
+    audit_logs: ["view"],
+    announcements: ["view", "create", "update", "delete", "manage"],
+    timetable: ["view", "create", "update", "delete", "manage"],
+    behavior: ["view", "create", "update", "delete", "manage"],
+    leave: ["view", "create", "update", "delete", "manage"],
+    events: ["view", "create", "update", "delete", "manage"]
   },
   teacher: {
     settings: ["view"],
@@ -33,7 +38,12 @@ export const roleAccessMatrix: Record<Role, RoleAccess> = {
     exams: ["view", "create", "update"],
     results: ["view", "create", "update"],
     reports: ["view"],
-    notifications: ["view"]
+    notifications: ["view"],
+    announcements: ["view"],
+    timetable: ["view"],
+    behavior: ["view", "create", "update"],
+    leave: ["view", "create"],
+    events: ["view"]
   },
   student: {
     settings: ["view"],
@@ -44,7 +54,12 @@ export const roleAccessMatrix: Record<Role, RoleAccess> = {
     results: ["view"],
     fees: ["view"],
     reports: ["view"],
-    notifications: ["view"]
+    notifications: ["view"],
+    announcements: ["view"],
+    timetable: ["view"],
+    behavior: ["view"],
+    leave: ["view", "create"],
+    events: ["view"]
   }
 };
 

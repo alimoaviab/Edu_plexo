@@ -14,7 +14,12 @@ export type EntityType =
   | "result"
   | "fee"
   | "notification"
-  | "sync_job";
+  | "sync_job"
+  | "announcement"
+  | "timetable"
+  | "behavior"
+  | "leave"
+  | "event";
 
 export type PermissionAction = "view" | "create" | "update" | "delete" | "manage";
 
@@ -33,7 +38,12 @@ export type Feature =
   | "reports"
   | "notifications"
   | "audit_logs"
-  | "platform";
+  | "platform"
+  | "announcements"
+  | "timetable"
+  | "behavior"
+  | "leave"
+  | "events";
 
 export type AuditAction =
   | "create"
