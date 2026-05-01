@@ -47,11 +47,25 @@ export function useAcademicYears() {
         [loadAcademicYears]
     );
 
+    const deleteAcademicYear = useCallback(
+        async (id: string) => {
+            const result = await service.deleteAcademicYear(id);
+            if (!result.ok) {
+                showToast("Failed to delete academic year", "error");
+                return result;
+            }
+            showToast("Academic year deleted.", "success");
+            await loadAcademicYears();
+            return result;
+        },
+        [loadAcademicYears]
+    );
+
     useEffect(() => {
         void loadAcademicYears().catch(() => {
             // Error state is already managed by useSafeAsync.
         });
     }, [loadAcademicYears]);
 
-    return { state, addAcademicYear, updateAcademicYear };
+    return { state, addAcademicYear, updateAcademicYear, deleteAcademicYear };
 }

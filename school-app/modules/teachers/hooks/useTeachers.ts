@@ -33,11 +33,39 @@ export function useTeachers() {
         [loadTeachers]
     );
 
+    const updateTeacher = useCallback(
+        async (id: string, input: Partial<TeacherFormInput>) => {
+            const result = await service.updateTeacher(id, input);
+            if (!result.ok) {
+                showToast(result.error.message || "Failed to update teacher", "error");
+                return result;
+            }
+            showToast("Teacher updated.", "success");
+            await loadTeachers();
+            return result;
+        },
+        [loadTeachers]
+    );
+
+    const deleteTeacher = useCallback(
+        async (id: string) => {
+            const result = await service.deleteTeacher(id);
+            if (!result.ok) {
+                showToast(result.error.message || "Failed to delete teacher", "error");
+                return result;
+            }
+            showToast("Teacher deleted.", "success");
+            await loadTeachers();
+            return result;
+        },
+        [loadTeachers]
+    );
+
     useEffect(() => {
         void loadTeachers().catch(() => {
             // Error state is already managed by useSafeAsync.
         });
     }, [loadTeachers]);
 
-    return { state, addTeacher };
+    return { state, addTeacher, updateTeacher, deleteTeacher };
 }

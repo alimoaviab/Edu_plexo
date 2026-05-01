@@ -16,21 +16,17 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
 
   useEffect(() => {
-    if (isDevelopment) {
-      router.replace("/admin/dashboard");
-      return;
-    }
-
-    const token = window.localStorage.getItem("token");
+    // Allow normal login flow in development so a real session cookie/token is created.
+    const token = typeof window !== "undefined" ? window.localStorage.getItem("token") : null;
     if (token) {
       router.replace("/admin/dashboard");
       return;
     }
 
     setSessionChecked(true);
-  }, [isDevelopment, router]);
+  }, [router]);
 
-  if (isDevelopment || !sessionChecked) {
+  if (!sessionChecked) {
     return null;
   }
 
@@ -146,11 +142,10 @@ export default function LoginPage() {
                     key={role.key}
                     type="button"
                     onClick={() => setSelectedRole(role.key)}
-                    className={`py-sm px-xs font-label-sm rounded-DEFAULT transition-colors flex flex-col items-center gap-xs ${
-                      selectedRole === role.key
+                    className={`py-sm px-xs font-label-sm rounded-DEFAULT transition-colors flex flex-col items-center gap-xs ${selectedRole === role.key
                         ? "text-on-primary bg-primary shadow-sm"
                         : "text-on-surface-variant hover:bg-surface-variant/50"
-                    }`}
+                      }`}
                   >
                     <span className="material-symbols-outlined text-[20px]">
                       {role.icon}

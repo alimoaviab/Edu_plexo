@@ -1,17 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { DataTable, DataTableColumn, RowAction, Badge, DataState, Skeleton, TableSkeleton } from "../../../components/ui";
 import { useExams } from "../hooks/useExams";
 import { ExamRow } from "../types/exam.types";
-import { useRouter } from "next/navigation";
 import { showToast } from "../../../utils/toast";
 
 export function ExamListPage() {
-  const { state } = useExams();
-  const router = useRouter();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { state, updateExam, deleteExam } = useExams();
 
   const columns: DataTableColumn<ExamRow>[] = [
     {
@@ -71,8 +67,19 @@ export function ExamListPage() {
       icon: "edit",
       label: "Edit Exam",
       variant: "ghost",
-      onClick: () => {
-        showToast("Edit feature coming soon", "info");
+      onClick: async (row) => {
+        const title = window.prompt("Exam title", row.title)?.trim();
+        if (!title) {
+          return;
+        }
+        const status = window.prompt("Status (scheduled/completed/cancelled)", row.status)?.trim();
+        if (!status) {
+          return;
+        }
+        await updateExam(row._id, {
+          title,
+          status: status as ExamRow["status"]
+        });
       },
     },
     {
@@ -82,10 +89,11 @@ export function ExamListPage() {
       requireConfirm: true,
       confirmTitle: "Delete Exam",
       confirmMessage: (row: ExamRow) => `Are you sure you want to delete "${row.title}"? This action cannot be undone.`,
-      onClick: (row) => {
-        setDeleteId(row._id);
-        showToast("Delete feature coming soon", "info");
-        setDeleteId(null);
+      onClick: async (row) => {
+        const result = await deleteExam(row._id);
+        if (!result.ok) {
+          showToast(result.error.message || "Failed to delete exam", "error");
+        }
       },
     },
   ];

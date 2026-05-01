@@ -30,7 +30,6 @@ export function StudentForm({
 
   function validate() {
     const newErrors: Record<string, string> = {};
-    if (!form.admission_no.trim()) newErrors.admission_no = "Admission number is required";
     if (!form.first_name.trim()) newErrors.first_name = "First name is required";
     if (!form.last_name.trim()) newErrors.last_name = "Last name is required";
     if (!form.class_id.trim()) newErrors.class_id = "Class is required";
@@ -62,33 +61,32 @@ export function StudentForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
             label="Admission Number"
-            placeholder="e.g., ADM-2024-001"
-            value={form.admission_no}
-            onChange={(e) => setForm({ ...form, admission_no: e.target.value })}
+            placeholder="Leave blank to auto-generate"
+            value={form.admission_no || ""}
+            onChange={(e) => setForm({ ...form, admission_no: e.target.value || undefined })}
             error={errors.admission_no}
-            required
           />
 
           <div className="grid grid-cols-2 gap-4">
-             <Select
-                label="Class"
-                value={form.class_id}
-                onChange={(e) => setForm({ ...form, class_id: e.target.value })}
-                options={[
-                  { label: "Select class", value: "" },
-                  ...classOptions.map(o => ({ label: o.label, value: o.id }))
-                ]}
-                error={errors.class_id}
-                required
-              />
-              <Input
-                label="Section"
-                placeholder="e.g., A"
-                value={form.section}
-                onChange={(e) => setForm({ ...form, section: e.target.value })}
-                error={errors.section}
-                required
-              />
+            <Select
+              label="Class"
+              value={form.class_id}
+              onChange={(e) => setForm({ ...form, class_id: e.target.value })}
+              options={[
+                { label: "Select class", value: "" },
+                ...classOptions.map(o => ({ label: o.label, value: o.id }))
+              ]}
+              error={errors.class_id}
+              required
+            />
+            <Input
+              label="Section"
+              placeholder="e.g., A"
+              value={form.section}
+              onChange={(e) => setForm({ ...form, section: e.target.value })}
+              error={errors.section}
+              required
+            />
           </div>
         </div>
       </div>

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { DataTable, DataTableColumn, RowAction, Badge, DataState, Skeleton, TableSkeleton } from "../../../components/ui";
 import { useHomework } from "../hooks/useHomework";
@@ -8,8 +7,7 @@ import { HomeworkRecordRow } from "../types/homework.types";
 import { showToast } from "../../../utils/toast";
 
 export function HomeworkListPage() {
-  const { state } = useHomework();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { state, updateHomework, deleteHomework } = useHomework();
 
   const columns: DataTableColumn<HomeworkRecordRow>[] = [
     {
@@ -61,7 +59,7 @@ export function HomeworkListPage() {
         <Badge
           variant={
             row.status === "assigned" ? "success" :
-            row.status === "draft" ? "warning" : "gray"
+              row.status === "draft" ? "warning" : "gray"
           }
           className="capitalize"
         >
@@ -84,7 +82,14 @@ export function HomeworkListPage() {
       icon: "edit",
       label: "Edit Homework",
       variant: "ghost",
-      onClick: () => showToast("Edit feature coming soon", "info"),
+      onClick: async (row) => {
+        const title = window.prompt("Title", row.title)?.trim();
+        if (!title) {
+          return;
+        }
+        const instructions = window.prompt("Instructions", row.instructions || "")?.trim() || "";
+        await updateHomework(row._id, { title, instructions });
+      },
     },
     {
       icon: "delete",
@@ -93,10 +98,11 @@ export function HomeworkListPage() {
       requireConfirm: true,
       confirmTitle: "Delete Homework",
       confirmMessage: (row: HomeworkRecordRow) => `Are you sure you want to delete ${row.title}?`,
-      onClick: (row) => {
-        setDeleteId(row._id);
-        showToast("Delete feature coming soon", "info");
-        setDeleteId(null);
+      onClick: async (row) => {
+        const result = await deleteHomework(row._id);
+        if (!result.ok) {
+          showToast(result.error.message || "Failed to delete homework", "error");
+        }
       },
     },
   ];

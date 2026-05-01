@@ -11,3 +11,16 @@ export function createAcademyYear(input: AcademyYearFormInput) {
         body: JSON.stringify(input)
     });
 }
+
+export function updateAcademyYear(id: string, input: Partial<AcademyYearFormInput>) {
+    return serviceRequest<AcademyYear>(`/api/academic-years/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(input)
+    });
+}
+
+export function deleteAcademyYear(id: string) {
+    return serviceRequest<{ success: boolean; id: string }>(`/api/academic-years/${id}`, {
+        method: "DELETE"
+    });
+}

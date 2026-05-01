@@ -6,6 +6,7 @@ export interface StudentRow {
   first_name: string;
   last_name: string;
   class_id: string;
+  subjects?: string[];
   section: string;
   guardian: {
     name: string;

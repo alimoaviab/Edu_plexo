@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState, useEffect, useRef } from "react";
+import { FormEvent, useState } from "react";
 import { Button, Input } from "../../../components/ui";
 import { AcademicYearFormInput } from "../types/academicYear.types";
 
@@ -16,11 +16,6 @@ export function AcademicYearForm({ onCreate }: { onCreate: (input: AcademicYearF
     const [form, setForm] = useState<AcademicYearFormInput>(initialForm);
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
-    const yearInputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-        yearInputRef.current?.focus();
-    }, []);
 
     function validate() {
         const newErrors: Record<string, string> = {};
@@ -56,7 +51,6 @@ export function AcademicYearForm({ onCreate }: { onCreate: (input: AcademicYearF
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
-                        ref={yearInputRef}
                         label="Academic Year Name"
                         placeholder="e.g., 2024-2025"
                         helperText="Enter a descriptive name for the academic session"

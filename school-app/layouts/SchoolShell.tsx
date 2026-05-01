@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { PageHeader, Breadcrumb } from "../components/ui";
+import { getSelectedAcademyCareId, setSelectedAcademyCareId } from "../services/academy-care-context";
 
 type NavItem = {
   label: string;
@@ -26,6 +27,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Academic Years", href: "/admin/academic-years", icon: "calendar_month" },
       { label: "Classes", href: "/admin/classes", icon: "groups" },
+      { label: "Subjects", href: "/admin/subjects", icon: "menu_book" },
       { label: "Attendance", href: "/admin/attendance", icon: "fact_check" },
       { label: "Homework", href: "/admin/homework", icon: "assignment" },
       { label: "Exams", href: "/admin/exams", icon: "quiz" },
@@ -79,6 +81,8 @@ export function SchoolShell({
   const router = useRouter();
   const [isSessionChecked, setIsSessionChecked] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [academyYears, setAcademyYears] = useState<Array<{ _id: string; year: string; is_active: boolean }>>([]);
+  const [selectedAcademyCareId, setSelectedAcademyCareIdState] = useState<string>("");
   const isDevelopment = process.env.NODE_ENV !== "production";
 
   useEffect(() => {
@@ -103,6 +107,41 @@ export function SchoolShell({
     setIsSessionChecked(true);
   }, [isDevelopment, router]);
 
+  useEffect(() => {
+    if (!isSessionChecked) {
+      return;
+    }
+
+    let ignore = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/academic-years", { credentials: "same-origin" });
+        const payload = await response.json();
+        if (ignore || !payload?.ok || !Array.isArray(payload?.data)) {
+          return;
+        }
+
+        const rows = payload.data as Array<{ _id: string; year: string; is_active: boolean }>;
+        setAcademyYears(rows);
+
+        const stored = getSelectedAcademyCareId();
+        const defaultId = stored || rows.find((row) => row.is_active)?._id || rows[0]?._id || "";
+        if (!defaultId) {
+          return;
+        }
+
+        setSelectedAcademyCareIdState(defaultId);
+        setSelectedAcademyCareId(defaultId);
+      } catch {
+        // Ignore selector loading failure and keep shell interactive.
+      }
+    })();
+
+    return () => {
+      ignore = true;
+    };
+  }, [isSessionChecked]);
+
   if (!isSessionChecked) {
     return null;
   }
@@ -116,35 +155,43 @@ export function SchoolShell({
         className={`${sidebarWidth} bg-[#0F172A] text-white flex flex-col sticky top-0 h-screen overflow-y-auto transition-all duration-300 ease-in-out flex-shrink-0`}
       >
         {/* Logo */}
-        <div className={`p-5 flex items-center gap-3 ${isCollapsed ? "justify-center" : ""}`}>
-          <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/20">
-            <span className="material-symbols-outlined text-white text-lg">school</span>
+        <div className={`p-5 flex items-center gap-3 ${isCollapsed ? "justify-center" : "justify-between"}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-600/20">
+              <span className="material-symbols-outlined text-white text-lg">school</span>
+            </div>
+            {!isCollapsed && (
+              <span className="text-lg font-bold tracking-tight">Eduplexo</span>
+            )}
           </div>
+
           {!isCollapsed && (
-            <span className="text-lg font-bold tracking-tight">Eduplexo</span>
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <span className="material-symbols-outlined text-white/70 text-lg">
+                {isCollapsed ? "chevron_right" : "chevron_left"}
+              </span>
+            </button>
           )}
         </div>
 
-        {/* Collapse Toggle */}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="mx-4 mb-3 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center"
-          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <span className="material-symbols-outlined text-white/60 text-lg">
-            {isCollapsed ? "chevron_right" : "chevron_left"}
-          </span>
-        </button>
+        {isCollapsed && (
+          <button
+            onClick={() => setIsCollapsed(false)}
+            className="mx-4 mb-3 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors flex items-center justify-center"
+            title="Expand sidebar"
+          >
+            <span className="material-symbols-outlined text-white/60 text-lg">chevron_right</span>
+          </button>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 px-3 space-y-6 overflow-y-auto">
           {navGroups.map((group) => (
             <div key={group.label}>
-              {!isCollapsed && (
-                <p className="px-3 mb-2 text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                  {group.label}
-                </p>
-              )}
               <div className="space-y-0.5">
                 {group.items.map((item) => {
                   const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
@@ -152,11 +199,10 @@ export function SchoolShell({
                     <Tooltip key={item.href} text={item.label}>
                       <Link
                         href={item.href}
-                        className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 ${
-                          isActive
-                            ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
-                            : "text-gray-400 hover:bg-white/5 hover:text-white"
-                        }`}
+                        className={`flex items-center justify-center p-3 rounded-xl transition-all duration-200 ${isActive
+                          ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                          : "text-gray-400 hover:bg-white/5 hover:text-white"
+                          }`}
                       >
                         <span className={`material-symbols-outlined text-xl ${isActive ? "font-bold" : ""}`}>
                           {item.icon}
@@ -167,11 +213,10 @@ export function SchoolShell({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group relative ${
-                        isActive
-                          ? "bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/20"
-                          : "text-gray-300 hover:bg-white/5 hover:text-white"
-                      }`}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group relative ${isActive
+                        ? "bg-blue-600 text-white font-bold shadow-lg shadow-blue-600/20"
+                        : "text-gray-300 hover:bg-white/5 hover:text-white"
+                        }`}
                     >
                       {isActive && (
                         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
@@ -221,9 +266,23 @@ export function SchoolShell({
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
             </button>
             <div className="w-px h-6 bg-gray-200" />
-            <span className="text-sm font-medium text-gray-600 bg-gray-50 px-3 py-1.5 rounded-lg">
-              Year: 2024-2025
-            </span>
+            <label className="text-sm font-medium text-gray-600">Year</label>
+            <select
+              value={selectedAcademyCareId}
+              onChange={(event) => {
+                const nextId = event.target.value;
+                setSelectedAcademyCareIdState(nextId);
+                setSelectedAcademyCareId(nextId);
+                window.location.reload();
+              }}
+              className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700"
+            >
+              {academyYears.map((row) => (
+                <option key={row._id} value={row._id}>
+                  {row.year}{row.is_active ? " (Active)" : ""}
+                </option>
+              ))}
+            </select>
           </div>
         </header>
 

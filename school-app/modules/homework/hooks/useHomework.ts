@@ -34,11 +34,41 @@ export function useHomework() {
     [loadHomework]
   );
 
+  const updateHomework = useCallback(
+    async (id: string, input: Partial<HomeworkFormInput>) => {
+      const result = await service.updateHomework(id, input);
+      if (!result.ok) {
+        showToast(result.error.message || "Failed to update homework", "error");
+        return result;
+      }
+
+      showToast("Homework updated.", "success");
+      await loadHomework();
+      return result;
+    },
+    [loadHomework]
+  );
+
+  const deleteHomework = useCallback(
+    async (id: string) => {
+      const result = await service.deleteHomework(id);
+      if (!result.ok) {
+        showToast(result.error.message || "Failed to delete homework", "error");
+        return result;
+      }
+
+      showToast("Homework deleted.", "success");
+      await loadHomework();
+      return result;
+    },
+    [loadHomework]
+  );
+
   useEffect(() => {
     void loadHomework().catch(() => {
       // Error state is already managed by useSafeAsync.
     });
   }, [loadHomework]);
 
-  return { state, addHomework };
+  return { state, addHomework, updateHomework, deleteHomework };
 }

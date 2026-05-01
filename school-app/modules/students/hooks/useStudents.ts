@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect } from "react";
 import { serviceRequest } from "../../../services/service-client";
+import { getAcademyCareQuery } from "../../../services/academy-care-context";
 import { useSafeAsync } from "../../../hooks/useSafeAsync";
 import { showToast } from "../../../utils/toast";
 import { StudentFormInput, StudentPatchInput, StudentRow } from "../types/student.types";
@@ -11,7 +12,7 @@ export function useStudents() {
 
   const loadStudents = useCallback(() => {
     return run(async () => {
-      const result = await serviceRequest<StudentRow[]>("/api/students");
+      const result = await serviceRequest<StudentRow[]>(`/api/students${getAcademyCareQuery()}`);
       if (!result.ok) {
         throw new Error(result.error.message || "Failed to load students");
       }
@@ -58,11 +59,29 @@ export function useStudents() {
     [loadStudents]
   );
 
+  const deleteStudent = useCallback(
+    async (id: string) => {
+      const result = await serviceRequest<{ success: boolean; id: string }>(`/api/students/${id}`, {
+        method: "DELETE"
+      });
+
+      if (!result.ok) {
+        showToast(result.error.message || "Failed to delete student", "error");
+        return result;
+      }
+
+      showToast("Student deleted.", "success");
+      await loadStudents();
+      return result;
+    },
+    [loadStudents]
+  );
+
   useEffect(() => {
     void loadStudents().catch(() => {
       // Error state is already managed by useSafeAsync.
     });
   }, [loadStudents]);
 
-  return { state, loadStudents, addStudent, updateStudent };
+  return { state, loadStudents, addStudent, updateStudent, deleteStudent };
 }

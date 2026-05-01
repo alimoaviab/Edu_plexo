@@ -34,11 +34,41 @@ export function useAttendance() {
     [loadAttendance]
   );
 
+  const updateAttendance = useCallback(
+    async (id: string, input: Partial<AttendanceFormInput>) => {
+      const result = await service.updateAttendance(id, input);
+      if (!result.ok) {
+        showToast(result.error.message || "Failed to update attendance", "error");
+        return result;
+      }
+
+      showToast("Attendance updated.", "success");
+      await loadAttendance();
+      return result;
+    },
+    [loadAttendance]
+  );
+
+  const deleteAttendance = useCallback(
+    async (id: string) => {
+      const result = await service.deleteAttendance(id);
+      if (!result.ok) {
+        showToast(result.error.message || "Failed to delete attendance", "error");
+        return result;
+      }
+
+      showToast("Attendance deleted.", "success");
+      await loadAttendance();
+      return result;
+    },
+    [loadAttendance]
+  );
+
   useEffect(() => {
     void loadAttendance().catch(() => {
       // Error state is already managed by useSafeAsync.
     });
   }, [loadAttendance]);
 
-  return { state, addAttendance };
+  return { state, addAttendance, updateAttendance, deleteAttendance };
 }

@@ -1,5 +1,6 @@
 export {
   createStudent,
   listStudents,
-  updateStudent
+  updateStudent,
+  deleteStudent
 } from "@edu/shared/services/student.service";

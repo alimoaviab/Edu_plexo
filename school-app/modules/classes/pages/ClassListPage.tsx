@@ -1,15 +1,41 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
 import { DataTable, DataTableColumn, RowAction, Badge, DataState, Skeleton, TableSkeleton } from "../../../components/ui";
 import { useClasses } from "../hooks/useClasses";
-import { ClassRow } from "../types/class.types";
+import { useAcademyCare } from "../../academyCare/hooks/useAcademyCare";
+import { useTeachers } from "../../teachers/hooks/useTeachers";
+import { ClassRow, ClassFormInput } from "../types/class.types";
 import { showToast } from "../../../utils/toast";
+import { ClassEditSidebar } from "../components/ClassEditSidebar";
 
 export function ClassListPage() {
-  const { state } = useClasses();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { state, updateClass, deleteClass } = useClasses();
+  const { state: academyCareState } = useAcademyCare();
+  const { state: teachersState } = useTeachers();
+  const [editingClass, setEditingClass] = useState<ClassRow | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const academyCareOptions = (academyCareState.data || []).map((ac) => ({
+    id: ac._id,
+    label: (ac as any).name || ac.year,
+  }));
+
+  const teacherOptions = (teachersState.data || []).map((teacher) => ({
+    id: teacher._id,
+    label: `${teacher.first_name} ${teacher.last_name}`,
+  }));
+
+  const subjectOptions = [
+    { id: "math", label: "Mathematics" },
+    { id: "english", label: "English" },
+    { id: "science", label: "Science" },
+    { id: "social_studies", label: "Social Studies" },
+    { id: "hindi", label: "Hindi" },
+    { id: "sanskrit", label: "Sanskrit" },
+    { id: "physical_education", label: "Physical Education" },
+  ];
 
   const columns: DataTableColumn<ClassRow>[] = [
     {
@@ -81,7 +107,11 @@ export function ClassListPage() {
       icon: "edit",
       label: "Edit Class",
       variant: "ghost",
-      onClick: () => showToast("Edit feature coming soon", "info"),
+      onClick: async (row) => {
+        const room_number = window.prompt("Room number", row.room_number || "")?.trim() || "";
+        const description = window.prompt("Description", row.description || "")?.trim() || "";
+        await updateClass(row._id, { room_number, description });
+      },
     },
     {
       icon: "delete",
@@ -90,10 +120,11 @@ export function ClassListPage() {
       requireConfirm: true,
       confirmTitle: "Delete Class",
       confirmMessage: (row: ClassRow) => `Are you sure you want to delete ${row.name}?`,
-      onClick: (row) => {
-        setDeleteId(row._id);
-        showToast("Delete feature coming soon", "info");
-        setDeleteId(null);
+      onClick: async (row) => {
+        const result = await deleteClass(row._id);
+        if (!result.ok) {
+          showToast(result.error.message || "Failed to delete class", "error");
+        }
       },
     },
   ];
@@ -130,20 +161,92 @@ export function ClassListPage() {
         </Link>
       </div>
 
-      <DataTable
-        columns={columns}
-        rows={state.data || []}
-        rowKey={(row) => row._id}
-        searchable
-        searchKeys={["name", "academy_care_year", "room_number", "description"]}
-        sortable
-        paginated={10}
-        rowActions={rowActions}
-        emptyState={{
-          title: "No classes found",
-          description: "Get started by creating your first class.",
-          action: { label: "Add Class", href: "/admin/classes/create" },
+      {(state.data || []).length === 0 ? (
+        <DataState variant="empty" title="No classes found" message="Get started by creating your first class." />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {(state.data || []).map((row) => (
+            <div
+              key={row._id}
+              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow"
+            >
+              <div className="mb-4">
+                <h3 className="font-bold text-lg text-gray-900">{row.name}</h3>
+                <p className="text-sm text-gray-500 mt-1">{row.description || "No description"}</p>
+              </div>
+
+              <div className="space-y-3 mb-6 text-sm">
+                <div>
+                  <span className="text-gray-500">Academic Year:</span>
+                  <p className="text-gray-900 font-medium">{row.academy_care_year || row.academy_care_id || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Room:</span>
+                  <p className="text-gray-900 font-medium">{row.room_number || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Status:</span>
+                  <p className="text-gray-900 font-medium capitalize">{row.status}</p>
+                </div>
+                {row.subjects && row.subjects.length > 0 && (
+                  <div>
+                    <span className="text-gray-500">Subjects:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {row.subjects.slice(0, 2).map((s) => (
+                        <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
+                      ))}
+                      {row.subjects.length > 2 && (
+                        <Badge variant="secondary" className="text-[10px]">+{row.subjects.length - 2}</Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setEditingClass(row)}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                >
+                  <span className="material-symbols-outlined text-base">edit</span>
+                  Edit
+                </button>
+                <button
+                  onClick={async () => {
+                    if (window.confirm(`Delete ${row.name}?`)) {
+                      const result = await deleteClass(row._id);
+                      if (!result.ok) {
+                        showToast(result.error.message || "Failed to delete", "error");
+                      }
+                    }
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                >
+                  <span className="material-symbols-outlined text-base">delete</span>
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ClassEditSidebar
+        classItem={editingClass}
+        isOpen={editingClass !== null}
+        academyCareOptions={academyCareOptions}
+        teacherOptions={teacherOptions}
+        subjectOptions={subjectOptions}
+        onClose={() => setEditingClass(null)}
+        onSave={async (id, data) => {
+          setIsSaving(true);
+          try {
+            await updateClass(id, data as ClassFormInput);
+          } finally {
+            setIsSaving(false);
+          }
         }}
+        isSaving={isSaving}
       />
     </div>
   );

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { DataTable, DataTableColumn, RowAction, Badge, DataState, Skeleton, TableSkeleton } from "../../../components/ui";
 import { useResults } from "../hooks/useResults";
@@ -8,8 +7,7 @@ import { ResultRow } from "../types/result.types";
 import { showToast } from "../../../utils/toast";
 
 export function ResultListPage() {
-  const { state } = useResults();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { state, updateResult, deleteResult } = useResults();
 
   const columns: DataTableColumn<ResultRow>[] = [
     {
@@ -96,7 +94,20 @@ export function ResultListPage() {
       icon: "edit",
       label: "Edit Result",
       variant: "ghost",
-      onClick: () => showToast("Edit feature coming soon", "info"),
+      onClick: async (row) => {
+        const marksInput = window.prompt("Obtained marks", String(row.obtained_marks));
+        if (!marksInput) {
+          return;
+        }
+        const obtained_marks = Number(marksInput);
+        if (Number.isNaN(obtained_marks)) {
+          showToast("Marks must be a number.", "error");
+          return;
+        }
+        const grade = window.prompt("Grade", row.grade)?.trim() || "";
+        const remarks = window.prompt("Remarks", row.remarks || "")?.trim() || "";
+        await updateResult(row._id, { obtained_marks, grade, remarks });
+      },
     },
     {
       icon: "delete",
@@ -105,10 +116,11 @@ export function ResultListPage() {
       requireConfirm: true,
       confirmTitle: "Delete Result",
       confirmMessage: (row: ResultRow) => `Are you sure you want to delete the result for ${row.student_name} in ${row.exam_title}?`,
-      onClick: (row) => {
-        setDeleteId(row._id);
-        showToast("Delete feature coming soon", "info");
-        setDeleteId(null);
+      onClick: async (row) => {
+        const result = await deleteResult(row._id);
+        if (!result.ok) {
+          showToast(result.error.message || "Failed to delete result", "error");
+        }
       },
     },
   ];

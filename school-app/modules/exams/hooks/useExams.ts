@@ -35,11 +35,41 @@ export function useExams() {
     [loadExams]
   );
 
+  const updateExam = useCallback(
+    async (id: string, input: Partial<ExamFormInput>) => {
+      const result = await service.updateExam(id, input);
+      if (!result.ok) {
+        showToast(result.error.message || "Failed to update exam", "error");
+        return result;
+      }
+
+      showToast("Exam updated.", "success");
+      await loadExams();
+      return result;
+    },
+    [loadExams]
+  );
+
+  const deleteExam = useCallback(
+    async (id: string) => {
+      const result = await service.deleteExam(id);
+      if (!result.ok) {
+        showToast(result.error.message || "Failed to delete exam", "error");
+        return result;
+      }
+
+      showToast("Exam deleted.", "success");
+      await loadExams();
+      return result;
+    },
+    [loadExams]
+  );
+
   useEffect(() => {
     void loadExams().catch(() => {
       // Error state is already managed by useSafeAsync.
     });
   }, [loadExams]);
 
-  return { state, addExam };
+  return { state, addExam, updateExam, deleteExam };
 }

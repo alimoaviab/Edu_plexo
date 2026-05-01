@@ -18,3 +18,9 @@ export function updateAcademicYear(id: string, input: AcademicYearUpdateInput) {
         body: JSON.stringify(input)
     });
 }
+
+export function deleteAcademicYear(id: string) {
+    return serviceRequest<{ success: boolean; id: string }>(`/api/academic-years/${id}`, {
+        method: "DELETE"
+    });
+}

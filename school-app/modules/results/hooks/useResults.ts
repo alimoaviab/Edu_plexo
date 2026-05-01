@@ -35,11 +35,41 @@ export function useResults() {
     [loadResults]
   );
 
+  const updateResult = useCallback(
+    async (id: string, input: Partial<ResultFormInput>) => {
+      const result = await service.updateResult(id, input);
+      if (!result.ok) {
+        showToast(result.error.message || "Failed to update result", "error");
+        return result;
+      }
+
+      showToast("Result updated.", "success");
+      await loadResults();
+      return result;
+    },
+    [loadResults]
+  );
+
+  const deleteResult = useCallback(
+    async (id: string) => {
+      const result = await service.deleteResult(id);
+      if (!result.ok) {
+        showToast(result.error.message || "Failed to delete result", "error");
+        return result;
+      }
+
+      showToast("Result deleted.", "success");
+      await loadResults();
+      return result;
+    },
+    [loadResults]
+  );
+
   useEffect(() => {
     void loadResults().catch(() => {
       // Error state is already managed by useSafeAsync.
     });
   }, [loadResults]);
 
-  return { state, addResult };
+  return { state, addResult, updateResult, deleteResult };
 }

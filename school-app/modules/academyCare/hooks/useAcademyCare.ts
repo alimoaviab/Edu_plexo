@@ -33,11 +33,39 @@ export function useAcademyCare() {
         [loadAcademyYears]
     );
 
+    const updateAcademyYear = useCallback(
+        async (id: string, input: Partial<AcademyYearFormInput>) => {
+            const result = await service.updateAcademyYear(id, input);
+            if (!result.ok) {
+                showToast("Failed to update academic year", "error");
+                return result;
+            }
+            showToast("Academic year updated.", "success");
+            await loadAcademyYears();
+            return result;
+        },
+        [loadAcademyYears]
+    );
+
+    const deleteAcademyYear = useCallback(
+        async (id: string) => {
+            const result = await service.deleteAcademyYear(id);
+            if (!result.ok) {
+                showToast("Failed to delete academic year", "error");
+                return result;
+            }
+            showToast("Academic year deleted.", "success");
+            await loadAcademyYears();
+            return result;
+        },
+        [loadAcademyYears]
+    );
+
     useEffect(() => {
         void loadAcademyYears().catch(() => {
             // Error state is already managed by useSafeAsync.
         });
     }, [loadAcademyYears]);
 
-    return { state, addAcademyYear };
+    return { state, addAcademyYear, updateAcademyYear, deleteAcademyYear };
 }

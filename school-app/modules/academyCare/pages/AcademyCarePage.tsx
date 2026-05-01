@@ -4,9 +4,39 @@ import { Card, DataState, Skeleton, TableSkeleton } from "../../../components/ui
 import { AcademyCareForm } from "../components/AcademyCareForm";
 import { AcademyCareTable } from "../components/AcademyCareTable";
 import { useAcademyCare } from "../hooks/useAcademyCare";
+import { showToast } from "../../../utils/toast";
 
 export function AcademyCarePage() {
-    const { state, addAcademyYear } = useAcademyCare();
+    const { state, addAcademyYear, updateAcademyYear, deleteAcademyYear } = useAcademyCare();
+
+    const handleEdit = async (row: any) => {
+        const description = window.prompt("Description", row.description || "")?.trim() || "";
+        const activeChoice = window.prompt("Set active? (yes/no)", row.is_active ? "yes" : "no")?.trim().toLowerCase();
+        if (!activeChoice) {
+            return;
+        }
+
+        await updateAcademyYear(row._id, {
+            description,
+            is_active: activeChoice === "yes"
+        });
+    };
+
+    const handleView = (row: any) => {
+        window.alert(`Year: ${row.year}\nStart: ${new Date(row.start_date).toLocaleDateString()}\nEnd: ${new Date(row.end_date).toLocaleDateString()}\nDescription: ${row.description || "No description"}`);
+    };
+
+    const handleDelete = async (row: any) => {
+        const ok = window.confirm(`Delete academic year ${row.year}?`);
+        if (!ok) {
+            return;
+        }
+
+        const result = await deleteAcademyYear(row._id);
+        if (!result.ok) {
+            showToast(result.error.message || "Failed to delete academic year", "error");
+        }
+    };
 
     return (
         <div className="flex flex-col gap-8">
@@ -20,8 +50,8 @@ export function AcademyCarePage() {
 
             {state.status === "loading" || state.status === "idle" ? (
                 <div className="space-y-4">
-                   <Skeleton className="h-8 w-48" />
-                   <TableSkeleton />
+                    <Skeleton className="h-8 w-48" />
+                    <TableSkeleton />
                 </div>
             ) : null}
 
@@ -38,10 +68,10 @@ export function AcademyCarePage() {
                     <div className="flex items-center justify-between">
                         <h3 className="text-lg font-bold text-gray-900">Academic Years History</h3>
                         <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                           {state.data.length} Total
+                            {state.data.length} Total
                         </span>
                     </div>
-                    <AcademyCareTable years={state.data} />
+                    <AcademyCareTable years={state.data} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} />
                 </div>
             ) : null}
         </div>

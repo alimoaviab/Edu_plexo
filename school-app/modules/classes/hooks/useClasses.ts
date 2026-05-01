@@ -35,11 +35,41 @@ export function useClasses() {
         [loadClasses]
     );
 
+    const updateClass = useCallback(
+        async (id: string, input: Partial<ClassFormInput>) => {
+            const result = await service.updateClass(id, input);
+            if (!result.ok) {
+                showToast(result.error.message || "Failed to update class", "error");
+                return result;
+            }
+
+            showToast("Class updated.", "success");
+            await loadClasses();
+            return result;
+        },
+        [loadClasses]
+    );
+
+    const deleteClass = useCallback(
+        async (id: string) => {
+            const result = await service.deleteClass(id);
+            if (!result.ok) {
+                showToast(result.error.message || "Failed to delete class", "error");
+                return result;
+            }
+
+            showToast("Class deleted.", "success");
+            await loadClasses();
+            return result;
+        },
+        [loadClasses]
+    );
+
     useEffect(() => {
         void loadClasses().catch(() => {
             // Error state is already managed by useSafeAsync.
         });
     }, [loadClasses]);
 
-    return { state, addClass };
+    return { state, addClass, updateClass, deleteClass };
 }

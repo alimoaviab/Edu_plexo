@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { DataTable, DataTableColumn, RowAction, Badge, DataState, Skeleton, TableSkeleton } from "../../../components/ui";
 import { useAttendance } from "../hooks/useAttendance";
@@ -8,8 +7,7 @@ import { AttendanceRecordRow } from "../types/attendance.types";
 import { showToast } from "../../../utils/toast";
 
 export function AttendanceListPage() {
-  const { state } = useAttendance();
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const { state, updateAttendance, deleteAttendance } = useAttendance();
 
   const columns: DataTableColumn<AttendanceRecordRow>[] = [
     {
@@ -48,9 +46,9 @@ export function AttendanceListPage() {
       render: (row) => (
         <Badge
           variant={
-            row.status === "present" ? "success" : 
-            row.status === "absent" ? "error" : 
-            row.status === "late" ? "warning" : "gray"
+            row.status === "present" ? "success" :
+              row.status === "absent" ? "error" :
+                row.status === "late" ? "warning" : "gray"
           }
           className="capitalize"
         >
@@ -80,7 +78,17 @@ export function AttendanceListPage() {
       icon: "edit",
       label: "Edit Record",
       variant: "ghost",
-      onClick: () => showToast("Edit feature coming soon", "info"),
+      onClick: async (row) => {
+        const status = window.prompt("Status (present/absent/late/excused)", row.status)?.trim();
+        if (!status) {
+          return;
+        }
+        const note = window.prompt("Note", row.note || "")?.trim() || "";
+        await updateAttendance(row._id, {
+          status: status as AttendanceRecordRow["status"],
+          note
+        });
+      },
     },
     {
       icon: "delete",
@@ -88,12 +96,13 @@ export function AttendanceListPage() {
       variant: "danger",
       requireConfirm: true,
       confirmTitle: "Delete Attendance Record",
-      confirmMessage: (row: AttendanceRecordRow) => 
+      confirmMessage: (row: AttendanceRecordRow) =>
         `Are you sure you want to delete attendance for ${row.student_name} on ${new Date(row.date).toLocaleDateString()}?`,
-      onClick: (row) => {
-        setDeleteId(row._id);
-        showToast("Delete feature coming soon", "info");
-        setDeleteId(null);
+      onClick: async (row) => {
+        const result = await deleteAttendance(row._id);
+        if (!result.ok) {
+          showToast(result.error.message || "Failed to delete attendance", "error");
+        }
       },
     },
   ];
