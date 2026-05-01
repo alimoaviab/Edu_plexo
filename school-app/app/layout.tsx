@@ -1,4 +1,6 @@
 import "./globals.css";
+import { ToastProvider } from "../components/ui/ToastProvider";
+import { NetworkStatus } from "../components/ui/NetworkStatus";
 
 export const metadata = {
   title: "School App",
@@ -7,8 +9,12 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
+        {children}
+        <ToastProvider />
+        <NetworkStatus />
+      </body>
     </html>
   );
 }

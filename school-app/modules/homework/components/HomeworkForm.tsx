@@ -1,27 +1,26 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Button, Input } from "../../../components/ui";
-import { FormSection, FormGroup } from "../../../components/ui/FormSection";
-import { spacing, colors } from "@edu/shared/design-system/tokens";
+import { Button, Input, Select } from "../../../components/ui";
+import { HomeworkFormInput, HomeworkStatus } from "../types/homework.types";
 
-interface HomeworkFormInput {
-    title: string;
-    class_id: string;
-    subject: string;
-    due_date: string;
-    description: string;
-    attachments: string;
-}
-
-export function HomeworkForm({ onCreate }: { onCreate: (input: HomeworkFormInput) => Promise<unknown> }) {
+export function HomeworkForm({
+    onCreate,
+    classOptions,
+    teacherOptions
+}: {
+    onCreate: (input: HomeworkFormInput) => Promise<unknown>;
+    classOptions: Array<{ id: string; label: string }>;
+    teacherOptions: Array<{ id: string; label: string }>;
+}) {
     const [form, setForm] = useState<HomeworkFormInput>({
         title: "",
         class_id: "",
+        teacher_id: "",
         subject: "",
-        due_date: "",
-        description: "",
-        attachments: ""
+        due_at: "",
+        instructions: "",
+        status: "assigned"
     });
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -30,8 +29,9 @@ export function HomeworkForm({ onCreate }: { onCreate: (input: HomeworkFormInput
         const newErrors: Record<string, string> = {};
         if (!form.title.trim()) newErrors.title = "Title is required";
         if (!form.class_id.trim()) newErrors.class_id = "Class is required";
+        if (!form.teacher_id.trim()) newErrors.teacher_id = "Teacher is required";
         if (!form.subject.trim()) newErrors.subject = "Subject is required";
-        if (!form.due_date) newErrors.due_date = "Due date is required";
+        if (!form.due_at) newErrors.due_at = "Due date is required";
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }
@@ -40,82 +40,116 @@ export function HomeworkForm({ onCreate }: { onCreate: (input: HomeworkFormInput
         event.preventDefault();
         if (!validate()) return;
         setSaving(true);
-        await onCreate(form);
-        setForm({
-            title: "",
-            class_id: "",
-            subject: "",
-            due_date: "",
-            description: "",
-            attachments: ""
-        });
-        setSaving(false);
+        try {
+            const result = (await onCreate(form)) as { ok?: boolean } | undefined;
+            if (result?.ok !== false) {
+                setForm({
+                    title: "",
+                    class_id: "",
+                    teacher_id: "",
+                    subject: "",
+                    due_at: "",
+                    instructions: "",
+                    status: "assigned"
+                });
+            }
+        } finally {
+            setSaving(false);
+        }
     }
 
     return (
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: spacing.lg }}>
-            <FormSection title="Assign Homework" description="Create new homework assignment" columns={2}>
-                <FormGroup label="Title" required error={errors.title}>
-                    <Input
-                        placeholder="e.g., Math Algebra Problems"
-                        value={form.title}
-                        onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    />
-                </FormGroup>
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                    label="Assignment Title"
+                    placeholder="e.g., Math Algebra Problems"
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    error={errors.title}
+                    required
+                />
 
-                <FormGroup label="Class" required error={errors.class_id}>
-                    <Input
-                        placeholder="Select class"
-                        value={form.class_id}
-                        onChange={(e) => setForm({ ...form, class_id: e.target.value })}
-                    />
-                </FormGroup>
+                <Select
+                    label="Subject"
+                    value={form.subject}
+                    onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                    options={[
+                        { label: "Select subject", value: "" },
+                        { label: "Mathematics", value: "Mathematics" },
+                        { label: "English", value: "English" },
+                        { label: "Science", value: "Science" },
+                        { label: "History", value: "History" }
+                    ]}
+                    error={errors.subject}
+                    required
+                />
+            </div>
 
-                <FormGroup label="Subject" required error={errors.subject}>
-                    <Input
-                        placeholder="e.g., Mathematics"
-                        value={form.subject}
-                        onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                    />
-                </FormGroup>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Select
+                    label="Target Class"
+                    value={form.class_id}
+                    onChange={(e) => setForm({ ...form, class_id: e.target.value })}
+                    options={[
+                        { label: "Select class", value: "" },
+                        ...classOptions.map(o => ({ label: o.label, value: o.id }))
+                    ]}
+                    error={errors.class_id}
+                    required
+                />
 
-                <FormGroup label="Due Date" required error={errors.due_date}>
-                    <Input
-                        type="date"
-                        value={form.due_date}
-                        onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                    />
-                </FormGroup>
+                <Select
+                    label="Assigning Teacher"
+                    value={form.teacher_id}
+                    onChange={(e) => setForm({ ...form, teacher_id: e.target.value })}
+                    options={[
+                        { label: "Select teacher", value: "" },
+                        ...teacherOptions.map(o => ({ label: o.label, value: o.id }))
+                    ]}
+                    error={errors.teacher_id}
+                    required
+                />
+            </div>
 
-                <FormGroup label="Description">
-                    <Input
-                        placeholder="Describe the homework assignment"
-                        value={form.description}
-                        onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    />
-                </FormGroup>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                    label="Due Date"
+                    type="date"
+                    value={form.due_at}
+                    onChange={(e) => setForm({ ...form, due_at: e.target.value })}
+                    error={errors.due_at}
+                    required
+                />
 
-                <FormGroup label="Attachments">
-                    <Input
-                        placeholder="Add attachment URLs or file references"
-                        value={form.attachments}
-                        onChange={(e) => setForm({ ...form, attachments: e.target.value })}
-                    />
-                </FormGroup>
-            </FormSection>
+                <Select
+                    label="Assignment Status"
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value as HomeworkStatus })}
+                    options={[
+                        { label: "Assigned", value: "assigned" },
+                        { label: "Draft", value: "draft" },
+                        { label: "Closed", value: "closed" }
+                    ]}
+                />
+            </div>
 
-            <Button
-                type="submit"
-                disabled={saving}
-                style={{
-                    background: colors.actionBlue,
-                    color: "white",
-                    padding: `${spacing.md}px`,
-                    alignSelf: "flex-start"
-                }}
-            >
-                {saving ? "Creating..." : "Assign Homework"}
-            </Button>
+            <Input
+                label="Instructions"
+                placeholder="Describe the homework assignment in detail..."
+                value={form.instructions || ""}
+                onChange={(e) => setForm({ ...form, instructions: e.target.value })}
+            />
+
+            <div className="flex justify-end pt-4 border-t border-border">
+                <Button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full md:w-auto min-w-[150px]"
+                >
+                    {saving ? "Creating..." : "Assign Homework"}
+                </Button>
+            </div>
         </form>
     );
 }

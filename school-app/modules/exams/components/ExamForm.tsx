@@ -1,26 +1,24 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Button, Input } from "../../../components/ui";
-import { FormSection, FormGroup } from "../../../components/ui/FormSection";
-import { spacing, colors } from "@edu/shared/design-system/tokens";
+import { Button, Input, Select } from "../../../components/ui";
+import { ServiceResult } from "@edu/shared/types/core";
+import { ExamFormInput, ExamOption } from "../types/exam.types";
 
-interface ExamFormInput {
-    exam_name: string;
-    class_id: string;
-    date: string;
-    total_marks: number;
-    passing_marks: number;
-    description: string;
-}
-
-export function ExamForm({ onCreate }: { onCreate: (input: ExamFormInput) => Promise<unknown> }) {
+export function ExamForm({
+  classOptions,
+  onCreate
+}: {
+  classOptions: ExamOption[];
+  onCreate: (input: ExamFormInput) => Promise<ServiceResult<unknown>>;
+}) {
     const [form, setForm] = useState<ExamFormInput>({
-        exam_name: "",
-        class_id: "",
-        date: "",
-        total_marks: 100,
-        passing_marks: 40,
+        class_id: classOptions[0]?.id ?? "",
+        subject: "",
+        title: "",
+        starts_at: "",
+        max_marks: 100,
+        status: "scheduled",
         description: ""
     });
     const [saving, setSaving] = useState(false);
@@ -28,9 +26,10 @@ export function ExamForm({ onCreate }: { onCreate: (input: ExamFormInput) => Pro
 
     function validate() {
         const newErrors: Record<string, string> = {};
-        if (!form.exam_name.trim()) newErrors.exam_name = "Exam name is required";
+        if (!form.title.trim()) newErrors.title = "Exam title is required";
+        if (!form.subject.trim()) newErrors.subject = "Subject is required";
         if (!form.class_id.trim()) newErrors.class_id = "Class is required";
-        if (!form.date) newErrors.date = "Date is required";
+        if (!form.starts_at) newErrors.starts_at = "Date is required";
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }
@@ -39,84 +38,112 @@ export function ExamForm({ onCreate }: { onCreate: (input: ExamFormInput) => Pro
         event.preventDefault();
         if (!validate()) return;
         setSaving(true);
-        await onCreate(form);
-        setForm({
-            exam_name: "",
-            class_id: "",
-            date: "",
-            total_marks: 100,
-            passing_marks: 40,
-            description: ""
-        });
-        setSaving(false);
+        try {
+            const result = await onCreate(form);
+            if (result.ok) {
+                setForm({
+                    class_id: classOptions[0]?.id ?? "",
+                    subject: "",
+                    title: "",
+                    starts_at: "",
+                    max_marks: 100,
+                    status: "scheduled",
+                    description: ""
+                });
+            }
+        } finally {
+            setSaving(false);
+        }
     }
 
     return (
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: spacing.lg }}>
-            <FormSection title="Schedule Exam" description="Create new exam schedule" columns={2}>
-                <FormGroup label="Exam Name" required error={errors.exam_name}>
-                    <Input
-                        placeholder="e.g., Mid-Term Exam"
-                        value={form.exam_name}
-                        onChange={(e) => setForm({ ...form, exam_name: e.target.value })}
-                    />
-                </FormGroup>
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                    label="Exam Title"
+                    placeholder="e.g., Mid-Term Exam"
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    error={errors.title}
+                    required
+                />
 
-                <FormGroup label="Class" required error={errors.class_id}>
-                    <Input
-                        placeholder="Select class"
-                        value={form.class_id}
-                        onChange={(e) => setForm({ ...form, class_id: e.target.value })}
-                    />
-                </FormGroup>
+                <Select
+                    label="Subject"
+                    value={form.subject}
+                    onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                    options={[
+                        { label: "Select subject", value: "" },
+                        { label: "Mathematics", value: "Mathematics" },
+                        { label: "English", value: "English" },
+                        { label: "Science", value: "Science" },
+                        { label: "History", value: "History" }
+                    ]}
+                    error={errors.subject}
+                    required
+                />
+            </div>
 
-                <FormGroup label="Date" required error={errors.date}>
-                    <Input
-                        type="date"
-                        value={form.date}
-                        onChange={(e) => setForm({ ...form, date: e.target.value })}
-                    />
-                </FormGroup>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Select
+                    label="Target Class"
+                    value={form.class_id}
+                    onChange={(e) => setForm({ ...form, class_id: e.target.value })}
+                    options={[
+                        { label: "Select class", value: "" },
+                        ...classOptions.map(o => ({ label: o.label, value: o.id }))
+                    ]}
+                    error={errors.class_id}
+                    required
+                />
 
-                <FormGroup label="Total Marks">
-                    <Input
-                        type="number"
-                        min="1"
-                        value={form.total_marks}
-                        onChange={(e) => setForm({ ...form, total_marks: parseInt(e.target.value) || 100 })}
-                    />
-                </FormGroup>
+                <Input
+                    label="Exam Date"
+                    type="date"
+                    value={form.starts_at}
+                    onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
+                    error={errors.starts_at}
+                    required
+                />
+            </div>
 
-                <FormGroup label="Passing Marks">
-                    <Input
-                        type="number"
-                        min="0"
-                        value={form.passing_marks}
-                        onChange={(e) => setForm({ ...form, passing_marks: parseInt(e.target.value) || 40 })}
-                    />
-                </FormGroup>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                    label="Total Marks"
+                    type="number"
+                    min="1"
+                    value={form.max_marks}
+                    onChange={(e) => setForm({ ...form, max_marks: parseInt(e.target.value) || 100 })}
+                />
 
-                <FormGroup label="Description">
-                    <Input
-                        placeholder="Exam description or instructions"
-                        value={form.description}
-                        onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    />
-                </FormGroup>
-            </FormSection>
+                <Select
+                    label="Status"
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value as ExamFormInput["status"] })}
+                    options={[
+                        { label: "Scheduled", value: "scheduled" },
+                        { label: "Completed", value: "completed" },
+                        { label: "Cancelled", value: "cancelled" }
+                    ]}
+                />
+            </div>
 
-            <Button
-                type="submit"
-                disabled={saving}
-                style={{
-                    background: colors.actionBlue,
-                    color: "white",
-                    padding: `${spacing.md}px`,
-                    alignSelf: "flex-start"
-                }}
-            >
-                {saving ? "Creating..." : "Schedule Exam"}
-            </Button>
+            <Input
+                label="Description (Optional)"
+                placeholder="Exam description or instructions..."
+                value={form.description || ""}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+
+            <div className="flex justify-end pt-4 border-t border-border">
+                <Button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full md:w-auto min-w-[150px]"
+                >
+                    {saving ? "Scheduling..." : "Schedule Exam"}
+                </Button>
+            </div>
         </form>
     );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -8,10 +8,31 @@ type Role = "admin" | "teacher" | "student" | "parent";
 
 export default function LoginPage() {
   const router = useRouter();
+  const isDevelopment = process.env.NODE_ENV !== "production";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role>("admin");
   const [formData, setFormData] = useState({ email: "", password: "" });
+
+  useEffect(() => {
+    if (isDevelopment) {
+      router.replace("/admin/dashboard");
+      return;
+    }
+
+    const token = window.localStorage.getItem("token");
+    if (token) {
+      router.replace("/admin/dashboard");
+      return;
+    }
+
+    setSessionChecked(true);
+  }, [isDevelopment, router]);
+
+  if (isDevelopment || !sessionChecked) {
+    return null;
+  }
 
   const roles: { key: Role; label: string; icon: string }[] = [
     { key: "admin", label: "Admin", icon: "admin_panel_settings" },
@@ -49,14 +70,7 @@ export default function LoginPage() {
       const data = await response.json();
       localStorage.setItem("token", data.token);
 
-      // Route based on role
-      const roleRoutes: Record<Role, string> = {
-        admin: "/admin/dashboard",
-        teacher: "/teacher/dashboard",
-        student: "/student/dashboard",
-        parent: "/parent/dashboard",
-      };
-      router.push(roleRoutes[selectedRole] || "/student/dashboard");
+      router.push("/admin/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -112,22 +126,6 @@ export default function LoginPage() {
               <h1 className="font-headline-md text-primary">EduFlow</h1>
             </div>
 
-            {/* Tab Switcher */}
-            <div className="flex p-xs bg-surface-container rounded-lg mb-lg border border-outline-variant/20 shadow-inner">
-              <button
-                className="flex-1 py-sm font-label-md text-on-primary bg-primary rounded-DEFAULT shadow-sm transition-all"
-                disabled
-              >
-                Login
-              </button>
-              <Link
-                href="/auth/signup"
-                className="flex-1 py-sm font-label-md text-on-surface-variant hover:text-on-surface transition-colors rounded-DEFAULT text-center"
-              >
-                Signup
-              </Link>
-            </div>
-
             <div className="mb-lg">
               <h2 className="font-headline-md text-on-surface mb-xs">
                 Welcome Back
@@ -166,7 +164,7 @@ export default function LoginPage() {
             {/* Form */}
             <form className="space-y-md" onSubmit={handleSubmit}>
               <div>
-                <label className="block font-label-md text-on-surface mb-xs">
+                <label htmlFor="email" className="block font-label-md text-on-surface mb-xs">
                   Email Address
                 </label>
                 <div className="relative">
@@ -177,6 +175,7 @@ export default function LoginPage() {
                     mail
                   </span>
                   <input
+                    id="email"
                     name="email"
                     type="email"
                     value={formData.email}
@@ -189,7 +188,7 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block font-label-md text-on-surface mb-xs">
+                <label htmlFor="password" className="block font-label-md text-on-surface mb-xs">
                   Password
                 </label>
                 <div className="relative">
@@ -200,6 +199,7 @@ export default function LoginPage() {
                     lock
                   </span>
                   <input
+                    id="password"
                     name="password"
                     type="password"
                     value={formData.password}

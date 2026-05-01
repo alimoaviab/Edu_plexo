@@ -1,25 +1,24 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Button, Input } from "../../../components/ui";
-import { FormSection, FormGroup } from "../../../components/ui/FormSection";
-import { spacing, colors } from "@edu/shared/design-system/tokens";
+import { Button, Input, Select } from "../../../components/ui";
+import { AttendanceFormInput, AttendanceStatus } from "../types/attendance.types";
 
-interface AttendanceFormInput {
-    student_id: string;
-    class_id: string;
-    date: string;
-    status: "present" | "absent" | "late" | "excused";
-    remarks: string;
-}
-
-export function AttendanceForm({ onCreate }: { onCreate: (input: AttendanceFormInput) => Promise<unknown> }) {
+export function AttendanceForm({
+    onCreate,
+    classOptions,
+    studentOptions
+}: {
+    onCreate: (input: AttendanceFormInput) => Promise<unknown>;
+    classOptions: Array<{ id: string; label: string }>;
+    studentOptions: Array<{ id: string; class_id: string; label: string }>;
+}) {
     const [form, setForm] = useState<AttendanceFormInput>({
         student_id: "",
         class_id: "",
         date: new Date().toISOString().split("T")[0],
         status: "present",
-        remarks: ""
+        note: ""
     });
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -37,83 +36,97 @@ export function AttendanceForm({ onCreate }: { onCreate: (input: AttendanceFormI
         event.preventDefault();
         if (!validate()) return;
         setSaving(true);
-        await onCreate(form);
-        setForm({
-            student_id: "",
-            class_id: "",
-            date: new Date().toISOString().split("T")[0],
-            status: "present",
-            remarks: ""
-        });
-        setSaving(false);
+        try {
+            const result = (await onCreate(form)) as { ok?: boolean } | undefined;
+            if (result?.ok !== false) {
+                setForm({
+                    student_id: "",
+                    class_id: "",
+                    date: new Date().toISOString().split("T")[0],
+                    status: "present",
+                    note: ""
+                });
+            }
+        } finally {
+            setSaving(false);
+        }
     }
 
+    const filteredStudents = studentOptions.filter((student) => !form.class_id || student.class_id === form.class_id);
+
     return (
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: spacing.lg }}>
-            <FormSection title="Mark Attendance" description="Record student attendance" columns={2}>
-                <FormGroup label="Student" required error={errors.student_id}>
-                    <Input
-                        placeholder="Select student"
-                        value={form.student_id}
-                        onChange={(e) => setForm({ ...form, student_id: e.target.value })}
-                    />
-                </FormGroup>
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Select
+                    label="Class"
+                    value={form.class_id}
+                    onChange={(e) =>
+                        setForm({
+                            ...form,
+                            class_id: e.target.value,
+                            student_id: ""
+                        })
+                    }
+                    options={[
+                        { label: "Select class", value: "" },
+                        ...classOptions.map(o => ({ label: o.label, value: o.id }))
+                    ]}
+                    error={errors.class_id}
+                    required
+                />
 
-                <FormGroup label="Class" required error={errors.class_id}>
-                    <Input
-                        placeholder="Select class"
-                        value={form.class_id}
-                        onChange={(e) => setForm({ ...form, class_id: e.target.value })}
-                    />
-                </FormGroup>
+                <Select
+                    label="Student"
+                    value={form.student_id}
+                    onChange={(e) => setForm({ ...form, student_id: e.target.value })}
+                    options={[
+                        { label: "Select student", value: "" },
+                        ...filteredStudents.map(o => ({ label: o.label, value: o.id }))
+                    ]}
+                    error={errors.student_id}
+                    required
+                />
+            </div>
 
-                <FormGroup label="Date" required error={errors.date}>
-                    <Input
-                        type="date"
-                        value={form.date}
-                        onChange={(e) => setForm({ ...form, date: e.target.value })}
-                    />
-                </FormGroup>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                    label="Date"
+                    type="date"
+                    value={form.date}
+                    onChange={(e) => setForm({ ...form, date: e.target.value })}
+                    error={errors.date}
+                    required
+                />
 
-                <FormGroup label="Status" required>
-                    <select
-                        value={form.status}
-                        onChange={(e) => setForm({ ...form, status: e.target.value as "present" | "absent" | "late" | "excused" })}
-                        style={{
-                            padding: spacing.sm,
-                            borderRadius: "4px",
-                            border: `1px solid ${colors.outline}`,
-                            fontSize: "14px"
-                        }}
-                    >
-                        <option value="present">Present</option>
-                        <option value="absent">Absent</option>
-                        <option value="late">Late</option>
-                        <option value="excused">Excused</option>
-                    </select>
-                </FormGroup>
+                <Select
+                    label="Status"
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value as AttendanceStatus })}
+                    options={[
+                        { label: "Present", value: "present" },
+                        { label: "Absent", value: "absent" },
+                        { label: "Late", value: "late" },
+                        { label: "Excused", value: "excused" }
+                    ]}
+                />
+            </div>
 
-                <FormGroup label="Remarks">
-                    <Input
-                        placeholder="Add any remarks"
-                        value={form.remarks}
-                        onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-                    />
-                </FormGroup>
-            </FormSection>
+            <Input
+                label="Remarks"
+                placeholder="Add any remarks..."
+                value={form.note || ""}
+                onChange={(e) => setForm({ ...form, note: e.target.value })}
+            />
 
-            <Button
-                type="submit"
-                disabled={saving}
-                style={{
-                    background: colors.actionBlue,
-                    color: "white",
-                    padding: `${spacing.md}px`,
-                    alignSelf: "flex-start"
-                }}
-            >
-                {saving ? "Recording..." : "Record Attendance"}
-            </Button>
+            <div className="flex justify-end pt-4 border-t border-border">
+                <Button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full md:w-auto min-w-[150px]"
+                >
+                    {saving ? "Recording..." : "Record Attendance"}
+                </Button>
+            </div>
         </form>
     );
 }

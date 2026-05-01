@@ -1,22 +1,21 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { Button, Input } from "../../../components/ui";
-import { FormSection, FormGroup } from "../../../components/ui/FormSection";
-import { spacing, colors } from "@edu/shared/design-system/tokens";
+import { Button, Input, Select } from "../../../components/ui";
+import { ResultFormInput, ResultOption } from "../types/result.types";
 
-interface ResultFormInput {
-    student_id: string;
-    exam_id: string;
-    obtained_marks: number;
-    grade: string;
-    remarks: string;
-}
-
-export function ResultForm({ onCreate }: { onCreate: (input: ResultFormInput) => Promise<unknown> }) {
+export function ResultForm({
+  examOptions,
+  studentOptions,
+  onCreate
+}: {
+  examOptions: ResultOption[];
+  studentOptions: ResultOption[];
+  onCreate: (input: ResultFormInput) => Promise<unknown>;
+}) {
     const [form, setForm] = useState<ResultFormInput>({
-        student_id: "",
         exam_id: "",
+        student_id: "",
         obtained_marks: 0,
         grade: "",
         remarks: ""
@@ -26,8 +25,8 @@ export function ResultForm({ onCreate }: { onCreate: (input: ResultFormInput) =>
 
     function validate() {
         const newErrors: Record<string, string> = {};
-        if (!form.student_id.trim()) newErrors.student_id = "Student is required";
         if (!form.exam_id.trim()) newErrors.exam_id = "Exam is required";
+        if (!form.student_id.trim()) newErrors.student_id = "Student is required";
         if (form.obtained_marks < 0) newErrors.obtained_marks = "Marks cannot be negative";
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -37,75 +36,83 @@ export function ResultForm({ onCreate }: { onCreate: (input: ResultFormInput) =>
         event.preventDefault();
         if (!validate()) return;
         setSaving(true);
-        await onCreate(form);
-        setForm({
-            student_id: "",
-            exam_id: "",
-            obtained_marks: 0,
-            grade: "",
-            remarks: ""
-        });
-        setSaving(false);
+        try {
+            await onCreate(form);
+            setForm({
+                exam_id: "",
+                student_id: "",
+                obtained_marks: 0,
+                grade: "",
+                remarks: ""
+            });
+        } finally {
+            setSaving(false);
+        }
     }
 
     return (
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: spacing.lg }}>
-            <FormSection title="Enter Results" description="Record exam results for students" columns={2}>
-                <FormGroup label="Student" required error={errors.student_id}>
-                    <Input
-                        placeholder="Select student"
-                        value={form.student_id}
-                        onChange={(e) => setForm({ ...form, student_id: e.target.value })}
-                    />
-                </FormGroup>
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Select
+                    label="Select Exam"
+                    value={form.exam_id}
+                    onChange={(e) => setForm({ ...form, exam_id: e.target.value })}
+                    options={[
+                        { label: "Choose an exam", value: "" },
+                        ...examOptions.map(o => ({ label: o.label, value: o.id }))
+                    ]}
+                    error={errors.exam_id}
+                    required
+                />
 
-                <FormGroup label="Exam" required error={errors.exam_id}>
-                    <Input
-                        placeholder="Select exam"
-                        value={form.exam_id}
-                        onChange={(e) => setForm({ ...form, exam_id: e.target.value })}
-                    />
-                </FormGroup>
+                <Select
+                    label="Select Student"
+                    value={form.student_id}
+                    onChange={(e) => setForm({ ...form, student_id: e.target.value })}
+                    options={[
+                        { label: "Choose a student", value: "" },
+                        ...studentOptions.map(o => ({ label: o.label, value: o.id }))
+                    ]}
+                    error={errors.student_id}
+                    required
+                />
+            </div>
 
-                <FormGroup label="Obtained Marks" required error={errors.obtained_marks}>
-                    <Input
-                        type="number"
-                        min="0"
-                        placeholder="Marks obtained"
-                        value={form.obtained_marks}
-                        onChange={(e) => setForm({ ...form, obtained_marks: parseFloat(e.target.value) || 0 })}
-                    />
-                </FormGroup>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Input
+                    label="Marks Obtained"
+                    type="number"
+                    min="0"
+                    value={form.obtained_marks}
+                    onChange={(e) => setForm({ ...form, obtained_marks: parseInt(e.target.value) || 0 })}
+                    error={errors.obtained_marks}
+                    required
+                />
 
-                <FormGroup label="Grade">
-                    <Input
-                        placeholder="e.g., A, B, C, D, F"
-                        value={form.grade}
-                        onChange={(e) => setForm({ ...form, grade: e.target.value })}
-                    />
-                </FormGroup>
+                <Input
+                    label="Grade"
+                    placeholder="e.g., A+"
+                    value={form.grade}
+                    onChange={(e) => setForm({ ...form, grade: e.target.value })}
+                />
 
-                <FormGroup label="Remarks">
-                    <Input
-                        placeholder="Add any remarks or comments"
-                        value={form.remarks}
-                        onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-                    />
-                </FormGroup>
-            </FormSection>
+                <Input
+                    label="Remarks (Optional)"
+                    placeholder="e.g., Excellent performance"
+                    value={form.remarks || ""}
+                    onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+                />
+            </div>
 
-            <Button
-                type="submit"
-                disabled={saving}
-                style={{
-                    background: colors.actionBlue,
-                    color: "white",
-                    padding: `${spacing.md}px`,
-                    alignSelf: "flex-start"
-                }}
-            >
-                {saving ? "Saving..." : "Save Result"}
-            </Button>
+            <div className="flex justify-end pt-4 border-t border-border">
+                <Button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full md:w-auto min-w-[150px]"
+                >
+                    {saving ? "Saving..." : "Save Result"}
+                </Button>
+            </div>
         </form>
     );
 }
