@@ -29,7 +29,15 @@ export function SettingsPage() {
             ) : null}
 
             {state.status === "error" ? (
-                <DataState variant="error" title="Failed to load settings" message={state.error} />
+                <div className="flex flex-col items-center">
+                    <DataState variant="error" title="Failed to load settings" message={state.error || "Something went wrong"} />
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="mt-4 px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
+                    >
+                        Retry Loading
+                    </button>
+                </div>
             ) : null}
 
             {state.status === "success" && state.data ? (

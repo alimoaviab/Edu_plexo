@@ -43,6 +43,8 @@ export interface DataTableProps<T> {
   selectable?: boolean;
   onRowClick?: (row: T) => void;
   isLoading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
   emptyState?: {
     title: string;
     description: string;
@@ -69,6 +71,8 @@ export function DataTable<T>({
   selectable = false,
   onRowClick,
   isLoading = false,
+  error = null,
+  onRetry,
   emptyState,
   bulkActions,
 }: DataTableProps<T>) {
@@ -185,7 +189,27 @@ export function DataTable<T>({
     );
   }
 
-  if (!isLoading && filteredRows.length === 0) {
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 px-4 bg-white rounded-xl border border-dashed border-error/30">
+        <div className="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center mb-4">
+          <span className="material-symbols-outlined text-error">error</span>
+        </div>
+        <h3 className="text-sm font-bold text-gray-900">Failed to load data</h3>
+        <p className="text-xs text-gray-500 mt-1 mb-6 text-center max-w-xs">{error}</p>
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            Retry
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (!isLoading && !error && filteredRows.length === 0) {
     return (
       <EmptyState
         title={emptyState?.title || "No data found"}

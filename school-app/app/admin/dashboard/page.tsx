@@ -2,11 +2,11 @@ import { Card } from "../../../components/ui";
 import { SchoolShell } from "../../../layouts/SchoolShell";
 
 const sections = [
-  { title: "Students", value: "1,248", detail: "Active enrollment", icon: "group", trend: "+12%", trendUp: true },
-  { title: "Teachers", value: "86", detail: "Faculty members", icon: "person", trend: "+2", trendUp: true },
-  { title: "Revenue", value: "$42.8k", detail: "Monthly collection", icon: "payments", trend: "+8%", trendUp: true },
-  { title: "Attendance", value: "92%", detail: "Avg. this week", icon: "check_circle", trend: "-1%", trendUp: false },
-  { title: "Exams", value: "14", detail: "Upcoming tests", icon: "description", trend: "Stable", trendUp: true }
+  { title: "Total Students", value: "1,248", detail: "Active enrollment", icon: "group", trend: "+12%", trendUp: true },
+  { title: "Total Teachers", value: "86", detail: "Faculty members", icon: "person", trend: "+2", trendUp: true },
+  { title: "Active Classes", value: "42", detail: "Running this term", icon: "school", trend: "+4", trendUp: true },
+  { title: "Attendance Today", value: "94.2%", detail: "Present today", icon: "check_circle", trend: "+2%", trendUp: true },
+  { title: "Upcoming Exams", value: "14", detail: "Next 30 days", icon: "description", trend: "Stable", trendUp: true }
 ];
 
 export default function AdminDashboardPage() {
@@ -56,25 +56,44 @@ export default function AdminDashboardPage() {
           </div>
         </Card>
 
-        <Card>
-          <h3 className="text-lg font-semibold mb-6">Quick Actions</h3>
-          <div className="space-y-3">
-             {[
-               { label: "Add New Student", icon: "person_add", color: "bg-blue-50 text-blue-600" },
-               { label: "Record Attendance", icon: "how_to_reg", color: "bg-green-50 text-green-600" },
-               { label: "Generate Report", icon: "summarize", color: "bg-purple-50 text-purple-600" },
-               { label: "Create Exam", icon: "add_task", color: "bg-orange-50 text-orange-600" }
-             ].map((action) => (
-               <button key={action.label} className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-primary/20 hover:bg-primary/5 transition-all group">
-                  <div className={`w-10 h-10 rounded-lg ${action.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                    <span className="material-symbols-outlined text-xl">{action.icon}</span>
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">{action.label}</span>
-                  <span className="material-symbols-outlined text-gray-400 ml-auto text-sm">chevron_right</span>
-               </button>
-             ))}
-          </div>
-        </Card>
+        <div className="space-y-6">
+          <Card>
+            <h3 className="text-lg font-semibold mb-6">Quick Actions</h3>
+            <div className="space-y-3">
+               {[
+                 { label: "Add New Student", icon: "person_add", color: "bg-blue-50 text-blue-600" },
+                 { label: "Record Attendance", icon: "how_to_reg", color: "bg-green-50 text-green-600" },
+                 { label: "Generate Report", icon: "summarize", color: "bg-purple-50 text-purple-600" },
+                 { label: "Create Exam", icon: "add_task", color: "bg-orange-50 text-orange-600" }
+               ].map((action) => (
+                 <button key={action.label} className="w-full flex items-center gap-3 p-3 rounded-xl border border-border hover:border-primary/20 hover:bg-primary/5 transition-all group">
+                    <div className={`w-10 h-10 rounded-lg ${action.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                      <span className="material-symbols-outlined text-xl">{action.icon}</span>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">{action.label}</span>
+                    <span className="material-symbols-outlined text-gray-400 ml-auto text-sm">chevron_right</span>
+                 </button>
+               ))}
+            </div>
+          </Card>
+
+          <Card className="border-error/20 bg-error/5">
+            <h3 className="text-sm font-bold text-error flex items-center gap-2 mb-4">
+              <span className="material-symbols-outlined text-lg">warning</span>
+              System Alerts
+            </h3>
+            <div className="space-y-3">
+               <div className="p-3 bg-white rounded-lg border border-error/10">
+                  <p className="text-xs font-bold text-gray-900">Missing Timetable</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">Grade 10-A has no sessions assigned for Wednesday.</p>
+               </div>
+               <div className="p-3 bg-white rounded-lg border border-error/10">
+                  <p className="text-xs font-bold text-gray-900">Low Attendance</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">Class 12-B attendance dropped below 80% this week.</p>
+               </div>
+            </div>
+          </Card>
+        </div>
       </div>
     </SchoolShell>
   );

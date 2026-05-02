@@ -2,16 +2,16 @@
 
 import { FormEvent, useState } from "react";
 import { Button, Input, Select } from "../../../components/ui";
-import { TimetableFormInput } from "../types/timetable.types";
+import { TimetableFormInput, DayOfWeek } from "../types/timetable.types";
 
-const DAYS = [
-  { label: "Monday", value: 1 },
-  { label: "Tuesday", value: 2 },
-  { label: "Wednesday", value: 3 },
-  { label: "Thursday", value: 4 },
-  { label: "Friday", value: 5 },
-  { label: "Saturday", value: 6 },
-  { label: "Sunday", value: 7 },
+const DAYS: { label: DayOfWeek; value: DayOfWeek }[] = [
+  { label: "Monday", value: "Monday" },
+  { label: "Tuesday", value: "Tuesday" },
+  { label: "Wednesday", value: "Wednesday" },
+  { label: "Thursday", value: "Thursday" },
+  { label: "Friday", value: "Friday" },
+  { label: "Saturday", value: "Saturday" },
+  { label: "Sunday", value: "Sunday" },
 ];
 
 export function TimetableForm({
@@ -29,8 +29,7 @@ export function TimetableForm({
     class_id: "",
     teacher_id: "",
     subject_id: "",
-    day_of_week: 1,
-    period_number: 1,
+    day: "Monday",
     start_time: "08:00",
     end_time: "09:00",
     room: ""
@@ -52,14 +51,13 @@ export function TimetableForm({
     if (!validate()) return;
     setSaving(true);
     try {
-      const result = (await onCreate(form)) as { ok?: boolean } | undefined;
-      if (result?.ok !== false) {
+      const result = (await onCreate(form)) as { success?: boolean } | undefined;
+      if (result?.success !== false) {
         setForm({
           class_id: "",
           teacher_id: "",
           subject_id: "",
-          day_of_week: 1,
-          period_number: 1,
+          day: "Monday",
           start_time: "08:00",
           end_time: "09:00",
           room: ""
@@ -102,32 +100,26 @@ export function TimetableForm({
         />
         <Select
           label="Day"
-          value={String(form.day_of_week)}
-          onChange={(e) => setForm({ ...form, day_of_week: Number(e.target.value) })}
-          options={DAYS.map(d => ({ label: d.label, value: String(d.value) }))}
+          value={form.day}
+          onChange={(e) => setForm({ ...form, day: e.target.value as DayOfWeek })}
+          options={DAYS.map(d => ({ label: d.label, value: d.value }))}
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Input
-          label="Period"
-          type="number"
-          min={1}
-          max={10}
-          value={form.period_number}
-          onChange={(e) => setForm({ ...form, period_number: Number(e.target.value) })}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Input
           label="Start Time"
           type="time"
           value={form.start_time}
           onChange={(e) => setForm({ ...form, start_time: e.target.value })}
+          required
         />
         <Input
           label="End Time"
           type="time"
           value={form.end_time}
           onChange={(e) => setForm({ ...form, end_time: e.target.value })}
+          required
         />
       </div>
 

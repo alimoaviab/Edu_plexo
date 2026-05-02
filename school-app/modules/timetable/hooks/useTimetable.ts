@@ -3,27 +3,27 @@
 import { useCallback, useEffect } from "react";
 import { useSafeAsync } from "../../../hooks/useSafeAsync";
 import { showToast } from "../../../utils/toast";
-import { TimetableFormInput, TimetableRecordRow } from "../types/timetable.types";
+import { TimetableFormInput, TimetableRecord } from "../types/timetable.types";
 import * as service from "../services/timetable.service";
 
-export function useTimetable() {
-  const { state, run } = useSafeAsync<TimetableRecordRow[]>();
+export function useTimetable(filters?: { class_id?: string; teacher_id?: string; day?: string }) {
+  const { state, run } = useSafeAsync<TimetableRecord[]>();
 
-  const loadTimetable = useCallback((classId?: string) => {
+  const loadTimetable = useCallback(() => {
     return run(async () => {
-      const result = await service.listTimetable(classId);
-      if (!result.ok) {
-        throw new Error(result.error.message || "Failed to load timetable");
+      const result = await service.listTimetable(filters);
+      if (!result.success) {
+        throw new Error(result.message || "Failed to load timetable");
       }
-      return result.data;
+      return result.data || [];
     });
-  }, [run]);
+  }, [run, filters]);
 
   const addTimetable = useCallback(
     async (input: TimetableFormInput) => {
       const result = await service.createTimetable(input);
-      if (!result.ok) {
-        showToast(result.error.message || "Failed to create timetable entry", "error");
+      if (!result.success) {
+        showToast(result.message || "Failed to create timetable entry", "error");
         return result;
       }
       showToast("Timetable entry created.", "success");
@@ -36,8 +36,8 @@ export function useTimetable() {
   const updateTimetable = useCallback(
     async (id: string, input: Partial<TimetableFormInput>) => {
       const result = await service.updateTimetable(id, input);
-      if (!result.ok) {
-        showToast(result.error.message || "Failed to update", "error");
+      if (!result.success) {
+        showToast(result.message || "Failed to update timetable entry", "error");
         return result;
       }
       showToast("Timetable entry updated.", "success");
@@ -50,8 +50,8 @@ export function useTimetable() {
   const deleteTimetable = useCallback(
     async (id: string) => {
       const result = await service.deleteTimetable(id);
-      if (!result.ok) {
-        showToast(result.error.message || "Failed to delete", "error");
+      if (!result.success) {
+        showToast(result.message || "Failed to delete timetable entry", "error");
         return result;
       }
       showToast("Timetable entry deleted.", "success");
@@ -65,5 +65,5 @@ export function useTimetable() {
     void loadTimetable().catch(() => {});
   }, [loadTimetable]);
 
-  return { state, addTimetable, updateTimetable, deleteTimetable };
+  return { state, addTimetable, updateTimetable, deleteTimetable, refresh: loadTimetable };
 }

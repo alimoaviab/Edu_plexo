@@ -77,8 +77,20 @@ export interface ServiceError {
 }
 
 export type ServiceResult<T> =
-  | { ok: true; data: T; meta?: Record<string, unknown> }
-  | { ok: false; error: ServiceError };
+  | {
+      ok: true;
+      success: true;
+      data: T;
+      message?: string;
+      meta?: Record<string, unknown>;
+    }
+  | {
+      ok: false;
+      success: false;
+      error: ServiceError;
+      message: string;
+      errorCode?: string;
+    };
 
 export class ControlledError extends Error {
   code: string;
