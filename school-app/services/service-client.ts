@@ -23,7 +23,7 @@ export async function serviceRequest<T>(
       });
 
       const payload = (await response.json()) as ServiceResult<T>;
-      if (response.ok || !payload.ok) {
+      if (response.ok || !payload.success) {
         return payload;
       }
     } catch (error) {
@@ -33,6 +33,9 @@ export async function serviceRequest<T>(
 
   return {
     ok: false,
+    success: false,
+    message: "The request could not be completed. Check your connection and retry.",
+    errorCode: "NETWORK_ERROR",
     error: {
       code: "NETWORK_ERROR",
       message: "The request could not be completed. Check your connection and retry.",

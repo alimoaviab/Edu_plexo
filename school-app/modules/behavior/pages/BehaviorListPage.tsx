@@ -19,8 +19,8 @@ export function BehaviorListPage() {
 
   const handleDelete = async (id: string) => {
     const result = await deleteBehavior(id);
-    if (!result.ok) {
-      showToast(result.error.message || "Failed to delete record", "error");
+    if (!result.success) {
+      showToast(result.message || "Failed to delete record", "error");
     } else {
       showToast("Record deleted", "success");
     }

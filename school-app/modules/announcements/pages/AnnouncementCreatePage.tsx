@@ -12,11 +12,11 @@ export function AnnouncementCreatePage() {
 
   async function handleCreate(input: any) {
     const result = await addAnnouncement(input);
-    if (result.ok) {
+    if (result.success) {
       showToast("Announcement published successfully", "success");
       router.push("/admin/announcements");
     } else {
-      showToast(result.error.message || "Failed to publish announcement", "error");
+      showToast(result.message || "Failed to publish announcement", "error");
     }
     return result;
   }

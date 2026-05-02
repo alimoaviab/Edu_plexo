@@ -12,8 +12,8 @@ export function useEvents() {
   const loadEvents = useCallback((eventType?: string) => {
     return run(async () => {
       const result = await service.listEvents(eventType);
-      if (!result.ok) {
-        throw new Error(result.error.message || "Failed to load events");
+      if (!result.success) {
+        throw new Error(result.message || "Failed to load events");
       }
       return result.data;
     });
@@ -22,8 +22,8 @@ export function useEvents() {
   const addEvent = useCallback(
     async (input: EventFormInput) => {
       const result = await service.createEvent(input);
-      if (!result.ok) {
-        showToast(result.error.message || "Failed to create event", "error");
+      if (!result.success) {
+        showToast(result.message || "Failed to create event", "error");
         return result;
       }
       showToast("Event created.", "success");
@@ -36,8 +36,8 @@ export function useEvents() {
   const updateEvent = useCallback(
     async (id: string, input: Partial<EventFormInput>) => {
       const result = await service.updateEvent(id, input);
-      if (!result.ok) {
-        showToast(result.error.message || "Failed to update", "error");
+      if (!result.success) {
+        showToast(result.message || "Failed to update", "error");
         return result;
       }
       showToast("Event updated.", "success");
@@ -50,8 +50,8 @@ export function useEvents() {
   const deleteEvent = useCallback(
     async (id: string) => {
       const result = await service.deleteEvent(id);
-      if (!result.ok) {
-        showToast(result.error.message || "Failed to delete", "error");
+      if (!result.success) {
+        showToast(result.message || "Failed to delete", "error");
         return result;
       }
       showToast("Event deleted.", "success");

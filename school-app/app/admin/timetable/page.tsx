@@ -1,10 +1,10 @@
+import { TimetablePage } from "../../../modules/timetable/pages/TimetablePage";
 import { SchoolShell } from "../../../layouts/SchoolShell";
-import { TimetableListPage } from "../../../modules/timetable/pages/TimetableListPage";
 
-export default function AdminTimetablePage() {
-    return (
-        <SchoolShell eyebrow="Academic" title="Timetable">
-            <TimetableListPage />
-        </SchoolShell>
-    );
+export default function TimetableRoute() {
+  return (
+    <SchoolShell eyebrow="Academic" title="Timetable">
+      <TimetablePage />
+    </SchoolShell>
+  );
 }

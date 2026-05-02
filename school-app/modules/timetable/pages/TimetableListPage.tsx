@@ -1,28 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DataTable, DataTableColumn, RowAction, Badge, DataState, Skeleton, TableSkeleton } from "../../../components/ui";
+import { DataTable, DataTableColumn, RowAction, Badge, DataState, TableSkeleton } from "../../../components/ui";
 import { useTimetable } from "../hooks/useTimetable";
-import { TimetableRecordRow } from "../types/timetable.types";
+import { TimetableRecord } from "../types/timetable.types";
 import { showToast } from "../../../utils/toast";
 
-const DAYS = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
 export function TimetableListPage() {
-  const { state, deleteTimetable } = useTimetable();
+  const { state, deleteTimetable, refresh } = useTimetable();
   const [selectedClass, setSelectedClass] = useState<string>("");
 
-  const columns: DataTableColumn<TimetableRecordRow>[] = useMemo(() => [
+  const columns: DataTableColumn<TimetableRecord>[] = useMemo(() => [
     {
       key: "day",
       label: "Day",
-      render: (row) => <span className="font-medium">{DAYS[row.day_of_week]}</span>,
-      sortable: true,
-    },
-    {
-      key: "period",
-      label: "Period",
-      render: (row) => <Badge variant="gray">Period {row.period_number}</Badge>,
+      render: (row) => <span className="font-medium">{row.day}</span>,
       sortable: true,
     },
     {
@@ -52,27 +44,27 @@ export function TimetableListPage() {
     },
   ], []);
 
-  const rowActions: RowAction<TimetableRecordRow>[] = useMemo(() => [
+  const rowActions: RowAction<TimetableRecord>[] = useMemo(() => [
     {
       icon: "delete",
       label: "Delete",
       variant: "danger",
       requireConfirm: true,
       confirmTitle: "Delete Timetable Entry",
-      confirmMessage: (row) => `Delete ${row.class_name} - ${row.subject_name} on ${DAYS[row.day_of_week]} Period ${row.period_number}?`,
+      confirmMessage: (row) => `Delete ${row.class_name} - ${row.subject_name} on ${row.day}?`,
       onClick: async (row) => {
         const result = await deleteTimetable(row._id);
-        if (!result.ok) showToast(result.error.message || "Failed to delete", "error");
+        if (!result.success) showToast(result.message || "Failed to delete", "error");
       },
     },
   ], [deleteTimetable]);
 
   if (state.status === "loading" || state.status === "idle") {
-    return <div className="space-y-4"><TableSkeleton /></div>;
+    return <TableSkeleton />;
   }
 
   if (state.status === "error") {
-    return <DataState variant="error" title="Failed to load timetable" message={state.error} />;
+    return <DataTable columns={columns} rows={[]} error={state.error} onRetry={refresh} />;
   }
 
   const rows = selectedClass ? (state.data || []).filter(r => r.class_id === selectedClass) : (state.data || []);
@@ -81,8 +73,8 @@ export function TimetableListPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Timetable</h2>
-          <p className="text-sm text-gray-500">Class-wise weekly schedule</p>
+          <h2 className="text-lg font-bold text-gray-900">Timetable List</h2>
+          <p className="text-sm text-gray-500">View and manage class schedules</p>
         </div>
       </div>
 
@@ -91,7 +83,7 @@ export function TimetableListPage() {
         rows={rows}
         rowKey={(row) => row._id}
         searchable
-        searchKeys={["class_name", "subject_name", "teacher_name", "room"]}
+        searchKeys={["class_name", "subject_name", "teacher_name", "room", "day"]}
         sortable
         paginated={15}
         rowActions={rowActions}

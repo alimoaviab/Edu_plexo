@@ -12,8 +12,8 @@ export function useClasses() {
     const loadClasses = useCallback(() => {
         return run(async () => {
             const result = await service.listClasses();
-            if (!result.ok) {
-                throw new Error(result.error.message || "Failed to load classes");
+            if (!result.success) {
+                throw new Error(result.message || "Failed to load classes");
             }
 
             return result.data;
@@ -23,8 +23,8 @@ export function useClasses() {
     const addClass = useCallback(
         async (input: ClassFormInput) => {
             const result = await service.createClass(input);
-            if (!result.ok) {
-                showToast(result.error.message, "error");
+            if (!result.success) {
+                showToast(result.message || "Failed to create class", "error");
                 return result;
             }
 
@@ -38,8 +38,8 @@ export function useClasses() {
     const updateClass = useCallback(
         async (id: string, input: Partial<ClassFormInput>) => {
             const result = await service.updateClass(id, input);
-            if (!result.ok) {
-                showToast(result.error.message || "Failed to update class", "error");
+            if (!result.success) {
+                showToast(result.message || "Failed to update class", "error");
                 return result;
             }
 
@@ -53,8 +53,8 @@ export function useClasses() {
     const deleteClass = useCallback(
         async (id: string) => {
             const result = await service.deleteClass(id);
-            if (!result.ok) {
-                showToast(result.error.message || "Failed to delete class", "error");
+            if (!result.success) {
+                showToast(result.message || "Failed to delete class", "error");
                 return result;
             }
 

@@ -55,7 +55,13 @@ export function SubjectListPage() {
       <div className="p-8 text-center text-red-600 min-h-[400px] flex flex-col items-center justify-center">
         <span className="material-symbols-outlined text-4xl mb-2 text-red-500">error</span>
         <p className="font-medium text-red-800">Error Loading Subjects</p>
-        <p className="text-sm mt-1">{error}</p>
+        <p className="text-sm mt-1">{error || "Something went wrong"}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-medium"
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -77,7 +83,7 @@ export function SubjectListPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {data.map((row) => (
+        {(data || []).map((row) => (
           <div
             key={row._id}
             className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200"
