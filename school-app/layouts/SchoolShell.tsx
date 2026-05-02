@@ -36,18 +36,29 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Operations",
+    label: "Students",
+    items: [
+      { label: "Students", href: "/admin/students", icon: "school" },
+      { label: "Behavior", href: "/admin/behavior", icon: "gavel" },
+      { label: "Attendance", href: "/admin/attendance", icon: "fact_check" },
+    ],
+  },
+  {
+    label: "Staff",
     items: [
       { label: "Teachers", href: "/admin/teachers", icon: "badge" },
-      { label: "Students", href: "/admin/students", icon: "school" },
-      { label: "Announcements", href: "/admin/announcements", icon: "campaign" },
-      { label: "Behavior", href: "/admin/behavior", icon: "gavel" },
       { label: "Leave", href: "/admin/leave", icon: "event_available" },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { label: "Announcements", href: "/admin/announcements", icon: "campaign" },
       { label: "Events", href: "/admin/events", icon: "event" },
     ],
   },
   {
-    label: "System",
+    label: "Settings",
     items: [{ label: "Settings", href: "/admin/settings", icon: "settings" }],
   },
 ];
@@ -196,7 +207,12 @@ export function SchoolShell({
         {/* Navigation */}
         <nav className="flex-1 px-3 space-y-6 overflow-y-auto">
           {navGroups.map((group) => (
-            <div key={group.label}>
+            <div key={group.label} className="space-y-2">
+              {!isCollapsed && (
+                <h3 className="px-3 text-[10px] font-bold text-white/40 uppercase tracking-widest">
+                  {group.label}
+                </h3>
+              )}
               <div className="space-y-0.5">
                 {group.items.map((item) => {
                   const isActive = pathname === item.href || pathname.startsWith(item.href + "/");

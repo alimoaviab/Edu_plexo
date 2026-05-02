@@ -1,7 +1,7 @@
 import { ControlledError, ServiceResult } from "../types/core";
 
-export function ok<T>(data: T, meta?: Record<string, unknown>): ServiceResult<T> {
-  return { ok: true, data, meta };
+export function ok<T>(data: T, meta?: Record<string, unknown>, message?: string): ServiceResult<T> {
+  return { ok: true, success: true, data, meta, message };
 }
 
 export function fail<T = never>(
@@ -10,7 +10,13 @@ export function fail<T = never>(
   status = 400,
   details?: unknown
 ): ServiceResult<T> {
-  return { ok: false, error: { code, message, status, details } };
+  return {
+    ok: false,
+    success: false,
+    message,
+    errorCode: code,
+    error: { code, message, status, details }
+  };
 }
 
 export async function serviceTry<T>(operation: () => Promise<T>): Promise<ServiceResult<T>> {

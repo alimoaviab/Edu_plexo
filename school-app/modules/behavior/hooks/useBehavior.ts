@@ -12,8 +12,8 @@ export function useBehavior() {
 	const loadBehavior = useCallback(() => {
 		return run(async () => {
 			const result = await service.listBehavior();
-			if (!result.ok) {
-				throw new Error(result.error.message || "Failed to load behavior records");
+			if (!result.success) {
+				throw new Error(result.message || "Failed to load behavior records");
 			}
 			return result.data;
 		});
@@ -22,8 +22,8 @@ export function useBehavior() {
 	const addBehavior = useCallback(
 		async (input: BehaviorFormInput) => {
 			const result = await service.createBehavior(input);
-			if (!result.ok) {
-				showToast(result.error.message || "Failed to create behavior record", "error");
+			if (!result.success) {
+				showToast(result.message || "Failed to create behavior record", "error");
 				return result;
 			}
 			showToast("Behavior record created.", "success");
@@ -36,8 +36,8 @@ export function useBehavior() {
 	const updateBehavior = useCallback(
 		async (id: string, input: Partial<BehaviorFormInput>) => {
 			const result = await service.updateBehavior(id, input);
-			if (!result.ok) {
-				showToast(result.error.message || "Failed to update behavior", "error");
+			if (!result.success) {
+				showToast(result.message || "Failed to update behavior", "error");
 				return result;
 			}
 			showToast("Behavior record updated.", "success");
@@ -50,8 +50,8 @@ export function useBehavior() {
 	const deleteBehavior = useCallback(
 		async (id: string) => {
 			const result = await service.deleteBehavior(id);
-			if (!result.ok) {
-				showToast(result.error.message || "Failed to delete behavior", "error");
+			if (!result.success) {
+				showToast(result.message || "Failed to delete behavior", "error");
 				return result;
 			}
 			showToast("Behavior record deleted.", "success");

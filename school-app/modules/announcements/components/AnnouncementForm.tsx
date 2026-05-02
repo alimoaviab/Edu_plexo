@@ -34,8 +34,8 @@ export function AnnouncementForm({
         if (!validate()) return;
         setSaving(true);
         try {
-            const result = (await onCreate(form)) as { ok?: boolean } | undefined;
-            if (result?.ok !== false) {
+            const result = (await onCreate(form)) as { success?: boolean } | undefined;
+            if (result?.success !== false) {
                 setForm({
                     title: "",
                     content: "",

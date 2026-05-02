@@ -12,8 +12,8 @@ export function useSettings() {
     const loadSettings = useCallback(() => {
         return run(async () => {
             const result = await service.getSettings();
-            if (!result.ok) {
-                throw new Error(result.error.message);
+            if (!result.success) {
+                throw new Error(result.message || "Failed to load settings");
             }
 
             return result.data;
@@ -23,8 +23,8 @@ export function useSettings() {
     const saveSettings = useCallback(
         async (input: SettingsFormInput) => {
             const result = await service.updateSettings(input);
-            if (!result.ok) {
-                showToast(result.error.message, "error");
+            if (!result.success) {
+                showToast(result.message || "Failed to save settings", "error");
                 return result;
             }
 

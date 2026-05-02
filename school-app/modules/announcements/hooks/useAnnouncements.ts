@@ -12,8 +12,8 @@ export function useAnnouncements() {
   const loadAnnouncements = useCallback(() => {
     return run(async () => {
       const result = await service.listAnnouncements();
-      if (!result.ok) {
-        throw new Error(result.error.message || "Failed to load announcements");
+      if (!result.success) {
+        throw new Error(result.message || "Failed to load announcements");
       }
       return result.data;
     });
@@ -22,8 +22,8 @@ export function useAnnouncements() {
   const addAnnouncement = useCallback(
     async (input: AnnouncementFormInput) => {
       const result = await service.createAnnouncement(input);
-      if (!result.ok) {
-        showToast(result.error.message || "Failed to create announcement", "error");
+      if (!result.success) {
+        showToast(result.message || "Failed to create announcement", "error");
         return result;
       }
 
@@ -37,8 +37,8 @@ export function useAnnouncements() {
   const updateAnnouncement = useCallback(
     async (id: string, input: Partial<AnnouncementFormInput>) => {
       const result = await service.updateAnnouncement(id, input);
-      if (!result.ok) {
-        showToast(result.error.message || "Failed to update announcement", "error");
+      if (!result.success) {
+        showToast(result.message || "Failed to update announcement", "error");
         return result;
       }
 
@@ -52,8 +52,8 @@ export function useAnnouncements() {
   const deleteAnnouncement = useCallback(
     async (id: string) => {
       const result = await service.deleteAnnouncement(id);
-      if (!result.ok) {
-        showToast(result.error.message || "Failed to delete announcement", "error");
+      if (!result.success) {
+        showToast(result.message || "Failed to delete announcement", "error");
         return result;
       }
 

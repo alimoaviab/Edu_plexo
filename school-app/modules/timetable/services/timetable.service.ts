@@ -1,27 +1,29 @@
 import { serviceRequest } from "../../../services/service-client";
 import { getAcademyCareQuery } from "../../../services/academy-care-context";
-import { TimetableFormInput, TimetableRecordRow } from "../types/timetable.types";
+import { TimetableFormInput, TimetableRecord } from "../types/timetable.types";
 
-export function listTimetable(classId?: string) {
+export function listTimetable(filters?: { class_id?: string; teacher_id?: string; day?: string }) {
   const params = new URLSearchParams();
-  if (classId) params.set("class_id", classId);
-  const queryString = params.toString() ? `?${params.toString()}` : "";
-  return serviceRequest<TimetableRecordRow[]>(`/api/timetable${queryString || getAcademyCareQuery()}`);
-}
+  if (filters?.class_id) params.set("class_id", filters.class_id);
+  if (filters?.teacher_id) params.set("teacher_id", filters.teacher_id);
+  if (filters?.day) params.set("day", filters.day);
 
-export function getTimetable(id: string) {
-  return serviceRequest<TimetableRecordRow>(`/api/timetable/${id}`);
+  const academyQuery = getAcademyCareQuery();
+  const baseQuery = academyQuery ? academyQuery : "?";
+  const finalQuery = params.toString() ? `${baseQuery}${academyQuery ? "&" : ""}${params.toString()}` : academyQuery;
+
+  return serviceRequest<TimetableRecord[]>(`/api/timetable${finalQuery}`);
 }
 
 export function createTimetable(input: TimetableFormInput) {
-  return serviceRequest<TimetableRecordRow>("/api/timetable", {
+  return serviceRequest<TimetableRecord>("/api/timetable", {
     method: "POST",
     body: JSON.stringify(input)
   });
 }
 
 export function updateTimetable(id: string, input: Partial<TimetableFormInput>) {
-  return serviceRequest<TimetableRecordRow>(`/api/timetable/${id}`, {
+  return serviceRequest<TimetableRecord>(`/api/timetable/${id}`, {
     method: "PATCH",
     body: JSON.stringify(input)
   });

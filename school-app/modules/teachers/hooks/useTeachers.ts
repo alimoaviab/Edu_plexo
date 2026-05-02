@@ -12,8 +12,8 @@ export function useTeachers() {
     const loadTeachers = useCallback(() => {
         return run(async () => {
             const result = await service.listTeachers();
-            if (!result.ok) {
-                throw new Error(result.error.message || "Failed to load teachers");
+            if (!result.success) {
+                throw new Error(result.message || "Failed to load teachers");
             }
             return result.data as TeacherRow[];
         });
@@ -22,8 +22,8 @@ export function useTeachers() {
     const addTeacher = useCallback(
         async (input: TeacherFormInput) => {
             const result = await service.createTeacher(input);
-            if (!result.ok) {
-                showToast(result.error.message || "Failed to create teacher", "error");
+            if (!result.success) {
+                showToast(result.message || "Failed to create teacher", "error");
                 return result;
             }
             showToast("Teacher created.", "success");
@@ -36,8 +36,8 @@ export function useTeachers() {
     const updateTeacher = useCallback(
         async (id: string, input: Partial<TeacherFormInput>) => {
             const result = await service.updateTeacher(id, input);
-            if (!result.ok) {
-                showToast(result.error.message || "Failed to update teacher", "error");
+            if (!result.success) {
+                showToast(result.message || "Failed to update teacher", "error");
                 return result;
             }
             showToast("Teacher updated.", "success");
@@ -50,8 +50,8 @@ export function useTeachers() {
     const deleteTeacher = useCallback(
         async (id: string) => {
             const result = await service.deleteTeacher(id);
-            if (!result.ok) {
-                showToast(result.error.message || "Failed to delete teacher", "error");
+            if (!result.success) {
+                showToast(result.message || "Failed to delete teacher", "error");
                 return result;
             }
             showToast("Teacher deleted.", "success");

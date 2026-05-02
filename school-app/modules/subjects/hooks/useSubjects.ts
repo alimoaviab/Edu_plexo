@@ -12,10 +12,10 @@ export function useSubjects() {
       setIsLoading(true);
       setError(null);
       const res = await serviceRequest<SubjectRow[]>("/api/subjects");
-      if (!res.ok) throw new Error(res.error.message || "Failed to fetch subjects");
-      setData(res.data);
+      if (!res.success) throw new Error(res.message || "Failed to fetch subjects");
+      setData(res.data || []);
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Something went wrong");
     } finally {
       setIsLoading(false);
     }
@@ -26,7 +26,7 @@ export function useSubjects() {
       method: "POST",
       body: JSON.stringify(input),
     });
-    if (!res.ok) throw new Error(res.error.message || "Failed to create subject");
+    if (!res.success) throw new Error(res.message || "Failed to create subject");
     await fetchSubjects();
   };
 
@@ -35,7 +35,7 @@ export function useSubjects() {
       method: "PUT",
       body: JSON.stringify(input),
     });
-    if (!res.ok) throw new Error(res.error.message || "Failed to update subject");
+    if (!res.success) throw new Error(res.message || "Failed to update subject");
     await fetchSubjects();
   };
 
@@ -43,7 +43,7 @@ export function useSubjects() {
     const res = await serviceRequest<null>(`/api/subjects/${id}`, {
       method: "DELETE",
     });
-    if (!res.ok) throw new Error(res.error.message || "Failed to delete subject");
+    if (!res.success) throw new Error(res.message || "Failed to delete subject");
     await fetchSubjects();
   };
 
