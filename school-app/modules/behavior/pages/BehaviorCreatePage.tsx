@@ -15,7 +15,7 @@ export function BehaviorCreatePage() {
   const router = useRouter();
   const { addBehavior } = useBehavior();
 
-  const { state: studentState, run: runStudents } = useSafeAsync<Array<{ _id: string; name: string }>>();
+  const { state: studentState, run: runStudents } = useSafeAsync<Array<{ _id: string; name: string; class_id?: string }>>();
   const { state: classState, run: runClasses } = useSafeAsync<Array<{ _id: string; name: string }>>();
 
   const loadDependencies = useCallback(() => {
@@ -34,7 +34,7 @@ export function BehaviorCreatePage() {
   }, [runStudents, runClasses]);
 
   useEffect(() => {
-    void loadDependencies().catch(() => {});
+    void loadDependencies().catch(() => { });
   }, [loadDependencies]);
 
   const isLoading = studentState.status === "loading" || classState.status === "loading" || studentState.status === "idle";

@@ -7,7 +7,7 @@ interface Props {
   initial?: Partial<BehaviorFormInput>;
   onSubmit: (data: BehaviorFormInput) => void;
   onCancel: () => void;
-  students: { _id: string; name: string }[];
+  students: { _id: string; name: string; class_id?: string }[];
   classes: { _id: string; name: string }[];
 }
 
@@ -26,7 +26,13 @@ export default function BehaviorForm({ initial, onSubmit, onCancel, students, cl
   });
 
   const handleChange = (field: keyof BehaviorFormInput, value: any) => {
-    setForm(prev => ({ ...prev, [field]: value }));
+    setForm(prev => {
+      // If class changes, clear selected student to force re-selection
+      if (field === "class_id") {
+        return { ...prev, [field]: value, student_id: "" };
+      }
+      return { ...prev, [field]: value };
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,23 +40,12 @@ export default function BehaviorForm({ initial, onSubmit, onCancel, students, cl
     onSubmit(form);
   };
 
+  // Ensure class is selected first and only students of that class are shown
+  const visibleStudents = form.class_id ? students.filter((s) => String(s.class_id) === String(form.class_id)) : [];
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Student</label>
-          <select
-            value={form.student_id}
-            onChange={e => handleChange("student_id", e.target.value)}
-            className="w-full border rounded px-3 py-2"
-            required
-          >
-            <option value="">Select Student</option>
-            {students.map(s => (
-              <option key={s._id} value={s._id}>{s.name}</option>
-            ))}
-          </select>
-        </div>
         <div>
           <label className="block text-sm font-medium mb-1">Class</label>
           <select
@@ -62,6 +57,21 @@ export default function BehaviorForm({ initial, onSubmit, onCancel, students, cl
             <option value="">Select Class</option>
             {classes.map(c => (
               <option key={c._id} value={c._id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Student</label>
+          <select
+            value={form.student_id}
+            onChange={e => handleChange("student_id", e.target.value)}
+            className="w-full border rounded px-3 py-2"
+            required
+            disabled={!form.class_id}
+          >
+            <option value="">Select Student</option>
+            {visibleStudents.map(s => (
+              <option key={s._id} value={s._id}>{s.name}</option>
             ))}
           </select>
         </div>

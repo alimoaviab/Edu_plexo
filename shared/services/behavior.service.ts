@@ -5,7 +5,7 @@ import { tenantFilter } from "../db/tenant-query";
 import { BehaviorModel } from "../models/behavior.model";
 import { StudentModel } from "../models/student.model";
 import { ClassModel } from "../models/class.model";
-import { RequestContext, ServiceResult } from "../types/core";
+import { RequestContext, ServiceResult, ControlledError } from "../types/core";
 import { serviceTry } from "../utils/result";
 import { BehaviorCreateInput, BehaviorUpdateInput, behaviorCreateSchema, behaviorUpdateSchema } from "../validation/behavior.schema";
 import { writeAuditLog } from "./audit.service";
@@ -29,6 +29,17 @@ export async function createBehavior(
     const classroom = await ClassModel.findOne(tenantFilter(ctx, { _id: parsed.class_id })).lean();
     if (!classroom) throw new Error("Class not found");
 
+    // Ensure user context is valid. In dev mode (`dev-school-id`) allow a generated fallback reporter id
+    const isDevContext = true && ctx.school_id === "dev-school-id";
+    let reporterId: Types.ObjectId;
+    if (ctx.user_id && Types.ObjectId.isValid(String(ctx.user_id))) {
+      reporterId = new Types.ObjectId(String(ctx.user_id));
+    } else if (isDevContext) {
+      reporterId = new Types.ObjectId();
+    } else {
+      throw new ControlledError("AUTH_REQUIRED", "A valid user context is required to report behavior.", 403);
+    }
+
     // Get current warning count for student
     const existingRecords = await BehaviorModel.find(
       tenantFilter(ctx, {
@@ -42,7 +53,7 @@ export async function createBehavior(
       school_id: ctx.school_id,
       student_id: new Types.ObjectId(parsed.student_id),
       class_id: new Types.ObjectId(parsed.class_id),
-      reported_by: new Types.ObjectId(ctx.user_id),
+      reported_by: reporterId,
       incident_type: parsed.incident_type,
       severity: parsed.severity,
       description: parsed.description,
@@ -147,7 +158,13 @@ export async function updateBehavior(
     // Auto-resolve if status changed to resolved
     if (parsed.status === "resolved" && (existing as any).status !== "resolved") {
       patch.resolved_at = new Date();
-      patch.resolved_by = new Types.ObjectId(ctx.user_id);
+      if (ctx.user_id && Types.ObjectId.isValid(String(ctx.user_id))) {
+        patch.resolved_by = new Types.ObjectId(String(ctx.user_id));
+      } else if (isDevContext) {
+        patch.resolved_by = new Types.ObjectId();
+      } else {
+        throw new ControlledError("AUTH_REQUIRED", "A valid user context is required to resolve behavior.", 403);
+      }
     }
 
     const updated = await BehaviorModel.findOneAndUpdate(
