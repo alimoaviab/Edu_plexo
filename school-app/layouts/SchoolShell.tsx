@@ -33,6 +33,8 @@ const adminNavGroups: NavGroup[] = [
       { label: "Attendance", href: "/admin/attendance", icon: "fact_check" },
       { label: "Exams", href: "/admin/exams", icon: "quiz" },
       { label: "Results", href: "/admin/results", icon: "leaderboard" },
+      { label: "Live Class", href: "/admin/live-class", icon: "videocam" },
+      { label: "Live Exam", href: "/admin/live-exam", icon: "live_tv" },
     ],
   },
   {
@@ -47,6 +49,7 @@ const adminNavGroups: NavGroup[] = [
     items: [
       { label: "Teachers", href: "/admin/teachers", icon: "badge" },
       { label: "Leave", href: "/admin/leave", icon: "event_available" },
+      { label: "Salary", href: "/admin/salary", icon: "account_balance" },
     ],
   },
   {
@@ -54,6 +57,13 @@ const adminNavGroups: NavGroup[] = [
     items: [
       { label: "Announcements", href: "/admin/announcements", icon: "campaign" },
       { label: "Events", href: "/admin/events", icon: "event" },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { label: "Fee", href: "/admin/fee", icon: "payments" },
+      { label: "Expense", href: "/admin/expense", icon: "account_balance_wallet" },
     ],
   },
   {
@@ -77,6 +87,8 @@ const teacherNavGroups: NavGroup[] = [
       { label: "Exams", href: "/teacher/exams", icon: "quiz" },
       { label: "Results", href: "/teacher/results", icon: "leaderboard" },
       { label: "Attendance", href: "/teacher/attendance", icon: "fact_check" },
+      { label: "Live Class", href: "/teacher/live-class", icon: "videocam" },
+      { label: "Live Exam", href: "/teacher/live-exam", icon: "live_tv" },
     ],
   },
   {
@@ -132,6 +144,8 @@ const studentNavGroups: NavGroup[] = [
       { label: "Exams", href: "/student/exams", icon: "quiz" },
       { label: "Results", href: "/student/results", icon: "leaderboard" },
       { label: "Attendance", href: "/student/attendance", icon: "fact_check" },
+      { label: "Live Class", href: "/student/live-class", icon: "videocam" },
+      { label: "Live Exam", href: "/student/live-exam", icon: "live_tv" },
     ],
   },
   {
@@ -292,7 +306,7 @@ export function SchoolShell({
       >
         {/* Logo */}
         <div className={`flex h-14 items-center gap-2 px-2.5 ${isCollapsed ? "justify-center" : "justify-between"}`}>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 shadow-[0_8px_16px_rgba(37,99,235,0.18)]">
               <span className="material-symbols-outlined text-base font-black text-white">school</span>
             </div>
@@ -377,7 +391,7 @@ export function SchoolShell({
                   <span className="truncate text-[11px] font-bold text-slate-900">{user.email.split('@')[0]}</span>
                   <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">{user.role.replace('_', ' ')}</span>
                 </div>
-                <button 
+                <button
                   onClick={logout}
                   className="rounded p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
                 >
@@ -401,33 +415,33 @@ export function SchoolShell({
             </button>
             <div className="relative max-w-xs w-full hidden md:block">
               <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-base text-slate-400">search</span>
-              <input 
-                type="text" 
-                placeholder="Search..." 
+              <input
+                type="text"
+                placeholder="Search..."
                 className="w-full rounded-lg border border-slate-200 bg-slate-50/50 py-1.5 pl-8 pr-3 text-[13px] text-slate-700 placeholder:text-slate-400 transition-all focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/5"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-             <div className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1">
-                <span className="material-symbols-outlined text-sm text-slate-400">calendar_today</span>
-                <select
-                  value={selectedAcademyCareId}
-                  onChange={(event) => {
-                    const nextId = event.target.value;
-                    setSelectedAcademyCareIdState(nextId);
-                    setSelectedAcademyCareId(nextId);
-                    window.location.reload();
-                  }}
-                  className="cursor-pointer bg-transparent text-[11px] font-bold text-slate-600 focus:outline-none"
-                >
-                  {academyYears.map((row) => (
-                    <option key={row._id} value={row._id}>
-                      {row.year}{row.is_active ? " (Active)" : ""}
-                    </option>
-                  ))}
-                </select>
+            <div className="hidden sm:flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1">
+              <span className="material-symbols-outlined text-sm text-slate-400">calendar_today</span>
+              <select
+                value={selectedAcademyCareId}
+                onChange={(event) => {
+                  const nextId = event.target.value;
+                  setSelectedAcademyCareIdState(nextId);
+                  setSelectedAcademyCareId(nextId);
+                  window.location.reload();
+                }}
+                className="cursor-pointer bg-transparent text-[11px] font-bold text-slate-600 focus:outline-none"
+              >
+                {academyYears.map((row) => (
+                  <option key={row._id} value={row._id}>
+                    {row.year}{row.is_active ? " (Active)" : ""}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="mx-1 hidden h-4 w-px bg-slate-200/60 sm:block" />
@@ -436,13 +450,13 @@ export function SchoolShell({
               <span className="material-symbols-outlined text-[20px]">notifications</span>
               <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full border-2 border-white bg-red-500" />
             </button>
-            
+
             <button className="rounded-lg p-1.5 text-slate-400 transition-all hover:bg-blue-50 hover:text-blue-600">
               <span className="material-symbols-outlined text-[20px]">help</span>
             </button>
 
             <div className="flex h-7 w-7 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white transition-all hover:border-blue-400">
-               <span className="text-[10px] font-black text-slate-600">{user.email.substring(0, 2).toUpperCase()}</span>
+              <span className="text-[10px] font-black text-slate-600">{user.email.substring(0, 2).toUpperCase()}</span>
             </div>
           </div>
         </header>
