@@ -74,173 +74,177 @@ export function ClassEditSidebar({
                 onClick={handleClose}
             />
 
-            <div className="fixed right-0 top-0 h-screen w-96 bg-white shadow-2xl z-50 flex flex-col overflow-hidden animate-in slide-in-from-right-96">
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gray-50">
-                    <h2 className="text-lg font-bold text-gray-900">Edit Class</h2>
+            <div className="fixed right-0 top-0 h-screen w-[400px] bg-white shadow-2xl z-50 flex flex-col overflow-hidden animate-in slide-in-from-right-full duration-300">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
+                    <div>
+                        <h2 className="text-[16px] font-bold text-slate-900">Edit Class</h2>
+                        <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Operational Configuration</p>
+                    </div>
                     <button
                         onClick={handleClose}
-                        className="p-1.5 text-gray-500 hover:bg-gray-200 rounded-lg transition-colors"
+                        className="h-8 w-8 flex items-center justify-center text-slate-400 hover:bg-slate-100 rounded-full transition-all"
                     >
-                        <span className="material-symbols-outlined">close</span>
+                        <span className="material-symbols-outlined text-[20px]">close</span>
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-                    <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-                            Class Details
-                        </h3>
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 pb-32">
+                    <section>
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="h-1 w-4 rounded-full bg-blue-600" />
+                            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                Basic Information
+                            </h3>
+                        </div>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                                     Class Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={currentForm.name}
                                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.name ? "border-red-500" : "border-gray-300"
+                                    placeholder="e.g., Class 10-A"
+                                    className={`h-9 w-full px-3 text-sm border rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 transition-all ${errors.name ? "border-red-500 bg-red-50/30" : "border-slate-200 bg-white focus:border-blue-400"
                                         }`}
                                 />
                                 {errors.name && (
-                                    <p className="text-sm text-red-600 mt-1">{errors.name}</p>
+                                    <p className="text-[10px] font-bold text-red-500 mt-1">{errors.name}</p>
                                 )}
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Room Number
-                                </label>
-                                <input
-                                    type="text"
-                                    value={currentForm.room_number}
-                                    onChange={(e) => setForm({ ...form, room_number: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                        Room Number
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={currentForm.room_number}
+                                        onChange={(e) => setForm({ ...form, room_number: e.target.value })}
+                                        placeholder="e.g., 201"
+                                        className="h-9 w-full px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-400 bg-white transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                        Academy Care <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={currentForm.academy_care_id}
+                                        onChange={(e) =>
+                                            setForm({ ...form, academy_care_id: e.target.value })
+                                        }
+                                        className={`h-9 w-full px-3 text-sm border rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 transition-all ${errors.academy_care_id
+                                            ? "border-red-500 bg-red-50/30"
+                                            : "border-slate-200 bg-white focus:border-blue-400 font-bold text-slate-700"
+                                            }`}
+                                    >
+                                        <option value="">Select Session</option>
+                                        {academyCareOptions.map((opt) => (
+                                            <option key={opt.id} value={opt.id}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                                     Description
                                 </label>
                                 <textarea
                                     value={currentForm.description}
                                     onChange={(e) => setForm({ ...form, description: e.target.value })}
                                     rows={3}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Brief class description..."
+                                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-400 bg-white transition-all"
                                 />
                             </div>
                         </div>
-                    </div>
+                    </section>
 
-                    <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-                            Academic
-                        </h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Academy Care <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    value={currentForm.academy_care_id}
-                                    onChange={(e) =>
-                                        setForm({ ...form, academy_care_id: e.target.value })
-                                    }
-                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.academy_care_id
-                                        ? "border-red-500"
-                                        : "border-gray-300"
-                                        }`}
-                                >
-                                    <option value="">Select academy care</option>
-                                    {academyCareOptions.map((opt) => (
-                                        <option key={opt.id} value={opt.id}>
-                                            {opt.label}
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.academy_care_id && (
-                                    <p className="text-sm text-red-600 mt-1">
-                                        {errors.academy_care_id}
-                                    </p>
-                                )}
-                            </div>
+                    <section>
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="h-1 w-4 rounded-full bg-blue-600" />
+                            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                Faculty Assignment
+                            </h3>
                         </div>
-                    </div>
+                        <div className="grid grid-cols-1 gap-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-2">
+                            {teacherOptions.map((teacher) => {
+                                const isChecked = currentForm.teacher_ids.includes(teacher.id);
+                                return (
+                                    <label
+                                        key={teacher.id}
+                                        className={`flex items-center gap-3 p-2.5 rounded-lg border transition-all cursor-pointer ${isChecked ? "bg-blue-50 border-blue-200" : "bg-white border-slate-100 hover:border-slate-200"}`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={(e) => {
+                                                const newIds = e.target.checked
+                                                    ? [...currentForm.teacher_ids, teacher.id]
+                                                    : currentForm.teacher_ids.filter(
+                                                        (id) => id !== teacher.id
+                                                    );
+                                                setForm({ ...form, teacher_ids: newIds });
+                                            }}
+                                            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600/20"
+                                        />
+                                        <span className={`text-[13px] font-bold ${isChecked ? "text-blue-700" : "text-slate-700"}`}>
+                                            {teacher.label}
+                                        </span>
+                                    </label>
+                                );
+                            })}
+                        </div>
+                    </section>
 
-                    <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-                            Teachers & Subjects
-                        </h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Teachers
-                                </label>
-                                <div className="space-y-2 max-h-32 overflow-y-auto">
-                                    {teacherOptions.map((teacher) => (
-                                        <label
-                                            key={teacher.id}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={currentForm.teacher_ids.includes(teacher.id)}
-                                                onChange={(e) => {
-                                                    const newIds = e.target.checked
-                                                        ? [...currentForm.teacher_ids, teacher.id]
-                                                        : currentForm.teacher_ids.filter(
-                                                            (id) => id !== teacher.id
-                                                        );
-                                                    setForm({ ...form, teacher_ids: newIds });
-                                                }}
-                                                className="rounded border-gray-300"
-                                            />
-                                            <span className="text-sm text-gray-700">
-                                                {teacher.label}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Subjects
-                                </label>
-                                <div className="space-y-2 max-h-32 overflow-y-auto">
-                                    {subjectOptions.map((subject) => (
-                                        <label
-                                            key={subject.id}
-                                            className="flex items-center gap-2 cursor-pointer"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={currentForm.subjects.includes(subject.id)}
-                                                onChange={(e) => {
-                                                    const newSubjects = e.target.checked
-                                                        ? [...currentForm.subjects, subject.id]
-                                                        : currentForm.subjects.filter(
-                                                            (id) => id !== subject.id
-                                                        );
-                                                    setForm({ ...form, subjects: newSubjects });
-                                                }}
-                                                className="rounded border-gray-300"
-                                            />
-                                            <span className="text-sm text-gray-700">
-                                                {subject.label}
-                                            </span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+                    <section>
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="h-1 w-4 rounded-full bg-blue-600" />
+                            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                                Academic Mapping
+                            </h3>
                         </div>
-                    </div>
+                        <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+                            {subjectOptions.map((subject) => {
+                                const isChecked = currentForm.subjects.includes(subject.label);
+                                return (
+                                    <label
+                                        key={subject.id}
+                                        className={`flex items-center gap-3 p-2 rounded-lg border transition-all cursor-pointer ${isChecked ? "bg-blue-50 border-blue-100" : "bg-white border-slate-50 hover:border-slate-200"}`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={(e) => {
+                                                const newSubjects = e.target.checked
+                                                    ? [...currentForm.subjects, subject.label]
+                                                    : currentForm.subjects.filter(
+                                                        (name) => name !== subject.label
+                                                    );
+                                                setForm({ ...form, subjects: newSubjects });
+                                            }}
+                                            className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-600/20"
+                                        />
+                                        <span className={`text-[11px] font-bold truncate ${isChecked ? "text-blue-700" : "text-slate-600"}`}>
+                                            {subject.label}
+                                        </span>
+                                    </label>
+                                );
+                            })}
+                        </div>
+                    </section>
                 </form>
 
-                <div className="flex gap-3 p-6 border-t border-gray-200 bg-gray-50">
+                <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-slate-100 bg-white/80 backdrop-blur-md flex gap-3">
                     <button
                         type="button"
                         onClick={handleClose}
                         disabled={isSaving}
-                        className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        className="flex-1 h-10 text-[13px] font-bold text-slate-600 bg-slate-50 rounded-lg hover:bg-slate-100 transition-all disabled:opacity-50"
                     >
                         Cancel
                     </button>
@@ -248,10 +252,14 @@ export function ClassEditSidebar({
                         type="submit"
                         disabled={isSaving}
                         onClick={handleSubmit}
-                        className="flex-1 px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="flex-[1.5] h-10 text-[13px] font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg shadow-blue-600/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                        <span className="material-symbols-outlined text-lg">save</span>
-                        {isSaving ? "Saving..." : "Save Changes"}
+                        {isSaving ? (
+                             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        ) : (
+                            <span className="material-symbols-outlined text-[18px]">save</span>
+                        )}
+                        {isSaving ? "Saving..." : "Apply Changes"}
                     </button>
                 </div>
             </div>

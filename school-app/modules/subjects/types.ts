@@ -4,6 +4,9 @@ export interface SubjectRow {
     code?: string;
     description?: string;
     status: "active" | "inactive";
+    teacher_name?: string;
+    class_mapping?: string[];
+    academic_year?: string;
     createdAt?: string;
     updatedAt?: string;
 }

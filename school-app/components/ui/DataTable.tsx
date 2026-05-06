@@ -265,17 +265,17 @@ export function DataTable<T>({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-50 sticky top-0 z-10">
+          <thead className="sticky top-0 z-10 bg-slate-50/90 backdrop-blur">
             <tr>
               {selectable && (
-                <th className="w-12 px-4 py-3.5 border-b border-gray-200">
+                <th className="w-12 border-b border-slate-200 px-4 py-3.5">
                   <input
                     type="checkbox"
                     checked={allCurrentSelected}
                     onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="h-4 w-4 cursor-pointer rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
                 </th>
               )}
@@ -283,8 +283,8 @@ export function DataTable<T>({
                 <th
                   key={column.key}
                   onClick={() => handleSort(column.key)}
-                  className={`px-4 py-3.5 text-xs font-semibold uppercase tracking-wider text-gray-500 border-b border-gray-200 whitespace-nowrap ${
-                    sortable && column.sortable !== false ? "cursor-pointer hover:text-gray-700 select-none" : ""
+                  className={`whitespace-nowrap border-b border-slate-200 px-4 py-3.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 ${
+                    sortable && column.sortable !== false ? "cursor-pointer select-none hover:text-slate-700" : ""
                   }`}
                 >
                   <div className="flex items-center gap-1">
@@ -298,11 +298,11 @@ export function DataTable<T>({
                 </th>
               ))}
               {rowActions && (
-                <th className="px-4 py-3.5 text-xs font-semibold uppercase tracking-wider text-gray-500 border-b border-gray-200 w-px">Actions</th>
+                <th className="w-px border-b border-slate-200 px-4 py-3.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Actions</th>
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-100">
             {paginatedRows.map((row, rowIndex) => {
               const id = rowKey(row, rowIndex);
               const isSelected = selectedRows.has(id);
@@ -310,7 +310,7 @@ export function DataTable<T>({
                 <tr
                   key={String(id)}
                   onClick={() => onRowClick?.(row)}
-                  className={`transition-colors group ${onRowClick ? "cursor-pointer" : ""} ${isSelected ? "bg-blue-50/50" : "hover:bg-gray-50/80"}`}
+                  className={`group transition-colors ${onRowClick ? "cursor-pointer" : ""} ${isSelected ? "bg-blue-50/50" : "hover:bg-slate-50"}`}
                 >
                   {selectable && (
                     <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
@@ -318,12 +318,12 @@ export function DataTable<T>({
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelectRow(id)}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        className="h-4 w-4 cursor-pointer rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                       />
                     </td>
                   )}
                   {columns.map((column) => (
-                    <td key={column.key} className="px-4 py-3.5 text-sm text-gray-700">
+                    <td key={column.key} className="px-4 py-3.5 text-sm text-slate-700">
                       {column.render(row)}
                     </td>
                   ))}
@@ -335,12 +335,12 @@ export function DataTable<T>({
                             key={i}
                             onClick={() => handleRowAction(action, row)}
                             title={action.label}
-                            className={`p-1.5 rounded-lg transition-colors ${
+                            className={`rounded-lg p-1.5 transition-colors ${
                               action.variant === "danger"
-                                ? "text-gray-400 hover:text-red-500 hover:bg-red-50"
+                                ? "text-slate-400 hover:bg-red-50 hover:text-red-500"
                                 : action.variant === "primary"
-                                ? "text-gray-400 hover:text-blue-500 hover:bg-blue-50"
-                                : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                                ? "text-slate-400 hover:bg-blue-50 hover:text-blue-600"
+                                : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                             }`}
                           >
                             <span className="material-symbols-outlined text-lg">{action.icon}</span>
@@ -358,14 +358,14 @@ export function DataTable<T>({
 
       {paginated && totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate-500">
             Showing {(page - 1) * pageSize + 1} to {Math.min(page * pageSize, filteredRows.length)} of {filteredRows.length} results
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="rounded-lg border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <span className="material-symbols-outlined">chevron_left</span>
             </button>
@@ -373,8 +373,8 @@ export function DataTable<T>({
               <button
                 key={p}
                 onClick={() => setPage(p)}
-                className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                  p === page ? "bg-blue-600 text-white shadow-sm" : "text-gray-600 hover:bg-gray-50"
+                className={`h-9 w-9 rounded-lg text-sm font-semibold transition-colors ${
+                  p === page ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"
                 }`}
               >
                 {p}
@@ -383,7 +383,7 @@ export function DataTable<T>({
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="rounded-lg border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <span className="material-symbols-outlined">chevron_right</span>
             </button>

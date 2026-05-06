@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
-import { Card, DataState, Skeleton, TableSkeleton } from "../../../components/ui";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Card, DataState, ListToolbar, Skeleton, TableSkeleton } from "../../../components/ui";
 import { useSafeAsync } from "../../../hooks/useSafeAsync";
 import { serviceRequest } from "../../../services/service-client";
 import { StudentForm } from "../components/StudentForm";
@@ -11,6 +11,8 @@ import { useStudents } from "../hooks/useStudents";
 export function StudentsPage() {
   const { state, addStudent } = useStudents();
   const { state: classState, run } = useSafeAsync<Array<{ _id: string; name: string }>>();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
   const loadClasses = useCallback(() => {
     return run(async () => {
@@ -32,12 +34,28 @@ export function StudentsPage() {
   const isClassDependencyLoading = classState.status === "idle" || classState.status === "loading";
   const classOptions = (classState.data ?? []).map((item) => ({ id: item._id, label: item.name }));
 
+  const filteredStudents = useMemo(() => {
+    const rows = state.data ?? [];
+    const q = searchQuery.trim().toLowerCase();
+    return rows.filter((row) => {
+      const queryMatch =
+        q.length === 0 ||
+        row.admission_no.toLowerCase().includes(q) ||
+        `${row.first_name} ${row.last_name}`.toLowerCase().includes(q) ||
+        (row.guardian?.name || "").toLowerCase().includes(q) ||
+        (row.class_id || "").toLowerCase().includes(q);
+
+      const statusMatch = statusFilter === "all" ? true : row.status === statusFilter;
+      return queryMatch && statusMatch;
+    });
+  }, [state.data, searchQuery, statusFilter]);
+
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-4">
       <Card className="max-w-4xl">
-        <div className="mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Student Admission</h2>
-            <p className="text-sm text-gray-500">Enter details to enroll a new student into the system.</p>
+        <div className="mb-4">
+            <h2 className="text-lg font-semibold tracking-tight text-slate-950">Student Admission</h2>
+            <p className="text-sm text-slate-600">Enter details to enroll a new student into the system.</p>
         </div>
         {isClassDependencyLoading ? (
             <div className="space-y-4">
@@ -57,7 +75,7 @@ export function StudentsPage() {
       ) : null}
 
       {state.status === "loading" || state.status === "idle" ? (
-        <div className="space-y-4">
+          <div className="space-y-3">
            <Skeleton className="h-8 w-48" />
            <TableSkeleton />
         </div>
@@ -72,14 +90,28 @@ export function StudentsPage() {
       ) : null}
 
       {state.status === "success" && state.data && state.data.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-900">Students Directory</h3>
-                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                   {state.data.length} Total
+                <h3 className="text-base font-semibold tracking-tight text-slate-950">Students Directory</h3>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                   {filteredStudents.length} visible
                 </span>
             </div>
-            <StudentTable students={state.data} />
+
+            <ListToolbar
+              searchValue={searchQuery}
+              onSearchChange={setSearchQuery}
+              searchPlaceholder="Search name, admission no, guardian, class"
+              filterValue={statusFilter}
+              onFilterChange={(value) => setStatusFilter(value as "all" | "active" | "inactive")}
+              filterOptions={[
+                { value: "all", label: "All statuses" },
+                { value: "active", label: "Active" },
+                { value: "inactive", label: "Inactive" },
+              ]}
+            />
+
+            <StudentTable students={filteredStudents} />
         </div>
       ) : null}
     </div>

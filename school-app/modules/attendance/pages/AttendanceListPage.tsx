@@ -13,7 +13,8 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
   const [activeFilters, setActiveFilters] = React.useState({
     class_id: initialFilters?.class_id || "",
     date: initialFilters?.date || new Date().toISOString().split('T')[0],
-    status: ""
+    status: "",
+    search: "",
   });
 
   const { state, updateAttendance, deleteAttendance } = useAttendance({
@@ -43,8 +44,17 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
     if (activeFilters.status) {
       data = data.filter(row => row.status === activeFilters.status);
     }
+    const q = activeFilters.search.trim().toLowerCase();
+    if (q) {
+      data = data.filter((row) =>
+        row.student_name.toLowerCase().includes(q) ||
+        row.admission_no.toLowerCase().includes(q) ||
+        row.class_name.toLowerCase().includes(q) ||
+        (row.note || "").toLowerCase().includes(q)
+      );
+    }
     return data;
-  }, [state.data, activeFilters.status]);
+  }, [state.data, activeFilters.status, activeFilters.search]);
 
   const stats = useMemo(() => {
     const data = state.data || [];
@@ -125,7 +135,7 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
   ];
 
   return (
-    <div className="space-y-8 animate-fade-in-up">
+    <div className="space-y-5 animate-fade-in-up">
       {/* Header & Stats */}
       <div className="flex flex-col lg:flex-row justify-between gap-6">
         <div>
@@ -149,7 +159,20 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white border border-gray-100 rounded-[2rem] p-4 shadow-sm flex flex-wrap items-end gap-4">
+      <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm flex flex-wrap items-end gap-3">
+        <div className="flex-1 min-w-[220px]">
+          <span className="block text-[10px] font-semibold text-slate-500 uppercase tracking-[0.12em] mb-1.5 ml-1">Search</span>
+          <div className="relative">
+            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-slate-400">search</span>
+            <input
+              value={activeFilters.search}
+              onChange={(e) => setActiveFilters(prev => ({ ...prev, search: e.target.value }))}
+              placeholder="Student, admission, class, note"
+              className="w-full bg-gray-50 border border-gray-100 rounded-xl pl-9 pr-3 py-2 text-sm font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-blue-600/10 transition-all"
+            />
+          </div>
+        </div>
+
         <div className="flex-1 min-w-[200px]">
           <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Classroom</span>
           <select 
@@ -200,7 +223,7 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
       </div>
 
       {/* Data Table */}
-      <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-sm overflow-hidden">
+      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
         {state.status === "loading" ? (
           <div className="p-8"><TableSkeleton /></div>
         ) : (

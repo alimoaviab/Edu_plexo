@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { DataTable, DataTableColumn, RowAction, Badge, DataState, Skeleton, TableSkeleton } from "../../../components/ui";
+import { useMemo, useState } from "react";
+import { DataTable, DataTableColumn, RowAction, Badge, DataState, ListToolbar, Skeleton, TableSkeleton } from "../../../components/ui";
 import { useClasses } from "../hooks/useClasses";
 import { useAcademyCare } from "../../academyCare/hooks/useAcademyCare";
 import { useTeachers } from "../../teachers/hooks/useTeachers";
@@ -19,7 +19,9 @@ export function ClassListPage() {
   const [editingClass, setEditingClass] = useState<ClassRow | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { state: generateState, run: runGenerate } = useSafeAsync<void>();
-  const [selectedClassForTimetable, setSelectedClassForTimetable] = useState<ClassRow | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const academyCareOptions = (academyCareState.data || []).map((ac) => ({
     id: ac._id,
@@ -56,6 +58,23 @@ export function ClassListPage() {
       showToast(`Successfully generated ${result.data.generated} timetable entries`, "success");
     });
   };
+
+  const filteredRows = useMemo(() => {
+    const rows = state.data || [];
+    const q = searchQuery.trim().toLowerCase();
+    return rows.filter((row) => {
+      const queryMatch =
+        q.length === 0 ||
+        row.name.toLowerCase().includes(q) ||
+        (row.description || "").toLowerCase().includes(q) ||
+        (row.academy_care_year || row.academy_care_id || "").toLowerCase().includes(q) ||
+        (row.room_number || "").toLowerCase().includes(q) ||
+        (row.teacher_names || row.teacher_ids || []).join(" ").toLowerCase().includes(q) ||
+        row.subjects.join(" ").toLowerCase().includes(q);
+      const statusMatch = statusFilter === "all" ? true : row.status === statusFilter;
+      return queryMatch && statusMatch;
+    });
+  }, [state.data, searchQuery, statusFilter]);
 
   const columns: DataTableColumn<ClassRow>[] = [
     {
@@ -166,11 +185,16 @@ export function ClassListPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">Classes</h2>
-          <p className="text-sm text-gray-500">Manage all classrooms and sections</p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+             <span className="material-symbols-outlined text-[24px]">school</span>
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Section Overview</p>
+            <p className="text-sm font-bold text-slate-500">Manage all classrooms and sections</p>
+          </div>
         </div>
         <div className="flex gap-3">
           <button
@@ -193,81 +217,154 @@ export function ClassListPage() {
         </div>
       </div>
 
+      <ListToolbar
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search class, year, teacher, subject"
+        filterValue={statusFilter}
+        onFilterChange={(value) => setStatusFilter(value as "all" | "active" | "inactive")}
+        filterOptions={[
+          { value: "all", label: "All statuses" },
+          { value: "active", label: "Active" },
+          { value: "inactive", label: "Inactive" },
+        ]}
+        rightSlot={
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+              {filteredRows.length} visible
+            </span>
+            <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-semibold transition-all ${
+                  viewMode === "grid" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[14px]">grid_view</span>
+                Grid
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-semibold transition-all ${
+                  viewMode === "list" ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <span className="material-symbols-outlined text-[14px]">view_list</span>
+                List
+              </button>
+            </div>
+          </div>
+        }
+      />
       {(state.data || []).length === 0 ? (
         <DataState variant="empty" title="No classes found" message="Get started by creating your first class." />
+      ) : filteredRows.length === 0 ? (
+        <DataState variant="empty" title="No matching classes" message="Try adjusting search or status filters." />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(state.data || []).map((row) => (
-            <div
-              key={row._id}
-              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow"
-            >
-              <div className="mb-4">
-                <h3 className="font-bold text-lg text-gray-900">{row.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">{row.description || "No description"}</p>
-              </div>
+        viewMode === "grid" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredRows.map((row) => (
+              <div
+                key={row._id}
+                className="premium-card group transition-all hover:border-blue-300 flex flex-col"
+              >
+                <div className="p-4 flex-1">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform">
+                        <span className="material-symbols-outlined text-[24px]">groups</span>
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-[15px] font-bold text-slate-900 leading-tight truncate">{row.name}</h3>
+                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mt-0.5">{row.academy_care_year || "Current Session"}</p>
+                      </div>
+                    </div>
+                    <Badge variant={row.status === "active" ? "success" : "gray"} className="capitalize px-2 py-0.5 text-[9px] font-black tracking-widest">
+                      {row.status}
+                    </Badge>
+                  </div>
 
-              <div className="space-y-3 mb-6 text-sm">
-                <div>
-                  <span className="text-gray-500">Academic Year:</span>
-                  <p className="text-gray-900 font-medium">{row.academy_care_year || row.academy_care_id || "—"}</p>
-                </div>
-                <div>
-                  <span className="text-gray-500">Room:</span>
-                  <p className="text-gray-900 font-medium">{row.room_number || "—"}</p>
-                </div>
-                <div>
-                  <span className="text-gray-500">Status:</span>
-                  <p className="text-gray-900 font-medium capitalize">{row.status}</p>
-                </div>
-                {row.subjects && row.subjects.length > 0 && (
-                  <div>
-                    <span className="text-gray-500">Subjects:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {row.subjects.slice(0, 2).map((s) => (
-                        <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
-                      ))}
-                      {row.subjects.length > 2 && (
-                        <Badge variant="secondary" className="text-[10px]">+{row.subjects.length - 2}</Badge>
-                      )}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between">
+                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Enrollment</span>
+                           <span className="text-[10px] font-black text-slate-900">{row.student_count || 0}</span>
+                        </div>
+                        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                           <div className="h-full bg-blue-500" style={{ width: `${Math.min(((row.student_count || 0) / 40) * 100, 100)}%` }} />
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between">
+                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Attendance</span>
+                           <span className="text-[10px] font-black text-emerald-600">{row.attendance_percentage || 0}%</span>
+                        </div>
+                        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                           <div className="h-full bg-emerald-500" style={{ width: `${row.attendance_percentage || 0}%` }} />
+                        </div>
                     </div>
                   </div>
-                )}
-              </div>
 
-              <div className="flex gap-3">
-                <Link
-                  href={`/admin/timetable?class_id=${row._id}`}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-                >
-                  <span className="material-symbols-outlined text-base">schedule</span>
-                  Timetable
-                </Link>
-                <button
-                  onClick={() => setEditingClass(row)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                >
-                  <span className="material-symbols-outlined text-base">edit</span>
-                  Edit
-                </button>
-                <button
-                  onClick={async () => {
-                    if (window.confirm(`Delete ${row.name}?`)) {
-                      const result = await deleteClass(row._id);
-                      if (!result.ok) {
-                        showToast(result.error.message || "Failed to delete", "error");
+                  <div className="space-y-2 mb-4">
+                    <div className="flex flex-wrap gap-1">
+                        {row.subjects.slice(0, 4).map((s) => (
+                          <span key={s} className="px-2 py-0.5 rounded-lg bg-slate-50 text-slate-600 text-[9px] font-bold border border-slate-100">{s}</span>
+                        ))}
+                        {row.subjects.length > 4 && (
+                          <span className="px-2 py-0.5 rounded-lg bg-white text-slate-400 text-[9px] font-bold border border-slate-100">+{row.subjects.length - 4}</span>
+                        )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-blue-50/50 transition-colors">
+                  <div className="flex items-center gap-1">
+                    <Link
+                        href={`/admin/timetable?class_id=${row._id}`}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg transition-all shadow-sm shadow-transparent hover:shadow-slate-200/50"
+                        title="Schedule"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">calendar_month</span>
+                      </Link>
+                      <button
+                        onClick={() => setEditingClass(row)}
+                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg transition-all shadow-sm shadow-transparent hover:shadow-slate-200/50"
+                        title="Edit"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                      </button>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (window.confirm(`Are you sure you want to delete ${row.name}?`)) {
+                        const result = await deleteClass(row._id);
+                        if (result.ok) showToast(`${row.name} archived.`, "success");
                       }
-                    }
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                >
-                  <span className="material-symbols-outlined text-base">delete</span>
-                  Delete
-                </button>
+                    }}
+                    className="p-1.5 text-slate-300 hover:text-red-600 transition-colors"
+                    title="Archive"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">archive</span>
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <DataTable
+            columns={columns}
+            rows={filteredRows}
+            rowKey={(row) => row._id}
+            sortable
+            paginated={10}
+            rowActions={rowActions}
+            emptyState={{
+              title: "No classes found",
+              description: "Adjust filters or add a class.",
+              action: { label: "Add Class", href: "/admin/classes/create" },
+            }}
+          />
+        )
       )}
 
       <ClassEditSidebar

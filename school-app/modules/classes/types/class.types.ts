@@ -9,6 +9,8 @@ export interface ClassRow {
     room_number?: string;
     description?: string;
     status: "active" | "archived";
+    student_count?: number;
+    attendance_percentage?: number;
 }
 
 export interface ClassFormInput {
@@ -18,4 +20,5 @@ export interface ClassFormInput {
     subjects: string[];
     room_number?: string;
     description?: string;
+    status?: "active" | "inactive";
 }

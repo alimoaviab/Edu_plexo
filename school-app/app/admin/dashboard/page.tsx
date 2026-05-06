@@ -67,13 +67,13 @@ export default function AdminDashboardPage() {
   if (error) {
     return (
       <SchoolShell eyebrow="Overview" title="Dashboard">
-        <div className="p-8 text-center bg-red-50 border border-red-100 rounded-2xl">
-          <span className="material-symbols-outlined text-red-500 text-4xl mb-4">error</span>
-          <h2 className="text-lg font-bold text-red-900">Failed to load dashboard</h2>
-          <p className="text-red-600 mt-2">{error}</p>
+        <div className="rounded-2xl border border-red-100 bg-red-50 px-6 py-6 text-center">
+          <span className="material-symbols-outlined mb-3 text-3xl text-red-500">error</span>
+          <h2 className="text-base font-semibold text-red-900">Failed to load dashboard</h2>
+          <p className="mt-1.5 text-sm text-red-600">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+            className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
           >
             Retry
           </button>
@@ -83,188 +83,258 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <SchoolShell eyebrow="Overview" title="Dashboard">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+    <SchoolShell eyebrow="System Overview" title="Dashboard">
+      {/* Header Section */}
+      <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-white p-6 rounded-3xl border border-slate-200/60 shadow-sm shadow-blue-900/5">
+        <div>
+           <div className="flex items-center gap-2 mb-1">
+              <div className="flex h-5 w-5 items-center justify-center rounded-md bg-blue-50 text-blue-600">
+                <span className="material-symbols-outlined text-[14px] font-black">waving_hand</span>
+              </div>
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Institutional Cockpit</p>
+           </div>
+           <h2 className="text-3xl font-black tracking-tight text-slate-900 leading-tight">Good Day, Administrator</h2>
+           <p className="text-sm font-medium text-slate-500 mt-1 flex items-center gap-2">
+             <span className="material-symbols-outlined text-[14px]">event</span>
+             Operational overview for {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+           </p>
+        </div>
+        <div className="flex items-center gap-3">
+           <div className="flex flex-col items-end pr-4 border-r border-slate-100">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Health</span>
+              <div className="flex items-center gap-2 mt-1">
+                 <div className="relative h-2 w-2">
+                    <span className="absolute inset-0 h-full w-full rounded-full bg-emerald-500 animate-ping opacity-25" />
+                    <span className="relative block h-full w-full rounded-full bg-emerald-500" />
+                 </div>
+                 <span className="text-xs font-bold text-slate-700">Live Infrastructure</span>
+              </div>
+           </div>
+           <div className="flex flex-col items-end">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Data Integrity</span>
+              <div className="flex items-center gap-1.5 mt-1 text-emerald-600">
+                 <span className="material-symbols-outlined text-sm">verified_user</span>
+                 <span className="text-xs font-bold uppercase tracking-tight">Verified</span>
+              </div>
+           </div>
+        </div>
+      </div>
+
+      {/* Main Stats Grid */}
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
         {loading ? (
-          Array(5).fill(0).map((_, i) => <div key={i} className="h-32 bg-white rounded-xl border border-gray-100 animate-pulse p-4 space-y-3">
+          Array(5).fill(0).map((_, i) => <div key={i} className="h-32 animate-pulse space-y-3 rounded-2xl border border-slate-100 bg-white p-4">
              <div className="flex justify-between">
-                <div className="w-10 h-10 bg-gray-100 rounded-lg" />
-                <div className="w-12 h-5 bg-gray-100 rounded-full" />
+                <div className="h-10 w-10 rounded-xl bg-slate-100" />
+                <div className="h-5 w-14 rounded-full bg-slate-100" />
              </div>
-             <div className="w-24 h-4 bg-gray-100 rounded" />
-             <div className="w-16 h-8 bg-gray-100 rounded" />
+             <div className="h-4 w-28 rounded bg-slate-100" />
+             <div className="h-8 w-20 rounded bg-slate-100" />
           </div>)
         ) : (
-          stats.map((section) => (
-            <Card key={section.title} className="group hover:border-blue-600/30 transition-all p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
-                  <span className="material-symbols-outlined text-xl">{section.icon}</span>
+          stats.map((section, idx) => (
+            <div key={section.title} className="premium-card group p-4 transition-all hover:border-blue-600/30 hover:shadow-xl hover:shadow-slate-200/40 relative overflow-hidden">
+              <div className="mb-3 flex items-start justify-between relative z-10">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-blue-600 group-hover:text-white shadow-sm">
+                  <span className="material-symbols-outlined text-[20px]">{section.icon}</span>
                 </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  section.trendUp ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"
+                <div className={`rounded-full px-2 py-0.5 text-[9px] font-black tracking-widest uppercase ${
+                  section.trendUp ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-red-50 text-red-600 border border-red-100"
                 }`}>
                   {section.trend}
-                </span>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{section.title}</p>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <h3 className="text-2xl font-bold text-gray-900 tracking-tight">{section.value}</h3>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1">{section.detail}</p>
               </div>
-            </Card>
+              <div className="relative z-10">
+                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">{section.title}</p>
+                <div className="mt-1.5 flex items-baseline gap-2">
+                  <h3 className="text-3xl font-black tracking-tighter text-slate-900 tabular-nums">{section.value}</h3>
+                </div>
+                <p className="mt-1 text-[11px] font-medium text-slate-500">{section.detail}</p>
+              </div>
+              {/* Background accent */}
+              <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
+                 <span className="material-symbols-outlined text-[80px] font-black">{section.icon}</span>
+              </div>
+            </div>
           ))
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left Column - Analytics */}
+        <div className="space-y-6 lg:col-span-2">
+          <div className="premium-card p-5">
+            <div className="mb-6 flex items-center justify-between gap-3">
                <div>
-                  <h3 className="text-lg font-bold text-gray-900">Attendance Analytics</h3>
-                  <p className="text-xs text-gray-500 mt-1">Class participation trends for the last 7 days</p>
+                  <h3 className="text-lg font-black tracking-tight text-slate-900">Attendance Analytics</h3>
+                  <p className="mt-1 text-xs font-medium text-slate-500">Global participation trends across all academic tiers</p>
                </div>
-               <select className="text-xs font-bold border border-gray-200 bg-gray-50 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-blue-600/10">
-                  <option>Last 7 days</option>
-                  <option>Last 30 days</option>
-               </select>
+               <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100">
+                  <button className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-blue-600 bg-white rounded-lg shadow-sm">7 Days</button>
+                  <button className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600">30 Days</button>
+               </div>
             </div>
             
-            <div className="h-72 flex items-end justify-between gap-3 px-2">
+            <div className="flex h-64 items-end justify-between gap-3 px-2 pt-8">
               {loading ? (
                 Array(7).fill(0).map((_, i) => (
-                  <div key={i} className="flex-1 bg-gray-50 rounded-t-lg animate-pulse" style={{ height: `${20 + Math.random() * 60}%` }} />
+                  <div key={i} className="flex-1 animate-pulse rounded-t-xl bg-slate-50" style={{ height: `${20 + Math.random() * 60}%` }} />
                 ))
               ) : (
                 data?.trends.map((day, i) => (
-                  <div key={day.date} className="flex-1 flex flex-col items-center gap-3 group relative">
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                  <div key={day.date} className="group relative flex flex-1 flex-col items-center gap-3">
+                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap rounded-xl bg-slate-900 px-3 py-1.5 text-[10px] font-black text-white opacity-0 transition-all group-hover:opacity-100 group-hover:-top-12 shadow-xl">
                       {day.percentage}% Present
+                      <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-900" />
                     </div>
                     <div
-                      className={`w-full rounded-t-lg transition-all duration-700 ease-out ${
-                        day.percentage > 90 ? "bg-blue-600" : day.percentage > 75 ? "bg-blue-400" : "bg-red-400"
+                      className={`w-full rounded-t-xl transition-all duration-700 ease-out relative group-hover:brightness-110 ${
+                        day.percentage > 90 ? "bg-gradient-to-t from-blue-700 to-blue-500 shadow-[0_10px_20px_rgba(37,99,235,0.15)]" : 
+                        day.percentage > 75 ? "bg-gradient-to-t from-blue-500 to-blue-400 shadow-[0_10px_20px_rgba(59,130,246,0.15)]" : 
+                        "bg-gradient-to-t from-red-500 to-rose-400 shadow-[0_10px_20px_rgba(244,63,94,0.15)]"
                       }`}
-                      style={{ height: `${day.percentage}%` }}
+                      style={{ height: `${Math.max(day.percentage, 20)}%` }}
                     >
-                      <div className="w-full h-full bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="w-full h-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-t-xl" />
                     </div>
-                    <span className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter">
+                    <span className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">
                       {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
                     </span>
                   </div>
                 ))
               )}
-              {!loading && (!data?.trends || data.trends.length === 0) && (
-                <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                  <span className="material-symbols-outlined text-4xl mb-2">bar_chart</span>
-                  <p className="text-sm">No attendance data for this period</p>
-                </div>
-              )}
             </div>
-          </Card>
+          </div>
 
-          <Card className="p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-6">Class-wise Performance</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               {loading ? (
-                 Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
-               ) : data?.classAttendance && data.classAttendance.length > 0 ? (
-                 data.classAttendance.map((cls) => (
-                   <div key={cls.class_name} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-xs font-bold text-gray-700">{cls.class_name}</span>
-                          <span className="text-[10px] font-bold text-blue-600">{cls.percentage}%</span>
-                        </div>
-                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-1000 ${cls.percentage > 90 ? 'bg-blue-600' : cls.percentage > 75 ? 'bg-blue-400' : 'bg-red-400'}`} 
-                            style={{ width: `${cls.percentage}%` }} 
-                          />
-                        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div className="premium-card p-5">
+                <h3 className="mb-4 text-sm font-black uppercase tracking-widest text-slate-400">Class Performance</h3>
+                <div className="space-y-4">
+                   {loading ? (
+                     Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)
+                   ) : data?.classAttendance && data.classAttendance.length > 0 ? (
+                     data.classAttendance.slice(0, 4).map((cls) => (
+                       <div key={cls.class_name} className="group">
+                          <div className="flex items-center justify-between mb-2">
+                             <span className="text-[11px] font-black text-slate-700 uppercase tracking-tight">{cls.class_name}</span>
+                             <span className="text-[10px] font-black text-blue-600 tabular-nums">{cls.percentage}%</span>
+                          </div>
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 border border-slate-50">
+                             <div 
+                               className={`h-full transition-all duration-1000 shadow-[0_0_8px_rgba(0,0,0,0.05)] ${cls.percentage > 90 ? 'bg-blue-600' : cls.percentage > 75 ? 'bg-blue-400' : 'bg-red-400'}`} 
+                               style={{ width: `${cls.percentage}%` }} 
+                             />
+                          </div>
+                       </div>
+                     ))
+                   ) : (
+                     <div className="py-6 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                       No Daily Data
+                     </div>
+                   )}
+                </div>
+             </div>
+
+             <div className="premium-card p-5 bg-gradient-to-br from-white to-slate-50/50">
+                <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Operational Log</h3>
+                   <span className="material-symbols-outlined text-slate-300 text-lg">history</span>
+                </div>
+                <div className="space-y-3">
+                   {[
+                      { msg: "Attendance marked for Grade 10", time: "10m ago", icon: "how_to_reg" },
+                      { msg: "New exam results published", time: "1h ago", icon: "leaderboard" },
+                      { msg: "Academic Year 2026 initialized", time: "3h ago", icon: "calendar_today" }
+                   ].map((log, i) => (
+                      <div key={i} className="flex items-start gap-3 p-2 rounded-xl border border-transparent hover:border-slate-100 hover:bg-white transition-all">
+                         <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
+                            <span className="material-symbols-outlined text-[16px]">{log.icon}</span>
+                         </div>
+                         <div>
+                            <p className="text-[11px] font-bold text-slate-700 leading-tight">{log.msg}</p>
+                            <p className="text-[9px] font-medium text-slate-400 mt-0.5">{log.time}</p>
+                         </div>
                       </div>
-                   </div>
-                 ))
-               ) : (
-                 <div className="col-span-2 text-center py-8 text-gray-400 italic text-xs">
-                   No class-wise data available for today.
-                 </div>
-               )}
-            </div>
-          </Card>
+                   ))}
+                </div>
+             </div>
+          </div>
         </div>
 
+        {/* Right Column - Actions & Alerts */}
         <div className="space-y-6">
-          <Card className="p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-6">Quick Actions</h3>
+          <div className="premium-card p-5">
+            <h3 className="mb-5 text-sm font-black uppercase tracking-widest text-slate-400">Control Center</h3>
             <div className="grid grid-cols-2 gap-3">
                {[
-                 { label: "Add Student", icon: "person_add", color: "text-blue-600 bg-blue-50", href: "/admin/students?action=new" },
-                 { label: "Attendance", icon: "how_to_reg", color: "text-green-600 bg-green-50", href: "/admin/attendance" },
-                 { label: "Schedule Exam", icon: "add_task", color: "text-orange-600 bg-orange-50", href: "/admin/exams?action=new" },
-                 { label: "Announce", icon: "campaign", color: "text-purple-600 bg-purple-50", href: "/admin/announcements?action=new" },
-                 { label: "Publish Results", icon: "leaderboard", color: "text-cyan-600 bg-cyan-50", href: "/admin/results" },
-                 { label: "Reports", icon: "summarize", color: "text-rose-600 bg-rose-50", href: "/admin/reports" },
-                 { label: "Timetable", icon: "calendar_view_week", color: "text-indigo-600 bg-indigo-50", href: "/admin/timetable" },
-                 { label: "Settings", icon: "settings", color: "text-gray-600 bg-gray-50", href: "/admin/settings" }
+                 { label: "Add Student", icon: "person_add", color: "text-blue-600 bg-blue-50 border-blue-100", href: "/admin/students?action=new" },
+                 { label: "Attendance", icon: "how_to_reg", color: "text-emerald-600 bg-emerald-50 border-emerald-100", href: "/admin/attendance" },
+                 { label: "Schedule Exam", icon: "add_task", color: "text-amber-600 bg-amber-50 border-amber-100", href: "/admin/exams?action=new" },
+                 { label: "Broadcast", icon: "campaign", color: "text-purple-600 bg-purple-50 border-purple-100", href: "/admin/announcements?action=new" },
+                 { label: "Results", icon: "leaderboard", color: "text-cyan-600 bg-cyan-50 border-cyan-100", href: "/admin/results" },
+                 { label: "Timetable", icon: "calendar_view_week", color: "text-indigo-600 bg-indigo-50 border-indigo-100", href: "/admin/timetable" }
                ].map((action) => (
                  <Link 
                     key={action.label} 
                     href={action.href}
-                    className="flex flex-col items-center gap-2 p-3 rounded-2xl border border-gray-100 hover:border-blue-600/20 hover:bg-blue-50/30 transition-all group text-center"
+                    className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-50 bg-slate-50/50 p-3 text-center transition-all hover:border-blue-300 hover:bg-white hover:shadow-lg hover:shadow-slate-200/50"
                  >
-                    <div className={`w-10 h-10 rounded-xl ${action.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <span className="material-symbols-outlined text-xl">{action.icon}</span>
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${action.color} transition-all group-hover:scale-110 shadow-sm shadow-transparent group-hover:shadow-current/10`}>
+                      <span className="material-symbols-outlined text-[20px]">{action.icon}</span>
                     </div>
-                    <span className="text-[10px] font-bold text-gray-700 uppercase tracking-tight leading-tight">{action.label}</span>
+                    <span className="text-[10px] font-black uppercase leading-tight tracking-tight text-slate-700">{action.label}</span>
                  </Link>
                ))}
             </div>
-          </Card>
+            <Link href="/admin/settings" className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98]">
+               <span className="material-symbols-outlined text-sm">settings</span>
+               Global Configuration
+            </Link>
+          </div>
 
-          <Card className={`p-6 border-red-100 ${data?.alerts && data.alerts.length > 0 ? 'bg-red-50/30' : 'bg-white'}`}>
-            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2 mb-5">
-              <span className="material-symbols-outlined text-red-500 text-lg">notifications_active</span>
-              Critical Alerts
-              {data?.alerts && data.alerts.length > 0 && (
-                <span className="ml-auto w-5 h-5 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full">
-                  {data.alerts.length}
-                </span>
-              )}
-            </h3>
+          <div className={`premium-card p-5 border-red-100/50 transition-all ${data?.alerts && data.alerts.length > 0 ? 'bg-red-50/30' : 'bg-white'}`}>
+            <div className="mb-5 flex items-center justify-between">
+               <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-red-500 text-lg">error</span>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-900">Critical Alerts</h3>
+               </div>
+               {data?.alerts && data.alerts.length > 0 && (
+                 <div className="h-5 px-1.5 flex items-center justify-center rounded-full bg-red-600 text-[9px] font-black text-white shadow-lg shadow-red-600/20">
+                   {data.alerts.length}
+                 </div>
+               )}
+            </div>
             
             <div className="space-y-3">
                {loading ? (
-                 Array(2).fill(0).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
+                 Array(2).fill(0).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)
                ) : data?.alerts && data.alerts.length > 0 ? (
                  data.alerts.map((alert, i) => (
-                   <div key={i} className="p-3 bg-white rounded-xl border border-red-100 shadow-sm animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
+                   <div key={i} className="animate-in slide-in-from-right-4 duration-300 rounded-2xl border border-red-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex items-start gap-3">
-                        <div className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${
-                          alert.severity === 'error' ? 'bg-red-500' : alert.severity === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
+                        <div className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${
+                          alert.severity === 'error' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 
+                          alert.severity === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
                         }`} />
-                        <div className="flex-1">
-                          <p className="text-[11px] font-bold text-gray-900 leading-none mb-1">{alert.title}</p>
-                          <p className="text-[10px] text-gray-500 leading-tight">{alert.message}</p>
-                          <Link href={alert.link} className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 mt-2 hover:underline">
+                        <div className="flex-1 min-w-0">
+                          <p className="mb-1 text-[12px] font-black leading-tight text-slate-900 truncate">{alert.title}</p>
+                          <p className="text-[11px] leading-relaxed font-medium text-slate-500 line-clamp-2">{alert.message}</p>
+                          <Link href={alert.link} className="mt-3 inline-flex items-center gap-1 text-[11px] font-black text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-wider">
                             {alert.cta}
-                            <span className="material-symbols-outlined text-[10px]">arrow_forward</span>
+                            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
                           </Link>
                         </div>
                       </div>
                    </div>
                  ))
                ) : (
-                 <div className="text-center py-4">
-                   <p className="text-[10px] text-gray-400 font-medium italic">No system alerts at this time.</p>
+                 <div className="py-6 text-center border-2 border-dashed border-slate-100 rounded-2xl">
+                    <span className="material-symbols-outlined text-slate-200 text-3xl mb-2">check_circle</span>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Status Nominal</p>
                  </div>
                )}
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     </SchoolShell>

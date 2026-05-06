@@ -1,7 +1,7 @@
 "use client";
 
-import { Card, DataState, Skeleton, TableSkeleton } from "../../../components/ui";
-import { useCallback, useEffect } from "react";
+import { Card, DataState, ListToolbar, Skeleton, TableSkeleton } from "../../../components/ui";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSafeAsync } from "../../../hooks/useSafeAsync";
 import { serviceRequest } from "../../../services/service-client";
 import { AttendanceForm } from "../components/AttendanceForm";
@@ -55,6 +55,24 @@ export function AttendancePage() {
         studentState.status === "loading";
 
     const classOptions = (classState.data ?? []).map((item) => ({ id: item._id, label: item.name }));
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<"all" | "present" | "absent" | "late" | "excused">("all");
+
+    const filteredRows = useMemo(() => {
+        const rows = state.data ?? [];
+        const q = searchQuery.trim().toLowerCase();
+        return rows.filter((row) => {
+            const queryMatch =
+                q.length === 0 ||
+                row.student_name.toLowerCase().includes(q) ||
+                row.admission_no.toLowerCase().includes(q) ||
+                row.class_name.toLowerCase().includes(q) ||
+                (row.note || "").toLowerCase().includes(q);
+
+            const statusMatch = statusFilter === "all" ? true : row.status === statusFilter;
+            return queryMatch && statusMatch;
+        });
+    }, [state.data, searchQuery, statusFilter]);
     const studentOptions = (studentState.data ?? []).map((item) => ({
         id: item._id,
         class_id: item.class_id,
@@ -62,11 +80,11 @@ export function AttendancePage() {
     }));
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-4">
             <Card className="max-w-4xl">
-                <div className="mb-6">
-                    <h2 className="text-xl font-bold text-gray-900">Mark Attendance</h2>
-                    <p className="text-sm text-gray-500">Record daily attendance for students in their respective classes.</p>
+                <div className="mb-4">
+                    <h2 className="text-lg font-semibold tracking-tight text-slate-950">Mark Attendance</h2>
+                    <p className="text-sm text-slate-600">Record daily attendance for students in their respective classes.</p>
                 </div>
                 {isDependencyLoading ? (
                     <div className="space-y-4">
@@ -90,7 +108,7 @@ export function AttendancePage() {
             ) : null}
 
             {state.status === "loading" || state.status === "idle" ? (
-                <div className="space-y-4">
+                     <div className="space-y-3">
                    <Skeleton className="h-8 w-48" />
                    <TableSkeleton />
                 </div>
@@ -105,14 +123,30 @@ export function AttendancePage() {
             ) : null}
 
             {state.status === "success" && state.data && state.data.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900">Attendance Log</h3>
-                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                           {state.data.length} Records
+                        <h3 className="text-base font-semibold tracking-tight text-slate-950">Attendance Log</h3>
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                           {filteredRows.length} visible
                         </span>
                     </div>
-                    <AttendanceTable rows={state.data} />
+
+                    <ListToolbar
+                        searchValue={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        searchPlaceholder="Search student, admission no, class, note"
+                        filterValue={statusFilter}
+                        onFilterChange={(value) => setStatusFilter(value as "all" | "present" | "absent" | "late" | "excused")}
+                        filterOptions={[
+                            { value: "all", label: "All statuses" },
+                            { value: "present", label: "Present" },
+                            { value: "absent", label: "Absent" },
+                            { value: "late", label: "Late" },
+                            { value: "excused", label: "Excused" },
+                        ]}
+                    />
+
+                    <AttendanceTable rows={filteredRows} />
                 </div>
             ) : null}
         </div>

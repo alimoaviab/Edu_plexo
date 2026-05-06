@@ -46,23 +46,15 @@ export function ExamCreatePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <Link
-        href={pathname.includes("/teacher") ? "/teacher/exams" : "/admin/exams"}
-        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition-colors"
-      >
-        <span className="material-symbols-outlined text-lg">arrow_back</span>
-        Back to Exams
-      </Link>
+    <div className="max-w-4xl mx-auto">
+      <div className="mb-6 flex flex-col gap-1">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Schedule New Examination</h2>
+        <p className="text-sm font-medium text-slate-500">
+          Define assessment criteria, target class, and schedule the event.
+        </p>
+      </div>
 
-      <Card>
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900">Schedule New Exam</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Create a new examination schedule for specific classes and subjects.
-          </p>
-        </div>
-
+      <Card className="p-6 md:p-8">
         {classState.status === "error" ? (
           <DataState variant="error" title="Failed to load classes" message={classState.error} />
         ) : isDependencyLoading ? (

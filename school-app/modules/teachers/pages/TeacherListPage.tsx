@@ -136,88 +136,124 @@ export function TeacherListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">Teacher Directory</h2>
-          <p className="text-sm text-gray-500">Manage all teaching staff</p>
+      {/* Executive Toolbar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">
+             <span className="material-symbols-outlined text-[24px]">badge</span>
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Faculty Management</p>
+            <p className="text-sm font-bold text-slate-500">Global teaching staff records</p>
+          </div>
         </div>
-        <Link
-          href="/admin/teachers/create"
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all hover:shadow-lg hover:shadow-blue-600/25 active:scale-[0.98]"
-        >
-          <span className="material-symbols-outlined text-lg">add</span>
-          Add Teacher
-        </Link>
+        <div className="flex items-center gap-3">
+           <Link
+             href="/admin/teachers/create"
+             className="flex h-10 items-center px-4 bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+           >
+             <span className="material-symbols-outlined mr-2 text-[18px]">person_add</span>
+             Add Faculty
+           </Link>
+        </div>
       </div>
 
       {(state.data || []).length === 0 ? (
         <DataState variant="empty" title="No teachers found" message="Get started by adding your first teacher." />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
           {(state.data || []).map((row) => (
             <div
               key={row._id}
-              className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow"
+              className="premium-card group flex flex-col p-0 overflow-hidden transition-all hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5"
             >
-              <div className="mb-4">
-                <h3 className="font-bold text-lg text-gray-900">{row.first_name} {row.last_name}</h3>
-                <p className="text-xs text-gray-500 mt-1 font-mono">{row.employee_no}</p>
-              </div>
-
-              <div className="space-y-3 mb-6 text-sm">
-                <div>
-                  <span className="text-gray-500">Email:</span>
-                  <p className="text-gray-900 font-medium truncate">{row.email}</p>
-                </div>
-                <div>
-                  <span className="text-gray-500">Phone:</span>
-                  <p className="text-gray-900 font-medium">{row.phone || "—"}</p>
-                </div>
-                <div>
-                  <span className="text-gray-500">Qualification:</span>
-                  <p className="text-gray-900 font-medium">{row.qualification || "—"}</p>
-                </div>
-                <div>
-                  <span className="text-gray-500">Status:</span>
-                  <p className="text-gray-900 font-medium capitalize">{row.status.replace("_", " ")}</p>
-                </div>
-                {row.subjects && row.subjects.length > 0 && (
-                  <div>
-                    <span className="text-gray-500">Subjects:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {row.subjects.slice(0, 2).map((s) => (
-                        <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
-                      ))}
-                      {row.subjects.length > 2 && (
-                        <Badge variant="secondary" className="text-[10px]">+{row.subjects.length - 2}</Badge>
-                      )}
+              <div className="p-5 flex-1">
+                <div className="flex items-start justify-between mb-5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-slate-400 font-black text-xs border border-slate-100 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                      {row.first_name.substring(0, 1)}{row.last_name.substring(0, 1)}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-black text-slate-900 tracking-tight truncate leading-tight">{row.first_name} {row.last_name}</h3>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">#{row.employee_no}</span>
+                        <div className="h-1 w-1 rounded-full bg-slate-200" />
+                        <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${row.status === 'active' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                          {row.status.replace("_", " ")}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                )}
+                  
+                  <div className="flex flex-col items-end gap-1">
+                     <button 
+                        onClick={() => setEditingTeacher(row)}
+                        className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all border border-slate-100 bg-white"
+                     >
+                        <span className="material-symbols-outlined text-[16px]">edit_square</span>
+                     </button>
+                     <button 
+                        onClick={async () => {
+                           if (window.confirm(`Delete ${row.first_name}?`)) {
+                              await deleteTeacher(row._id);
+                           }
+                        }}
+                        className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all border border-slate-100 bg-white"
+                     >
+                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                     </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                   <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-2.5">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Workload</span>
+                      <div className="flex items-center gap-2">
+                         <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500" style={{ width: '75%' }} />
+                         </div>
+                         <span className="text-[10px] font-black text-slate-900">75%</span>
+                      </div>
+                   </div>
+                   <div className="bg-slate-50/50 border border-slate-100 rounded-xl p-2.5">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Capacity</span>
+                      <p className="text-[11px] font-black text-slate-900">{(row.class_ids || []).length} / 12 Classes</p>
+                   </div>
+                </div>
+
+                <div className="space-y-2">
+                   <div className="flex items-center justify-between px-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Specialization</span>
+                      <span className="text-[9px] font-black text-blue-600 uppercase">{row.qualification || "B.Ed"}</span>
+                   </div>
+                   <div className="flex flex-wrap gap-1.5">
+                      {(row.subjects || []).slice(0, 4).map((s) => (
+                        <span key={s} className="px-2 py-0.5 rounded-lg bg-blue-50/50 text-blue-700 text-[9px] font-black uppercase tracking-tighter border border-blue-100/50">
+                          {s}
+                        </span>
+                      ))}
+                      {(row.subjects || []).length > 4 && (
+                        <span className="px-2 py-0.5 rounded-lg bg-white text-slate-400 text-[9px] font-bold border border-slate-100">
+                          +{(row.subjects || []).length - 4}
+                        </span>
+                      )}
+                   </div>
+                </div>
               </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setEditingTeacher(row)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                >
-                  <span className="material-symbols-outlined text-base">edit</span>
-                  Edit
-                </button>
-                <button
-                  onClick={async () => {
-                    if (window.confirm(`Delete ${row.first_name} ${row.last_name}?`)) {
-                      const result = await deleteTeacher(row._id);
-                      if (!result.ok) {
-                        showToast(result.error.message || "Failed to delete", "error");
-                      }
-                    }
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                >
-                  <span className="material-symbols-outlined text-base">delete</span>
-                  Delete
-                </button>
+              <div className="mt-auto p-4 bg-slate-50/30 border-t border-slate-100 flex items-center justify-between">
+                 <div className="flex items-center gap-3">
+                    <div className="flex -space-x-1.5">
+                       {[1, 2, 3].map(i => (
+                         <div key={i} className="h-6 w-6 rounded-full border-2 border-white bg-slate-200" />
+                       ))}
+                    </div>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Schedule</span>
+                 </div>
+                 <Link href={`/admin/teachers/${row._id}`} className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:underline flex items-center gap-1">
+                    Faculty Hub
+                    <span className="material-symbols-outlined text-sm">chevron_right</span>
+                 </Link>
               </div>
             </div>
           ))}

@@ -16,7 +16,6 @@ const routeLabels: Record<string, string> = {
   teachers: "Teachers",
   students: "Students",
   attendance: "Attendance",
-  homework: "Homework",
   exams: "Exams",
   results: "Results",
   settings: "Settings",

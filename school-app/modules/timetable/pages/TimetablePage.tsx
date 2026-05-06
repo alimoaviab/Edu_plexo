@@ -83,95 +83,48 @@ export function TimetablePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          {selectedClass && (
-            <button
-              onClick={handleBack}
-              className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
-            >
-              <span className="material-symbols-outlined text-base">arrow_back</span>
-              Back to Classes
-            </button>
-          )}
-          <h2 className="text-lg font-bold text-gray-900">
-            {selectedClass ? `${selectedClass.name} - Timetable` : "Weekly Timetable"}
-          </h2>
-          <p className="text-sm text-gray-500">Select a class and set its timetable from the watch button.</p>
-        </div>
-        <button
-          onClick={() => { setEditingRecord(null); setIsAdding(true); }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all hover:shadow-lg hover:shadow-blue-600/25 active:scale-[0.98]"
-        >
-          <span className="material-symbols-outlined text-lg">add</span>
-          Add Entry
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {(classesState.data || []).map((classItem) => (
-          <div
-            key={classItem._id}
-            className={`rounded-2xl border p-5 shadow-sm transition-all ${selectedClassId === classItem._id
-                ? "border-blue-500 bg-blue-50/70 shadow-blue-100"
-                : "border-gray-200 bg-white hover:shadow-md"
-              }`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">Class</p>
-                <h3 className="mt-1 text-lg font-bold text-gray-900">{classItem.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">{classItem.description || "No description"}</p>
-              </div>
-              <Badge variant={classItem.status === "active" ? "success" : "gray"} className="capitalize">
-                {classItem.status}
-              </Badge>
-            </div>
-
-            <div className="mt-4 space-y-2 text-sm text-gray-600">
-              <p>Room: {classItem.room_number || "—"}</p>
-              <p>Subjects: {classItem.subjects?.length || 0}</p>
-            </div>
-
-            <div className="mt-5 flex gap-3">
-              <button
-                onClick={() => handleWatchClass(classItem._id)}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-              >
-                <span className="material-symbols-outlined text-base">visibility</span>
-                Watch
-              </button>
-              <Link
-                href={`/admin/timetable?class_id=${classItem._id}`}
-                className="inline-flex items-center justify-center rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-              >
-                Open
-              </Link>
-            </div>
+      {/* Premium Toolbar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm sticky top-0 z-30 backdrop-blur-md bg-white/90">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+             <span className="material-symbols-outlined text-[24px]">calendar_view_week</span>
           </div>
-        ))}
-      </div>
+          <div className="min-w-[200px]">
+             <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Active Schedule</p>
+             <select
+                value={classId}
+                onChange={(e) => {
+                  setClassId(e.target.value);
+                  if (e.target.value) {
+                    router.push(`/admin/timetable?class_id=${e.target.value}`);
+                  } else {
+                    router.push("/admin/timetable");
+                  }
+                }}
+                className="w-full bg-transparent border-none p-0 text-lg font-black text-slate-900 focus:ring-0 cursor-pointer hover:text-blue-600 transition-colors"
+              >
+                <option value="">Select Class Section</option>
+                {classOptions.map(opt => (
+                  <option key={opt.id} value={opt.id}>{opt.label}</option>
+                ))}
+              </select>
+          </div>
+        </div>
 
-      <div className="flex gap-4 items-center bg-white p-4 rounded-xl border border-gray-200">
-        <div className="flex flex-col gap-1 flex-1 max-w-xs">
-          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider ml-1">Filter by Class</label>
-          <select
-            value={classId}
-            onChange={(e) => {
-              setClassId(e.target.value);
-              if (e.target.value) {
-                router.push(`/admin/timetable?class_id=${e.target.value}`);
-              } else {
-                router.push("/admin/timetable");
-              }
-            }}
-            className="bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2"
-          >
-            <option value="">All Classes</option>
-            {classOptions.map(opt => (
-              <option key={opt.id} value={opt.id}>{opt.label}</option>
-            ))}
-          </select>
+        <div className="flex items-center gap-3">
+           <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-100">
+              <span className="material-symbols-outlined text-slate-400 text-sm">info</span>
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-tight">
+                {selectedClass ? `${selectedClass.room_number || 'No Room'} • ${selectedClass.subjects.length} Subjects` : "Choose class to view timeline"}
+              </span>
+           </div>
+           <button
+              onClick={() => { setEditingRecord(null); setIsAdding(true); }}
+              className="flex h-10 items-center gap-2 px-4 bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+           >
+              <span className="material-symbols-outlined text-lg">add_circle</span>
+              New Entry
+           </button>
         </div>
       </div>
 

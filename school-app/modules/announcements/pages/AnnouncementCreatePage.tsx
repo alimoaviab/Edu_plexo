@@ -24,9 +24,9 @@ export function AnnouncementCreatePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <Card className="p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-6">Create Announcement</h2>
+    <div className="mx-auto max-w-3xl space-y-4">
+      <Card className="p-3">
+        <h2 className="mb-4 text-base font-semibold tracking-tight text-slate-950">Create Announcement</h2>
         <AnnouncementForm onCreate={handleCreate} />
       </Card>
     </div>

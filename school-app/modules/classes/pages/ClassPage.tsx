@@ -1,6 +1,7 @@
 "use client";
 
-import { Card, DataState, Skeleton, TableSkeleton } from "../../../components/ui";
+import { useMemo, useState } from "react";
+import { Card, DataState, ListToolbar, Skeleton, TableSkeleton } from "../../../components/ui";
 import { useAcademicYears } from "../../academicYear/hooks/useAcademicYears";
 import { useTeachers } from "../../teachers/hooks/useTeachers";
 import { useSubjects } from "../../subjects/hooks/useSubjects";
@@ -22,9 +23,26 @@ export function ClassPage() {
         subjectsLoading;
 
     const hasAcademicYears = (academicYearState.data ?? []).length > 0;
+    const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+
+    const filteredRows = useMemo(() => {
+        const rows = state.data ?? [];
+        const q = searchQuery.trim().toLowerCase();
+        return rows.filter((row) => {
+            const queryMatch =
+                q.length === 0 ||
+                row.name.toLowerCase().includes(q) ||
+                (row.academy_care_year || "").toLowerCase().includes(q) ||
+                row.teacher_names.join(" ").toLowerCase().includes(q) ||
+                row.subjects.join(" ").toLowerCase().includes(q);
+            const statusMatch = statusFilter === "all" ? true : row.status === statusFilter;
+            return queryMatch && statusMatch;
+        });
+    }, [state.data, searchQuery, statusFilter]);
 
     return (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-4">
             {isDependencyLoading ? (
                 <div className="space-y-6">
                     <Skeleton className="h-[400px] w-full rounded-xl" />
@@ -58,9 +76,9 @@ export function ClassPage() {
 
             {!isDependencyLoading && hasAcademicYears ? (
                 <Card className="max-w-4xl">
-                    <div className="mb-6">
-                        <h2 className="text-xl font-bold text-gray-900">Create New Class</h2>
-                        <p className="text-sm text-gray-500">Set up a new classroom and assign teachers and subjects.</p>
+                    <div className="mb-4">
+                        <h2 className="text-lg font-semibold tracking-tight text-slate-950">Create New Class</h2>
+                        <p className="text-sm text-slate-600">Set up a new classroom and assign teachers and subjects.</p>
                     </div>
                     <ClassForm
                         onCreate={addClass}
@@ -80,7 +98,7 @@ export function ClassPage() {
             ) : null}
 
             {state.status === "loading" || state.status === "idle" ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                     <Skeleton className="h-8 w-48" />
                     <TableSkeleton />
                 </div>
@@ -95,14 +113,28 @@ export function ClassPage() {
             ) : null}
 
             {state.status === "success" && state.data && state.data.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-gray-900">Classes List</h3>
-                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                            {state.data.length} Total
+                        <h3 className="text-base font-semibold tracking-tight text-slate-950">Classes List</h3>
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-600">
+                            {filteredRows.length} visible
                         </span>
                     </div>
-                    <ClassTable rows={state.data} />
+
+                    <ListToolbar
+                        searchValue={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        searchPlaceholder="Search class, year, teacher, subject"
+                        filterValue={statusFilter}
+                        onFilterChange={(value) => setStatusFilter(value as "all" | "active" | "inactive")}
+                        filterOptions={[
+                            { value: "all", label: "All statuses" },
+                            { value: "active", label: "Active" },
+                            { value: "inactive", label: "Inactive" },
+                        ]}
+                    />
+
+                    <ClassTable rows={filteredRows} />
                 </div>
             ) : null}
         </div>

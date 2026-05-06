@@ -67,70 +67,111 @@ export function SubjectListPage() {
   }
 
   return (
-    <>
-      <div className="flex items-center justify-end mb-8">
-        <button
-          onClick={() => setIsAdding(true)}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <span className="material-symbols-outlined mr-2 text-[20px]">add</span>
-          Add Subject
-        </button>
+    <div className="space-y-6">
+      {/* Toolbar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+             <span className="material-symbols-outlined text-[24px]">menu_book</span>
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Curriculum Inventory</p>
+            <p className="text-sm font-bold text-slate-500">Manage institutional subjects and mappings</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+           <div className="relative">
+              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400">search</span>
+              <input 
+                type="text" 
+                placeholder="Search code or name..."
+                className="h-9 w-48 rounded-lg border border-slate-200 bg-slate-50/50 pl-8 pr-3 text-xs focus:border-blue-300 focus:bg-white outline-none transition-all"
+              />
+           </div>
+           <button
+             onClick={() => setIsAdding(true)}
+             className="flex h-9 items-center px-4 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20 active:scale-95"
+           >
+             <span className="material-symbols-outlined mr-2 text-[18px]">add</span>
+             Initialize Subject
+           </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
         {(data || []).map((row) => (
           <div
             key={row._id}
-            className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200"
+            className="premium-card group flex flex-col p-0 overflow-hidden transition-all hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5"
           >
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <span className="text-indigo-600 font-semibold text-sm">
-                      {row.code ? row.code.substring(0, 2) : row.name.substring(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-gray-900">{row.name}</h3>
-                    {row.code && <p className="text-xs text-gray-500 uppercase">{row.code}</p>}
-                  </div>
+            <div className="p-5 flex-1">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-slate-400 font-black text-sm uppercase border border-slate-100 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                  {row.code ? row.code.substring(0, 2) : row.name.substring(0, 2).toUpperCase()}
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => setEditingSubject(row)}
-                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                    title="Edit"
+                    className="h-8 w-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 border border-slate-100 bg-white transition-all shadow-sm"
                   >
-                    <span className="material-symbols-outlined text-[20px]">edit</span>
+                    <span className="material-symbols-outlined text-[18px]">edit_square</span>
                   </button>
                   <button
                     onClick={() => handleDelete(row._id)}
-                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                    title="Delete"
+                    className="h-8 w-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 border border-slate-100 bg-white transition-all shadow-sm"
                   >
-                    <span className="material-symbols-outlined text-[20px]">delete</span>
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
                   </button>
                 </div>
               </div>
 
-              {row.description && (
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">{row.description}</p>
-              )}
+              <div className="mb-4">
+                <h3 className="text-lg font-black text-slate-900 tracking-tight leading-tight">{row.name}</h3>
+                <div className="flex items-center gap-2 mt-1">
+                   <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{row.code || "NO-CODE"}</span>
+                   <span className="h-1 w-1 rounded-full bg-slate-300" />
+                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{row.academic_year || "All Sessions"}</span>
+                </div>
+              </div>
 
-              <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${row.status === "active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                  }`}>
-                  {row.status === "active" ? "Active" : "Inactive"}
-                </span>
+              <div className="space-y-2.5">
+                 <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50/80 border border-slate-100/50">
+                    <div className="flex items-center gap-2 min-w-0">
+                       <span className="material-symbols-outlined text-slate-400 text-[18px]">account_circle</span>
+                       <span className="text-[11px] font-bold text-slate-700 truncate">{row.teacher_name || "Faculty Pending"}</span>
+                    </div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase">HOD</span>
+                 </div>
+
+                 <div className="flex flex-wrap gap-1.5">
+                    {(row.class_mapping || ["Grade 10", "Grade 11"]).map(cls => (
+                      <span key={cls} className="px-2 py-0.5 rounded-md bg-blue-50/50 text-blue-600 text-[9px] font-black uppercase tracking-tighter border border-blue-100/50">
+                        {cls}
+                      </span>
+                    ))}
+                 </div>
+              </div>
+            </div>
+
+            <div className="mt-auto p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`h-2 w-2 rounded-full ${row.status === "active" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-slate-300"}`} />
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{row.status}</span>
+              </div>
+              <div className="flex -space-x-2">
+                 {[1,2,3].map(i => (
+                   <div key={i} className="h-6 w-6 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center">
+                      <span className="text-[8px] font-bold text-slate-400">{i}</span>
+                   </div>
+                 ))}
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {data.length === 0 && (
+      {(data || []).length === 0 && (
         <div className="text-center py-16 bg-white rounded-xl border border-gray-200 border-dashed">
           <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
             <span className="material-symbols-outlined text-gray-400 text-3xl">menu_book</span>
@@ -157,6 +198,6 @@ export function SubjectListPage() {
         onSave={handleSave}
         isSaving={isSaving}
       />
-    </>
+    </div>
   );
 }

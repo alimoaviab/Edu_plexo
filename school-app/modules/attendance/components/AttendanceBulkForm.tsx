@@ -198,75 +198,146 @@ export function AttendanceBulkForm({ initialClassId, onSaved }: AttendanceBulkFo
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Select
-                    label="Class"
-                    value={selectedClassId}
-                    onChange={(event) => setSelectedClassId(event.target.value)}
-                    options={[{ label: "Select class", value: "" }, ...classOptions.map((item) => ({ label: item.label, value: item.id }))]}
-                />
-                <Input
-                    label="Date"
-                    type="date"
-                    value={selectedDate}
-                    onChange={(event) => setSelectedDate(event.target.value)}
-                />
+            <div className="flex flex-col md:flex-row items-center gap-4 premium-card p-4 bg-slate-50/50 border-slate-200">
+                <div className="flex-1 w-full">
+                    <Select
+                        label="Target Class"
+                        value={selectedClassId}
+                        onChange={(event) => setSelectedClassId(event.target.value)}
+                        options={[{ label: "Select assigned class", value: "" }, ...classOptions.map((item) => ({ label: item.label, value: item.id }))]}
+                        className="font-bold text-slate-800"
+                    />
+                </div>
+                <div className="w-full md:w-64">
+                    <Input
+                        label="Tracking Date"
+                        type="date"
+                        value={selectedDate}
+                        onChange={(event) => setSelectedDate(event.target.value)}
+                        className="font-bold"
+                    />
+                </div>
             </div>
 
             {selectedClassId ? (
                 classStudents.length > 0 ? (
-                    <div className="rounded-2xl border border-border bg-white overflow-hidden">
-                        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 bg-slate-50">
-                            <div>
-                                <p className="text-sm font-semibold text-slate-900">Active students</p>
-                                <p className="text-xs text-slate-500">Mark each student for {selectedDate}.</p>
+                    <div className="space-y-4">
+                        {/* Summary Header */}
+                        <div className="flex items-center justify-between gap-4 flex-wrap">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-[24px]">group</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900">Roster Management</h3>
+                                    <p className="text-[11px] font-medium text-slate-500">Mark attendance for {classStudents.length} students</p>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2 text-xs text-slate-600">
-                                <span className="rounded-full bg-slate-200 px-2 py-1">Marked {markedCount}</span>
-                                <span className="rounded-full bg-emerald-100 px-2 py-1 text-emerald-700">Present {summaryCounts.present}</span>
-                                <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-700">Late {summaryCounts.late}</span>
+                            <div className="flex items-center gap-2">
+                                <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                    <span className="text-[11px] font-bold text-emerald-700">Present: {summaryCounts.present}</span>
+                                </div>
+                                <div className="px-3 py-1.5 rounded-xl bg-red-50 border border-red-100 flex items-center gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                                    <span className="text-[11px] font-bold text-red-700">Absent: {summaryCounts.absent}</span>
+                                </div>
+                                <div className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-100 flex items-center gap-2">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                    <span className="text-[11px] font-bold text-amber-700">Late: {summaryCounts.late}</span>
+                                </div>
                             </div>
                         </div>
-                        <div className="divide-y divide-border max-h-[480px] overflow-auto">
-                            {classStudents.map((student, index) => {
-                                const value = statusByStudent[student._id] ?? "present";
+
+                        {/* Student Grid/List */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {classStudents.map((student) => {
+                                const status = statusByStudent[student._id] ?? "present";
                                 return (
-                                    <div key={student._id} className={`grid gap-3 px-4 py-3 md:grid-cols-[minmax(0,1fr)_180px] ${index % 2 === 0 ? "bg-white" : "bg-slate-50/40"}`}>
-                                        <div className="min-w-0">
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-semibold text-slate-900 truncate">{student.first_name} {student.last_name}</p>
-                                                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">{student.admission_no}</span>
+                                    <div 
+                                        key={student._id} 
+                                        className={`premium-card p-4 transition-all flex flex-col gap-4 ${
+                                            status === "present" ? "hover:border-emerald-200" :
+                                            status === "absent" ? "border-red-100 bg-red-50/10" :
+                                            status === "late" ? "border-amber-100 bg-amber-50/10" : ""
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-9 w-9 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs">
+                                                {student.first_name.substring(0, 1)}{student.last_name.substring(0, 1)}
                                             </div>
-                                            <p className="text-xs text-slate-500">Student ID: {student._id}</p>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-bold text-slate-900 truncate">{student.first_name} {student.last_name}</p>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{student.admission_no}</p>
+                                            </div>
                                         </div>
-                                        <Select
-                                            value={value}
-                                            onChange={(event) => setStatusByStudent((current) => ({ ...current, [student._id]: event.target.value as AttendanceStatus }))}
-                                            options={statusOptions.map((option) => ({ label: option.label, value: option.value }))}
-                                        />
+
+                                        <div className="grid grid-cols-3 gap-2">
+                                            {[
+                                                { label: "Present", value: "present", icon: "check_circle", activeClass: "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20", inactiveClass: "bg-slate-50 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600" },
+                                                { label: "Absent", value: "absent", icon: "cancel", activeClass: "bg-red-600 text-white shadow-lg shadow-red-600/20", inactiveClass: "bg-slate-50 text-slate-500 hover:bg-red-50 hover:text-red-600" },
+                                                { label: "Late", value: "late", icon: "schedule", activeClass: "bg-amber-500 text-white shadow-lg shadow-amber-500/20", inactiveClass: "bg-slate-50 text-slate-500 hover:bg-amber-50 hover:text-amber-600" },
+                                            ].map((btn) => (
+                                                <button
+                                                    key={btn.value}
+                                                    type="button"
+                                                    onClick={() => setStatusByStudent(prev => ({ ...prev, [student._id]: btn.value as AttendanceStatus }))}
+                                                    className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all ${status === btn.value ? btn.activeClass : btn.inactiveClass}`}
+                                                >
+                                                    <span className="material-symbols-outlined text-[18px] mb-0.5">{btn.icon}</span>
+                                                    <span className="text-[9px] font-black uppercase tracking-tighter">{btn.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
                 ) : (
-                    <DataState
-                        variant="empty"
-                        title="No active students"
-                        message="This class does not have any active enrollments yet."
-                    />
+                    <div className="py-20 text-center premium-card border-dashed border-2">
+                        <div className="h-16 w-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="material-symbols-outlined text-[32px]">person_off</span>
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900">Roster Empty</h3>
+                        <p className="text-sm text-slate-500 max-w-xs mx-auto">No active students found in this class segment.</p>
+                    </div>
                 )
             ) : (
-                <DataState
-                    variant="empty"
-                    title="Pick a class"
-                    message="Select an assigned class to load its active students."
-                />
+                <div className="py-20 text-center premium-card border-dashed border-2">
+                    <div className="h-16 w-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="material-symbols-outlined text-[32px]">touch_app</span>
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900">Select Target Class</h3>
+                    <p className="text-sm text-slate-500 max-w-xs mx-auto">Initialize the roster by picking a class from the selector above.</p>
+                </div>
             )}
 
-            <div className="flex items-center justify-end gap-3 border-t border-border pt-4">
-                <Button type="submit" disabled={saving || !selectedClassId || classStudents.length === 0} className="min-w-[180px]">
-                    {saving ? "Saving attendance..." : "Save attendance"}
+            {/* Sticky Actions Footer */}
+            <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 sticky bottom-0 bg-white/80 backdrop-blur-md py-4 z-10">
+                <div className="hidden sm:flex items-center gap-4 mr-auto px-4 border-r border-slate-100">
+                    <div className="text-right">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Marking Progress</p>
+                        <p className="text-xs font-bold text-slate-700">{markedCount} / {classStudents.length} Verified</p>
+                    </div>
+                </div>
+                
+                <Button 
+                    type="submit" 
+                    disabled={saving || !selectedClassId || classStudents.length === 0} 
+                    className="min-w-[220px] h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xl shadow-blue-600/20 transition-all font-bold"
+                >
+                    {saving ? (
+                         <span className="flex items-center gap-2">
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                            Synchronizing...
+                        </span>
+                    ) : (
+                        <span className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[20px]">cloud_upload</span>
+                            Commit Attendance
+                        </span>
+                    )}
                 </Button>
             </div>
         </form>

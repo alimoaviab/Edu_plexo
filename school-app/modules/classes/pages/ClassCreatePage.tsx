@@ -48,23 +48,15 @@ export function ClassCreatePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <Link
-        href="/admin/classes"
-        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition-colors"
-      >
-        <span className="material-symbols-outlined text-lg">arrow_back</span>
-        Back to Classes
-      </Link>
+    <div className="max-w-4xl mx-auto">
+      <div className="mb-6 flex flex-col gap-1">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Initialize New Class</h2>
+        <p className="text-sm font-medium text-slate-500">
+          Set up a new classroom environment, assign faculty, and map the curriculum.
+        </p>
+      </div>
 
-      <Card>
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900">Create New Class</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Set up a new classroom and assign teachers and subjects.
-          </p>
-        </div>
-
+      <Card className="p-6 md:p-8">
         {academicYearState.status === "error" ? (
           <DataState variant="error" title="Academic years unavailable" message={academicYearState.error} />
         ) : teacherState.status === "error" ? (

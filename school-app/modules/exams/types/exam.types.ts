@@ -1,4 +1,5 @@
 export interface ExamFormInput {
+  academy_care_id: string;
   class_id: string;
   subject: string;
   title: string;

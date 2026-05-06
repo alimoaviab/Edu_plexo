@@ -70,34 +70,34 @@ export function AcademicYearEditSidebar({
 
             {/* Drawer */}
             <aside
-                className={`fixed top-0 right-0 h-screen w-full max-w-md bg-white border-l border-blue-100 shadow-xl z-50 transition-transform duration-300 ease-out transform flex flex-col ${
+                className={`fixed top-0 right-0 z-50 flex h-screen w-full max-w-md transform flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 ease-out ${
                     isOpen ? "translate-x-0" : "translate-x-full"
                 }`}
             >
                 {/* Header */}
-                <div className="px-5 py-4 border-b border-blue-100 flex items-center justify-between bg-blue-50/30">
+                <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3.5">
                     <div>
-                        <h2 className="text-lg font-bold text-black tracking-tight">Edit Academic Year</h2>
-                        <p className="text-xs text-slate-600 mt-0.5 font-medium">Update session details and status</p>
+                        <h2 className="text-[17px] font-semibold tracking-tight text-slate-950">Edit Academic Year</h2>
+                        <p className="mt-0.5 text-xs font-medium text-slate-500">Update session details and status</p>
                     </div>
                     <button
                         onClick={handleClose}
-                        className="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-blue-50 rounded-lg transition-all"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-all hover:bg-blue-50 hover:text-slate-900"
                     >
                         <span className="material-symbols-outlined text-lg">close</span>
                     </button>
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto px-5 py-4 custom-scrollbar">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="flex-1 overflow-y-auto px-5 py-3.5 custom-scrollbar">
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         {/* Basic Info */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 pb-2 border-b border-blue-100">
-                                <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center">
+                        <div className="space-y-3.5">
+                            <div className="flex items-center gap-2 border-b border-slate-200 pb-1.5">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-700">
                                     <span className="material-symbols-outlined text-base">info</span>
                                 </div>
-                                <h3 className="text-[10px] font-semibold text-slate-600 uppercase tracking-[0.14em]">General Information</h3>
+                                <h3 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">General Information</h3>
                             </div>
                             
                             <div className="space-y-4">
@@ -108,14 +108,14 @@ export function AcademicYearEditSidebar({
                                     required
                                     placeholder="e.g. 2024-2025"
                                     error={errors.year}
-                                    className="bg-white border-blue-100 focus:bg-white transition-all px-3 py-2"
+                                    className="bg-white border-slate-200 focus:bg-white transition-all px-3 py-2"
                                 />
 
-                                <div className="flex flex-col gap-2">
-                                    <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-[0.1em]">Session Status</span>
-                                    <label className={`flex items-center gap-3 h-[40px] px-3 border rounded-lg cursor-pointer transition-all duration-200 ${currentForm.is_active ? 'bg-blue-600 border-blue-600 shadow-sm text-white' : 'bg-blue-50/20 border-blue-100 hover:border-blue-300 text-slate-700'}`}>
-                                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${currentForm.is_active ? 'border-white bg-white/20' : 'border-slate-300 bg-white'}`}>
-                                            {currentForm.is_active && <span className="material-symbols-outlined text-white text-base font-black">check</span>}
+                                <div className="flex flex-col gap-1.5">
+                                    <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Session status</span>
+                                    <label className={`flex h-9 cursor-pointer items-center gap-3 rounded-lg border px-3 transition-all duration-200 ${currentForm.is_active ? 'border-blue-600 bg-blue-600 text-white shadow-sm' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-blue-300'}`}>
+                                        <div className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${currentForm.is_active ? 'border-white bg-white/15' : 'border-slate-300 bg-white'}`}>
+                                            {currentForm.is_active && <span className="material-symbols-outlined text-base font-black text-white">check</span>}
                                         </div>
                                         <input
                                             type="checkbox"
@@ -123,21 +123,21 @@ export function AcademicYearEditSidebar({
                                             onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                                             className="hidden"
                                         />
-                                        <span className="text-xs font-semibold">Set as Active Academic Year</span>
+                                        <span className="text-xs font-semibold">Set as active academic year</span>
                                     </label>
                                 </div>
                             </div>
                         </div>
 
                         {/* Dates */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 pb-2 border-b border-blue-100">
-                                <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center">
+                        <div className="space-y-3.5">
+                            <div className="flex items-center gap-2 border-b border-slate-200 pb-1.5">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-700">
                                     <span className="material-symbols-outlined text-base">calendar_today</span>
                                 </div>
-                                <h3 className="text-[10px] font-semibold text-slate-600 uppercase tracking-[0.14em]">Duration</h3>
+                                <h3 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Duration</h3>
                             </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                                 <Input
                                     label="Start Date"
                                     type="date"
@@ -145,7 +145,7 @@ export function AcademicYearEditSidebar({
                                     onChange={(e) => setForm({ ...form, start_date: e.target.value })}
                                     error={errors.start_date}
                                     required
-                                    className="bg-white border-blue-100 focus:bg-white transition-all px-3 py-2"
+                                    className="bg-white border-slate-200 focus:bg-white transition-all px-3 py-2"
                                 />
                                 <Input
                                     label="End Date"
@@ -154,42 +154,42 @@ export function AcademicYearEditSidebar({
                                     onChange={(e) => setForm({ ...form, end_date: e.target.value })}
                                     error={errors.end_date}
                                     required
-                                    className="bg-white border-blue-100 focus:bg-white transition-all px-3 py-2"
+                                    className="bg-white border-slate-200 focus:bg-white transition-all px-3 py-2"
                                 />
                             </div>
                         </div>
 
                         {/* Notes */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 pb-2 border-b border-blue-100">
-                                <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center">
+                        <div className="space-y-3.5">
+                            <div className="flex items-center gap-2 border-b border-slate-200 pb-1.5">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-50 text-blue-700">
                                     <span className="material-symbols-outlined text-base">notes</span>
                                 </div>
-                                <h3 className="text-[10px] font-semibold text-slate-600 uppercase tracking-[0.14em]">Additional Notes</h3>
+                                <h3 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">Additional Notes</h3>
                             </div>
                             <Input
                                 label="Description"
                                 value={currentForm.description || ""}
                                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                                 placeholder="Notes about this session..."
-                                className="bg-white border-blue-100 focus:bg-white transition-all px-3 py-2"
+                                className="bg-white border-slate-200 focus:bg-white transition-all px-3 py-2"
                             />
                         </div>
                     </form>
                 </div>
 
                 {/* Footer */}
-                <div className="px-5 py-4 border-t border-blue-100 bg-white/95 backdrop-blur-sm flex items-center gap-3">
+                <div className="flex items-center gap-3 border-t border-slate-200 bg-white/95 px-5 py-3.5 backdrop-blur-sm">
                     <button
                         onClick={handleClose}
-                        className="flex-1 px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors uppercase tracking-[0.12em]"
+                        className="flex-1 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600 transition-colors hover:text-slate-900"
                     >
                         Cancel
                     </button>
                     <Button
                         onClick={() => void handleSubmit()}
                         disabled={isSaving || !currentForm.year || !currentForm.start_date || !currentForm.end_date}
-                        className="flex-[2] py-2.5 h-auto text-xs font-semibold rounded-lg shadow-sm active:scale-[0.98] transition-all"
+                        className="flex-[2] h-auto rounded-lg py-2 text-[10px] font-semibold shadow-sm transition-all active:scale-[0.98]"
                     >
                         {isSaving ? (
                             <div className="flex items-center gap-2">
