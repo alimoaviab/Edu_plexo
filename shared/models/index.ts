@@ -23,3 +23,5 @@ export * from "./sync-job.model";
 export * from "./teacher.model";
 export * from "./timetable.model";
 export * from "./user.model";
+export * from "./live/live-class.model";
+export * from "./live/live-attendance.model";
