@@ -16,10 +16,22 @@ export class ProviderManager {
       this.providers.set(
         "gemini",
         new ChatGoogleGenerativeAI({
-          model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
+          model: process.env.GEMINI_MODEL || "gemini-3.1-flash-lite",
+          temperature: 0.2,
+          maxRetries: 3,
+          apiKey: process.env.GEMINI_API_KEY,
+          apiVersion: "v1beta",
+        })
+      );
+      
+      this.providers.set(
+        "gemini-pro",
+        new ChatGoogleGenerativeAI({
+          model: "gemini-3.1-pro",
           temperature: 0.2,
           maxRetries: 2,
           apiKey: process.env.GEMINI_API_KEY,
+          apiVersion: "v1beta",
         })
       );
     }
@@ -56,11 +68,11 @@ export class ProviderManager {
     const preferences: AIProviderName[] = [];
 
     if (complexity === "complex") {
-      preferences.push("openai", "grok", "gemini");
+      preferences.push("openai", "grok", "gemini-pro", "gemini");
     } else if (complexity === "simple") {
-      preferences.push("gemini", "grok", "openai");
+      preferences.push("gemini", "gemini-pro", "grok", "openai");
     } else {
-      preferences.push("gemini", "openai", "grok");
+      preferences.push("gemini", "gemini-pro", "openai", "grok");
     }
 
     // We would do healthchecks or fallback routing.
