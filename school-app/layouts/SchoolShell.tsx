@@ -199,6 +199,7 @@ export function SchoolShell({
   const [academyYears, setAcademyYears] = useState<Array<{ _id: string; year: string; is_active: boolean }>>([]);
   const [selectedAcademyCareId, setSelectedAcademyCareIdState] = useState<string>("");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   const navGroups = useMemo(() => {
     if (!user) return [];
@@ -291,8 +292,6 @@ export function SchoolShell({
   }
 
   const sidebarWidth = isCollapsed ? "w-16" : "w-60";
-
-  const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   const toggleGroup = (label: string) => {
     setExpandedGroups(prev => ({
