@@ -186,15 +186,10 @@ export function ClassListPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200/60 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-             <span className="material-symbols-outlined text-[24px]">school</span>
-          </div>
-          <div>
-            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Section Overview</p>
-            <p className="text-sm font-bold text-slate-500">Manage all classrooms and sections</p>
-          </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold tracking-tight text-slate-950">Classes</h2>
+          <p className="text-sm text-slate-600">Manage all classrooms and sections</p>
         </div>
         <div className="flex gap-3">
           <button
@@ -256,100 +251,85 @@ export function ClassListPage() {
           </div>
         }
       />
+
       {(state.data || []).length === 0 ? (
         <DataState variant="empty" title="No classes found" message="Get started by creating your first class." />
       ) : filteredRows.length === 0 ? (
         <DataState variant="empty" title="No matching classes" message="Try adjusting search or status filters." />
       ) : (
         viewMode === "grid" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredRows.map((row) => (
-              <div
-                key={row._id}
-                className="premium-card group transition-all hover:border-blue-300 flex flex-col"
-              >
-                <div className="p-4 flex-1">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform">
-                        <span className="material-symbols-outlined text-[24px]">groups</span>
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-[15px] font-bold text-slate-900 leading-tight truncate">{row.name}</h3>
-                        <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mt-0.5">{row.academy_care_year || "Current Session"}</p>
-                      </div>
-                    </div>
-                    <Badge variant={row.status === "active" ? "success" : "gray"} className="capitalize px-2 py-0.5 text-[9px] font-black tracking-widest">
-                      {row.status}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="flex flex-col gap-1">
-                        <div className="flex items-center justify-between">
-                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Enrollment</span>
-                           <span className="text-[10px] font-black text-slate-900">{row.student_count || 0}</span>
-                        </div>
-                        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-                           <div className="h-full bg-blue-500" style={{ width: `${Math.min(((row.student_count || 0) / 40) * 100, 100)}%` }} />
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                        <div className="flex items-center justify-between">
-                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Attendance</span>
-                           <span className="text-[10px] font-black text-emerald-600">{row.attendance_percentage || 0}%</span>
-                        </div>
-                        <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-                           <div className="h-full bg-emerald-500" style={{ width: `${row.attendance_percentage || 0}%` }} />
-                        </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 mb-4">
-                    <div className="flex flex-wrap gap-1">
-                        {row.subjects.slice(0, 4).map((s) => (
-                          <span key={s} className="px-2 py-0.5 rounded-lg bg-slate-50 text-slate-600 text-[9px] font-bold border border-slate-100">{s}</span>
-                        ))}
-                        {row.subjects.length > 4 && (
-                          <span className="px-2 py-0.5 rounded-lg bg-white text-slate-400 text-[9px] font-bold border border-slate-100">+{row.subjects.length - 4}</span>
-                        )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-blue-50/50 transition-colors">
-                  <div className="flex items-center gap-1">
-                    <Link
-                        href={`/admin/timetable?class_id=${row._id}`}
-                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg transition-all shadow-sm shadow-transparent hover:shadow-slate-200/50"
-                        title="Schedule"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">calendar_month</span>
-                      </Link>
-                      <button
-                        onClick={() => setEditingClass(row)}
-                        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-white rounded-lg transition-all shadow-sm shadow-transparent hover:shadow-slate-200/50"
-                        title="Edit"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">edit</span>
-                      </button>
-                  </div>
-                  <button
-                    onClick={async () => {
-                      if (window.confirm(`Are you sure you want to delete ${row.name}?`)) {
-                        const result = await deleteClass(row._id);
-                        if (result.ok) showToast(`${row.name} archived.`, "success");
-                      }
-                    }}
-                    className="p-1.5 text-slate-300 hover:text-red-600 transition-colors"
-                    title="Archive"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">archive</span>
-                  </button>
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredRows.map((row) => (
+            <div
+              key={row._id}
+              className="premium-card p-3.5"
+            >
+              <div className="mb-3">
+                <h3 className="text-base font-semibold tracking-tight text-slate-950">{row.name}</h3>
+                <p className="mt-1 text-sm text-slate-600">{row.description || "No description"}</p>
               </div>
-            ))}
-          </div>
+
+              <div className="mb-4 space-y-2.5 text-sm">
+                <div>
+                  <span className="text-slate-500">Academic Year:</span>
+                  <p className="font-medium text-slate-900">{row.academy_care_year || row.academy_care_id || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-slate-500">Room:</span>
+                  <p className="font-medium text-slate-900">{row.room_number || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-slate-500">Status:</span>
+                  <p className="font-medium capitalize text-slate-900">{row.status}</p>
+                </div>
+                {row.subjects && row.subjects.length > 0 && (
+                  <div>
+                    <span className="text-slate-500">Subjects:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {row.subjects.slice(0, 2).map((s) => (
+                        <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
+                      ))}
+                      {row.subjects.length > 2 && (
+                        <Badge variant="secondary" className="text-[10px]">+{row.subjects.length - 2}</Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Link
+                  href={`/admin/timetable?class_id=${row._id}`}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-50 px-2.5 py-1.5 text-xs font-semibold text-green-600 transition-colors hover:bg-green-100"
+                >
+                  <span className="material-symbols-outlined text-base">schedule</span>
+                  Timetable
+                </Link>
+                <button
+                  onClick={() => setEditingClass(row)}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-100"
+                >
+                  <span className="material-symbols-outlined text-base">edit</span>
+                  Edit
+                </button>
+                <button
+                  onClick={async () => {
+                    if (window.confirm(`Delete ${row.name}?`)) {
+                      const result = await deleteClass(row._id);
+                      if (!result.ok) {
+                        showToast(result.error.message || "Failed to delete", "error");
+                      }
+                    }
+                  }}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100"
+                >
+                  <span className="material-symbols-outlined text-base">delete</span>
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
         ) : (
           <DataTable
             columns={columns}

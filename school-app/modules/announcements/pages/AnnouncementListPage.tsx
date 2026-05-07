@@ -141,102 +141,38 @@ export function AnnouncementListPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-slate-950">Notice Board</h2>
-          <p className="text-sm font-medium text-slate-500">Institutional broadcast control and audience outreach</p>
+          <h2 className="text-base font-semibold tracking-tight text-slate-950">Announcements</h2>
+          <p className="text-sm text-slate-600">School-wide announcements and notices</p>
         </div>
         {!pathname.includes("/parent") && (
           <Link
             href={pathname.includes("/teacher") ? "/teacher/announcements/create" : "/admin/announcements/create"}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all hover:shadow-lg hover:shadow-blue-600/25 active:scale-[0.98]"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all hover:shadow-lg hover:shadow-blue-600/25 active:scale-[0.98]"
           >
-            <span className="material-symbols-outlined text-lg">campaign</span>
-            New Notice
+            <span className="material-symbols-outlined text-lg">add</span>
+            New Announcement
           </Link>
         )}
       </div>
 
-      {(state.data || []).length === 0 ? (
-        <DataState variant="empty" title="No notices found" message="Keep the community informed by creating your first broadcast." />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {(state.data || []).map((row, index) => (
-            <div
-              key={isValidObjectId(row._id) ? row._id : `${row.title}-${index}`}
-              className="premium-card group transition-all hover:border-blue-300 flex flex-col"
-            >
-              <div className="p-4 flex-1">
-                <div className="flex items-center justify-between mb-3">
-                   <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-[0.15em] border ${
-                      row.priority === 'urgent' ? 'bg-red-50 text-red-600 border-red-100' :
-                      row.priority === 'high' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                      'bg-slate-50 text-slate-500 border-slate-100'
-                   }`}>
-                      {row.priority}
-                   </div>
-                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {!pathname.includes("/parent") && (
-                        <>
-                          <button 
-                            onClick={async () => {
-                              const status = window.prompt("Status (draft/published/archived)", row.status)?.trim();
-                              if (status) await updateAnnouncement(row._id, { status: status as any });
-                            }}
-                            className="p-1 text-slate-400 hover:text-blue-600"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">edit_note</span>
-                          </button>
-                          <button 
-                            onClick={async () => {
-                              if (window.confirm(`Delete notice?`)) await deleteAnnouncement(row._id);
-                            }}
-                            className="p-1 text-slate-400 hover:text-red-600"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">delete</span>
-                          </button>
-                        </>
-                      )}
-                   </div>
-                </div>
-
-                <h3 className="text-[15px] font-bold text-slate-900 leading-tight mb-2 line-clamp-2">{row.title}</h3>
-                <p className="text-[12px] text-slate-600 line-clamp-3 mb-4 leading-relaxed font-medium">
-                  {row.content}
-                </p>
-
-                <div className="flex items-center gap-2 mt-auto pt-3 border-t border-slate-50">
-                   <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                      <span className="material-symbols-outlined text-[14px]">
-                        {row.target_type === 'all' ? 'public' : row.target_type === 'teachers' ? 'badge' : 'person'}
-                      </span>
-                   </div>
-                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{row.target_type}</span>
-                   <div className="ml-auto flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[14px] text-slate-300">calendar_today</span>
-                      <span className="text-[10px] font-bold text-slate-400 tabular-nums">
-                        {row.created_at ? new Date(row.created_at).toLocaleDateString() : "—"}
-                      </span>
-                   </div>
-                </div>
-              </div>
-              
-              <div className="px-4 py-2 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between">
-                 <span className={`text-[9px] font-black uppercase tracking-widest ${
-                    row.status === 'published' ? 'text-emerald-600' : 'text-amber-600'
-                 }`}>
-                    {row.status}
-                 </span>
-                 <button className="text-[10px] font-black text-blue-600 hover:underline flex items-center gap-1">
-                    Read More
-                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                 </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        rows={state.data || []}
+        rowKey={(row, index) => (isValidObjectId(row._id) ? row._id : `${row.title}-${index}`)}
+        searchable
+        searchKeys={["title", "content", "target_type", "status", "priority"]}
+        sortable
+        paginated={10}
+        rowActions={pathname.includes("/parent") ? rowActions.filter(a => a.label === "View Details") : rowActions}
+        emptyState={{
+          title: "No announcements",
+          description: "Create your first announcement.",
+          action: { label: "New Announcement", href: pathname.includes("/teacher") ? "/teacher/announcements/create" : "/admin/announcements/create" },
+        }}
+      />
     </div>
   );
 }
