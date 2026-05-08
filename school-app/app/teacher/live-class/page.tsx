@@ -2,14 +2,46 @@
 
 import Link from "next/link";
 import { SchoolShell } from "../../../layouts/SchoolShell";
+import { LiveClassList } from "../../../components/live-classes/LiveClassList";
+import { CreateLiveClassModal } from "../../../components/live-classes/CreateLiveClassModal";
+import { useState, useEffect } from "react";
 
 const stats = [
-  { title: "My Live Classes", value: "0", detail: "Classes scheduled", icon: "video_camera_back", tone: "text-sky-700" },
-  { title: "Today", value: "0", detail: "Active sessions", icon: "today", tone: "text-emerald-700" },
-  { title: "Participants", value: "0", detail: "Joined students", icon: "groups", tone: "text-violet-700" },
+  { title: "My Live Classes", value: "-", detail: "Classes scheduled", icon: "video_camera_back", tone: "text-sky-700" },
+  { title: "Today", value: "-", detail: "Active sessions", icon: "today", tone: "text-emerald-700" },
+  { title: "Participants", value: "-", detail: "Joined students", icon: "groups", tone: "text-violet-700" },
 ];
 
 export default function TeacherLiveClassPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [listKey, setListKey] = useState(0); // To force refresh list
+  const [classesData, setClassesData] = useState([]);
+  const [subjectsData, setSubjectsData] = useState([]);
+
+  useEffect(() => {
+    // Fetch filter data for modal
+    const fetchFormData = async () => {
+      try {
+        const [classesRes, subjectsRes] = await Promise.all([
+          fetch("/api/school/my-classes"), // or teacher/classes depending on exact API layout
+          fetch("/api/school/subjects")
+        ]);
+
+        if (classesRes.ok) {
+          const data = await classesRes.json();
+          setClassesData(data.data || []);
+        }
+        if (subjectsRes.ok) {
+           const data = await subjectsRes.json();
+           setSubjectsData(data.data || []);
+        }
+      } catch (e) {
+        console.error("Failed to load form data", e);
+      }
+    };
+    fetchFormData();
+  }, []);
+
   return (
     <SchoolShell title="Live Classes" eyebrow="Teacher">
       <div className="space-y-8">
@@ -49,61 +81,58 @@ export default function TeacherLiveClassPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
           <div className="rounded-[2rem] border border-slate-200/70 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3 mb-6">
               <div>
                 <h2 className="text-xl font-bold text-slate-900">Upcoming live classes</h2>
                 <p className="mt-1 text-sm text-slate-500">Scheduled sessions for today and this week.</p>
               </div>
-              <Link
-                href="/teacher/live-class"
+              <button
+                onClick={() => setListKey(prev => prev + 1)}
                 className="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
               >
                 Refresh
-              </Link>
+              </button>
             </div>
-            <div className="mt-6 space-y-4">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="rounded-3xl border border-slate-200 p-4 shadow-sm">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-semibold text-slate-900">No sessions scheduled</p>
-                      <p className="text-sm text-slate-500">Add a live class to see it here.</p>
-                    </div>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase text-slate-600">Pending</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+
+            <LiveClassList key={listKey} role="TEACHER" />
           </div>
 
           <div className="space-y-6">
             <div className="rounded-[2rem] border border-slate-200/70 bg-white p-6 shadow-sm">
               <h2 className="text-xl font-bold text-slate-900">Quick actions</h2>
               <div className="mt-5 space-y-3">
-                {[
-                  ["Create Live Class", "/teacher/live-class", "add_circle"],
-                  ["View Timetable", "/teacher/timetable", "schedule"],
-                  ["My Classes", "/teacher/classes", "groups"],
-                ].map(([label, href, icon]) => (
-                  <Link
-                    key={href as string}
-                    href={href as string}
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="w-full flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-4 text-sm font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
+                  >
+                    <span>Create Live Class</span>
+                    <span className="material-symbols-outlined text-slate-400">add_circle</span>
+                </button>
+                <Link
+                    href="/teacher/timetable"
                     className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-4 text-sm font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
                   >
-                    <span>{label}</span>
-                    <span className="material-symbols-outlined text-slate-400">{icon}</span>
-                  </Link>
-                ))}
+                    <span>View Timetable</span>
+                    <span className="material-symbols-outlined text-slate-400">schedule</span>
+                </Link>
               </div>
             </div>
 
             <div className="rounded-[2rem] border border-slate-200/70 bg-white p-6 shadow-sm">
               <h2 className="text-xl font-bold text-slate-900">Notes</h2>
-              <p className="mt-3 text-sm text-slate-500">Live classes are best when you prepare the lesson plan and confirm attendance before session start.</p>
+              <p className="mt-3 text-sm text-slate-500">Live classes are automatically integrated with Google Meet. Links are generated for you and your students upon creation.</p>
             </div>
           </div>
         </div>
       </div>
+
+      <CreateLiveClassModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => setListKey(prev => prev + 1)}
+        classes={classesData}
+        subjects={subjectsData}
+      />
     </SchoolShell>
   );
 }

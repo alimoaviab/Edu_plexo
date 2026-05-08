@@ -1,36 +1,41 @@
-import { ServiceResult } from "@edu/shared/types/core";
+import { ServiceResult, ServiceError } from "@edu/shared/types/core";
 
-export async function serviceRequest<T>(
-  url: string,
-  options: RequestInit = {},
-  retries = 2
-): Promise<ServiceResult<T>> {
-  let lastError: unknown;
+export async function fetchFromService<T>(url: string, options?: RequestInit): Promise<ServiceResult<T>> {
+  try {
+    const res = await fetch(url, options);
+    const json = await res.json();
 
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          "content-type": "application/json",
-          ...(options.headers ?? {})
-        }
-      });
-      return (await response.json()) as ServiceResult<T>;
-    } catch (error) {
-      lastError = error;
+    if (res.ok) {
+      return {
+        ok: true,
+        success: true,
+        data: json.data as T,
+        message: json.message,
+      };
     }
+
+    return {
+      ok: false,
+      success: false,
+      error: {
+        code: json.error?.code || "UNKNOWN",
+        message: json.error?.message || json.message || "An error occurred",
+        status: res.status,
+      },
+      message: json.message || "An error occurred",
+    };
+  } catch (error: any) {
+    return {
+      ok: false,
+      success: false,
+      error: {
+        code: "NETWORK_ERROR",
+        message: error.message,
+        status: 500,
+      },
+      message: error.message,
+    };
   }
-
-  return {
-    ok: false,
-    success: false,
-    message: "The request could not be completed. Check your connection and retry.",
-    error: {
-      code: "NETWORK_ERROR",
-      message: "The request could not be completed. Check your connection and retry.",
-      status: 503,
-      details: lastError
-    }
-  };
 }
+
+export const serviceRequest = fetchFromService;
