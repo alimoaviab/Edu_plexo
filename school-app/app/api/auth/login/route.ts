@@ -46,7 +46,14 @@ export async function POST(request: NextRequest) {
             .select("_id school_id role permissions email password_hash status")
             .lean()) as LoginUser | null;
 
-        if (!user || !verifyPassword(password, user.password_hash)) {
+        // Dummy hash to prevent timing attacks for user enumeration
+        const dummyHash = "db58233e04d4954dfde648a01b528928:5b81562a6b96ea010094a78f0269f1871008e9f49b3d2e231a16d8571aeda4df39a2559d1ad79f64f5c319cbba3dac110a00b564cc1cb42fb686a7bf5b872207";
+
+        const isValidPassword = user
+            ? verifyPassword(password, user.password_hash)
+            : verifyPassword(password, dummyHash);
+
+        if (!user || !isValidPassword) {
             return NextResponse.json(
                 { message: "Invalid email or password" },
                 { status: 401 }
