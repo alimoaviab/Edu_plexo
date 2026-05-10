@@ -17,6 +17,7 @@
     "bail": "^2.0.2",
     "devlop": "^1.1.0",
     "extend": "^3.0.2",
+    "framer-motion": "^12.38.0",
     "googleapis": "^171.4.0",
     "hast-util-to-jsx-runtime": "^2.3.6",
     "html-url-attributes": "^3.0.1",
