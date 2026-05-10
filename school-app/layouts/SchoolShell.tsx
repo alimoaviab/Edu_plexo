@@ -29,7 +29,6 @@ const adminNavGroups: NavGroup[] = [
     items: [
       { label: "Academic Years", href: "/admin/academic-years", icon: "calendar_month" },
       { label: "Classes", href: "/admin/classes", icon: "groups" },
-      { label: "Subjects", href: "/admin/subjects", icon: "menu_book" },
       { label: "Timetable", href: "/admin/timetable", icon: "schedule" },
       { label: "Attendance", href: "/admin/attendance", icon: "fact_check" },
       { label: "Exams", href: "/admin/exams", icon: "quiz" },

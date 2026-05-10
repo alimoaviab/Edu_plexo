@@ -39,21 +39,10 @@ export async function listStudents(
     const classIds = await resolveClassIdsForAcademyCare(ctx, filter.academy_care_id);
     const query = tenantFilter(ctx, {
       ...(filter.status ? { status: filter.status } : {}),
-      ...(filter.class_id ? { class_id: new Types.ObjectId(filter.class_id) } : {}),
       class_id: filter.class_id ? new Types.ObjectId(filter.class_id) : { $in: classIds }
     });
 
-    const filtered = await StudentModel.find(query).sort({ last_name: 1, first_name: 1 }).lean();
-
-    if ((filter.academy_care_id || classIds.length > 0) && filtered.length === 0) {
-      return StudentModel.find(tenantFilter(ctx, {
-        ...(filter.status ? { status: filter.status } : {})
-      }))
-        .sort({ last_name: 1, first_name: 1 })
-        .lean();
-    }
-
-    return filtered;
+    return StudentModel.find(query).sort({ last_name: 1, first_name: 1 }).lean();
   });
 }
 

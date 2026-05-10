@@ -6,14 +6,7 @@ export function listClasses() {
     const query = getAcademyCareQuery();
 
     return (async () => {
-        const filtered = await serviceRequest<ClassRow[]>(`/api/classes${query}`);
-
-        if (!query || !filtered.ok || (filtered.data ?? []).length > 0) {
-            return filtered;
-        }
-
-        // Fallback: selected year may be stale in localStorage; load all classes.
-        return serviceRequest<ClassRow[]>("/api/classes");
+    return serviceRequest<ClassRow[]>(`/api/classes${query}`);
     })();
 }
 

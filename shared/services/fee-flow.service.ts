@@ -773,8 +773,15 @@ export async function listMonthlyFees(ctx: RequestContext, filters: unknown): Pr
         assertPermission(ctx, "fees", "view");
 
         const parsed = feeFilterSchema.parse(filters ?? {});
+        const academyCareId = (filters as any).academy_care_id;
+        const resolvedYearId = await resolveAcademicYearId(ctx, academyCareId);
+
         const query: Record<string, unknown> = tenantFilter(ctx);
-        if (parsed.class_id) query.class_id = parsed.class_id;
+        if (resolvedYearId) {
+            query.academic_year_id = new Types.ObjectId(resolvedYearId);
+        }
+
+        if (parsed.class_id) query.class_id = new Types.ObjectId(parsed.class_id);
         if (parsed.month) query.month = parsed.month.toLowerCase();
         if (parsed.year) query.year = parsed.year;
         if (parsed.status) query.status = parsed.status;

@@ -6,16 +6,19 @@ import { ServiceResult } from "@edu/shared/types/core";
 import { ExamFormInput, ExamOption } from "../types/exam.types";
 
 export function ExamForm({
-  classOptions,
+  classes,
+  allSubjects,
   onCreate
 }: {
-  classOptions: ExamOption[];
+  classes: any[];
+  allSubjects: any[];
   onCreate: (input: ExamFormInput) => Promise<ServiceResult<unknown>>;
 }) {
     const [form, setForm] = useState<ExamFormInput>({
         academy_care_id: typeof window !== "undefined" ? window.localStorage.getItem("academy_care_id") || "" : "",
-        class_id: classOptions[0]?.id ?? "",
+        class_id: "",
         subject: "",
+        teacher_id: "",
         title: "",
         starts_at: "",
         max_marks: 100,
@@ -25,11 +28,22 @@ export function ExamForm({
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
+    // Derive options based on selection
+    const selectedClass = classes.find(c => c.id === form.class_id || c._id === form.class_id);
+    
+    // INTERSECTION LOGIC: Only show subjects that exist in both the class AND the global subjects list
+    // This removes the "Static" subjects (Mathematics, etc.) unless the user actually added them.
+    const availableSubjects = (selectedClass?.subjects || []).map((s: any) => {
+        const subjectName = typeof s === 'string' ? s : s.name;
+        return allSubjects.find(as => as.name === subjectName || as._id === s.id);
+    }).filter(Boolean); // Filter out subjects not found in the database
+    const classTeacher = selectedClass?.class_teacher;
+
     function validate() {
         const newErrors: Record<string, string> = {};
         if (!form.title.trim()) newErrors.title = "Exam title is required";
-        if (!form.subject.trim()) newErrors.subject = "Subject is required";
         if (!form.class_id.trim()) newErrors.class_id = "Class is required";
+        if (!form.subject.trim()) newErrors.subject = "Subject is required";
         if (!form.starts_at) newErrors.starts_at = "Date is required";
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -44,8 +58,9 @@ export function ExamForm({
             if (result.ok) {
                 setForm({
                     academy_care_id: typeof window !== "undefined" ? window.localStorage.getItem("academy_care_id") || "" : "",
-                    class_id: classOptions[0]?.id ?? "",
+                    class_id: "",
                     subject: "",
+                    teacher_id: "",
                     title: "",
                     starts_at: "",
                     max_marks: 100,
@@ -60,26 +75,37 @@ export function ExamForm({
 
     return (
         <form onSubmit={handleSubmit} className="space-y-10">
-            {/* Section: Basic Details */}
+            {/* Section: Academic Context */}
             <section className="space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                        <span className="material-symbols-outlined text-[24px]">description</span>
+                        <span className="material-symbols-outlined text-[24px]">school</span>
                     </div>
                     <div>
-                        <h3 className="text-[15px] font-bold text-slate-900">Exam Details</h3>
-                        <p className="text-[11px] font-medium text-slate-400">Define the assessment title and academic subject</p>
+                        <h3 className="text-[15px] font-bold text-slate-900">Academic Context</h3>
+                        <p className="text-[11px] font-medium text-slate-400">Select target class and associated curriculum subject</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Input
-                        label="Examination Title"
-                        placeholder="e.g., Q1 Periodical Assessment"
-                        value={form.title}
-                        onChange={(e) => setForm({ ...form, title: e.target.value })}
-                        error={errors.title}
-                        className="font-bold text-slate-800"
+                    <Select
+                        label="Target Class"
+                        value={form.class_id}
+                        onChange={(e) => {
+                            const classId = e.target.value;
+                            const cls = classes.find(c => c.id === classId || c._id === classId);
+                            setForm({ 
+                                ...form, 
+                                class_id: classId, 
+                                subject: "", // Reset subject on class change
+                                teacher_id: cls?.class_teacher?.id || "" // Auto-assign class teacher
+                            });
+                        }}
+                        options={[
+                            { label: "Select target class", value: "" },
+                            ...classes.map(o => ({ label: o.name, value: o.id || o._id }))
+                        ]}
+                        error={errors.class_id}
                         required
                     />
 
@@ -89,42 +115,54 @@ export function ExamForm({
                         onChange={(e) => setForm({ ...form, subject: e.target.value })}
                         options={[
                             { label: "Select subject", value: "" },
-                            { label: "Mathematics", value: "Mathematics" },
-                            { label: "English", value: "English" },
-                            { label: "Science", value: "Science" },
-                            { label: "History", value: "History" },
-                            { label: "Geography", value: "Geography" },
-                            { label: "Physics", value: "Physics" },
-                            { label: "Chemistry", value: "Chemistry" }
+                            ...availableSubjects.map((s: any) => ({ 
+                                label: typeof s === 'string' ? s : s.name, 
+                                value: typeof s === 'string' ? s : s.name 
+                            }))
                         ]}
+                        disabled={!form.class_id}
                         error={errors.subject}
                         required
+                        placeholder={!form.class_id ? "Select class first" : "Choose subject"}
                     />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Assigned Examiner</label>
+                        <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/50">
+                            <div className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-black text-white">
+                                {classTeacher?.name?.substring(0, 1) || "?"}
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-xs font-bold text-slate-900">{classTeacher?.name || "Unassigned"}</p>
+                                <p className="text-[10px] text-slate-400 font-medium">Primary Faculty Head</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            {/* Section: Logistics */}
+            {/* Section: Basic Details */}
             <section className="space-y-6">
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                        <span className="material-symbols-outlined text-[24px]">event_note</span>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                        <span className="material-symbols-outlined text-[24px]">description</span>
                     </div>
                     <div>
-                        <h3 className="text-[15px] font-bold text-slate-900">Logistics & Schedule</h3>
-                        <p className="text-[11px] font-medium text-slate-400">Set the target class and examination date</p>
+                        <h3 className="text-[15px] font-bold text-slate-900">Exam Details</h3>
+                        <p className="text-[11px] font-medium text-slate-400">Define the assessment title and instructions</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Select
-                        label="Target Class"
-                        value={form.class_id}
-                        onChange={(e) => setForm({ ...form, class_id: e.target.value })}
-                        options={[
-                            { label: "Select target class", value: "" },
-                            ...classOptions.map(o => ({ label: o.label, value: o.id }))
-                        ]}
-                        error={errors.class_id}
+                    <Input
+                        label="Examination Title"
+                        placeholder="e.g., Mid-Term Mathematics Assessment"
+                        value={form.title}
+                        onChange={(e) => setForm({ ...form, title: e.target.value })}
+                        error={errors.title}
+                        className="font-bold text-slate-800"
                         required
                     />
 

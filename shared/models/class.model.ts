@@ -5,10 +5,19 @@ const classSchema = new Schema(
   {
     school_id: tenantField,
     name: requiredString,
+    code: { type: String, trim: true, default: "" },
+    display_order: { type: Number, default: 1 },
+    passing_percentage: { type: Number, default: 33 },
     capacity: { type: Number, min: 0, default: 0 },
     academy_care_id: { type: Types.ObjectId, ref: "AcademicYear", required: true, index: true },
     subject_ids: [{ type: Types.ObjectId, ref: "Subject", index: true }],
-    subjects: [{ type: String, trim: true }], // Keep for backward compatibility, will be deprecated
+    subjects: [
+      {
+        name: { type: String, trim: true },
+        total_marks: { type: Number, default: 100 },
+        passing_marks: { type: Number, default: 33 }
+      }
+    ],
     grade: { type: String, trim: true, default: "" },
     section: { type: String, trim: true, default: "" },
     academic_year: { type: String, trim: true, default: "" },

@@ -7,6 +7,7 @@ const examSchema = new Schema(
     name: { type: String, trim: true, default: "" },
     exam_type: { type: String, trim: true, default: "written", index: true },
     class_id: { type: Types.ObjectId, ref: "Class", index: true },
+    teacher_id: { type: Types.ObjectId, ref: "Teacher", index: true },
     class_ids: [{ type: Types.ObjectId, ref: "Class", index: true }],
     academic_year_id: { type: Types.ObjectId, ref: "AcademicYear", index: true },
     subject: { type: String, trim: true, default: "" },

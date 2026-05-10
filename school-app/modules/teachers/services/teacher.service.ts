@@ -6,13 +6,7 @@ export function listTeachers() {
     const query = getAcademyCareQuery();
 
     return (async () => {
-        const filtered = await serviceRequest<TeacherRow[]>(`/api/teachers${query}`);
-
-        if (!query || !filtered.ok || (filtered.data ?? []).length > 0) {
-            return filtered;
-        }
-
-        return serviceRequest<TeacherRow[]>("/api/teachers");
+    return serviceRequest<TeacherRow[]>(`/api/teachers${query}`);
     })();
 }
 

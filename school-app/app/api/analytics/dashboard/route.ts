@@ -19,11 +19,13 @@ export async function GET(request: NextRequest) {
   try {
     await connectDb();
     const ctx = authenticateRequest(sessionRequest(request), "school");
+    const { searchParams } = new URL(request.url);
+    const academy_care_id = searchParams.get("academy_care_id") || undefined;
     
-    const overview = await DashboardAnalyticsService.getOverviewStats(ctx.school_id);
-    const trends = await DashboardAnalyticsService.getAttendanceTrends(ctx.school_id);
-    const alerts = await DashboardAnalyticsService.getSystemAlerts(ctx.school_id);
-    const classAttendance = await DashboardAnalyticsService.getClassAttendance(ctx.school_id);
+    const overview = await DashboardAnalyticsService.getOverviewStats(ctx, academy_care_id);
+    const trends = await DashboardAnalyticsService.getAttendanceTrends(ctx, academy_care_id);
+    const alerts = await DashboardAnalyticsService.getSystemAlerts(ctx, academy_care_id);
+    const classAttendance = await DashboardAnalyticsService.getClassAttendance(ctx, academy_care_id);
 
     return NextResponse.json(ok({
       overview,

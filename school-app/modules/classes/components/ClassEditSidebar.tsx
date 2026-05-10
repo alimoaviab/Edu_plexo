@@ -32,9 +32,13 @@ export function ClassEditSidebar({
 
     const currentForm = {
         name: form.name ?? classItem.name ?? "",
+        code: form.code ?? classItem.code ?? "",
+        display_order: form.display_order ?? classItem.display_order ?? 1,
+        passing_percentage: form.passing_percentage ?? classItem.passing_percentage ?? 33,
         academy_care_id: form.academy_care_id ?? classItem.academy_care_id ?? "",
         teacher_ids: form.teacher_ids ?? classItem.teacher_ids ?? [],
         subjects: form.subjects ?? classItem.subjects ?? [],
+        grade_thresholds: form.grade_thresholds ?? classItem.grade_thresholds ?? [],
         room_number: form.room_number ?? classItem.room_number ?? "",
         description: form.description ?? classItem.description ?? "",
     };
@@ -53,9 +57,13 @@ export function ClassEditSidebar({
         if (!validate() || !classItem) return;
         await onSave(classItem._id, {
             name: currentForm.name,
+            code: currentForm.code,
+            display_order: currentForm.display_order,
+            passing_percentage: currentForm.passing_percentage,
             academy_care_id: currentForm.academy_care_id,
             teacher_ids: currentForm.teacher_ids,
             subjects: currentForm.subjects,
+            grade_thresholds: currentForm.grade_thresholds,
             room_number: currentForm.room_number,
             description: currentForm.description,
         });

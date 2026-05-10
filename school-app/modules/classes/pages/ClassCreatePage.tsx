@@ -69,40 +69,16 @@ export function ClassCreatePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8">
-      <div className="mb-10 text-center md:text-left">
-        <Link 
-          href="/admin/classes" 
-          className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 hover:text-blue-600 transition-colors mb-4 group"
-        >
-          <span className="material-symbols-outlined text-sm transition-transform group-hover:-translate-x-1">arrow_back</span>
-          Back to Registry
-        </Link>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-           <div>
-             <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-               <span className="material-symbols-outlined text-blue-600 text-sm font-black">architecture</span>
-               <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Unit Initialization</h2>
-             </div>
-             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Register Academic Group</h1>
-             <p className="mt-2 text-sm font-medium text-slate-500 max-w-lg">
-                Establish a new foundational academic environment, designate faculty leads, and synchronize curriculum mappings.
-             </p>
-           </div>
-           <div className="hidden md:flex items-center gap-3 p-4 rounded-2xl bg-blue-50/50 border border-blue-100/50">
-             <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center text-blue-600 shadow-sm">
-               <span className="material-symbols-outlined font-black">hub</span>
-             </div>
-             <div>
-               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Capacity</p>
-               <p className="text-sm font-black text-slate-900">Adaptive Stream</p>
-             </div>
-           </div>
-        </div>
+    <div className="max-w-5xl mx-auto py-12 px-6">
+      <div className="mb-12">
+        <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Create Class</h1>
+        <p className="text-slate-500 font-medium">
+          Set up a new class with subjects and grading.
+        </p>
       </div>
 
+
       <div className="premium-card p-0 overflow-hidden border-slate-200/60 bg-white shadow-2xl shadow-slate-200/50 rounded-3xl">
-        <div className="h-1.5 w-full bg-slate-900" />
         <div className="p-6 md:p-10">
           {academicYearState.status === "error" ? (
             <DataState variant="error" title="Infrastructure Sync Failed" message={academicYearState.error} />
@@ -158,24 +134,8 @@ export function ClassCreatePage() {
           )}
         </div>
       </div>
-      
-      <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 px-6">
-         <div className="flex items-center gap-4">
-            <div className="flex -space-x-2">
-               {[1,2,3].map(i => (
-                 <div key={i} className="h-8 w-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-black text-slate-400 uppercase">
-                    AC
-                 </div>
-               ))}
-            </div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Collaborative Infrastructure</p>
-         </div>
-         <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Real-time Validation Active</p>
-         </div>
-      </div>
     </div>
   );
 }
+
 

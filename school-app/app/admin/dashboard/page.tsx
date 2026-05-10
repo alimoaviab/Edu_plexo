@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, Skeleton, CardSkeleton } from "../../../components/ui";
 import { SchoolShell } from "../../../layouts/SchoolShell";
 import Link from "next/link";
+import { getAcademyCareQuery, getSelectedAcademyCareId } from "../../../services/academy-care-context";
 
 interface DashboardData {
   overview: {
@@ -37,10 +38,14 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const selectedYearId = getSelectedAcademyCareId();
+
   useEffect(() => {
     async function fetchDashboard() {
       try {
-        const res = await fetch("/api/analytics/dashboard");
+        setLoading(true);
+        const query = getAcademyCareQuery();
+        const res = await fetch(`/api/analytics/dashboard${query}`);
         const payload = await res.json();
         if (payload.ok) {
           setData(payload.data);
@@ -54,7 +59,7 @@ export default function AdminDashboardPage() {
       }
     }
     fetchDashboard();
-  }, []);
+  }, [selectedYearId]);
 
   const stats = [
     { title: "Total Students", value: data?.overview.totalStudents ?? "0", detail: "Active enrollment", icon: "group", trend: "+2%", trendUp: true },

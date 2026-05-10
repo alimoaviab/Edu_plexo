@@ -18,6 +18,9 @@ function toClassSummary(classRow: any) {
     id: String(classRow._id),
     _id: String(classRow._id),
     name: classRow.name,
+    code: classRow.code ?? "",
+    display_order: Number(classRow.display_order ?? 1),
+    passing_percentage: Number(classRow.passing_percentage ?? 33),
     section: classRow.section ?? "",
     capacity: Number(classRow.capacity ?? 0),
     enrolled_students: Number(classRow.enrolled_students ?? 0),
@@ -26,8 +29,8 @@ function toClassSummary(classRow: any) {
     academic_year: classRow.academic_year ?? classRow.academy_care_year ?? "",
     class_teacher_id: classTeacher ? String(classTeacher) : "",
     teacher_ids: (classRow.teacher_ids ?? []).map((value: unknown) => String(value)),
-    subjects: (classRow.subjects ?? []).map((subject: unknown) =>
-      typeof subject === "string" ? subject : String(subject)
+    subjects: (classRow.subjects ?? []).map((subject: any) =>
+      typeof subject === "string" ? subject : (subject.name || String(subject))
     ),
     room_number: classRow.room_number ?? "",
     description: classRow.description ?? "",

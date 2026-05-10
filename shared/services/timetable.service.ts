@@ -10,6 +10,7 @@ import { TimetableModel } from "../models/timetable.model";
 import { SubjectModel } from "../models/subject.model";
 import { connectDb } from "../db/connect";
 import { tenantFilter } from "../db/tenant-query";
+import { resolveClassIdsForAcademyCare } from "./_academy-care-filter";
 
 const FEATURE = "timetable" as const;
 
@@ -283,10 +284,13 @@ export async function listTimetable(
 
   try {
     await connectDb();
+    const classIds = await resolveClassIdsForAcademyCare(ctx, query.academy_care_id);
     const filter: any = tenantFilter(ctx);
 
     if (query.class_id) {
       filter.class_id = toObjectId(query.class_id, "class_id");
+    } else {
+      filter.class_id = { $in: classIds };
     }
     if (query.teacher_id) {
       filter.teacher_id = toObjectId(query.teacher_id, "teacher_id");
