@@ -1,29 +1,43 @@
-import { Navbar } from "../components/landing/Navbar";
-import { HeroSection } from "../components/landing/HeroSection";
-import { TrustSection } from "../components/landing/TrustSection";
-import { FeaturesSection } from "../components/landing/FeaturesSection";
+import { NavbarPremium } from "../components/landing/NavbarPremium";
+import { Hero3D } from "../components/landing/Hero3D";
+import { StatsSection } from "../components/landing/StatsSection";
+import { FeaturesEcosystem } from "../components/landing/FeaturesEcosystem";
+import { RoleBasedShowcase } from "../components/landing/RoleBasedShowcase";
+import { AISection } from "../components/landing/AISection";
 import { DashboardShowcase } from "../components/landing/DashboardShowcase";
-import { WhyChooseUsSection } from "../components/landing/WhyChooseUsSection";
+import { PricingSection } from "../components/landing/PricingSection";
 import { TestimonialSection } from "../components/landing/TestimonialSection";
-import { MobileExperienceSection } from "../components/landing/MobileExperienceSection";
-import { CtaSection } from "../components/landing/CtaSection";
-import { Footer } from "../components/landing/Footer";
+import { FAQSection } from "../components/landing/FAQSection";
+import { FinalCTA } from "../components/landing/FinalCTA";
+import { FooterPremium } from "../components/landing/FooterPremium";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-slate-50 selection:bg-blue-100 selection:text-blue-900">
-      <Navbar />
+    <div className="min-h-screen bg-slate-950">
+      <NavbarPremium />
       <main>
-        <HeroSection />
-        <TrustSection />
-        <FeaturesSection />
+        <Hero3D />
+        <StatsSection />
+        <section id="features">
+          <FeaturesEcosystem />
+        </section>
+        <section id="platform">
+          <RoleBasedShowcase />
+        </section>
+        <AISection />
         <DashboardShowcase />
-        <WhyChooseUsSection />
+        <section id="pricing">
+          <PricingSection />
+        </section>
         <TestimonialSection />
-        <MobileExperienceSection />
-        <CtaSection />
+        <section id="faq">
+          <FAQSection />
+        </section>
+        <section id="demo">
+          <FinalCTA />
+        </section>
       </main>
-      <Footer />
+      <FooterPremium />
     </div>
   );
 }

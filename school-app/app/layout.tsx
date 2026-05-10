@@ -4,8 +4,8 @@ import { NetworkStatus } from "../components/ui/NetworkStatus";
 import { NextAuthProvider } from "../components/NextAuthProvider";
 
 export const metadata = {
-  title: "School App",
-  description: "Multi-school SaaS school workspace"
+  title: "EduManage - AI-Powered School Management System",
+  description: "Enterprise-grade school ERP platform trusted by 10,000+ schools worldwide. Automate operations, engage parents, and empower educators with real-time intelligence."
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

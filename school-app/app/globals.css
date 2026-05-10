@@ -1,7 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
 @import "tailwindcss";
+
+/* Performance optimizations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* GPU acceleration for transforms */
+.will-change-transform {
+  will-change: transform;
+}
+
+/* Optimize animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 
 /* Custom Premium Scrollbar - Refined */
 .custom-scrollbar::-webkit-scrollbar {
@@ -89,36 +115,37 @@
     @apply border-border;
   }
   html {
-    background-color: #F8FAFC;
-    color: #0F172A;
+    background-color: #0F172A;
+    color: #F8FAFC;
+    scroll-behavior: smooth;
   }
   body {
-    @apply bg-background text-slate-900 font-sans antialiased;
+    @apply bg-slate-950 text-slate-50 font-sans antialiased;
     min-height: 100vh;
-    font-size: 0.875rem; /* 14px default for enterprise feel */
+    font-size: 0.875rem;
   }
   h1 {
-    @apply text-xl font-bold tracking-tight text-slate-950;
+    @apply text-xl font-bold tracking-tight text-slate-50;
   }
   h2 {
-    @apply text-lg font-bold tracking-tight text-slate-950;
+    @apply text-lg font-bold tracking-tight text-slate-50;
   }
   h3 {
-    @apply text-base font-bold tracking-tight text-slate-950;
+    @apply text-base font-bold tracking-tight text-slate-50;
   }
   h4 {
-    @apply text-sm font-bold tracking-tight text-slate-950;
+    @apply text-sm font-bold tracking-tight text-slate-50;
   }
   p {
-    @apply text-[13px] leading-relaxed text-slate-600;
+    @apply text-[13px] leading-relaxed text-slate-300;
   }
   small {
-    @apply text-[11px] font-medium text-slate-500;
+    @apply text-[11px] font-medium text-slate-400;
   }
 
   ::selection {
-    background-color: #DBEAFE;
-    color: #1D4ED8;
+    background-color: rgba(59, 130, 246, 0.3);
+    color: #DBEAFE;
   }
 }
 

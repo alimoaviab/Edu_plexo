@@ -15,7 +15,7 @@ export const DashboardShowcase = () => {
   ];
 
   return (
-    <section id="dashboard" className="py-24 bg-white overflow-hidden">
+    <section id="dashboard" className="py-32 bg-gradient-to-b from-white to-slate-50 overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col lg:flex-row items-center gap-16">
 
@@ -25,17 +25,17 @@ export const DashboardShowcase = () => {
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="text-4xl font-bold text-slate-900 mb-6 tracking-tight"
+              className="text-5xl font-bold text-slate-900 mb-6 tracking-tight"
             >
               Designed for <br />
-              <span className="text-blue-600">maximum clarity.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">maximum clarity</span>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-lg text-slate-600 mb-10"
+              className="text-xl text-slate-600 mb-10 leading-relaxed"
             >
               We stripped away the noise to give you an interface that is as powerful as it is beautiful. Data you need, right when you need it.
             </motion.p>
