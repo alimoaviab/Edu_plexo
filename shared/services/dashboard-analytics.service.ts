@@ -16,6 +16,12 @@ export class DashboardAnalyticsService {
     const classIds = await resolveClassIdsForAcademyCare(ctx, academyCareId);
     const academicYearId = await resolveAcademyCareId(ctx, academyCareId);
 
+    // Fetch classes for dropdowns
+    const classes = await ClassModel.find({
+      school_id: schoolId,
+      academy_care_id: academicYearId ? new Types.ObjectId(academicYearId) : { $exists: true }
+    }).select("_id name").lean();
+
     const [totalStudents, totalTeachers, activeExams, pendingLeave] = await Promise.all([
       StudentModel.countDocuments({ 
         school_id: schoolId, 
@@ -90,6 +96,7 @@ export class DashboardAnalyticsService {
       : { total: 0, paid: 0, percentage: 0 };
 
     return {
+      classes, // return classes for the dropdowns
       totalStudents,
       totalTeachers,
       attendanceToday,
@@ -263,5 +270,15 @@ export class DashboardAnalyticsService {
     }
 
     return alerts;
+  }
+static async getOperationalLogs(ctx: RequestContext, academyCareId?: string) {
+    // Dummy dynamic log generation
+    return [
+      { msg: "Attendance marked for Grade 10", time: "10m ago", icon: "how_to_reg" },
+      { msg: "New exam results published", time: "1h ago", icon: "leaderboard" },
+      { msg: "Academic Year 2026 initialized", time: "3h ago", icon: "calendar_today" },
+      { msg: "Teacher Smith updated leave request", time: "4h ago", icon: "event_busy" },
+      { msg: "Fee collected for Student #1042", time: "5h ago", icon: "payments" }
+    ];
   }
 }

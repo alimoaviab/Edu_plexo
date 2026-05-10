@@ -26,12 +26,14 @@ export async function GET(request: NextRequest) {
     const trends = await DashboardAnalyticsService.getAttendanceTrends(ctx, academy_care_id);
     const alerts = await DashboardAnalyticsService.getSystemAlerts(ctx, academy_care_id);
     const classAttendance = await DashboardAnalyticsService.getClassAttendance(ctx, academy_care_id);
+    const operationalLogs = await DashboardAnalyticsService.getOperationalLogs(ctx, academy_care_id);
 
     return NextResponse.json(ok({
       overview,
       trends,
       alerts,
-      classAttendance
+      classAttendance,
+      operationalLogs
     }));
   } catch (error: any) {
     console.error("[DashboardAPI] Error:", error);

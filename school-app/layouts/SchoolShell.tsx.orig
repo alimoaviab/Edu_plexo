@@ -191,7 +191,6 @@ export function SchoolShell({
   title: string;
   eyebrow: string;
   actions?: React.ReactNode;
-  hideHeader?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
