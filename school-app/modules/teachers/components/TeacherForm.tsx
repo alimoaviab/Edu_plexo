@@ -17,10 +17,12 @@ const initialForm: TeacherFormInput = {
 
 export function TeacherForm({
     onCreate,
-    classOptions
+    classOptions,
+    showFooter = true
 }: {
     onCreate: (input: TeacherFormInput) => Promise<unknown>;
     classOptions: Array<{ id: string; label: string }>;
+    showFooter?: boolean;
 }) {
     const [form, setForm] = useState<TeacherFormInput>(initialForm);
     const [saving, setSaving] = useState(false);
@@ -55,7 +57,7 @@ export function TeacherForm({
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form id="teacher-form-quick" onSubmit={handleSubmit} className="space-y-8">
             <div className="space-y-6">
                 <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Account Credentials</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -156,15 +158,17 @@ export function TeacherForm({
                 </div>
             </div>
 
-            <div className="flex justify-end pt-4 border-t border-border">
-                <Button
-                    type="submit"
-                    disabled={saving}
-                    className="w-full md:w-auto min-w-[150px]"
-                >
-                    {saving ? "Creating..." : "Add Teacher"}
-                </Button>
-            </div>
+            {showFooter && (
+                <div className="flex justify-end pt-4 border-t border-border">
+                    <Button
+                        type="submit"
+                        disabled={saving}
+                        className="w-full md:w-auto min-w-[150px]"
+                    >
+                        {saving ? "Creating..." : "Add Teacher"}
+                    </Button>
+                </div>
+            )}
         </form>
     );
 }

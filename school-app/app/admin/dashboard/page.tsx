@@ -1,22 +1,33 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, Skeleton, CardSkeleton } from "../../../components/ui";
+import { Skeleton } from "../../../components/ui";
 import { SchoolShell } from "../../../layouts/SchoolShell";
 import Link from "next/link";
 import { getAcademyCareQuery, getSelectedAcademyCareId } from "../../../services/academy-care-context";
+import { DashboardDrawer } from "../../../components/dashboard/DashboardDrawer";
+import { useClasses } from "../../../modules/classes/hooks/useClasses";
+import { useTeachers } from "../../../modules/teachers/hooks/useTeachers";
+import { useExams } from "../../../modules/exams/hooks/useExams";
 
 interface DashboardData {
   overview: {
     totalStudents: number;
     totalTeachers: number;
+    totalClasses: number;
     attendanceToday: number;
+    attendanceDetailed: {
+      present: number;
+      absent: number;
+      total: number;
+    };
     activeExams: number;
     pendingLeave: number;
     feeCollection: {
       total: number;
       paid: number;
       percentage: number;
+      pending_count: number;
     };
   };
   trends: Array<{ date: string; percentage: number }>;
@@ -31,12 +42,25 @@ interface DashboardData {
     class_name: string;
     percentage: number;
   }>;
+  activities: Array<{
+    action: string;
+    entity_type: string;
+    actor_email: string;
+    created_at: string;
+    _id: string;
+  }>;
 }
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [drawerConfig, setDrawerConfig] = useState<{ isOpen: boolean; type: string; title: string } | null>(null);
+
+  // Real-time data hooks for filters
+  const { state: classesState } = useClasses();
+  const { state: teachersState } = useTeachers();
+  const { state: examsState } = useExams();
 
   const selectedYearId = getSelectedAcademyCareId();
 
@@ -62,23 +86,23 @@ export default function AdminDashboardPage() {
   }, [selectedYearId]);
 
   const stats = [
-    { title: "Total Students", value: data?.overview.totalStudents ?? "0", detail: "Active enrollment", icon: "group", trend: "+2%", trendUp: true },
-    { title: "Total Teachers", value: data?.overview.totalTeachers ?? "0", detail: "Faculty members", icon: "badge", trend: "Stable", trendUp: true },
-    { title: "Attendance Today", value: `${data?.overview.attendanceToday ?? 0}%`, detail: "Present today", icon: "check_circle", trend: "+1.2%", trendUp: true },
-    { title: "Fee Collection", value: `${data?.overview.feeCollection.percentage ?? 0}%`, detail: "Of total target", icon: "payments", trend: "+5%", trendUp: true },
-    { title: "Upcoming Exams", value: data?.overview.activeExams ?? "0", detail: "Active schedule", icon: "quiz", trend: "Normal", trendUp: true }
+    { title: "Students", value: data?.overview.totalStudents ?? "0", icon: "school", color: "text-blue-600 bg-blue-50" },
+    { title: "Teachers", value: data?.overview.totalTeachers ?? "0", icon: "badge", color: "text-emerald-600 bg-emerald-50" },
+    { title: "Attendance", value: `${data?.overview.attendanceToday ?? 0}%`, icon: "fact_check", color: "text-amber-600 bg-amber-50" },
+    { title: "Fees", value: `${data?.overview.feeCollection.percentage ?? 0}%`, icon: "payments", color: "text-purple-600 bg-purple-50" },
+    { title: "Exams", value: data?.overview.activeExams ?? "0", icon: "quiz", color: "text-rose-600 bg-rose-50" }
   ];
 
   if (error) {
     return (
       <SchoolShell eyebrow="Overview" title="Dashboard">
-        <div className="rounded-2xl border border-red-100 bg-red-50 px-6 py-6 text-center">
-          <span className="material-symbols-outlined mb-3 text-3xl text-red-500">error</span>
-          <h2 className="text-base font-semibold text-red-900">Failed to load dashboard</h2>
-          <p className="mt-1.5 text-sm text-red-600">{error}</p>
+        <div className="rounded-xl border border-red-100 bg-red-50 p-6 text-center">
+          <span className="material-symbols-outlined mb-2 text-2xl text-red-500">error</span>
+          <h2 className="text-sm font-bold text-red-900">Failed to load dashboard</h2>
+          <p className="text-[11px] text-red-600">{error}</p>
           <button 
             onClick={() => window.location.reload()}
-            className="mt-4 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+            className="mt-3 rounded-lg bg-red-600 px-4 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-red-700"
           >
             Retry
           </button>
@@ -87,226 +111,302 @@ export default function AdminDashboardPage() {
     );
   }
 
-  return (
-    <SchoolShell eyebrow="System Overview" title="Dashboard">
+  const attendanceCompletionPercent = data ? Math.round(((data.classAttendance.length) / (data.overview.totalClasses || 1)) * 100) : 0;
 
-      {/* Main Stats Grid */}
-      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+  return (
+    <SchoolShell eyebrow="System Intelligence" title="Admin Command Center">
+      
+      {/* 1. KPI Cards Row - Refined Density */}
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         {loading ? (
-          Array(5).fill(0).map((_, i) => <div key={i} className="h-32 animate-pulse space-y-3 rounded-2xl border border-slate-100 bg-white p-4">
-             <div className="flex justify-between">
-                <div className="h-10 w-10 rounded-xl bg-slate-100" />
-                <div className="h-5 w-14 rounded-full bg-slate-100" />
-             </div>
-             <div className="h-4 w-28 rounded bg-slate-100" />
-             <div className="h-8 w-20 rounded bg-slate-100" />
-          </div>)
+          Array(5).fill(0).map((_, i) => <div key={i} className="h-[80px] animate-pulse rounded-xl bg-slate-50 border border-slate-100" />)
         ) : (
-          stats.map((section, idx) => (
-            <div key={section.title} className="premium-card group p-4 transition-all hover:border-blue-600/30 hover:shadow-xl hover:shadow-slate-200/40 relative overflow-hidden">
-              <div className="mb-3 flex items-start justify-between relative z-10">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-400 transition-all group-hover:bg-blue-600 group-hover:text-white shadow-sm">
-                  <span className="material-symbols-outlined text-[20px]">{section.icon}</span>
-                </div>
-                <div className={`rounded-full px-2 py-0.5 text-[9px] font-black tracking-widest uppercase ${
-                  section.trendUp ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-red-50 text-red-600 border border-red-100"
-                }`}>
-                  {section.trend}
-                </div>
-              </div>
-              <div className="relative z-10">
-                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400">{section.title}</p>
-                <div className="mt-1.5 flex items-baseline gap-2">
-                  <h3 className="text-3xl font-black tracking-tighter text-slate-900 tabular-nums">{section.value}</h3>
-                </div>
-                <p className="mt-1 text-[11px] font-medium text-slate-500">{section.detail}</p>
-              </div>
-              {/* Background accent */}
-              <div className="absolute -right-2 -bottom-2 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
-                 <span className="material-symbols-outlined text-[80px] font-black">{section.icon}</span>
-              </div>
+          stats.map((stat) => (
+            <div key={stat.title} className="premium-card relative flex items-center gap-2.5 p-2.5 transition-all hover:border-blue-200/60 hover:shadow-sm">
+               <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${stat.color} border border-current/5 shadow-sm`}>
+                  <span className="material-symbols-outlined text-[16px]">{stat.icon}</span>
+               </div>
+               <div className="flex-1 min-w-0">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">{stat.title}</p>
+                  <h3 className="text-lg font-black text-slate-900 tabular-nums leading-tight">{stat.value}</h3>
+               </div>
+               <button 
+                 onClick={() => setDrawerConfig({ isOpen: true, type: stat.title, title: stat.title })}
+                 className="text-slate-300 hover:text-blue-600 transition-colors p-1"
+               >
+                 <span className="material-symbols-outlined text-[16px]">visibility</span>
+               </button>
             </div>
           ))
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Left Column - Analytics */}
-        <div className="space-y-6 lg:col-span-2">
-          <div className="premium-card p-5">
-            <div className="mb-6 flex items-center justify-between gap-3">
-               <div>
-                  <h3 className="text-lg font-black tracking-tight text-slate-900">Attendance Analytics</h3>
-                  <p className="mt-1 text-xs font-medium text-slate-500">Global participation trends across all academic tiers</p>
-               </div>
-               <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl border border-slate-100">
-                  <button className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-blue-600 bg-white rounded-lg shadow-sm">7 Days</button>
-                  <button className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600">30 Days</button>
-               </div>
-            </div>
-            
-            <div className="flex h-64 items-end justify-between gap-3 px-2 pt-8">
-              {loading ? (
-                Array(7).fill(0).map((_, i) => (
-                  <div key={i} className="flex-1 animate-pulse rounded-t-xl bg-slate-50" style={{ height: `${20 + Math.random() * 60}%` }} />
-                ))
-              ) : (
-                data?.trends.map((day, i) => (
-                  <div key={day.date} className="group relative flex flex-1 flex-col items-center gap-3">
-                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap rounded-xl bg-slate-900 px-3 py-1.5 text-[10px] font-black text-white opacity-0 transition-all group-hover:opacity-100 group-hover:-top-12 shadow-xl">
-                      {day.percentage}% Present
-                      <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-900" />
-                    </div>
-                    <div
-                      className={`w-full rounded-t-xl transition-all duration-700 ease-out relative group-hover:brightness-110 ${
-                        day.percentage > 90 ? "bg-gradient-to-t from-blue-700 to-blue-500 shadow-[0_10px_20px_rgba(37,99,235,0.15)]" : 
-                        day.percentage > 75 ? "bg-gradient-to-t from-blue-500 to-blue-400 shadow-[0_10px_20px_rgba(59,130,246,0.15)]" : 
-                        "bg-gradient-to-t from-red-500 to-rose-400 shadow-[0_10px_20px_rgba(244,63,94,0.15)]"
-                      }`}
-                      style={{ height: `${Math.max(day.percentage, 20)}%` }}
-                    >
-                      <div className="w-full h-full bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-t-xl" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">
-                      {new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
-                    </span>
-                  </div>
-                ))
-              )}
-            </div>
+      {/* Attendance Completion Strip (Optional Small Widget) */}
+      <div className="mb-4 flex items-center justify-between px-4 py-2 bg-blue-50/30 rounded-xl border border-blue-100/50">
+        <div className="flex items-center gap-3">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white">
+            <span className="material-symbols-outlined text-[14px]">checklist</span>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <div className="premium-card p-5">
-                <h3 className="mb-4 text-sm font-black uppercase tracking-widest text-slate-400">Class Performance</h3>
-                <div className="space-y-4">
-                   {loading ? (
-                     Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)
-                   ) : data?.classAttendance && data.classAttendance.length > 0 ? (
-                     data.classAttendance.slice(0, 4).map((cls) => (
-                       <div key={cls.class_name} className="group">
-                          <div className="flex items-center justify-between mb-2">
-                             <span className="text-[11px] font-black text-slate-700 uppercase tracking-tight">{cls.class_name}</span>
-                             <span className="text-[10px] font-black text-blue-600 tabular-nums">{cls.percentage}%</span>
-                          </div>
-                          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 border border-slate-50">
-                             <div 
-                               className={`h-full transition-all duration-1000 shadow-[0_0_8px_rgba(0,0,0,0.05)] ${cls.percentage > 90 ? 'bg-blue-600' : cls.percentage > 75 ? 'bg-blue-400' : 'bg-red-400'}`} 
-                               style={{ width: `${cls.percentage}%` }} 
-                             />
-                          </div>
-                       </div>
-                     ))
-                   ) : (
-                     <div className="py-6 text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                       No Daily Data
-                     </div>
-                   )}
-                </div>
-             </div>
-
-             <div className="premium-card p-5 bg-gradient-to-br from-white to-slate-50/50">
-                <div className="flex items-center justify-between mb-4">
-                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Operational Log</h3>
-                   <span className="material-symbols-outlined text-slate-300 text-lg">history</span>
-                </div>
-                <div className="space-y-3">
-                   {[
-                      { msg: "Attendance marked for Grade 10", time: "10m ago", icon: "how_to_reg" },
-                      { msg: "New exam results published", time: "1h ago", icon: "leaderboard" },
-                      { msg: "Academic Year 2026 initialized", time: "3h ago", icon: "calendar_today" }
-                   ].map((log, i) => (
-                      <div key={i} className="flex items-start gap-3 p-2 rounded-xl border border-transparent hover:border-slate-100 hover:bg-white transition-all">
-                         <div className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
-                            <span className="material-symbols-outlined text-[16px]">{log.icon}</span>
-                         </div>
-                         <div>
-                            <p className="text-[11px] font-bold text-slate-700 leading-tight">{log.msg}</p>
-                            <p className="text-[9px] font-medium text-slate-400 mt-0.5">{log.time}</p>
-                         </div>
-                      </div>
-                   ))}
-                </div>
-             </div>
+          <div>
+            <p className="text-[10px] font-bold text-slate-700">Attendance Completion</p>
+            <p className="text-[8px] font-medium text-slate-500 uppercase tracking-tighter">
+              {data?.classAttendance.length} of {data?.overview.totalClasses} classes registered today
+            </p>
           </div>
         </div>
+        <div className="flex items-center gap-3 flex-1 max-w-md mx-6">
+           <div className="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-600 transition-all duration-1000" style={{ width: `${attendanceCompletionPercent}%` }} />
+           </div>
+           <span className="text-[10px] font-black text-blue-600">{attendanceCompletionPercent}%</span>
+        </div>
+        <Link href="/admin/attendance" className="text-[9px] font-black text-blue-600 uppercase hover:underline">
+          View Detail
+        </Link>
+      </div>
 
-        {/* Right Column - Actions & Alerts */}
-        <div className="space-y-6">
-          <div className="premium-card p-5">
-            <h3 className="mb-5 text-sm font-black uppercase tracking-widest text-slate-400">Control Center</h3>
-            <div className="grid grid-cols-2 gap-3">
-               {[
-                 { label: "Add Student", icon: "person_add", color: "text-blue-600 bg-blue-50 border-blue-100", href: "/admin/students?action=new" },
-                 { label: "Attendance", icon: "how_to_reg", color: "text-emerald-600 bg-emerald-50 border-emerald-100", href: "/admin/attendance" },
-                 { label: "Schedule Exam", icon: "add_task", color: "text-amber-600 bg-amber-50 border-amber-100", href: "/admin/exams?action=new" },
-                 { label: "Broadcast", icon: "campaign", color: "text-purple-600 bg-purple-50 border-purple-100", href: "/admin/announcements?action=new" },
-                 { label: "Results", icon: "leaderboard", color: "text-cyan-600 bg-cyan-50 border-cyan-100", href: "/admin/results" },
-                 { label: "Timetable", icon: "calendar_view_week", color: "text-indigo-600 bg-indigo-50 border-indigo-100", href: "/admin/timetable" }
-               ].map((action) => (
-                 <Link 
-                    key={action.label} 
-                    href={action.href}
-                    className="group flex flex-col items-center gap-2 rounded-2xl border border-slate-50 bg-slate-50/50 p-3 text-center transition-all hover:border-blue-300 hover:bg-white hover:shadow-lg hover:shadow-slate-200/50"
-                 >
-                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${action.color} transition-all group-hover:scale-110 shadow-sm shadow-transparent group-hover:shadow-current/10`}>
-                      <span className="material-symbols-outlined text-[20px]">{action.icon}</span>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Left Column - Operational Insights */}
+        <div className="space-y-4 lg:col-span-2">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Today Overview Widget */}
+              <div className="premium-card p-3.5">
+                 <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Today Overview</h3>
+                    <span className="material-symbols-outlined text-slate-300 text-base">today</span>
+                 </div>
+                 <div className="grid grid-cols-2 gap-2.5">
+                    <div className="rounded-xl border border-emerald-50 bg-emerald-50/30 p-2.5 text-center">
+                       <p className="text-[9px] font-bold text-emerald-600 uppercase">Present</p>
+                       <h4 className="text-lg font-black text-emerald-700">{data?.overview.attendanceDetailed.present ?? 0}</h4>
                     </div>
-                    <span className="text-[10px] font-black uppercase leading-tight tracking-tight text-slate-700">{action.label}</span>
-                 </Link>
-               ))}
-            </div>
-            <Link href="/admin/settings" className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-[11px] font-black uppercase tracking-widest text-white transition-all hover:bg-slate-800 hover:scale-[1.02] active:scale-[0.98]">
-               <span className="material-symbols-outlined text-sm">settings</span>
-               Global Configuration
-            </Link>
-          </div>
+                    <div className="rounded-xl border border-rose-50 bg-rose-50/30 p-2.5 text-center">
+                       <p className="text-[9px] font-bold text-rose-600 uppercase">Absent</p>
+                       <h4 className="text-lg font-black text-rose-700">{data?.overview.attendanceDetailed.absent ?? 0}</h4>
+                    </div>
+                    <div className="rounded-xl border border-amber-50 bg-amber-50/30 p-2.5 text-center">
+                       <p className="text-[9px] font-bold text-amber-600 uppercase">Late</p>
+                       <h4 className="text-lg font-black text-amber-700">0</h4>
+                    </div>
+                    <div className="rounded-xl border border-slate-50 bg-slate-50/50 p-2.5 text-center">
+                       <p className="text-[9px] font-bold text-slate-500 uppercase">Pending</p>
+                       <h4 className="text-lg font-black text-slate-600">0</h4>
+                    </div>
+                 </div>
+                 {data?.overview.attendanceDetailed.total === 0 && (
+                   <Link href="/admin/attendance" className="mt-3 block w-full text-center py-2 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md shadow-blue-600/20 active:scale-[0.98]">
+                     Mark Attendance
+                   </Link>
+                 )}
+              </div>
 
-          <div className={`premium-card p-5 border-red-100/50 transition-all ${data?.alerts && data.alerts.length > 0 ? 'bg-red-50/30' : 'bg-white'}`}>
-            <div className="mb-5 flex items-center justify-between">
-               <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-red-500 text-lg">error</span>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-900">Critical Alerts</h3>
-               </div>
-               {data?.alerts && data.alerts.length > 0 && (
-                 <div className="h-5 px-1.5 flex items-center justify-center rounded-full bg-red-600 text-[9px] font-black text-white shadow-lg shadow-red-600/20">
-                   {data.alerts.length}
+              {/* Pending Tasks Widget */}
+              <div className="premium-card p-3.5">
+                 <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pending Tasks</h3>
+                    <span className="material-symbols-outlined text-slate-300 text-base">task_alt</span>
                  </div>
-               )}
-            </div>
-            
-            <div className="space-y-3">
-               {loading ? (
-                 Array(2).fill(0).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)
-               ) : data?.alerts && data.alerts.length > 0 ? (
-                 data.alerts.map((alert, i) => (
-                   <div key={i} className="animate-in slide-in-from-right-4 duration-300 rounded-2xl border border-red-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-start gap-3">
-                        <div className={`mt-1 h-2 w-2 flex-shrink-0 rounded-full ${
-                          alert.severity === 'error' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' : 
-                          alert.severity === 'warning' ? 'bg-orange-500' : 'bg-blue-500'
-                        }`} />
-                        <div className="flex-1 min-w-0">
-                          <p className="mb-1 text-[12px] font-black leading-tight text-slate-900 truncate">{alert.title}</p>
-                          <p className="text-[11px] leading-relaxed font-medium text-slate-500 line-clamp-2">{alert.message}</p>
-                          <Link href={alert.link} className="mt-3 inline-flex items-center gap-1 text-[11px] font-black text-blue-600 hover:text-blue-700 transition-colors uppercase tracking-wider">
-                            {alert.cta}
-                            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                          </Link>
+                 <div className="space-y-1.5">
+                    {[
+                      { label: "Pending Fees", count: data?.overview.feeCollection.pending_count ?? 0, href: "/admin/fee" },
+                      { label: "Leave Requests", count: data?.overview.pendingLeave ?? 0, href: "/admin/leave" },
+                      { label: "Unmarked Attendance", count: (data?.overview.totalClasses || 0) - (data?.classAttendance.length || 0), href: "/admin/attendance" }
+                    ].map((task) => (
+                      <Link key={task.label} href={task.href} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors group">
+                         <span className="text-[11px] font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{task.label}</span>
+                         <span className={`h-5 min-w-[20px] px-1.5 flex items-center justify-center rounded-md font-black text-[9px] ${task.count > 0 ? "bg-rose-50 text-rose-600" : "bg-slate-100 text-slate-400"}`}>
+                           {task.count}
+                         </span>
+                      </Link>
+                    ))}
+                 </div>
+              </div>
+           </div>
+
+           {/* Quick Insights Chips */}
+           <div className="flex flex-wrap gap-2">
+              {data?.alerts.map((alert, i) => (
+                <Link key={i} href={alert.link} className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider transition-all hover:scale-[1.02] ${
+                  alert.severity === 'error' ? 'bg-rose-50 border-rose-100 text-rose-600' : 
+                  alert.severity === 'warning' ? 'bg-amber-50 border-amber-100 text-amber-600' : 'bg-blue-50 border-blue-100 text-blue-600'
+                }`}>
+                   <span className="material-symbols-outlined text-[14px]">{alert.severity === 'error' ? 'error' : alert.severity === 'warning' ? 'warning' : 'info'}</span>
+                   {alert.title}
+                </Link>
+              ))}
+              {!loading && data?.alerts.length === 0 && (
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 text-[9px] font-black uppercase tracking-wider">
+                   <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                   Systems Nominal
+                </div>
+              )}
+           </div>
+
+           {/* Upcoming Timeline (REAL Data Only) */}
+           <div className="premium-card p-3.5">
+              <div className="mb-4 flex items-center justify-between">
+                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Upcoming Events & Exams</h3>
+                 <span className="material-symbols-outlined text-slate-300 text-base">event</span>
+              </div>
+              <div className="relative ml-2 pl-4 border-l-2 border-slate-100">
+                 {data?.alerts.filter(a => a.severity === "info" && a.title.includes("Exam")).length ? (
+                    <div className="space-y-4">
+                       {data.alerts.filter(a => a.severity === "info" && a.title.includes("Exam")).map((alert, i) => (
+                         <div key={i} className="relative">
+                            <div className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-blue-600 border-2 border-white shadow-sm" />
+                            <div>
+                               <p className="text-[11px] font-bold text-slate-900">{alert.title}</p>
+                               <p className="text-[9px] font-medium text-slate-500">{alert.message}</p>
+                            </div>
+                         </div>
+                       ))}
+                    </div>
+                 ) : (
+                    <div className="py-4 text-center">
+                       <span className="material-symbols-outlined text-slate-200 text-3xl mb-1">calendar_today</span>
+                       <p className="text-[11px] font-medium text-slate-500 mb-3">No upcoming events scheduled.</p>
+                       <Link href="/admin/exams?action=new" className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-blue-300 hover:text-blue-600 transition-all">
+                          <span className="material-symbols-outlined text-sm">add</span>
+                          Create Event
+                       </Link>
+                    </div>
+                 )}
+              </div>
+           </div>
+        </div>
+
+        {/* Right Column - Activity Feed */}
+        <div className="space-y-4">
+           <div className="premium-card p-3.5 h-full flex flex-col">
+              <div className="mb-4 flex items-center justify-between">
+                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Recent Activity Feed</h3>
+                 <span className="material-symbols-outlined text-slate-300 text-base">rss_feed</span>
+              </div>
+              <div className="flex-1 space-y-2 overflow-y-auto custom-scrollbar max-h-[520px] pr-1">
+                 {loading ? (
+                   Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)
+                 ) : data?.activities && data.activities.length > 0 ? (
+                   data.activities.map((act) => (
+                     <div key={act._id} className="flex items-start gap-3 p-2 rounded-xl border border-transparent hover:border-slate-50 hover:bg-slate-50/50 transition-all group">
+                        <div className="h-7 w-7 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 shrink-0 group-hover:bg-white group-hover:text-blue-600 group-hover:shadow-sm transition-all">
+                           <span className="material-symbols-outlined text-[15px]">
+                             {act.entity_type === 'student' ? 'school' : 
+                              act.entity_type === 'fee' ? 'payments' : 
+                              act.entity_type === 'attendance' ? 'fact_check' : 'edit'}
+                           </span>
                         </div>
-                      </div>
+                        <div className="min-w-0 flex-1">
+                           <p className="text-[11px] font-bold text-slate-700 leading-tight">
+                             <span className="capitalize">{act.action}</span> {act.entity_type}
+                           </p>
+                           <p className="text-[9px] font-medium text-slate-400 mt-0.5 truncate">{act.actor_email}</p>
+                           <p className="text-[8px] font-black text-slate-300 uppercase mt-1">
+                             {new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                           </p>
+                        </div>
+                     </div>
+                   ))
+                 ) : (
+                   <div className="py-16 text-center border-2 border-dashed border-slate-50 rounded-2xl">
+                      <span className="material-symbols-outlined text-slate-100 text-4xl mb-2">history</span>
+                      <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">No recent activity available.</p>
                    </div>
-                 ))
-               ) : (
-                 <div className="py-6 text-center border-2 border-dashed border-slate-100 rounded-2xl">
-                    <span className="material-symbols-outlined text-slate-200 text-3xl mb-2">check_circle</span>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Status Nominal</p>
-                 </div>
-               )}
-            </div>
-          </div>
+                 )}
+              </div>
+           </div>
         </div>
       </div>
+
+      {/* Dashboard Drawer Implementation */}
+      <DashboardDrawer 
+        isOpen={!!drawerConfig?.isOpen} 
+        onClose={() => setDrawerConfig(null)}
+        title={drawerConfig?.title || ""}
+      >
+          <div className="space-y-4">
+            {/* Filter Configuration Area - Live System Data */}
+            <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">View Configuration</p>
+                <div className="flex items-center gap-2">
+                  {(classesState.status === "loading" || teachersState.status === "loading") && (
+                    <div className="flex gap-1">
+                      <span className="w-1 h-1 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.3s]" />
+                      <span className="w-1 h-1 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.15s]" />
+                      <span className="w-1 h-1 rounded-full bg-blue-600 animate-bounce" />
+                    </div>
+                  )}
+                  <span className="material-symbols-outlined text-slate-300 text-sm">tune</span>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 pl-0.5">
+                  {drawerConfig?.type === "Students" || drawerConfig?.type === "Attendance" ? "Select Class" : 
+                   drawerConfig?.type === "Teachers" ? "Select Instructor" : 
+                   drawerConfig?.type === "Fees" ? "Select Category" : "Select Examination"}
+                </label>
+                <div className="relative">
+                  <select className="w-full h-9 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-bold text-slate-700 outline-none appearance-none cursor-pointer focus:border-blue-600 focus:ring-4 focus:ring-blue-600/5 transition-all">
+                    <option value="all">All {drawerConfig?.type}</option>
+                    
+                    {/* Live Classes Data */}
+                    {(drawerConfig?.type === "Students" || drawerConfig?.type === "Attendance") && 
+                      classesState.data?.map(cls => (
+                        <option key={cls._id} value={cls._id}>{cls.name}</option>
+                      ))
+                    }
+
+                    {/* Live Teachers Data */}
+                    {drawerConfig?.type === "Teachers" && 
+                      teachersState.data?.map(t => (
+                        <option key={t._id} value={t._id}>{t.first_name} {t.last_name}</option>
+                      ))
+                    }
+
+                    {/* Live Exams Data */}
+                    {drawerConfig?.type === "Exams" && 
+                      examsState.data?.map(ex => (
+                        <option key={ex._id} value={ex._id}>{ex.title}</option>
+                      ))
+                    }
+
+                    {/* Static Categories for Fees */}
+                    {drawerConfig?.type === "Fees" && (
+                      <>
+                        <option value="tuition">Tuition Fees</option>
+                        <option value="transport">Transport Fees</option>
+                        <option value="activities">Extra-Curricular</option>
+                      </>
+                    )}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-base">expand_more</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Current Value</p>
+                <h4 className="mt-1 text-2xl font-black text-slate-900">
+                  {drawerConfig?.type === "Students" ? data?.overview.totalStudents : 
+                   drawerConfig?.type === "Teachers" ? data?.overview.totalTeachers : 
+                   drawerConfig?.type === "Attendance" ? `${data?.overview.attendanceToday}%` : 
+                   drawerConfig?.type === "Fees" ? `${data?.overview.feeCollection.percentage}%` : 
+                   data?.overview.activeExams}
+                </h4>
+              </div>
+              <div className="rounded-2xl border border-slate-100 bg-blue-50/20 p-4">
+                <p className="text-[9px] font-black uppercase tracking-widest text-blue-400">Filter Status</p>
+                <h4 className="mt-1 text-xs font-bold text-blue-600 truncate">
+                  {classesState.status === "loading" || teachersState.status === "loading" || examsState.status === "loading" 
+                    ? "Synchronizing..." 
+                    : "Live Data Feed"}
+                </h4>
+              </div>
+            </div>
+          </div>
+      </DashboardDrawer>
     </SchoolShell>
   );
 }

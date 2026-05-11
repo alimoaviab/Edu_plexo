@@ -67,5 +67,5 @@ export function useTeachers() {
         });
     }, [loadTeachers]);
 
-    return { state, addTeacher, updateTeacher, deleteTeacher };
+    return { state, addTeacher, updateTeacher, deleteTeacher, refresh: loadTeachers };
 }

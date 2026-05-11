@@ -105,34 +105,34 @@ export function AcademicYearListPage() {
 
   return (
     <>
-      <div className="space-y-8 relative min-h-[87vh] pb-20">
-        {/* Stats Section - Premium SaaS Style */}
-        <div className={`grid gap-4 transition-all duration-500 ease-in-out ${isDrawerOpen ? "grid-cols-1 md:grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}>
+      <div className="space-y-6 relative pb-6">
+        {/* Stats Section - Compact ERP Style */}
+        <div className={`grid gap-3 transition-all duration-500 ease-in-out ${isDrawerOpen ? "grid-cols-1 md:grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}>
           {[
             { label: "Total Sessions", value: years.length, icon: "calendar_today", color: "text-slate-500", bg: "bg-slate-500/5" },
             { label: "Active Year", value: activeYear?.year || "None", icon: "auto_awesome", color: "text-blue-600", bg: "bg-blue-600/5" },
             { label: "Completed", value: years.filter(y => y.status === "completed").length, icon: "verified", color: "text-emerald-600", bg: "bg-emerald-600/5" },
           ].map((stat) => (
-            <div key={stat.label} className="group premium-card p-4 flex items-center justify-between bg-white border-slate-200/60 hover:border-blue-200 transition-all shadow-sm">
+            <div key={stat.label} className="group premium-card p-3 flex items-center justify-between bg-white border-slate-200/60 hover:border-blue-200 transition-all shadow-sm">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-1">{stat.label}</span>
-                <span className={`text-xl font-bold tracking-tight block ${stat.color}`}>{stat.value}</span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-0.5">{stat.label}</span>
+                <span className={`text-lg font-black tracking-tight block ${stat.color}`}>{stat.value}</span>
               </div>
-              <div className={`h-10 w-10 rounded-xl ${stat.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                <span className={`material-symbols-outlined text-xl ${stat.color}`}>{stat.icon}</span>
+              <div className={`h-8 w-8 rounded-lg ${stat.bg} flex items-center justify-center group-hover:scale-105 transition-transform border border-current/5`}>
+                <span className={`material-symbols-outlined text-[18px] ${stat.color}`}>{stat.icon}</span>
               </div>
             </div>
           ))}
           <Link 
             href="/admin/academic-years/create" 
-            className={`premium-card p-4 flex items-center justify-between bg-white border-slate-200 group hover:bg-blue-600 hover:border-blue-600 transition-all shadow-sm ${isDrawerOpen ? "hidden md:flex" : ""}`}
+            className={`premium-card p-3 flex items-center justify-between bg-white border-slate-200 group hover:bg-blue-600 hover:border-blue-600 transition-all shadow-sm ${isDrawerOpen ? "hidden md:flex" : ""}`}
           >
             <div>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] block mb-1 group-hover:text-blue-100 transition-colors">Setup Control</span>
-              <span className="text-sm font-black text-slate-900 block group-hover:text-white transition-colors tracking-tight">Add New Year</span>
+              <span className="text-[8px] font-black uppercase text-slate-400 tracking-[0.2em] block mb-0.5 group-hover:text-blue-100 transition-colors">Setup Control</span>
+              <span className="text-[13px] font-black text-slate-900 block group-hover:text-white transition-colors tracking-tight">Add New Year</span>
             </div>
-            <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-white/20 group-hover:rotate-90 transition-all border border-slate-100 group-hover:border-transparent">
-              <span className="material-symbols-outlined text-xl text-slate-400 group-hover:text-white">add</span>
+            <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center group-hover:bg-white/10 group-hover:rotate-90 transition-all border border-slate-100 group-hover:border-transparent">
+              <span className="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-white">add</span>
             </div>
           </Link>
         </div>
@@ -212,108 +212,95 @@ export function AcademicYearListPage() {
             ) : (
               viewMode === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-                  {filteredYears.map((row) => {
-                    const days = durationInDays(row.start_date, row.end_date);
-                    const isActive = row.is_active;
-                    const isEditing = editingYear?._id === row._id;
-                    
-                    const statusConfig = {
-                      active: "text-emerald-600 bg-emerald-50 border-emerald-100",
-                      completed: "text-blue-600 bg-blue-50 border-blue-100",
-                      cancelled: "text-red-600 bg-red-50 border-red-100",
-                      draft: "text-slate-500 bg-slate-50 border-slate-100",
-                      all: ""
-                    }[row.status] || "text-slate-500 bg-slate-50 border-slate-100";
-                    
-                    return (
-                      <div
-                        key={row._id}
-                        className={`premium-card group relative flex flex-col p-6 transition-all duration-300 bg-white border-slate-200/60 hover:shadow-2xl hover:shadow-slate-200/40 hover:-translate-y-1.5 ${
-                          isActive ? "ring-2 ring-blue-600/30" : ""
-                        } ${isEditing ? "border-blue-400 bg-blue-50/5" : ""}`}
-                      >
-                        <div className="flex items-start justify-between gap-6 mb-6">
-                          <div className="space-y-1.5">
-                            <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none">{row.year}</h3>
-                            <div className="flex items-center gap-2">
-                               <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${statusConfig}`}>
-                                 {row.status}
-                               </span>
-                               {isActive && (
-                                 <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 border border-blue-100">
-                                   <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-pulse" />
-                                   Live Session
-                                 </span>
-                               )}
+                    {filteredYears.map((row) => {
+                      const days = durationInDays(row.start_date, row.end_date);
+                      const isActive = row.is_active;
+                      const isEditing = editingYear?._id === row._id;
+                      
+                      return (
+                        <div
+                          key={row._id}
+                          className={`premium-card group relative flex flex-col p-4 transition-all duration-300 bg-white border-slate-200/60 hover:shadow-xl hover:shadow-slate-200/30 hover:-translate-y-0.5 ${
+                            isActive ? "ring-2 ring-blue-600/20 border-blue-600/40" : ""
+                          } ${isEditing ? "border-blue-400 bg-blue-50/5" : ""}`}
+                        >
+                          {/* Top Row: Name & Actions */}
+                          <div className="flex items-start justify-between gap-4 mb-3.5">
+                            <div className="space-y-0.5 flex-1 min-w-0">
+                              <h3 className="text-base font-black text-slate-900 tracking-tight leading-none truncate">{row.year}</h3>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Academic Session</p>
+                            </div>
+                            
+                            <div className="flex items-center gap-0.5">
+                              <button 
+                                onClick={(e) => { e.preventDefault(); setEditingYear(row); }}
+                                className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all"
+                                title="Edit Session"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                              </button>
+                              <button 
+                                onClick={(e) => { e.preventDefault(); setDeletingYear(row); }}
+                                className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
+                                title="Delete"
+                              >
+                                <span className="material-symbols-outlined text-[18px]">delete</span>
+                              </button>
                             </div>
                           </div>
-                          
-                          <div className="flex items-center gap-1">
-                            <button 
-                              onClick={(e) => { e.preventDefault(); handleSetCurrent(row); }}
-                              className={`h-9 px-4 flex items-center justify-center gap-2 rounded-xl transition-all border text-[10px] font-black uppercase tracking-widest ${
-                                isActive 
-                                ? "bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/20" 
-                                : "bg-white text-slate-400 border-slate-200 hover:border-blue-400 hover:text-blue-600"
-                              }`}
-                              title={isActive ? "Current Active Year" : "Set as Current"}
-                            >
-                              <span className="material-symbols-outlined text-[18px]">{isActive ? "check_circle" : "radio_button_unchecked"}</span>
-                              {isActive ? "Active" : "Inactive"}
-                            </button>
-                            <div className="w-px h-4 bg-slate-100 mx-1" />
-                            <button 
-                              onClick={(e) => { e.preventDefault(); setEditingYear(row); }}
-                              className="h-9 w-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-blue-600 transition-all border border-transparent hover:border-slate-100"
-                              title="Edit"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">edit</span>
-                            </button>
-                            <button 
-                              onClick={(e) => { e.preventDefault(); setDeletingYear(row); }}
-                              className="h-9 w-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all border border-transparent hover:border-slate-100"
-                              title="Delete"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">delete</span>
-                            </button>
-                          </div>
-                        </div>
 
-                        <div className="space-y-5 mb-6">
-                          <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50/50 border border-slate-100/50">
+                          {/* Middle Row: Timeline */}
+                          <div className="mb-3.5 p-3 rounded-xl bg-slate-50/50 border border-slate-100/50 flex items-center justify-between">
                             <div className="flex-1">
-                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Academic Timeline</p>
-                              <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
-                                <span className="bg-white px-2 py-1 rounded-md border border-slate-100">{formatDate(row.start_date)}</span>
-                                <span className="text-slate-300 mx-1">→</span>
-                                <span className="bg-white px-2 py-1 rounded-md border border-slate-100">{formatDate(row.end_date)}</span>
+                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Session Dates</p>
+                              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
+                                <span className="bg-white px-1.5 py-0.5 rounded-md border border-slate-100">{formatDate(row.start_date)}</span>
+                                <span className="text-slate-300">→</span>
+                                <span className="bg-white px-1.5 py-0.5 rounded-md border border-slate-100">{formatDate(row.end_date)}</span>
                               </div>
                             </div>
-                            <div className="h-10 w-px bg-slate-200/50" />
-                            <div className="text-right min-w-[50px]">
-                               <p className="text-base font-black text-slate-900 leading-none">{days || 0}</p>
-                               <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Total Days</p>
+                            <div className="text-right pl-3 border-l border-slate-200/50 ml-3">
+                               <p className="text-xs font-black text-slate-900 leading-none">{days || 0}</p>
+                               <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Days</p>
                             </div>
                           </div>
 
-                          <div className="px-1">
-                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Internal Notes</p>
-                             <p className="text-xs font-medium text-slate-600 line-clamp-2 leading-relaxed">
-                               {row.description || "Administrative session cycle for " + row.year}
-                             </p>
+                          {/* Bottom Row: Notes & Status Toggle */}
+                          <div className="mt-auto pt-2 flex flex-col gap-3">
+                            <div className="px-0.5">
+                               <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Notes</p>
+                               <p className="text-[10px] font-medium text-slate-500 line-clamp-1 leading-relaxed">
+                                 {row.description || "No additional notes provided."}
+                               </p>
+                            </div>
+
+                            <div className="flex items-center justify-between bg-slate-50/30 rounded-lg p-1.5 border border-slate-100/30">
+                              <div className="flex items-center gap-1.5">
+                                {isActive ? (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest text-blue-600 bg-blue-50">
+                                    <span className="h-1 w-1 rounded-full bg-blue-500 animate-pulse" />
+                                    Active
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest text-slate-400 bg-slate-100">
+                                    Inactive
+                                  </span>
+                                )}
+                              </div>
+                              <label className="relative inline-flex cursor-pointer items-center shrink-0">
+                                <input
+                                  type="checkbox"
+                                  checked={isActive}
+                                  onChange={() => handleSetCurrent(row)}
+                                  className="peer sr-only"
+                                />
+                                <div className="peer h-[18px] w-[34px] rounded-full bg-slate-200 after:absolute after:left-[2px] after:top-[2px] after:h-[14px] after:w-[14px] after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-[16px] peer-focus:outline-none" />
+                              </label>
+                            </div>
                           </div>
                         </div>
-
-                        <button 
-                          onClick={() => setEditingYear(row)}
-                          className="w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-blue-600 text-[11px] font-black text-white uppercase tracking-[0.15em] hover:bg-blue-600 transition-all active:scale-[0.98] shadow-lg shadow-slate-900/10 hover:shadow-blue-600/20"
-                        >
-                          Manage Session
-                          <span className="material-symbols-outlined text-[16px]">arrow_right_alt</span>
-                        </button>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               ) : (
                 <div className="premium-card overflow-hidden border-slate-200/60 shadow-sm bg-white rounded-2xl">
@@ -328,7 +315,7 @@ export function AcademicYearListPage() {
             )}
 
             {/* Pagination - Standard ERP Style */}
-            <div className="mt-10 flex items-center justify-between border-t border-slate-100 pt-8">
+            <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-54">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-slate-500">
                   Showing <span className="font-bold text-slate-900">{years.length}</span> of <span className="font-bold text-slate-900">{meta?.total || years.length}</span> sessions

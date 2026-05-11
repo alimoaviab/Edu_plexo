@@ -161,6 +161,38 @@ const studentNavGroups: NavGroup[] = [
   },
 ];
 
+function AdminActions() {
+  const actions = [
+    { label: "Student", icon: "person_add", href: "/admin/students?action=new", color: "text-blue-600 border-blue-100 hover:bg-blue-50" },
+    { label: "Attendance", icon: "how_to_reg", href: "/admin/attendance", color: "text-emerald-600 border-emerald-100 hover:bg-emerald-50" },
+    { label: "Exam", icon: "add_task", href: "/admin/exams?action=new", color: "text-amber-600 border-amber-100 hover:bg-amber-50" },
+    { label: "Broadcast", icon: "campaign", href: "/admin/announcements?action=new", color: "text-purple-600 border-purple-100 hover:bg-purple-50" },
+  ];
+
+  return (
+    <div className="hidden lg:flex items-center gap-2">
+      {actions.map((action) => (
+        <Link 
+          key={action.label} 
+          href={action.href}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full border bg-white transition-all hover:scale-[1.02] active:scale-[0.98] ${action.color} shadow-sm`}
+        >
+          <span className="material-symbols-outlined text-[15px]">{action.icon}</span>
+          <span className="text-[10px] font-bold uppercase tracking-tight">{action.label}</span>
+        </Link>
+      ))}
+      <div className="flex gap-1 ml-1">
+        <Link href="/admin/results" className="p-1 rounded-full text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition-all" title="Results">
+          <span className="material-symbols-outlined text-[18px]">leaderboard</span>
+        </Link>
+        <Link href="/admin/timetable" className="p-1 rounded-full text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition-all" title="Timetable">
+          <span className="material-symbols-outlined text-[18px]">calendar_view_week</span>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 function Tooltip({ children, text }: { children: React.ReactNode; text: string }) {
   const [show, setShow] = useState(false);
   return (
@@ -290,7 +322,7 @@ export function SchoolShell({
     );
   }
 
-  const sidebarWidth = isCollapsed ? "w-16" : "w-60";
+  const sidebarWidth = isCollapsed ? "w-16" : "w-64";
 
   const toggleGroup = (label: string) => {
     setExpandedGroups(prev => ({
@@ -300,7 +332,7 @@ export function SchoolShell({
   };
 
   return (
-    <div className="flex min-h-screen bg-background text-slate-900">
+    <div className="flex min-h-screen bg-background text-slate-900 font-sans">
       {showAIAssistant ? (
         <div className="fixed inset-0 z-50 pointer-events-none">
            <div className="pointer-events-auto">
@@ -321,29 +353,29 @@ export function SchoolShell({
         className={`${sidebarWidth} sticky top-0 z-20 flex h-screen flex-shrink-0 flex-col border-r border-slate-200/80 bg-white shadow-[0_1px_5px_rgba(15,23,42,0.03)] transition-all duration-300 ease-in-out`}
       >
         {/* Logo */}
-        <div className={`flex h-12 items-center gap-2 px-3 ${isCollapsed ? "justify-center" : "justify-between"}`}>
+        <div className={`flex h-11 items-center gap-2 px-3 ${isCollapsed ? "justify-center" : "justify-between"}`}>
           <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-blue-600 shadow-sm">
-              <span className="material-symbols-outlined text-[14px] font-black text-white">school</span>
+            <div className="flex h-5.5 w-5.5 flex-shrink-0 items-center justify-center rounded bg-blue-600 shadow-sm">
+              <span className="material-symbols-outlined text-[12px] font-black text-white">school</span>
             </div>
             {!isCollapsed && (
-              <span className="text-sm font-bold tracking-tight text-slate-900">Eduplexo</span>
+              <span className="text-[13px] font-black tracking-tight text-slate-900">Eduplexo</span>
             )}
           </div>
 
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="rounded p-1 text-slate-400 transition-colors hover:bg-slate-50 hover:text-blue-600"
+            className="rounded p-1 text-slate-300 transition-colors hover:bg-slate-50 hover:text-blue-600"
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <span className="material-symbols-outlined text-[16px]">
+            <span className="material-symbols-outlined text-[15px]">
               {isCollapsed ? "chevron_right" : "chevron_left"}
             </span>
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-2 px-2.5 py-3 custom-scrollbar overflow-y-auto">
+        <nav className="flex-1 space-y-1.5 px-2 py-2.5 custom-scrollbar overflow-y-auto">
           {navGroups.map((group) => {
             const isExpanded = expandedGroups[group.label] !== false;
             return (
@@ -351,10 +383,10 @@ export function SchoolShell({
                 {!isCollapsed && (
                   <button
                     onClick={() => toggleGroup(group.label)}
-                    className="group flex w-full items-center justify-between px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-slate-400 transition-colors hover:text-blue-600"
+                    className="group flex w-full items-center justify-between px-2 py-1 text-[8px] font-black uppercase tracking-[0.15em] text-slate-400 transition-colors hover:text-blue-600"
                   >
                     <span>{group.label}</span>
-                    <span className={`material-symbols-outlined text-[12px] transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>
+                    <span className={`material-symbols-outlined text-[10px] transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>
                       expand_more
                     </span>
                   </button>
@@ -368,7 +400,7 @@ export function SchoolShell({
                           href={item.href}
                           className={`flex h-7 w-7 items-center justify-center rounded transition-all duration-200 ${isActive ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:bg-blue-50 hover:text-blue-600"}`}
                         >
-                          <span className={`material-symbols-outlined text-[16px] ${isActive ? "font-bold" : ""}`}>
+                          <span className={`material-symbols-outlined text-[15px] ${isActive ? "font-bold" : ""}`}>
                             {item.icon}
                           </span>
                         </Link>
@@ -377,12 +409,12 @@ export function SchoolShell({
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`premium-nav-item group flex h-8 items-center gap-2.5 px-2.5 py-1.5 text-[13px] font-medium ${isActive ? "premium-nav-item-active" : ""}`}
+                        className={`premium-nav-item group flex h-7.5 items-center gap-2 px-2.5 py-1 text-[12px] font-bold ${isActive ? "premium-nav-item-active" : "text-slate-500 hover:bg-slate-50"}`}
                       >
-                        <span className={`material-symbols-outlined text-[16px] transition-colors ${isActive ? "font-bold text-white" : "text-slate-400 group-hover:text-blue-600"}`}>
+                        <span className={`material-symbols-outlined text-[15px] transition-colors ${isActive ? "font-bold text-white" : "text-slate-400 group-hover:text-blue-600"}`}>
                           {item.icon}
                         </span>
-                        <span className="truncate">{item.label}</span>
+                        <span className="truncate tracking-tight">{item.label}</span>
                         {isActive && !isCollapsed && <span className="ml-auto h-1 w-1 rounded-full bg-white/80" />}
                       </Link>
                     );
@@ -429,17 +461,19 @@ export function SchoolShell({
             >
               <span className="material-symbols-outlined text-slate-600 text-[20px]">menu</span>
             </button>
-            <div className="relative max-w-xs w-full hidden md:block">
-              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400">search</span>
+            <div className="relative max-w-[180px] w-full hidden xl:block">
+              <span className="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[14px] text-slate-400">search</span>
               <input
                 type="text"
-                placeholder="Search..."
-                className="w-full rounded-md border border-slate-100 bg-slate-50/50 py-1 pl-8 pr-3 text-[12px] text-slate-600 placeholder:text-slate-400 transition-all focus:border-blue-200 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-600/5"
+                placeholder="Quick search..."
+                className="w-full rounded-lg border border-slate-100 bg-slate-50/50 py-1 pl-7 pr-2 text-[11px] text-slate-600 placeholder:text-slate-400 transition-all focus:border-blue-200 focus:bg-white focus:outline-none"
               />
             </div>
+            {user.role === "admin" && <AdminActions />}
           </div>
 
           <div className="flex items-center gap-2.5">
+            
             <div className="hidden sm:flex items-center gap-2 rounded border border-slate-100 bg-white px-2 py-0.5">
               <span className="material-symbols-outlined text-xs text-slate-300">calendar_today</span>
               <select

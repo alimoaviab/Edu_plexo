@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import { Card, Skeleton, DataState } from "../../../components/ui";
 import { useAcademicYears } from "../../academicYear/hooks/useAcademicYears";
@@ -10,12 +11,17 @@ import { ClassForm } from "../components/ClassForm";
 import { useClasses } from "../hooks/useClasses";
 import { ClassFormInput } from "../types/class.types";
 import { showToast } from "../../../utils/toast";
+import { DashboardDrawer } from "../../../components/dashboard/DashboardDrawer";
+import { AcademicYearForm } from "../../academicYear/components/AcademicYearForm";
+import { TeacherForm } from "../../teachers/components/TeacherForm";
+import { useClasses as useClassList } from "../hooks/useClasses"; // For class options in teacher form
 
 export function ClassCreatePage() {
   const router = useRouter();
   const { addClass } = useClasses();
-  const { state: academicYearState } = useAcademicYears();
-  const { state: teacherState } = useTeachers();
+  const { state: academicYearState, addAcademicYear, refresh: refreshAcademicYears } = useAcademicYears();
+  const { state: teacherState, addTeacher, refresh: refreshTeachers } = useTeachers();
+  const { state: classesListState } = useClassList();
   const {
     data: subjects,
     isLoading: subjectsLoading,
@@ -23,6 +29,14 @@ export function ClassCreatePage() {
     createSubject,
     refresh: refreshSubjects
   } = useSubjects();
+
+  // Drawer states
+  const [isAcademicYearDrawerOpen, setIsAcademicYearDrawerOpen] = useState(false);
+  const [isTeacherDrawerOpen, setIsTeacherDrawerOpen] = useState(false);
+  
+  // Track newly created IDs for auto-selection
+  const [newAcademicYearId, setNewAcademicYearId] = useState<string | undefined>(undefined);
+  const [newTeacherId, setNewTeacherId] = useState<string | undefined>(undefined);
 
   const isDependencyLoading =
     academicYearState.status === "idle" ||
@@ -69,7 +83,7 @@ export function ClassCreatePage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-12 px-6">
+    <div className="max-w-5xl mx-auto py-20 px-6">
       <div className="mb-12">
         <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Create Class</h1>
         <p className="text-slate-500 font-medium">
@@ -78,7 +92,7 @@ export function ClassCreatePage() {
       </div>
 
 
-      <div className="premium-card p-0 overflow-hidden border-slate-200/60 bg-white shadow-2xl shadow-slate-200/50 rounded-3xl">
+      <div className="premium-card p-0 overflow-hidden border-slate-200/60 bg-white shadow-2xl shadow-slate-200/50 rounded-3xl mt-8">
         <div className="p-6 md:p-10">
           {academicYearState.status === "error" ? (
             <DataState variant="error" title="Infrastructure Sync Failed" message={academicYearState.error} />
@@ -130,10 +144,78 @@ export function ClassCreatePage() {
               subjectOptions={(subjects ?? [])
                 .filter((item) => item.status === "active")
                 .map((item) => ({ id: item._id, label: item.name }))}
+              onCreateAcademicYear={() => setIsAcademicYearDrawerOpen(true)}
+              onCreateTeacher={() => setIsTeacherDrawerOpen(true)}
+              autoSelectAcademicYear={newAcademicYearId}
+              autoSelectTeacher={newTeacherId}
+              onSelectionHandled={() => {
+                setNewAcademicYearId(undefined);
+                setNewTeacherId(undefined);
+              }}
             />
           )}
         </div>
       </div>
+
+      {/* Contextual Side Drawers */}
+      <DashboardDrawer
+        isOpen={isAcademicYearDrawerOpen}
+        onClose={() => setIsAcademicYearDrawerOpen(false)}
+        title="New Academic Session"
+        description="Initialize an institutional timeline without leaving your current class setup."
+        icon="calendar_month"
+        primaryActionLabel="Publish Session"
+        onPrimaryAction={() => {
+          document.getElementById("academic-year-form-quick")?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }}
+      >
+        <div className="space-y-4">
+          <AcademicYearForm 
+            showFooter={false}
+            onCreate={async (input) => {
+              const result = await addAcademicYear(input);
+              if (result && (result as any).ok !== false) {
+                const newId = (result as any).data?._id;
+                await refreshAcademicYears();
+                setNewAcademicYearId(newId);
+                setIsAcademicYearDrawerOpen(false);
+                showToast("Academic year created and selected", "success");
+              }
+              return result;
+            }} 
+          />
+        </div>
+      </DashboardDrawer>
+
+      <DashboardDrawer
+        isOpen={isTeacherDrawerOpen}
+        onClose={() => setIsTeacherDrawerOpen(false)}
+        title="Add New Teacher"
+        description="Instantly add faculty members to the database and assign them to classes."
+        icon="person_add"
+        primaryActionLabel="Add Teacher"
+        onPrimaryAction={() => {
+          document.getElementById("teacher-form-quick")?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }}
+      >
+        <div className="space-y-4">
+          <TeacherForm 
+            showFooter={false}
+            classOptions={(classesListState.data ?? []).map(c => ({ id: c._id, label: c.name }))}
+            onCreate={async (input) => {
+              const result = await addTeacher(input);
+              if (result && (result as any).ok !== false) {
+                const newId = (result as any).data?._id;
+                await refreshTeachers();
+                setNewTeacherId(newId);
+                setIsTeacherDrawerOpen(false);
+                showToast("Teacher added to curriculum", "success");
+              }
+              return result;
+            }}
+          />
+        </div>
+      </DashboardDrawer>
     </div>
   );
 }

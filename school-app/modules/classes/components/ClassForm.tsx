@@ -31,17 +31,46 @@ export function ClassForm({
     academyCareOptions,
     teacherOptions,
     subjectOptions,
-    onAddSubject
+    onAddSubject,
+    onCreateAcademicYear,
+    onCreateTeacher,
+    autoSelectAcademicYear,
+    autoSelectTeacher,
+    onSelectionHandled
 }: {
     onCreate: (input: ClassFormInput) => Promise<unknown>;
     academyCareOptions: Array<{ id: string; label: string }>;
     teacherOptions: Array<{ id: string; label: string }>;
     subjectOptions: Array<{ id: string; label: string }>;
     onAddSubject?: (name: string) => Promise<void>;
+    onCreateAcademicYear?: () => void;
+    onCreateTeacher?: () => void;
+    autoSelectAcademicYear?: string | undefined;
+    autoSelectTeacher?: string | undefined;
+    onSelectionHandled?: () => void;
 }) {
     const [form, setForm] = useState<ClassFormInput>(initialForm);
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [teacherSearch, setTeacherSearch] = useState("");
+
+    // Auto-select logic for contextual creation
+    useEffect(() => {
+        if (autoSelectAcademicYear) {
+            setForm(prev => ({ ...prev, academy_care_id: autoSelectAcademicYear }));
+            onSelectionHandled?.();
+        }
+    }, [autoSelectAcademicYear, onSelectionHandled]);
+
+    useEffect(() => {
+        if (autoSelectTeacher) {
+            setForm(prev => ({ 
+                ...prev, 
+                teacher_ids: [...new Set([...prev.teacher_ids, autoSelectTeacher])] 
+            }));
+            onSelectionHandled?.();
+        }
+    }, [autoSelectTeacher, onSelectionHandled]);
 
     // Summary data
     const subjectCount = form.subjects.length;
@@ -191,31 +220,120 @@ export function ClassForm({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Select
-                        label="Academic Year *"
-                        value={form.academy_care_id}
-                        onChange={(e) => setForm({ ...form, academy_care_id: e.target.value })}
-                        options={[
-                            { label: "Select Year", value: "" },
-                            ...academyCareOptions.map(o => ({ label: o.label, value: o.id }))
-                        ]}
-                        error={errors.academy_care_id}
-                    />
-                     <div className="flex flex-col gap-1.5">
-                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Assigned Teachers</label>
-                        <select
-                            multiple
-                            value={form.teacher_ids}
-                            onChange={(e) => {
-                                const values = Array.from(e.target.selectedOptions, option => option.value);
-                                setForm({ ...form, teacher_ids: values });
-                            }}
-                            className="w-full h-11 px-4 rounded-xl border border-slate-200 bg-white text-sm text-slate-800 outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-600/5 transition-all"
-                        >
-                            {teacherOptions.map(t => (
-                                <option key={t.id} value={t.id}>{t.label}</option>
-                            ))}
-                        </select>
+                    <div className="space-y-1.5">
+                        <div className="flex items-center justify-between px-0.5">
+                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Academic Year *</label>
+                            {onCreateAcademicYear && (
+                                <button 
+                                    type="button"
+                                    onClick={onCreateAcademicYear}
+                                    className="h-8 px-3 rounded-full border border-blue-100 bg-blue-50/30 text-[10px] font-black text-blue-600 uppercase tracking-widest hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
+                                >
+                                    <span className="material-symbols-outlined text-[16px] group-hover:rotate-90 transition-transform">add_circle</span>
+                                    New Session
+                                </button>
+                            )}
+                        </div>
+                        <Select
+                            value={form.academy_care_id}
+                            onChange={(e) => setForm({ ...form, academy_care_id: e.target.value })}
+                            options={[
+                                { label: "Select Academic Cycle", value: "" },
+                                ...academyCareOptions.map((o: { id: string; label: string }) => ({ label: o.label, value: o.id }))
+                            ]}
+                            error={errors.academy_care_id}
+                            className="h-11 rounded-xl"
+                        />
+                        {academyCareOptions.length === 0 && (
+                            <p className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[14px]">warning</span>
+                                No academic year found. Please create one to proceed.
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <div className="flex items-center justify-between px-0.5">
+                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Assigned Faculty</label>
+                            {onCreateTeacher && (
+                                <button 
+                                    type="button"
+                                    onClick={onCreateTeacher}
+                                    className="h-8 px-3 rounded-full border border-blue-100 bg-blue-50/30 text-[10px] font-black text-blue-600 uppercase tracking-widest hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
+                                >
+                                    <span className="material-symbols-outlined text-[16px] group-hover:rotate-90 transition-transform">person_add</span>
+                                    Add Teacher
+                                </button>
+                            )}
+                        </div>
+                        
+                        <div className="relative group">
+                            <div className="flex flex-wrap gap-1.5 p-2 min-h-[44px] rounded-xl border border-slate-200 bg-white focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-600/5 transition-all">
+                                {form.teacher_ids.map(id => {
+                                    const teacher = teacherOptions.find((t: { id: string; label: string }) => t.id === id);
+                                    return (
+                                        <span key={id} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold text-slate-700">
+                                            {teacher?.label || "Unknown"}
+                                            <button 
+                                                type="button"
+                                                onClick={() => setForm(prev => ({ ...prev, teacher_ids: prev.teacher_ids.filter(t => t !== id) }))}
+                                                className="text-slate-400 hover:text-red-500 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">close</span>
+                                            </button>
+                                        </span>
+                                    );
+                                })}
+                                <input 
+                                    placeholder={form.teacher_ids.length === 0 ? "Search and select teachers..." : "Add more..."}
+                                    className="flex-1 min-w-[120px] bg-transparent text-[11px] font-medium text-slate-700 outline-none placeholder:text-slate-400"
+                                    value={teacherSearch}
+                                    onChange={(e) => setTeacherSearch(e.target.value)}
+                                />
+                            </div>
+
+                            {/* Dropdown Results */}
+                            {teacherSearch && (
+                                <div className="absolute top-full left-0 right-0 mt-2 z-50 max-h-48 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-xl p-1.5 space-y-1">
+                                    {teacherOptions
+                                        .filter((t: { id: string; label: string }) => t.label.toLowerCase().includes(teacherSearch.toLowerCase()) && !form.teacher_ids.includes(t.id))
+                                        .map((t: { id: string; label: string }) => (
+                                            <button
+                                                key={t.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setForm(prev => ({ ...prev, teacher_ids: [...prev.teacher_ids, t.id] }));
+                                                    setTeacherSearch("");
+                                                }}
+                                                className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-[11px] font-bold text-slate-700 transition-colors flex items-center gap-3"
+                                            >
+                                                <div className="h-6 w-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                                                    <span className="material-symbols-outlined text-[14px]">badge</span>
+                                                </div>
+                                                {t.label}
+                                            </button>
+                                        ))}
+                                    {teacherOptions.filter((t: { id: string; label: string }) => t.label.toLowerCase().includes(teacherSearch.toLowerCase()) && !form.teacher_ids.includes(t.id)).length === 0 && (
+                                        <div className="px-3 py-4 text-center">
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No faculty found</p>
+                                            <button 
+                                                type="button"
+                                                onClick={onCreateTeacher}
+                                                className="mt-2 text-[10px] font-black text-blue-600 uppercase hover:underline"
+                                            >
+                                                Create "{teacherSearch}" teacher
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                        {teacherOptions.length === 0 && !teacherSearch && (
+                            <p className="text-[10px] font-bold text-slate-400 flex items-center gap-2 pl-1">
+                                <span className="material-symbols-outlined text-[14px]">info</span>
+                                No teachers available in database.
+                            </p>
+                        )}
                     </div>
                 </div>
 

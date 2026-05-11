@@ -7,6 +7,7 @@ import { FeeModel } from "../models/fee.model";
 import { LeaveModel } from "../models/leave.model";
 import { TimetableModel } from "../models/timetable.model";
 import { ClassModel } from "../models/class.model";
+import { AuditLogModel } from "../models/audit-log.model";
 import { resolveClassIdsForAcademyCare, resolveAcademyCareId } from "./_academy-care-filter";
 import { RequestContext } from "../types/core";
 
@@ -63,6 +64,14 @@ export class DashboardAnalyticsService {
     const attendanceToday = attendanceStats.length > 0 
       ? Math.round((attendanceStats[0].present / attendanceStats[0].total) * 100) 
       : 0;
+    
+    const attendanceDetailed = attendanceStats.length > 0
+      ? { 
+          present: attendanceStats[0].present, 
+          absent: attendanceStats[0].total - attendanceStats[0].present,
+          total: attendanceStats[0].total
+        }
+      : { present: 0, absent: 0, total: 0 };
 
     // Fee collection
     const feeStats = await FeeModel.aggregate([
@@ -76,7 +85,8 @@ export class DashboardAnalyticsService {
         $group: {
           _id: null,
           total_amount: { $sum: "$amount" },
-          total_paid: { $sum: "$paid_amount" }
+          total_paid: { $sum: "$paid_amount" },
+          pending_count: { $sum: { $cond: [{ $lt: ["$paid_amount", "$amount"] }, 1, 0] } }
         }
       }
     ]);
@@ -85,14 +95,16 @@ export class DashboardAnalyticsService {
       ? { 
           total: feeStats[0].total_amount, 
           paid: feeStats[0].total_paid,
-          percentage: feeStats[0].total_amount > 0 ? Math.round((feeStats[0].total_paid / feeStats[0].total_amount) * 100) : 0
+          percentage: feeStats[0].total_amount > 0 ? Math.round((feeStats[0].total_paid / feeStats[0].total_amount) * 100) : 0,
+          pending_count: feeStats[0].pending_count
         }
-      : { total: 0, paid: 0, percentage: 0 };
+      : { total: 0, paid: 0, percentage: 0, pending_count: 0 };
 
     return {
       totalStudents,
       totalTeachers,
       attendanceToday,
+      attendanceDetailed,
       activeExams,
       pendingLeave,
       feeCollection
@@ -263,5 +275,13 @@ export class DashboardAnalyticsService {
     }
 
     return alerts;
+  }
+
+  static async getRecentActivity(ctx: RequestContext) {
+    const schoolId = ctx.school_id;
+    return AuditLogModel.find({ school_id: schoolId })
+      .sort({ created_at: -1 })
+      .limit(10)
+      .lean();
   }
 }
