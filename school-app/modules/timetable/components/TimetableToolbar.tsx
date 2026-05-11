@@ -50,7 +50,7 @@ export function TimetableToolbar({
               className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 hover:border-blue-400 hover:bg-white transition-all cursor-pointer min-w-[240px]"
             >
               <span className="material-symbols-outlined text-slate-400 text-lg">school</span>
-              <span className="text-sm font-black text-slate-900 truncate">
+              <span className="text-sm font-bold text-slate-900 truncate">
                 {activeClass ? activeClass.label : "Select Class"}
               </span>
               <span className="material-symbols-outlined text-slate-400 text-lg ml-auto group-hover:rotate-180 transition-transform duration-300">expand_more</span>
@@ -84,12 +84,12 @@ export function TimetableToolbar({
                         className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all ${classId === opt.id ? 'bg-blue-600 text-white shadow-md' : 'hover:bg-slate-50 text-slate-700 hover:text-blue-600'}`}
                       >
                         <span className={`material-symbols-outlined text-sm ${classId === opt.id ? 'text-white' : 'text-slate-400'}`}>class</span>
-                        <span className="font-black uppercase tracking-tight text-[11px]">{opt.label}</span>
+                        <span className="font-bold normal-case tracking-tight text-[11px]">{opt.label}</span>
                       </button>
                     ))
                   ) : (
                     <div className="p-4 text-center">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No results</p>
+                      <p className="text-[10px] font-bold text-slate-400 normal-case ">No results</p>
                     </div>
                   )}
                 </div>
@@ -102,14 +102,14 @@ export function TimetableToolbar({
         <div className="hidden lg:flex items-center gap-2">
            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-100">
               <div className={`h-1.5 w-1.5 rounded-full ${selectedClass?.room_number ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-              <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-slate-600 normal-case ">
                 {selectedClass?.room_number || 'Room TBA'}
               </span>
            </div>
            
            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-100">
               <span className="material-symbols-outlined text-blue-500 text-[16px]">layers</span>
-              <span className="text-[10px] font-black text-slate-600 uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-slate-600 normal-case ">
                 {selectedClass?.subjects?.length || 0} Subjects
               </span>
            </div>
@@ -117,7 +117,7 @@ export function TimetableToolbar({
            {conflictsCount > 0 && (
              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-red-50 border border-red-100 animate-pulse">
                 <span className="material-symbols-outlined text-red-500 text-[16px]">error</span>
-                <span className="text-[10px] font-black text-red-600 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-red-600 normal-case ">
                   {conflictsCount} Conflicts
                 </span>
              </div>
@@ -146,16 +146,16 @@ export function TimetableToolbar({
                   </button>
                   {isMenuOpen && (
                       <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl border border-slate-200 shadow-xl z-50 py-1.5 animate-in fade-in slide-in-from-top-2">
-                          <button className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                          <button className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[10px] font-bold normal-case  text-slate-600 hover:bg-slate-50 hover:text-blue-600">
                               <span className="material-symbols-outlined text-base">content_copy</span>
                               Duplicate
                           </button>
-                          <button className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 hover:text-blue-600">
+                          <button className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[10px] font-bold normal-case  text-slate-600 hover:bg-slate-50 hover:text-blue-600">
                               <span className="material-symbols-outlined text-base">auto_awesome</span>
                               Auto-Fill
                           </button>
                           <div className="my-1 border-t border-slate-100" />
-                          <button className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50">
+                          <button className="w-full flex items-center gap-2.5 px-3 py-1.5 text-left text-[10px] font-bold normal-case  text-red-600 hover:bg-red-50">
                               <span className="material-symbols-outlined text-base">delete_sweep</span>
                               Clear
                           </button>
@@ -169,7 +169,7 @@ export function TimetableToolbar({
               className="h-10 px-5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95 flex items-center gap-2 group"
            >
               <span className="material-symbols-outlined text-[18px] group-hover:rotate-90 transition-transform duration-300">add</span>
-              <span className="text-[10px] font-black uppercase tracking-widest">New Entry</span>
+              <span className="text-[10px] font-bold normal-case ">New Entry</span>
            </button>
         </div>
       </div>

@@ -46,7 +46,7 @@ export function TeacherTable({ teachers }: { teachers: TeacherRow[] }) {
             key: "status",
             label: "Status",
             render: (row: TeacherRow) => (
-                <Badge variant={row.status === "active" ? "success" : "gray"} className="capitalize">
+                <Badge variant={row.status === "active" ? "success" : "gray"} className="normal-case">
                     {row.status}
                 </Badge>
             )

@@ -68,7 +68,7 @@ export const LiveClassCard: React.FC<LiveClassCardProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase border ${currentConfig.bg} ${currentConfig.text} ${currentConfig.border}`}>
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold  normal-case border ${currentConfig.bg} ${currentConfig.text} ${currentConfig.border}`}>
                 {currentConfig.icon}
                 {displayStatus}
               </span>

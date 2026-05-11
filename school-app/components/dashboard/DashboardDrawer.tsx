@@ -70,7 +70,7 @@ export function DashboardDrawer({
                       </div>
                     )}
                     <div>
-                      <h3 className="text-lg font-black tracking-tight text-slate-900 leading-none">{title}</h3>
+                      <h3 className="text-lg font-bold tracking-tight text-slate-900 leading-none">{title}</h3>
                       {description && (
                         <p className="text-[11px] font-medium text-slate-500 mt-2 leading-relaxed max-w-[280px]">
                           {description}
@@ -95,16 +95,18 @@ export function DashboardDrawer({
               {/* Footer */}
               <div className="px-8 py-6 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between gap-4">
                 <button 
+                  type="button"
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-all disabled:opacity-50"
+                  className="px-6 py-2.5 text-[10px] font-bold normal-case  text-slate-400 hover:text-slate-900 transition-all disabled:opacity-50"
                 >
                   Discard
                 </button>
                 <button 
+                  type="button"
                   onClick={onPrimaryAction || onClose}
                   disabled={isSubmitting}
-                  className="flex-1 max-w-[180px] rounded-xl bg-blue-600 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-blue-700 shadow-xl shadow-blue-600/20 active:scale-[0.98] hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 max-w-[180px] rounded-xl bg-blue-600 py-3 text-[10px] font-bold normal-case  text-white transition-all hover:bg-blue-700 shadow-xl shadow-blue-600/20 active:scale-[0.98] hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isSubmitting && <span className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                   {isSubmitting ? "Processing..." : primaryActionLabel}

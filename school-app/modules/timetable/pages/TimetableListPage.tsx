@@ -75,12 +75,12 @@ export function TimetableListPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between px-4 py-2 bg-white rounded-2xl border border-slate-200/60 shadow-sm">
         <div>
-          <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest">Schedule Registry</h2>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Data-grid view of all institutional sessions</p>
+          <h2 className="text-sm font-bold text-slate-900 normal-case ">Schedule Registry</h2>
+          <p className="text-[10px] font-bold text-slate-500 normal-case tracking-tight">Data-grid view of all institutional sessions</p>
         </div>
         <button 
           onClick={() => router.push('/admin/timetable/create')}
-          className="h-9 px-5 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-md active:scale-95"
+          className="h-9 px-5 bg-blue-600 text-white rounded-lg text-[10px] font-bold normal-case  hover:bg-blue-700 transition-all shadow-md active:scale-95"
         >
           + New Record
         </button>

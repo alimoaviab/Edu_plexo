@@ -96,7 +96,7 @@ export const PricingSection = () => {
               }`}
             >
               {plan.isPopular && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1.5 bg-blue-500 text-white text-sm font-bold rounded-full uppercase tracking-wider shadow-md">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1.5 bg-blue-500 text-white text-sm font-bold rounded-full normal-case  shadow-md">
                   Most Popular
                 </div>
               )}

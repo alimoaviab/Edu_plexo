@@ -61,7 +61,7 @@ export default function TeacherClassStudentsPage() {
                 <Card>
                     <div className="flex items-center justify-between gap-3">
                         <div>
-                            <h2 className="text-2xl font-black text-slate-900">{state.data.class}</h2>
+                            <h2 className="text-2xl font-bold text-slate-900">{state.data.class}</h2>
                             <p className="text-sm text-slate-500">{state.data.total_students} students enrolled</p>
                         </div>
                         <Badge variant="secondary">Teacher view</Badge>

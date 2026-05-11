@@ -116,13 +116,13 @@ export function TimetablePage() {
               <div className="h-20 w-20 rounded-[2rem] bg-slate-50 flex items-center justify-center text-slate-300 mb-6 border border-slate-100">
                 <span className="material-symbols-outlined text-4xl">calendar_add_on</span>
               </div>
-              <h3 className="text-xl font-black text-slate-900 mb-2">No schedule entries found</h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">No schedule entries found</h3>
               <p className="text-sm text-slate-500 mb-8 max-w-sm text-center leading-relaxed">
                 Your timetable workspace is currently empty. Start by creating your first class schedule entry to begin configuration.
               </p>
               <button 
                 onClick={() => router.push(`/admin/timetable/create?class_id=${classId}`)}
-                className="h-11 px-8 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 active:scale-95"
+                className="h-11 px-8 bg-slate-900 text-white rounded-xl text-[10px] font-bold normal-case  hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 active:scale-95"
               >
                 + Create First Entry
               </button>

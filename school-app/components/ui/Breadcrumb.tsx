@@ -47,12 +47,12 @@ export function Breadcrumb() {
             {item.href ? (
               <Link
                 href={item.href}
-                className="text-gray-500 hover:text-blue-600 transition-colors font-medium capitalize"
+                className="text-gray-500 hover:text-blue-600 transition-colors font-medium normal-case"
               >
                 {item.label}
               </Link>
             ) : (
-              <span className="text-gray-900 font-semibold capitalize">{item.label}</span>
+              <span className="text-gray-900 font-semibold normal-case">{item.label}</span>
             )}
           </li>
         ))}

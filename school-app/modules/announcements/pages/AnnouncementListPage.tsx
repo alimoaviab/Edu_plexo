@@ -52,7 +52,7 @@ export function AnnouncementListPage() {
             row.priority === "high" ? "warning" :
             row.priority === "normal" ? "secondary" : "gray"
           }
-          className="capitalize text-[9px] font-black uppercase tracking-widest px-2"
+          className="normal-case text-[9px] font-bold normal-case  px-2"
         >
           {row.priority}
         </Badge>
@@ -65,7 +65,7 @@ export function AnnouncementListPage() {
       render: (row) => (
         <div className="flex flex-col">
           <span className="font-bold text-slate-900 leading-none mb-1">{row.title}</span>
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter truncate max-w-[200px]">{row.content}</span>
+          <span className="text-[10px] text-slate-400 font-bold normal-case tracking-tighter truncate max-w-[200px]">{row.content}</span>
         </div>
       ),
       sortable: true,
@@ -74,7 +74,7 @@ export function AnnouncementListPage() {
       key: "target",
       label: "Reach",
       render: (row) => (
-        <Badge variant="gray" className="capitalize text-[10px] font-black tracking-widest px-1.5 bg-slate-50 border-slate-100 text-slate-500">
+        <Badge variant="gray" className="normal-case text-[10px] font-bold  px-1.5 bg-slate-50 border-slate-100 text-slate-500">
            {row.target_type}
         </Badge>
       ),
@@ -85,7 +85,7 @@ export function AnnouncementListPage() {
       render: (row) => (
         <Badge
           variant={row.status === "published" ? "success" : row.status === "draft" ? "warning" : "gray"}
-          className="capitalize text-[9px] font-black uppercase tracking-widest px-2"
+          className="normal-case text-[9px] font-bold normal-case  px-2"
         >
           {row.status}
         </Badge>
@@ -142,11 +142,11 @@ export function AnnouncementListPage() {
         ].map((stat, i) => (
           <div key={i} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-              <h3 className="text-xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
+              <p className="text-[10px] font-bold text-slate-400 normal-case  mb-1">{stat.label}</p>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
             </div>
             <div className={`h-8 w-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
-               <span className="material-symbols-outlined text-lg font-black">{stat.icon}</span>
+               <span className="material-symbols-outlined text-lg font-bold">{stat.icon}</span>
             </div>
           </div>
         ))}
@@ -199,13 +199,13 @@ export function AnnouncementListPage() {
             </button>
           </div>
           <div className="h-6 w-px bg-slate-200" />
-          <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest px-2 whitespace-nowrap">
+          <span className="text-[10px] font-bold text-slate-900 normal-case  px-2 whitespace-nowrap">
             {filteredRows.length} <span className="text-slate-400">NOTICES</span>
           </span>
           <div className="h-6 w-px bg-slate-200" />
           <Link
             href={pathname.includes("/teacher") ? "/teacher/announcements/create" : "/admin/announcements/create"}
-            className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-black uppercase tracking-widest text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+            className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-bold normal-case  text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
           >
             <span className="material-symbols-outlined text-lg">campaign</span>
             New Notice
@@ -228,20 +228,20 @@ export function AnnouncementListPage() {
                 <div key={row._id} className="premium-card group relative flex flex-col p-0 overflow-hidden transition-all duration-500 bg-white border-slate-200/60 hover:shadow-2xl hover:shadow-slate-200/80 hover:-translate-y-1">
                   <div className="p-5">
                     <div className="flex items-start justify-between mb-4">
-                      <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-[11px] font-black uppercase shadow-lg group-hover:scale-110 transition-transform">
+                      <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-[11px] font-bold normal-case shadow-lg group-hover:scale-110 transition-transform">
                         <span className="material-symbols-outlined text-lg">campaign</span>
                       </div>
                       <Badge
                         variant={row.priority === "urgent" ? "error" : row.priority === "high" ? "warning" : "secondary"}
-                        className="uppercase text-[9px] font-black tracking-widest px-2 py-0.5"
+                        className="normal-case text-[9px] font-bold  px-2 py-0.5"
                       >
                         {row.priority}
                       </Badge>
                     </div>
 
                     <div className="mb-6">
-                      <h3 className="text-lg font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors truncate">{row.title}</h3>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Target: {row.target_type} &bull; {row.status}</p>
+                      <h3 className="text-lg font-bold text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors truncate">{row.title}</h3>
+                      <p className="text-[10px] font-bold text-slate-400 normal-case  mt-1">Target: {row.target_type} &bull; {row.status}</p>
                     </div>
 
                     <div className="space-y-1 min-h-[60px]">
@@ -252,7 +252,7 @@ export function AnnouncementListPage() {
                   <div className="mt-auto px-5 py-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-white transition-all">
                      <div className="flex items-center gap-2 text-slate-400">
                         <span className="material-symbols-outlined text-sm">schedule</span>
-                        <span className="text-[9px] font-black uppercase tracking-widest">
+                        <span className="text-[9px] font-bold normal-case ">
                           {row.created_at ? new Date(row.created_at).toLocaleDateString() : "Pending"}
                         </span>
                      </div>
@@ -285,18 +285,18 @@ export function AnnouncementListPage() {
 
       {/* Pagination Footer - Premium ERP Style */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        <p className="text-[10px] font-bold text-slate-400 normal-case ">
           Showing <span className="text-blue-600">1</span> to <span className="text-slate-900">{filteredRows.length}</span> of <span className="text-slate-900">{state.data?.length}</span> Broadcast Records
         </p>
         <div className="flex items-center gap-2">
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
             <span className="material-symbols-outlined text-base">chevron_left</span>
             Previous
           </button>
           <div className="flex items-center gap-1">
-            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-black text-white shadow-lg shadow-blue-600/20">1</button>
+            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-bold text-white shadow-lg shadow-blue-600/20">1</button>
           </div>
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
             Next
             <span className="material-symbols-outlined text-base">chevron_right</span>
           </button>

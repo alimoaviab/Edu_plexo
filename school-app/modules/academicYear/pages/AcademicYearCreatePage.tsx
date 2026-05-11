@@ -26,12 +26,12 @@ export function AcademicYearCreatePage() {
       <div className="mb-6 flex items-center justify-between">
         <Link
           href="/admin/academic-years"
-          className="inline-flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-all group"
+          className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-400 normal-case  hover:text-slate-900 transition-all group"
         >
           <span className="material-symbols-outlined text-[16px] group-hover:-translate-x-0.5 transition-transform">arrow_back</span>
           Return to Sessions
         </Link>
-        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 normal-case ">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
           System Configurator
         </div>
@@ -48,7 +48,7 @@ export function AcademicYearCreatePage() {
                   <span className="material-symbols-outlined text-lg">calendar_month</span>
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-slate-900 tracking-tight leading-none">New Academic Session</h2>
+                  <h2 className="text-lg font-bold text-slate-900 tracking-tight leading-none">New Academic Session</h2>
                   <p className="text-[10px] text-slate-500 mt-1.5 font-medium">
                     Initialize institutional timeline and operational cycles.
                   </p>
@@ -69,12 +69,12 @@ export function AcademicYearCreatePage() {
               <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-600">
                 <span className="material-symbols-outlined text-base">info</span>
               </div>
-              <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-tight">Setup Intelligence</h3>
+              <h3 className="text-[11px] font-bold text-slate-900 normal-case tracking-tight">Setup Intelligence</h3>
             </div>
 
             <div className="space-y-5">
               <section>
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                <h4 className="text-[10px] font-bold text-slate-400 normal-case  mb-1.5 flex items-center gap-2">
                   <span className="h-1 w-1 rounded-full bg-slate-400" />
                   What is a Session?
                 </h4>
@@ -84,7 +84,7 @@ export function AcademicYearCreatePage() {
               </section>
 
               <section>
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                <h4 className="text-[10px] font-bold text-slate-400 normal-case  mb-1.5 flex items-center gap-2">
                   <span className="h-1 w-1 rounded-full bg-slate-400" />
                   Activation Rule
                 </h4>
@@ -96,7 +96,7 @@ export function AcademicYearCreatePage() {
               </section>
 
               <section>
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Naming Guide</h4>
+                <h4 className="text-[10px] font-bold text-slate-400 normal-case  mb-2.5">Naming Guide</h4>
                 <div className="flex flex-wrap gap-1.5">
                   <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[9px] font-bold text-slate-600 italic">2025–2026</span>
                   <span className="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[9px] font-bold text-slate-600 italic">Spring 2026</span>
@@ -104,7 +104,7 @@ export function AcademicYearCreatePage() {
               </section>
 
               <div className="pt-2 border-t border-slate-200">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Quick Checklist</h4>
+                <h4 className="text-[10px] font-bold text-slate-400 normal-case  mb-2.5">Quick Checklist</h4>
                 <ul className="space-y-1.5">
                   <li className="flex items-center gap-2 text-[10px] font-medium text-slate-600">
                     <span className="material-symbols-outlined text-[14px] text-emerald-500">check_circle</span>

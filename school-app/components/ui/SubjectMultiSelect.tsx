@@ -153,7 +153,7 @@ export function SubjectMultiSelect({
                 type="button"
                 onClick={() => setIsExpanded(!isExpanded)}
                 disabled={disabled || isLoading}
-                className={`w-full px-4 py-2 rounded-lg border transition-all text-left flex items-center justify-between ${disabled || isLoading
+                className={`w-full px-2 py-1 rounded-lg border transition-all text-left flex items-center justify-between ${disabled || isLoading
                     ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
                     : "bg-white border-gray-300 text-gray-700 hover:border-gray-400 cursor-pointer"
                     } ${isExpanded ? "border-blue-500 ring-1 ring-blue-200" : ""}`}

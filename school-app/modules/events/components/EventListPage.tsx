@@ -47,12 +47,12 @@ export default function EventListPage() {
       label: "Event Milestone",
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-black uppercase">
+          <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-bold normal-case">
             <span className="material-symbols-outlined text-base">event</span>
           </div>
           <div>
             <p className="font-bold text-slate-900 leading-none mb-1">{row.title}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter capitalize">{row.location || "Global Campus"}</p>
+            <p className="text-[10px] text-slate-400 font-bold normal-case tracking-tighter normal-case">{row.location || "Global Campus"}</p>
           </div>
         </div>
       ),
@@ -62,7 +62,7 @@ export default function EventListPage() {
       key: "type",
       label: "Category",
       render: (row) => (
-        <Badge variant="secondary" className="capitalize text-[10px] font-black tracking-widest px-1.5 bg-slate-50 border-slate-100 text-slate-600">
+        <Badge variant="secondary" className="normal-case text-[10px] font-bold  px-1.5 bg-slate-50 border-slate-100 text-slate-600">
            {row.event_type}
         </Badge>
       ),
@@ -73,7 +73,7 @@ export default function EventListPage() {
       render: (row) => (
         <div className="flex flex-col">
           <p className="text-[11px] font-bold text-slate-700">{row.start_date}</p>
-          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">to {row.end_date || "N/A"}</p>
+          <p className="text-[9px] font-bold text-slate-400 normal-case ">to {row.end_date || "N/A"}</p>
         </div>
       ),
     },
@@ -83,7 +83,7 @@ export default function EventListPage() {
       render: (row) => (
         <Badge
           variant={row.status === "published" ? "success" : row.status === "cancelled" ? "error" : "warning"}
-          className="capitalize text-[9px] font-black uppercase tracking-widest px-2"
+          className="normal-case text-[9px] font-bold normal-case  px-2"
         >
           {row.status}
         </Badge>
@@ -140,11 +140,11 @@ export default function EventListPage() {
         ].map((stat, i) => (
           <div key={i} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-              <h3 className="text-xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
+              <p className="text-[10px] font-bold text-slate-400 normal-case  mb-1">{stat.label}</p>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
             </div>
             <div className={`h-8 w-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
-               <span className="material-symbols-outlined text-lg font-black">{stat.icon}</span>
+               <span className="material-symbols-outlined text-lg font-bold">{stat.icon}</span>
             </div>
           </div>
         ))}
@@ -156,8 +156,8 @@ export default function EventListPage() {
            <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-100 animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
              <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight">{editing ? "Modify Event Milestone" : "Schedule New Milestone"}</h3>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Institutional Calendar Management</p>
+                  <h3 className="text-lg font-bold text-slate-900 tracking-tight">{editing ? "Modify Event Milestone" : "Schedule New Milestone"}</h3>
+                  <p className="text-[11px] font-bold text-slate-400 normal-case  mt-1">Institutional Calendar Management</p>
                 </div>
                 <button onClick={() => { setShowForm(false); setEditing(null); }} className="h-8 w-8 rounded-full hover:bg-slate-50 flex items-center justify-center transition-colors">
                    <span className="material-symbols-outlined text-slate-400">close</span>
@@ -219,14 +219,14 @@ export default function EventListPage() {
             </button>
           </div>
           <div className="h-6 w-px bg-slate-200" />
-          <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest px-2 whitespace-nowrap">
+          <span className="text-[10px] font-bold text-slate-900 normal-case  px-2 whitespace-nowrap">
             {filteredRows.length} <span className="text-slate-400">EVENTS</span>
           </span>
           <div className="h-6 w-px bg-slate-200" />
           {!pathname.includes("/parent") && (
             <button
               onClick={() => { setEditing(null); setShowForm(true); }}
-              className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-black uppercase tracking-widest text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+              className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-bold normal-case  text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
             >
               <span className="material-symbols-outlined text-lg">event_available</span>
               Add Event
@@ -250,24 +250,24 @@ export default function EventListPage() {
                 <div key={row._id} className="premium-card group relative flex flex-col p-0 overflow-hidden transition-all duration-500 bg-white border-slate-200/60 hover:shadow-2xl hover:shadow-slate-200/80 hover:-translate-y-1">
                   <div className="p-5">
                     <div className="flex items-start justify-between mb-4">
-                      <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-[11px] font-black uppercase shadow-lg group-hover:scale-110 transition-transform">
+                      <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-[11px] font-bold normal-case shadow-lg group-hover:scale-110 transition-transform">
                         <span className="material-symbols-outlined text-lg">event</span>
                       </div>
                       <Badge
                         variant={row.status === "published" ? "success" : row.status === "cancelled" ? "error" : "warning"}
-                        className="uppercase text-[9px] font-black tracking-widest px-2 py-0.5"
+                        className="normal-case text-[9px] font-bold  px-2 py-0.5"
                       >
                         {row.status}
                       </Badge>
                     </div>
 
                     <div className="mb-6">
-                      <h3 className="text-lg font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors truncate">{row.title}</h3>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 capitalize">{row.event_type} &bull; {row.location || "Global Campus"}</p>
+                      <h3 className="text-lg font-bold text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors truncate">{row.title}</h3>
+                      <p className="text-[10px] font-bold text-slate-400 normal-case  mt-1 normal-case">{row.event_type} &bull; {row.location || "Global Campus"}</p>
                     </div>
 
                     <div className="bg-slate-50/50 rounded-xl p-3 border border-slate-100/50 mb-6">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Timing Index</p>
+                      <p className="text-[8px] font-bold text-slate-400 normal-case  mb-1">Timing Index</p>
                       <p className="text-[11px] font-bold text-slate-700 truncate">{row.start_date} <span className="text-slate-400 font-normal">to</span> {row.end_date || "—"}</p>
                     </div>
                   </div>
@@ -275,7 +275,7 @@ export default function EventListPage() {
                   <div className="mt-auto px-5 py-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-white transition-all">
                      <div className="flex items-center gap-2 text-slate-400">
                         <span className="material-symbols-outlined text-sm">location_on</span>
-                        <span className="text-[9px] font-black uppercase tracking-widest truncate max-w-[120px]">{row.location || "Global"}</span>
+                        <span className="text-[9px] font-bold normal-case  truncate max-w-[120px]">{row.location || "Global"}</span>
                      </div>
                      {!pathname.includes("/parent") && (
                         <div className="flex items-center gap-1">
@@ -308,18 +308,18 @@ export default function EventListPage() {
 
       {/* Pagination Footer - Premium ERP Style */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        <p className="text-[10px] font-bold text-slate-400 normal-case ">
           Showing <span className="text-blue-600">1</span> to <span className="text-slate-900">{filteredRows.length}</span> of <span className="text-slate-900">{state.data?.length}</span> Calendar Records
         </p>
         <div className="flex items-center gap-2">
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
             <span className="material-symbols-outlined text-base">chevron_left</span>
             Previous
           </button>
           <div className="flex items-center gap-1">
-            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-black text-white shadow-lg shadow-blue-600/20">1</button>
+            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-bold text-white shadow-lg shadow-blue-600/20">1</button>
           </div>
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
             Next
             <span className="material-symbols-outlined text-base">chevron_right</span>
           </button>

@@ -28,10 +28,10 @@ export function HomeworkEditPage({ role, id }: HomeworkEditPageProps) {
     try {
       const isTeacher = role === "TEACHER";
       const endpoints = [
-        fetch(isTeacher ? "/api/school/my-classes" : "/api/classes"),
-        fetch("/api/school/subjects"),
-        fetch(`/api/homework/${id}`),
-        ...(role === "ADMIN" ? [fetch("/api/teachers")] : [])
+        fetch(isTeacher ? "/api/school/my-classes" : "/api/classes", { credentials: "include" }),
+        fetch("/api/school/subjects", { credentials: "include" }),
+        fetch(`/api/homework/${id}`, { credentials: "include" }),
+        ...(role === "ADMIN" ? [fetch("/api/teachers", { credentials: "include" })] : [])
       ];
 
       const responses = await Promise.all(endpoints);
@@ -70,6 +70,7 @@ export function HomeworkEditPage({ role, id }: HomeworkEditPageProps) {
       const res = await fetch(`/api/homework/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
       });
 
@@ -101,7 +102,7 @@ export function HomeworkEditPage({ role, id }: HomeworkEditPageProps) {
 
       <Card className="p-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Edit Homework</h2>
+          <h2 className="text-2xl font-bold text-slate-900 normal-case tracking-tight">Edit Homework</h2>
           <p className="text-sm text-slate-500 mt-1 font-medium">Modify the assignment details.</p>
         </div>
 

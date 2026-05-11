@@ -88,7 +88,7 @@ export function SubjectSelect({
                 value={value || ""}
                 onChange={(e) => onChange(e.target.value || null)}
                 disabled={disabled || isLoading || subjects.length === 0}
-                className={`w-full px-4 py-2 rounded-lg border transition-all ${disabled || isLoading
+                className={`w-full px-2 py-1 rounded-lg border transition-all ${disabled || isLoading
                     ? "bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed"
                     : error || subjects.length === 0
                         ? "bg-gray-50 border-gray-200 text-gray-500 cursor-not-allowed"

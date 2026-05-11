@@ -46,7 +46,7 @@ export function ResultListPage({ filters }: { filters?: { exam_id?: string; stud
       render: (row) => (
         <div className="flex flex-col">
           <span className="font-bold text-slate-900 leading-none mb-1">{row.exam_title}</span>
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{row.exam_subject}</span>
+          <span className="text-[10px] text-slate-400 font-bold normal-case tracking-tighter">{row.exam_subject}</span>
         </div>
       ),
       sortable: true,
@@ -57,7 +57,7 @@ export function ResultListPage({ filters }: { filters?: { exam_id?: string; stud
       render: (row) => (
         <div className="flex flex-col">
           <span className="text-[11px] font-bold text-slate-700 leading-none mb-1">{row.student_name}</span>
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{row.admission_no} &bull; {row.class_name}</span>
+          <span className="text-[9px] font-bold text-slate-400 normal-case ">{row.admission_no} &bull; {row.class_name}</span>
         </div>
       ),
       sortable: true,
@@ -70,8 +70,8 @@ export function ResultListPage({ filters }: { filters?: { exam_id?: string; stud
         return (
           <div className="flex flex-col w-32">
             <div className="flex items-center justify-between mb-1">
-               <span className="text-[11px] font-black text-slate-900">{row.obtained_marks} / {row.max_marks}</span>
-               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{Math.round(ratio * 100)}%</span>
+               <span className="text-[11px] font-bold text-slate-900">{row.obtained_marks} / {row.max_marks}</span>
+               <span className="text-[9px] font-bold text-slate-400 normal-case ">{Math.round(ratio * 100)}%</span>
             </div>
             <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
               <div
@@ -89,7 +89,7 @@ export function ResultListPage({ filters }: { filters?: { exam_id?: string; stud
       render: (row) => (
         <Badge 
           variant={row.grade === "A" || row.grade === "A+" ? "success" : row.grade === "F" ? "error" : "primary"}
-          className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 min-w-[32px] text-center"
+          className="text-[10px] font-bold normal-case  px-2.5 py-1 min-w-[32px] text-center"
         >
           {row.grade}
         </Badge>
@@ -98,7 +98,7 @@ export function ResultListPage({ filters }: { filters?: { exam_id?: string; stud
     {
         key: "period",
         label: "Timeline",
-        render: (row) => <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{new Date(row.graded_at).toLocaleDateString()}</span>,
+        render: (row) => <span className="text-[10px] font-bold text-slate-500 normal-case ">{new Date(row.graded_at).toLocaleDateString()}</span>,
     }
   ], []);
 
@@ -147,11 +147,11 @@ export function ResultListPage({ filters }: { filters?: { exam_id?: string; stud
         ].map((stat, i) => (
           <div key={i} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-              <h3 className="text-xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
+              <p className="text-[10px] font-bold text-slate-400 normal-case  mb-1">{stat.label}</p>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
             </div>
             <div className={`h-8 w-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
-               <span className="material-symbols-outlined text-lg font-black">{stat.icon}</span>
+               <span className="material-symbols-outlined text-lg font-bold">{stat.icon}</span>
             </div>
           </div>
         ))}
@@ -184,14 +184,14 @@ export function ResultListPage({ filters }: { filters?: { exam_id?: string; stud
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest px-2 whitespace-nowrap">
+          <span className="text-[10px] font-bold text-slate-900 normal-case  px-2 whitespace-nowrap">
             {filteredRows.length} <span className="text-slate-400">RECORDS</span>
           </span>
           <div className="h-6 w-px bg-slate-200" />
           {!pathname.includes("/parent") && (
             <Link
               href={pathname.includes("/teacher") ? "/teacher/results/create" : "/admin/results/create"}
-              className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-black uppercase tracking-widest text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+              className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-bold normal-case  text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
             >
               <span className="material-symbols-outlined text-lg">add_chart</span>
               Record Performance
@@ -218,18 +218,18 @@ export function ResultListPage({ filters }: { filters?: { exam_id?: string; stud
 
       {/* Pagination Footer - Premium ERP Style */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        <p className="text-[10px] font-bold text-slate-400 normal-case ">
           Showing <span className="text-blue-600">1</span> to <span className="text-slate-900">{filteredRows.length}</span> of <span className="text-slate-900">{state.data?.length}</span> Assessments
         </p>
         <div className="flex items-center gap-2">
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
             <span className="material-symbols-outlined text-base">chevron_left</span>
             Previous
           </button>
           <div className="flex items-center gap-1">
-            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-black text-white shadow-lg shadow-blue-600/20">1</button>
+            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-bold text-white shadow-lg shadow-blue-600/20">1</button>
           </div>
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
             Next
             <span className="material-symbols-outlined text-base">chevron_right</span>
           </button>

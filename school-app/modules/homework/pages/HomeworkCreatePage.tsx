@@ -26,9 +26,9 @@ export function HomeworkCreatePage({ role }: HomeworkCreatePageProps) {
     try {
       const isTeacher = role === "TEACHER";
       const endpoints = [
-        fetch(isTeacher ? "/api/school/my-classes" : "/api/classes"),
-        fetch("/api/school/subjects"),
-        ...(role === "ADMIN" ? [fetch("/api/teachers")] : [])
+        fetch(isTeacher ? "/api/school/my-classes" : "/api/classes", { credentials: "include" }),
+        fetch("/api/school/subjects", { credentials: "include" }),
+        ...(role === "ADMIN" ? [fetch("/api/teachers", { credentials: "include" })] : [])
       ];
 
       const responses = await Promise.all(endpoints);
@@ -66,6 +66,7 @@ export function HomeworkCreatePage({ role }: HomeworkCreatePageProps) {
       const res = await fetch("/api/homework", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data),
       });
 
@@ -97,7 +98,7 @@ export function HomeworkCreatePage({ role }: HomeworkCreatePageProps) {
 
       <Card className="p-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Assign New Homework</h2>
+          <h2 className="text-2xl font-bold text-slate-900 normal-case tracking-tight">Assign New Homework</h2>
           <p className="text-sm text-slate-500 mt-1 font-medium">Create a new assignment for your students.</p>
         </div>
 

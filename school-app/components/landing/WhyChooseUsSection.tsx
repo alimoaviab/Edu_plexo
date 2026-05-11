@@ -108,12 +108,12 @@ export const WhyChooseUsSection = () => {
                    <div className="mt-12 pt-8 border-t border-white/10 flex items-center justify-between">
                      <div>
                        <div className="text-white text-4xl font-extrabold">100%</div>
-                       <div className="text-slate-400 text-sm font-semibold uppercase tracking-wider mt-1">Satisfaction Rate</div>
+                       <div className="text-slate-400 text-sm font-semibold normal-case  mt-1">Satisfaction Rate</div>
                      </div>
                      <div className="h-12 w-px bg-white/10" />
                      <div>
                        <div className="text-white text-4xl font-extrabold">&lt; 1hr</div>
-                       <div className="text-slate-400 text-sm font-semibold uppercase tracking-wider mt-1">Support Response</div>
+                       <div className="text-slate-400 text-sm font-semibold normal-case  mt-1">Support Response</div>
                      </div>
                    </div>
                 </div>

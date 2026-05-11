@@ -7,6 +7,7 @@ import { showToast } from "@/utils/toast";
 import { PeriodCard } from "./PeriodCard";
 import { findTimetableConflicts } from "../utils/conflicts";
 import { useTimetable } from "../hooks/useTimetable";
+import { serviceRequest } from "../../../services/service-client";
 
 interface TimetableFormProps {
   onCreate: (input: TimetableFormInput) => Promise<unknown>;
@@ -42,6 +43,8 @@ export function TimetableForm({
 
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [classSubjectOptions, setClassSubjectOptions] = useState<Array<{ id: string; label: string }>>([]);
+  const [loadingClassSubjects, setLoadingClassSubjects] = useState(false);
 
   useEffect(() => {
     if (initialClassId && !initialValues) {
@@ -49,13 +52,59 @@ export function TimetableForm({
     }
   }, [initialClassId, initialValues]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadClassSubjects(classId: string) {
+      if (!classId) {
+        setClassSubjectOptions([]);
+        return;
+      }
+
+      setLoadingClassSubjects(true);
+      try {
+        const result = await serviceRequest<{ subjects?: any[] }>(`/api/classes/${classId}/subjects`);
+        if (!result.ok) {
+          throw new Error(result.error.message || "Failed to load class subjects");
+        }
+
+        const subjects = (result.data?.subjects ?? [])
+          .map((subject: any) => ({
+            id: String(subject._id ?? subject.id ?? subject.name ?? ""),
+            label: subject.name || String(subject._id ?? subject.id ?? "")
+          }))
+          .filter((option: { id: string; label: string }) => Boolean(option.id));
+
+        if (!cancelled) {
+          setClassSubjectOptions(subjects);
+        }
+      } catch {
+        if (!cancelled) {
+          setClassSubjectOptions([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingClassSubjects(false);
+        }
+      }
+    }
+
+    void loadClassSubjects(form.class_id);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.class_id]);
+
+  const subjectsToDisplay = classSubjectOptions.length > 0 ? classSubjectOptions : subjectOptions;
+
   const conflicts = useMemo(() => {
     if (!timetableState.data) return [];
     return findTimetableConflicts(timetableState.data, form);
   }, [timetableState.data, form]);
 
   const previewRecord = useMemo(() => {
-    const subject = subjectOptions.find(s => s.id === form.subject_id);
+    const subject = subjectsToDisplay.find(s => s.id === form.subject_id);
     const teacher = teacherOptions.find(t => t.id === form.teacher_id);
     const className = classOptions.find(c => c.id === form.class_id);
 
@@ -75,7 +124,7 @@ export function TimetableForm({
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     } as TimetableRecord;
-  }, [form, subjectOptions, teacherOptions, classOptions]);
+  }, [form, subjectsToDisplay, teacherOptions, classOptions]);
 
   function validate() {
     const newErrors: Record<string, string> = {};
@@ -138,7 +187,7 @@ export function TimetableForm({
             <Select
               label="Class Section"
               value={form.class_id}
-              onChange={(e) => setForm({ ...form, class_id: e.target.value })}
+              onChange={(e) => setForm({ ...form, class_id: e.target.value, subject_id: "" })}
               options={[{ label: "Select class", value: "" }, ...classOptions.map(o => ({ label: o.label, value: o.id }))]}
               error={errors.class_id}
               required
@@ -148,7 +197,11 @@ export function TimetableForm({
               label="Subject"
               value={form.subject_id}
               onChange={(e) => setForm({ ...form, subject_id: e.target.value })}
-              options={[{ label: "Select subject", value: "" }, ...subjectOptions.map(o => ({ label: o.label, value: o.id }))]}
+              options={[
+                { label: loadingClassSubjects ? "Loading subjects..." : "Select subject", value: "" },
+                ...subjectsToDisplay.map(o => ({ label: o.label, value: o.id }))
+              ]}
+              disabled={!form.class_id || loadingClassSubjects}
               error={errors.subject_id}
               required
               className="h-11 text-sm rounded-xl"
@@ -220,7 +273,7 @@ export function TimetableForm({
         <div className="lg:col-span-5 border-l border-slate-100 pl-6 flex flex-col justify-center bg-slate-50/50 rounded-2xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Entry Intelligence</h4>
+            <h4 className="text-[10px] font-bold text-slate-500 normal-case ">Entry Intelligence</h4>
           </div>
           
           <div className="w-full">
@@ -231,16 +284,16 @@ export function TimetableForm({
             <div className="mt-4 p-3 bg-red-50 rounded-xl border border-red-100/50">
               <div className="flex items-center gap-2 text-red-600 mb-1">
                 <span className="material-symbols-outlined text-[14px]">warning</span>
-                <p className="text-[9px] font-black uppercase tracking-widest">Conflict detected</p>
+                <p className="text-[9px] font-bold normal-case ">Conflict detected</p>
               </div>
-              <p className="text-[10px] font-bold text-red-500/80 leading-relaxed uppercase tracking-tight">
+              <p className="text-[10px] font-bold text-red-500/80 leading-relaxed normal-case tracking-tight">
                 {conflicts[0].type} overlaps found at this time slot.
               </p>
             </div>
           ) : (
              <div className="mt-4 p-3 bg-emerald-50/50 rounded-xl border border-emerald-100/50 flex items-center gap-2">
                 <span className="material-symbols-outlined text-emerald-500 text-[14px]">check_circle</span>
-                <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Schedule Clear</p>
+                <p className="text-[9px] font-bold text-emerald-600 normal-case ">Schedule Clear</p>
              </div>
           )}
         </div>
@@ -250,7 +303,7 @@ export function TimetableForm({
         <Button
           variant="secondary"
           type="button"
-          className="h-10 px-8 rounded-xl text-[10px] font-black uppercase tracking-widest"
+          className="h-10 px-8 rounded-xl text-[10px] font-bold normal-case "
           onClick={() => window.history.back()}
         >
           Cancel
@@ -258,7 +311,7 @@ export function TimetableForm({
         <Button
           type="submit"
           disabled={saving || isLoading}
-          className="h-10 px-10 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-600/20 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+          className="h-10 px-10 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-600/20 text-[10px] font-bold normal-case  active:scale-95 transition-all"
         >
           {saving ? "Processing..." : "Create Schedule Entry"}
         </Button>

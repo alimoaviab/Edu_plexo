@@ -80,7 +80,7 @@ export function ClassForm({
         const newErrors: Record<string, string> = {};
         if (!form.name.trim()) newErrors.name = "Class name is required";
         if (!form.code.trim()) newErrors.code = "Class code is required";
-        if (!form.academy_care_id.trim()) newErrors.academy_care_id = "Academy Care is required";
+        if (!form.academy_care_id.trim()) newErrors.academy_care_id = "Academy Year is required";
         if (form.subjects.length === 0) newErrors.subjects = "At least one subject is required";
         
         // Validate subjects
@@ -161,7 +161,7 @@ export function ClassForm({
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             {/* Summary Bar */}
-            <div className="flex items-center gap-4 p-1.5 bg-slate-50/50 rounded-xl border border-slate-100 text-[11px] font-black uppercase tracking-widest text-slate-500">
+            <div className="flex items-center gap-4 p-1.5 bg-slate-50/50 rounded-xl border border-slate-100 text-[11px] font-bold normal-case  text-slate-500">
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-sm text-blue-600">visibility</span>
                     <span>{subjectCount} subjects</span>
@@ -188,7 +188,7 @@ export function ClassForm({
                 {/* Basic Info Section */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <Input
-                        label="Class Name *"
+                        label="Class name *"
                         placeholder="Class 10"
                         value={form.name}
                         onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -196,7 +196,7 @@ export function ClassForm({
                         className="font-bold"
                     />
                     <Input
-                        label="Class Code *"
+                        label="Class code *"
                         placeholder="C10"
                         value={form.code}
                         onChange={(e) => setForm({ ...form, code: e.target.value })}
@@ -204,7 +204,7 @@ export function ClassForm({
                         className="font-bold"
                     />
                     <Input
-                        label="Display Order"
+                        label="Display order"
                         type="number"
                         value={form.display_order}
                         onChange={(e) => setForm({ ...form, display_order: parseInt(e.target.value) || 0 })}
@@ -222,12 +222,12 @@ export function ClassForm({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
                         <div className="flex items-center justify-between px-0.5">
-                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Academic Year *</label>
+                            <label className="text-[11px] font-bold text-slate-500 normal-case ">Academic year *</label>
                             {onCreateAcademicYear && (
                                 <button 
                                     type="button"
                                     onClick={onCreateAcademicYear}
-                                    className="h-8 px-3 rounded-full border border-blue-100 bg-blue-50/30 text-[10px] font-black text-blue-600 uppercase tracking-widest hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
+                                    className="h-8 px-3 rounded-full border border-blue-100 bg-blue-50/30 text-[10px] font-bold text-blue-600 normal-case  hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
                                 >
                                     <span className="material-symbols-outlined text-[16px] group-hover:rotate-90 transition-transform">add_circle</span>
                                     New Session
@@ -254,12 +254,12 @@ export function ClassForm({
 
                     <div className="space-y-1.5">
                         <div className="flex items-center justify-between px-0.5">
-                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Assigned Faculty</label>
+                            <label className="text-[11px] font-bold text-slate-500 normal-case ">Assigned faculty</label>
                             {onCreateTeacher && (
                                 <button 
                                     type="button"
                                     onClick={onCreateTeacher}
-                                    className="h-8 px-3 rounded-full border border-blue-100 bg-blue-50/30 text-[10px] font-black text-blue-600 uppercase tracking-widest hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
+                                    className="h-8 px-3 rounded-full border border-blue-100 bg-blue-50/30 text-[10px] font-bold text-blue-600 normal-case  hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
                                 >
                                     <span className="material-symbols-outlined text-[16px] group-hover:rotate-90 transition-transform">person_add</span>
                                     Add Teacher
@@ -315,11 +315,11 @@ export function ClassForm({
                                         ))}
                                     {teacherOptions.filter((t: { id: string; label: string }) => t.label.toLowerCase().includes(teacherSearch.toLowerCase()) && !form.teacher_ids.includes(t.id)).length === 0 && (
                                         <div className="px-3 py-4 text-center">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">No faculty found</p>
+                                            <p className="text-[10px] font-bold text-slate-400 normal-case ">No faculty found</p>
                                             <button 
                                                 type="button"
                                                 onClick={onCreateTeacher}
-                                                className="mt-2 text-[10px] font-black text-blue-600 uppercase hover:underline"
+                                                className="mt-2 text-[10px] font-bold text-blue-600 normal-case hover:underline"
                                             >
                                                 Create "{teacherSearch}" teacher
                                             </button>
@@ -340,7 +340,7 @@ export function ClassForm({
                 {/* Subjects Section */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Subjects</h3>
+                        <h3 className="text-sm font-bold text-slate-900 normal-case ">Subjects</h3>
                         <div className="flex items-center gap-2">
                             <Button
                                 type="button"
@@ -382,7 +382,7 @@ export function ClassForm({
                                         type="number"
                                         value={subject.total_marks}
                                         onChange={(e) => updateSubject(index, "total_marks", parseInt(e.target.value) || 0)}
-                                        className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-black text-slate-900"
+                                        className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900"
                                     />
                                 </div>
                                 <div className="w-14">
@@ -390,7 +390,7 @@ export function ClassForm({
                                         type="number"
                                         value={subject.passing_marks}
                                         onChange={(e) => updateSubject(index, "passing_marks", parseInt(e.target.value) || 0)}
-                                        className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-black text-slate-900"
+                                        className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900"
                                     />
                                 </div>
                                 <button
@@ -408,7 +408,7 @@ export function ClassForm({
                 {/* Grade Thresholds Section */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Grade Thresholds</h3>
+                        <h3 className="text-sm font-bold text-slate-900 normal-case ">Grade thresholds</h3>
                         <div className="flex items-center gap-2">
                             <Button
                                 type="button"
@@ -438,7 +438,7 @@ export function ClassForm({
                                     <input
                                         value={grade.grade}
                                         onChange={(e) => updateGrade(index, "grade", e.target.value)}
-                                        className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-black text-slate-900"
+                                        className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900"
                                     />
                                 </div>
                                 <div className="w-14">
@@ -446,7 +446,7 @@ export function ClassForm({
                                         type="number"
                                         value={grade.min_score}
                                         onChange={(e) => updateGrade(index, "min_score", parseInt(e.target.value) || 0)}
-                                        className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-black text-blue-600"
+                                        className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-bold text-blue-600"
                                     />
                                 </div>
                                 <div className="w-14">
@@ -454,7 +454,7 @@ export function ClassForm({
                                         type="number"
                                         value={grade.max_score}
                                         onChange={(e) => updateGrade(index, "max_score", parseInt(e.target.value) || 0)}
-                                        className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-black text-blue-600"
+                                        className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-bold text-blue-600"
                                     />
                                 </div>
                                 <div className="flex-1">
@@ -482,14 +482,14 @@ export function ClassForm({
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <Link
                     href="/admin/classes"
-                    className="px-4 py-2 text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-all"
+                    className="px-4 py-2 text-[11px] font-bold normal-case  text-slate-400 hover:text-slate-600 transition-all"
                 >
                     Cancel
                 </Link>
                 <Button
                     type="submit"
                     disabled={saving}
-                    className="min-w-[140px] h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-md transition-all text-[10px] font-black uppercase tracking-widest"
+                    className="min-w-[140px] h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-md transition-all text-[10px] font-bold normal-case "
                 >
                     {saving ? "Saving..." : "Save class"}
                 </Button>

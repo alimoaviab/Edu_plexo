@@ -68,12 +68,12 @@ export function SubjectListPage() {
       label: "Subject Identity",
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-black text-xs">
+          <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs">
             {row.name.substring(0, 2).toUpperCase()}
           </div>
           <div>
             <p className="font-bold text-slate-900 leading-none mb-1">{row.name}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{row.code || "NO-CODE"}</p>
+            <p className="text-[10px] text-slate-400 font-bold normal-case tracking-tighter">{row.code || "NO-CODE"}</p>
           </div>
         </div>
       ),
@@ -89,7 +89,7 @@ export function SubjectListPage() {
       label: "Faculty Head",
       render: (row) => (
         <div className="flex items-center gap-2">
-           <div className="h-6 w-6 rounded-full bg-slate-900 text-[8px] font-black text-white flex items-center justify-center uppercase">
+           <div className="h-6 w-6 rounded-full bg-slate-900 text-[8px] font-bold text-white flex items-center justify-center normal-case">
               {(row.teacher_name || 'T').substring(0, 1)}
            </div>
            <span className="text-[11px] font-bold text-slate-600">{row.teacher_name || "Faculty Pending"}</span>
@@ -100,7 +100,7 @@ export function SubjectListPage() {
       key: "status",
       label: "Status",
       render: (row) => (
-        <Badge variant={row.status === "active" ? "success" : "gray"} className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
+        <Badge variant={row.status === "active" ? "success" : "gray"} className="text-[9px] font-bold normal-case  px-2 py-0.5">
           {row.status}
         </Badge>
       ),
@@ -144,11 +144,11 @@ export function SubjectListPage() {
         ].map((stat, i) => (
           <div key={i} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-              <h3 className="text-xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
+              <p className="text-[10px] font-bold text-slate-400 normal-case  mb-1">{stat.label}</p>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
             </div>
             <div className={`h-8 w-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
-               <span className="material-symbols-outlined text-lg font-black">{stat.icon}</span>
+               <span className="material-symbols-outlined text-lg font-bold">{stat.icon}</span>
             </div>
           </div>
         ))}
@@ -200,13 +200,13 @@ export function SubjectListPage() {
             </button>
           </div>
           <div className="h-6 w-px bg-slate-200" />
-          <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest px-2 whitespace-nowrap">
+          <span className="text-[10px] font-bold text-slate-900 normal-case  px-2 whitespace-nowrap">
             {filteredRows.length} <span className="text-slate-400">SUBJECTS</span>
           </span>
           <div className="h-6 w-px bg-slate-200" />
           <button
             onClick={() => setIsAdding(true)}
-            className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-black uppercase tracking-widest text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+            className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-bold normal-case  text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
           >
             <span className="material-symbols-outlined text-lg">add_box</span>
             Register Subject
@@ -233,7 +233,7 @@ export function SubjectListPage() {
                   <div className="p-5">
                     <div className="flex items-start justify-between mb-4">
                       <div className="h-10 w-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shadow-sm transition-transform group-hover:scale-110">
-                        <span className="material-symbols-outlined font-black">menu_book</span>
+                        <span className="material-symbols-outlined font-bold">menu_book</span>
                       </div>
                       <div className="flex items-center gap-1 bg-slate-50/50 rounded-lg p-1 border border-slate-100">
                         <button
@@ -255,21 +255,21 @@ export function SubjectListPage() {
 
                     <div className="mb-6">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">{row.name}</h3>
-                        <Badge variant={row.status === "active" ? "success" : "gray"} className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0">
+                        <h3 className="text-lg font-bold text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">{row.name}</h3>
+                        <Badge variant={row.status === "active" ? "success" : "gray"} className="text-[8px] font-bold normal-case  px-1.5 py-0">
                           {row.status}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-blue-600 normal-case ">
                          <span>{row.code || "NO-CODE"}</span>
                       </div>
                     </div>
 
                     <div className="space-y-4 pt-4 border-t border-slate-50">
                       <div className="space-y-1">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Faculty Head</p>
+                        <p className="text-[8px] font-bold text-slate-400 normal-case ">Faculty Head</p>
                         <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-full bg-slate-900 text-[8px] font-black text-white flex items-center justify-center uppercase shadow-sm">
+                          <div className="h-6 w-6 rounded-full bg-slate-900 text-[8px] font-bold text-white flex items-center justify-center normal-case shadow-sm">
                             {(row.teacher_name || 'T').substring(0, 1)}
                           </div>
                           <p className="text-[10px] font-bold text-slate-700 truncate">
@@ -280,7 +280,7 @@ export function SubjectListPage() {
                       
                       <div className="flex flex-wrap gap-1">
                         {(row.class_mapping || ["Core Grade"]).map((cls, i) => (
-                          <Badge key={i} variant="secondary" className="bg-slate-50 text-slate-400 border-slate-100/50 text-[9px] font-bold uppercase">
+                          <Badge key={i} variant="secondary" className="bg-slate-50 text-slate-400 border-slate-100/50 text-[9px] font-bold normal-case">
                             {cls}
                           </Badge>
                         ))}
@@ -291,13 +291,13 @@ export function SubjectListPage() {
                   <div className="mt-auto px-5 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-white transition-all">
                     <div className="flex items-center gap-2">
                        <span className="material-symbols-outlined text-slate-400 text-sm">calendar_month</span>
-                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                       <p className="text-[10px] font-bold text-slate-400 normal-case ">
                          {row.academic_year || "All Sessions"}
                        </p>
                     </div>
                     <button
                       onClick={() => setEditingSubject(row)}
-                      className="group/btn h-8 px-4 rounded-lg bg-blue-600 text-[10px] font-black text-white uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95"
+                      className="group/btn h-8 px-4 rounded-lg bg-blue-600 text-[10px] font-bold text-white normal-case  hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95"
                     >
                       Manage
                       <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
@@ -323,18 +323,18 @@ export function SubjectListPage() {
 
       {/* Pagination Footer - Premium ERP Style */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        <p className="text-[10px] font-bold text-slate-400 normal-case ">
           Showing <span className="text-blue-600">1</span> to <span className="text-slate-900">{filteredRows.length}</span> of <span className="text-slate-900">{filteredRows.length}</span> Curriculum Units
         </p>
         <div className="flex items-center gap-2">
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
             <span className="material-symbols-outlined text-base">chevron_left</span>
             Previous
           </button>
           <div className="flex items-center gap-1">
-            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-black text-white shadow-lg shadow-blue-600/20">1</button>
+            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-bold text-white shadow-lg shadow-blue-600/20">1</button>
           </div>
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
             Next
             <span className="material-symbols-outlined text-base">chevron_right</span>
           </button>

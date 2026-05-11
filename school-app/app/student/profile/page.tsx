@@ -80,7 +80,7 @@ export default function StudentProfilePage() {
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                             <p className="text-sm text-slate-500">Student</p>
-                            <h2 className="mt-1 text-3xl font-black text-slate-900">{profile.student.name}</h2>
+                            <h2 className="mt-1 text-3xl font-bold text-slate-900">{profile.student.name}</h2>
                             <p className="mt-2 text-sm text-slate-500">{profile.student.class} {profile.student.section ? `- ${profile.student.section}` : ""}</p>
                         </div>
                         <Badge variant="success">{profile.student.status}</Badge>
@@ -95,7 +95,7 @@ export default function StudentProfilePage() {
                             ["Date of Birth", profile.student.date_of_birth || "—"]
                         ].map(([label, value]) => (
                             <div key={label as string} className="rounded-2xl border border-slate-200 p-4">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                                <p className="text-xs font-semibold normal-case tracking-wide text-slate-400">{label}</p>
                                 <p className="mt-1 font-semibold text-slate-900">{value}</p>
                             </div>
                         ))}

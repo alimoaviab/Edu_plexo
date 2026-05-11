@@ -42,20 +42,26 @@ export function HomeworkForm({
   React.useEffect(() => {
     if (formData.class_id) {
       setLoadingSubjects(true);
-      fetch(`/api/school/subjects/class/${formData.class_id}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.subjects) {
-            setClassSubjects(data.subjects);
-          } else {
+      (async () => {
+        try {
+          const res = await fetch(`/api/school/subjects/class/${formData.class_id}`, { credentials: "include" });
+          if (!res.ok) {
             setClassSubjects([]);
+            return;
           }
-        })
-        .catch(err => {
+          const data = await res.json();
+          const subjects =
+            (Array.isArray(data?.subjects) && data.subjects) ||
+            (Array.isArray(data?.data?.subjects) && data.data.subjects) ||
+            [];
+          setClassSubjects(subjects);
+        } catch (err) {
           console.error("Failed to fetch subjects for class", err);
           setClassSubjects([]);
-        })
-        .finally(() => setLoadingSubjects(false));
+        } finally {
+          setLoadingSubjects(false);
+        }
+      })();
     } else {
       setClassSubjects([]);
     }
@@ -151,7 +157,7 @@ export function HomeworkForm({
 
         <div className="space-y-6">
           <div className="flex flex-col h-full">
-            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">
+            <label className="text-[11px] font-bold text-slate-500 normal-case  mb-2 px-1">
               Instructions / Description
             </label>
             <textarea
@@ -169,14 +175,14 @@ export function HomeworkForm({
           type="button"
           variant="secondary"
           onClick={() => window.history.back()}
-          className="h-14 px-8 rounded-2xl text-[11px] font-black uppercase tracking-widest"
+          className="h-14 px-8 rounded-2xl text-[11px] font-bold normal-case "
         >
           Cancel
         </Button>
         <Button
           type="submit"
           disabled={loading}
-          className="h-14 px-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-600/20 text-[11px] font-black uppercase tracking-widest active:scale-95 transition-all"
+          className="h-14 px-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-600/20 text-[11px] font-bold normal-case  active:scale-95 transition-all"
         >
           {loading ? "Saving..." : (initialValues ? "Update Homework" : "Assign Homework")}
         </Button>

@@ -44,22 +44,8 @@ export function StudentCreatePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <Link
-        href="/admin/students"
-        className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-blue-600 transition-colors"
-      >
-        <span className="material-symbols-outlined text-lg">arrow_back</span>
-        Back to Students
-      </Link>
-
-      <Card>
-        <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900">New Student Admission</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Enter details to enroll a new student into the system.
-          </p>
-        </div>
+    <div className="w-full py-2 px-6">
+      <Card className="p-4 md:p-6 border-slate-200/60 bg-white shadow-2xl shadow-slate-200/50 rounded-3xl">
 
         {classState.status === "error" ? (
           <DataState variant="error" title="Failed to load classes" message={classState.error} />

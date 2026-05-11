@@ -98,7 +98,7 @@ export function StudentEditSidebar({
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
                     {/* Name Section */}
                     <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                        <h3 className="text-xs font-semibold text-gray-500 normal-case  mb-4">
                             Personal Details
                         </h3>
                         <div className="space-y-4">
@@ -148,7 +148,7 @@ export function StudentEditSidebar({
 
                     {/* Academic Section */}
                     <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                        <h3 className="text-xs font-semibold text-gray-500 normal-case  mb-4">
                             Academic Placement
                         </h3>
                         <div className="space-y-4">
@@ -195,7 +195,7 @@ export function StudentEditSidebar({
 
                     {/* Subjects Section */}
                     <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                        <h3 className="text-xs font-semibold text-gray-500 normal-case  mb-4">
                             Enrolled Subjects
                         </h3>
                         <div className="space-y-2 max-h-48 overflow-y-auto p-2 border border-gray-200 rounded-lg">
@@ -224,7 +224,7 @@ export function StudentEditSidebar({
 
                     {/* Guardian Section */}
                     <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                        <h3 className="text-xs font-semibold text-gray-500 normal-case  mb-4">
                             Guardian Details
                         </h3>
                         <div className="space-y-4">

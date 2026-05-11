@@ -42,7 +42,7 @@ export function AcademyCarePage() {
         <div className="flex flex-col gap-8">
             <Card className="max-w-4xl">
                 <div className="mb-6">
-                    <h2 className="text-xl font-bold text-gray-900">Manage Academy Care</h2>
+                    <h2 className="text-xl font-bold text-gray-900">Manage Academy Year</h2>
                     <p className="text-sm text-gray-500">Configure academic years and institutional care settings.</p>
                 </div>
                 <AcademyCareForm onCreate={addAcademyYear} />

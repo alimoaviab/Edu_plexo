@@ -55,9 +55,9 @@ export function StudentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="space-y-6">
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Academic Placement</h3>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold text-slate-400 normal-case ">Academic Placement</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
             label="Admission Number"
@@ -91,8 +91,8 @@ export function StudentForm({
         </div>
       </div>
 
-      <div className="space-y-6 border-t border-border pt-6">
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Personal Details</h3>
+      <div className="space-y-3 border-t border-slate-100 pt-4">
+        <h3 className="text-xs font-bold text-slate-400 normal-case ">Personal Details</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
             label="First Name"
@@ -114,8 +114,8 @@ export function StudentForm({
         </div>
       </div>
 
-      <div className="space-y-6 border-t border-border pt-6">
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Guardian Details</h3>
+      <div className="space-y-3 border-t border-slate-100 pt-4">
+        <h3 className="text-xs font-bold text-slate-400 normal-case ">Guardian Details</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
             label="Guardian Name"

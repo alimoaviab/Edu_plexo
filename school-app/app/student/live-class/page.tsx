@@ -11,8 +11,8 @@ export default function StudentLiveClassPage() {
         <section className="rounded-[2rem] bg-gradient-to-r from-sky-600 to-indigo-600 p-8 text-white shadow-lg">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-sky-200">Online Learning</p>
-              <h1 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">My Live Classes</h1>
+              <p className="text-xs font-semibold normal-case tracking-[0.35em] text-sky-200">Online Learning</p>
+              <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">My Live Classes</h1>
               <p className="mt-3 max-w-2xl text-sm text-sky-100 md:text-base">
                 Join your scheduled online sessions, view upcoming classes, and participate in interactive learning.
                 Only classes for your enrolled section are shown here.

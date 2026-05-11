@@ -43,15 +43,8 @@ export function ExamCreatePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6 flex flex-col gap-1">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Schedule New Examination</h2>
-        <p className="text-sm font-medium text-slate-500">
-          Define assessment criteria, target class, and schedule the event.
-        </p>
-      </div>
-
-      <Card className="p-6 md:p-8">
+    <div className="w-full py-2 px-6">
+      <Card className="p-4 md:p-6 border-slate-200/60 bg-white shadow-2xl shadow-slate-200/50 rounded-3xl">
         {classState.status === "error" ? (
           <DataState variant="error" title="Failed to load classes" message={classState.error} />
         ) : isDependencyLoading ? (

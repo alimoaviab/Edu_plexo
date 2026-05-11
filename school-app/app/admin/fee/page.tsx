@@ -51,12 +51,12 @@ export default function FeePage() {
             label: "Student identity",
             render: (row: FeeRecord) => (
                 <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-black uppercase">
+                    <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-bold normal-case">
                         {row.student_name.substring(0, 2)}
                     </div>
                     <div>
                         <p className="font-bold text-slate-900 leading-none mb-1">{row.student_name}</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{row.admission_no}</p>
+                        <p className="text-[10px] text-slate-400 font-bold normal-case tracking-tighter">{row.admission_no}</p>
                     </div>
                 </div>
             ),
@@ -69,12 +69,12 @@ export default function FeePage() {
         {
             key: "amount",
             label: "Balance",
-            render: (row: FeeRecord) => <span className="text-[11px] font-black text-slate-900">${row.amount.toLocaleString()}</span>,
+            render: (row: FeeRecord) => <span className="text-[11px] font-bold text-slate-900">${row.amount.toLocaleString()}</span>,
         },
         {
             key: "due_date",
             label: "Deadline",
-            render: (row: FeeRecord) => <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{row.due_date}</span>,
+            render: (row: FeeRecord) => <span className="text-[10px] font-bold text-slate-500 normal-case ">{row.due_date}</span>,
         },
         {
             key: "status",
@@ -82,7 +82,7 @@ export default function FeePage() {
             render: (row: FeeRecord) => (
                 <Badge
                     variant={row.status === "paid" ? "success" : row.status === "overdue" ? "error" : "warning"}
-                    className="capitalize text-[9px] font-black uppercase tracking-widest px-2"
+                    className="normal-case text-[9px] font-bold normal-case  px-2"
                 >
                     {row.status}
                 </Badge>
@@ -119,11 +119,11 @@ export default function FeePage() {
                     ].map((stat, i) => (
                         <div key={i} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
                             <div>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                                <h3 className="text-xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
+                                <p className="text-[10px] font-bold text-slate-400 normal-case  mb-1">{stat.label}</p>
+                                <h3 className="text-xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
                             </div>
                             <div className={`h-8 w-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
-                                <span className="material-symbols-outlined text-lg font-black">{stat.icon}</span>
+                                <span className="material-symbols-outlined text-lg font-bold">{stat.icon}</span>
                             </div>
                         </div>
                     ))}
@@ -155,12 +155,12 @@ export default function FeePage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest px-2 whitespace-nowrap">
+                        <span className="text-[10px] font-bold text-slate-900 normal-case  px-2 whitespace-nowrap">
                             {filteredRows.length} <span className="text-slate-400">LEDGER ENTRIES</span>
                         </span>
                         <div className="h-6 w-px bg-slate-200" />
                         <button
-                            className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-black uppercase tracking-widest text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
+                            className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-bold normal-case  text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
                         >
                             <span className="material-symbols-outlined text-lg">add_card</span>
                             New Payment
@@ -186,18 +186,18 @@ export default function FeePage() {
 
                 {/* Pagination Footer - Premium ERP Style */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <p className="text-[10px] font-bold text-slate-400 normal-case ">
                         Showing <span className="text-emerald-600">1</span> to <span className="text-slate-900">{filteredRows.length}</span> of <span className="text-slate-900">{data.length}</span> Ledgers
                     </p>
                     <div className="flex items-center gap-2">
-                        <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+                        <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
                             <span className="material-symbols-outlined text-base">chevron_left</span>
                             Previous
                         </button>
                         <div className="flex items-center gap-1">
-                            <button className="h-9 w-9 rounded-xl bg-emerald-600 text-[10px] font-black text-white shadow-lg shadow-emerald-600/20">1</button>
+                            <button className="h-9 w-9 rounded-xl bg-emerald-600 text-[10px] font-bold text-white shadow-lg shadow-emerald-600/20">1</button>
                         </div>
-                        <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+                        <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
                             Next
                             <span className="material-symbols-outlined text-base">chevron_right</span>
                         </button>

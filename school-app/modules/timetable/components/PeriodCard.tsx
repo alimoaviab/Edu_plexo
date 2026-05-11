@@ -94,7 +94,7 @@ export function PeriodCard({ slot, conflicts, onEdit, onDelete, isCompact }: Per
         <div className="flex justify-between items-start mb-1.5">
           <div className="flex items-center gap-2 min-w-0">
             <div className={`h-2 w-2 rounded-full ${hasConflict ? 'bg-red-500 animate-pulse' : style.dot} shrink-0`} />
-            <p className={`text-[12px] font-black leading-none uppercase tracking-tight truncate ${hasConflict ? 'text-red-700' : style.text}`}>
+            <p className={`text-[12px] font-bold leading-none normal-case tracking-tight truncate ${hasConflict ? 'text-red-700' : style.text}`}>
               {slot.subject_name}
             </p>
           </div>
@@ -128,12 +128,12 @@ export function PeriodCard({ slot, conflicts, onEdit, onDelete, isCompact }: Per
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-slate-500">
               <span className="material-symbols-outlined text-[16px] text-slate-400">room</span>
-              <span className="text-[10px] font-bold uppercase tracking-wider leading-none">{slot.room || "Room TBA"}</span>
+              <span className="text-[10px] font-bold normal-case  leading-none">{slot.room || "Room TBA"}</span>
             </div>
             
             <div className="flex items-center gap-1.5 text-slate-400 bg-white/50 px-1.5 py-0.5 rounded-md border border-slate-100/50">
               <span className="material-symbols-outlined text-[14px]">schedule</span>
-              <span className="text-[10px] font-black tabular-nums tracking-tight leading-none">
+              <span className="text-[10px] font-bold tabular-nums tracking-tight leading-none">
                 {slot.start_time}-{slot.end_time}
               </span>
             </div>
@@ -143,7 +143,7 @@ export function PeriodCard({ slot, conflicts, onEdit, onDelete, isCompact }: Per
         {hasConflict && (
           <div className="mt-2 pt-2 border-t border-red-100 flex items-center gap-2 text-red-600">
             <span className="material-symbols-outlined text-[14px]">warning</span>
-            <span className="text-[9px] font-black uppercase tracking-widest">
+            <span className="text-[9px] font-bold normal-case ">
               {conflicts[0].type} conflict detected
             </span>
           </div>

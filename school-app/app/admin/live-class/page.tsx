@@ -84,9 +84,9 @@ export default function LiveClassPage() {
                         <div className="absolute right-0 top-0 h-16 w-16 -mr-4 -mt-4 rounded-full bg-red-50 transition-transform group-hover:scale-150 duration-500"></div>
                         <div className="relative z-10 flex items-start justify-between">
                             <div>
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Active Live</h3>
+                                <h3 className="text-xs font-bold normal-case  text-slate-500">Active Live</h3>
                                 <div className="mt-2 flex items-baseline gap-2">
-                                    <p className="text-3xl font-black text-slate-900">0</p>
+                                    <p className="text-3xl font-bold text-slate-900">0</p>
                                     <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100 flex items-center">
                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5 animate-pulse"></span>
                                        Live
@@ -101,8 +101,8 @@ export default function LiveClassPage() {
                         <div className="absolute right-0 top-0 h-16 w-16 -mr-4 -mt-4 rounded-full bg-blue-50 transition-transform group-hover:scale-150 duration-500"></div>
                         <div className="relative z-10 flex items-start justify-between">
                             <div>
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Queued Today</h3>
-                                <p className="mt-2 text-3xl font-black text-slate-900">-</p>
+                                <h3 className="text-xs font-bold normal-case  text-slate-500">Queued Today</h3>
+                                <p className="mt-2 text-3xl font-bold text-slate-900">-</p>
                             </div>
                             <Calendar className="h-5 w-5 text-blue-500" />
                         </div>
@@ -112,8 +112,8 @@ export default function LiveClassPage() {
                         <div className="absolute right-0 top-0 h-16 w-16 -mr-4 -mt-4 rounded-full bg-emerald-50 transition-transform group-hover:scale-150 duration-500"></div>
                         <div className="relative z-10 flex items-start justify-between">
                             <div>
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Teachers Ready</h3>
-                                <p className="mt-2 text-3xl font-black text-slate-900">{teachersData.length || "-"}</p>
+                                <h3 className="text-xs font-bold normal-case  text-slate-500">Teachers Ready</h3>
+                                <p className="mt-2 text-3xl font-bold text-slate-900">{teachersData.length || "-"}</p>
                             </div>
                             <Users className="h-5 w-5 text-emerald-500" />
                         </div>
@@ -123,9 +123,9 @@ export default function LiveClassPage() {
                         <div className="absolute right-0 top-0 h-16 w-16 -mr-4 -mt-4 rounded-full bg-amber-50 transition-transform group-hover:scale-150 duration-500"></div>
                         <div className="relative z-10 flex items-start justify-between">
                             <div>
-                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Avg Duration</h3>
+                                <h3 className="text-xs font-bold normal-case  text-slate-500">Avg Duration</h3>
                                 <div className="mt-2 flex items-baseline gap-1">
-                                    <p className="text-3xl font-black text-slate-900">45</p>
+                                    <p className="text-3xl font-bold text-slate-900">45</p>
                                     <span className="text-sm font-semibold text-slate-500">min</span>
                                 </div>
                             </div>
@@ -156,7 +156,7 @@ export default function LiveClassPage() {
 
                         {/* Quick Actions Panel */}
                         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Workspace Tools</h2>
+                            <h2 className="text-sm font-bold normal-case  text-slate-500 mb-4">Workspace Tools</h2>
                             <div className="space-y-2">
                                 <Link
                                     href="/admin/teachers"
@@ -211,7 +211,7 @@ export default function LiveClassPage() {
                         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                                 <UserCheck className="h-4 w-4 text-indigo-600" />
-                                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">Live Attendance</h2>
+                                <h2 className="text-sm font-bold normal-case  text-slate-500">Live Attendance</h2>
                             </div>
                             <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 text-center">
                                 <p className="text-sm text-slate-500 font-medium mb-2">No active tracking</p>

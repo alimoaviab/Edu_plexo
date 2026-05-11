@@ -72,12 +72,12 @@ export function ResultPage() {
             label: "Student Performance",
             render: (row) => (
                 <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[10px] font-black uppercase">
+                    <div className="h-8 w-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold normal-case">
                         {(row.student_name || 'S').substring(0, 1)}
                     </div>
                     <div>
                         <p className="font-bold text-slate-900 leading-none mb-1">{row.student_name}</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{row.admission_no}</p>
+                        <p className="text-[10px] text-slate-400 font-bold normal-case tracking-tighter">{row.admission_no}</p>
                     </div>
                 </div>
             ),
@@ -88,7 +88,7 @@ export function ResultPage() {
             render: (row) => (
                 <div>
                     <p className="text-[11px] font-bold text-slate-700 leading-none mb-1">{row.exam_title}</p>
-                    <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">{row.exam_subject}</p>
+                    <p className="text-[9px] font-bold text-blue-600 normal-case ">{row.exam_subject}</p>
                 </div>
             ),
         },
@@ -100,8 +100,8 @@ export function ResultPage() {
                 return (
                     <div className="flex flex-col w-32">
                         <div className="flex items-center justify-between mb-1">
-                            <span className="text-[11px] font-black text-slate-700">{row.obtained_marks} / {row.max_marks}</span>
-                            <span className={`text-[10px] font-black ${percentage >= 80 ? 'text-emerald-600' : percentage >= 50 ? 'text-blue-600' : 'text-red-500'}`}>{percentage.toFixed(0)}%</span>
+                            <span className="text-[11px] font-bold text-slate-700">{row.obtained_marks} / {row.max_marks}</span>
+                            <span className={`text-[10px] font-bold ${percentage >= 80 ? 'text-emerald-600' : percentage >= 50 ? 'text-blue-600' : 'text-red-500'}`}>{percentage.toFixed(0)}%</span>
                         </div>
                         <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                             <div 
@@ -117,7 +117,7 @@ export function ResultPage() {
             key: "grade",
             label: "Merit",
             render: (row) => (
-                <Badge variant={row.grade === "A" || row.grade === "A+" ? "success" : row.grade === "F" ? "error" : "primary"} className="text-[10px] font-black uppercase px-2 py-0.5">
+                <Badge variant={row.grade === "A" || row.grade === "A+" ? "success" : row.grade === "F" ? "error" : "primary"} className="text-[10px] font-bold normal-case px-2 py-0.5">
                     {row.grade}
                 </Badge>
             ),
@@ -156,11 +156,11 @@ export function ResultPage() {
                 ].map((stat, i) => (
                     <div key={i} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
                         <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                            <h3 className="text-xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
+                            <p className="text-[10px] font-bold text-slate-400 normal-case  mb-1">{stat.label}</p>
+                            <h3 className="text-xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
                         </div>
                         <div className={`h-8 w-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
-                            <span className="material-symbols-outlined text-lg font-black">{stat.icon}</span>
+                            <span className="material-symbols-outlined text-lg font-bold">{stat.icon}</span>
                         </div>
                     </div>
                 ))}
@@ -202,13 +202,13 @@ export function ResultPage() {
                         </button>
                     </div>
                     <div className="h-6 w-px bg-slate-200" />
-                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest px-2 whitespace-nowrap">
+                    <span className="text-[10px] font-bold text-slate-900 normal-case  px-2 whitespace-nowrap">
                         {filteredRows.length} <span className="text-slate-400">Records</span>
                     </span>
                     <div className="h-6 w-px bg-slate-200" />
                     <button
                         onClick={() => setIsAdding(!isAdding)}
-                        className={`inline-flex h-9 items-center gap-2 px-5 text-[11px] font-black uppercase tracking-widest transition-all rounded-xl shadow-lg active:scale-95 ${
+                        className={`inline-flex h-9 items-center gap-2 px-5 text-[11px] font-bold normal-case  transition-all rounded-xl shadow-lg active:scale-95 ${
                             isAdding ? "bg-slate-900 text-white" : "bg-blue-600 text-white shadow-blue-600/20 hover:bg-blue-700"
                         }`}
                     >
@@ -222,8 +222,8 @@ export function ResultPage() {
             {isAdding && (
                 <div className="premium-card p-6 bg-white border-blue-100 shadow-xl shadow-blue-900/5 animate-in slide-in-from-top-4 duration-300">
                     <div className="mb-6">
-                        <h2 className="text-lg font-black text-slate-900">Record Assessment Results</h2>
-                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Single Student entry mode</p>
+                        <h2 className="text-lg font-bold text-slate-900">Record Assessment Results</h2>
+                        <p className="text-[11px] font-bold text-slate-400 normal-case  mt-1">Single Student entry mode</p>
                     </div>
                     {isDependencyLoading ? (
                         <div className="space-y-4">
@@ -263,23 +263,23 @@ export function ResultPage() {
                                     <div key={row._id} className="premium-card group relative flex flex-col p-0 overflow-hidden transition-all duration-500 bg-white border-slate-200/60 hover:shadow-2xl hover:shadow-slate-200/80 hover:-translate-y-1">
                                         <div className="p-5">
                                             <div className="flex items-start justify-between mb-4">
-                                                <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xs font-black uppercase shadow-sm">
+                                                <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xs font-bold normal-case shadow-sm">
                                                     {(row.student_name || 'S').substring(0, 1)}
                                                 </div>
-                                                <Badge variant={row.grade === "A" || row.grade === "A+" ? "success" : row.grade === "F" ? "error" : "primary"} className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5">
+                                                <Badge variant={row.grade === "A" || row.grade === "A+" ? "success" : row.grade === "F" ? "error" : "primary"} className="text-[10px] font-bold normal-case  px-2 py-0.5">
                                                     Grade {row.grade}
                                                 </Badge>
                                             </div>
 
                                             <div className="mb-6">
-                                                <h3 className="text-lg font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">{row.student_name}</h3>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{row.admission_no} • {row.class_name}</p>
+                                                <h3 className="text-lg font-bold text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">{row.student_name}</h3>
+                                                <p className="text-[10px] font-bold text-slate-400 normal-case  mt-1">{row.admission_no} • {row.class_name}</p>
                                             </div>
 
                                             <div className="bg-slate-50/50 rounded-xl p-3 border border-slate-100/50 mb-6">
                                                 <div className="flex items-center justify-between mb-2">
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Score Analysis</span>
-                                                    <span className={`text-[11px] font-black ${percentage >= 80 ? 'text-emerald-600' : 'text-blue-600'}`}>{percentage.toFixed(1)}%</span>
+                                                    <span className="text-[10px] font-bold text-slate-400 normal-case ">Score Analysis</span>
+                                                    <span className={`text-[11px] font-bold ${percentage >= 80 ? 'text-emerald-600' : 'text-blue-600'}`}>{percentage.toFixed(1)}%</span>
                                                 </div>
                                                 <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                                                     <div 
@@ -295,18 +295,18 @@ export function ResultPage() {
                                             <div className="flex items-center gap-2 pt-4 border-t border-slate-50">
                                                 <span className="material-symbols-outlined text-blue-600 text-sm">description</span>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-[10px] font-black text-slate-900 truncate uppercase tracking-widest">{row.exam_title}</p>
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{row.exam_subject}</p>
+                                                    <p className="text-[10px] font-bold text-slate-900 truncate normal-case ">{row.exam_title}</p>
+                                                    <p className="text-[9px] font-bold text-slate-400 normal-case ">{row.exam_subject}</p>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="mt-auto px-5 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-white transition-all">
-                                            <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 flex items-center gap-1 transition-colors">
+                                            <button className="text-[10px] font-bold text-slate-400 normal-case  hover:text-blue-600 flex items-center gap-1 transition-colors">
                                                 <span className="material-symbols-outlined text-sm">history_edu</span>
                                                 Transcript
                                             </button>
-                                            <button className="group/btn h-8 px-4 rounded-lg bg-blue-600 text-[10px] font-black text-white uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95">
+                                            <button className="group/btn h-8 px-4 rounded-lg bg-blue-600 text-[10px] font-bold text-white normal-case  hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95">
                                                 Analytics
                                                 <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">query_stats</span>
                                             </button>
@@ -332,18 +332,18 @@ export function ResultPage() {
 
             {/* Pagination Footer - Premium ERP Style */}
             <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <p className="text-[10px] font-bold text-slate-400 normal-case ">
                     Showing <span className="text-blue-600">1</span> to <span className="text-slate-900">{filteredRows.length}</span> of <span className="text-slate-900">{filteredRows.length}</span> Academic Records
                 </p>
                 <div className="flex items-center gap-2">
-                    <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+                    <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
                         <span className="material-symbols-outlined text-base">chevron_left</span>
                         Previous
                     </button>
                     <div className="flex items-center gap-1">
-                        <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-black text-white shadow-lg shadow-blue-600/20">1</button>
+                        <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-bold text-white shadow-lg shadow-blue-600/20">1</button>
                     </div>
-                    <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+                    <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
                         Next
                         <span className="material-symbols-outlined text-base">chevron_right</span>
                     </button>

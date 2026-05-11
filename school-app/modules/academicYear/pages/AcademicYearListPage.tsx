@@ -115,8 +115,8 @@ export function AcademicYearListPage() {
           ].map((stat) => (
             <div key={stat.label} className="group premium-card p-3 flex items-center justify-between bg-white border-slate-200/60 hover:border-blue-200 transition-all shadow-sm">
               <div>
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-0.5">{stat.label}</span>
-                <span className={`text-lg font-black tracking-tight block ${stat.color}`}>{stat.value}</span>
+                <span className="text-[9px] font-bold normal-case  text-slate-400 block mb-0.5">{stat.label}</span>
+                <span className={`text-lg font-bold tracking-tight block ${stat.color}`}>{stat.value}</span>
               </div>
               <div className={`h-8 w-8 rounded-lg ${stat.bg} flex items-center justify-center group-hover:scale-105 transition-transform border border-current/5`}>
                 <span className={`material-symbols-outlined text-[18px] ${stat.color}`}>{stat.icon}</span>
@@ -128,8 +128,8 @@ export function AcademicYearListPage() {
             className={`premium-card p-3 flex items-center justify-between bg-white border-slate-200 group hover:bg-blue-600 hover:border-blue-600 transition-all shadow-sm ${isDrawerOpen ? "hidden md:flex" : ""}`}
           >
             <div>
-              <span className="text-[8px] font-black uppercase text-slate-400 tracking-[0.2em] block mb-0.5 group-hover:text-blue-100 transition-colors">Setup Control</span>
-              <span className="text-[13px] font-black text-slate-900 block group-hover:text-white transition-colors tracking-tight">Add New Year</span>
+              <span className="text-[8px] font-bold normal-case text-slate-400 tracking-[0.2em] block mb-0.5 group-hover:text-blue-100 transition-colors">Setup Control</span>
+              <span className="text-[13px] font-bold text-slate-900 block group-hover:text-white transition-colors tracking-tight">Add New Year</span>
             </div>
             <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center group-hover:bg-white/10 group-hover:rotate-90 transition-all border border-slate-100 group-hover:border-transparent">
               <span className="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-white">add</span>
@@ -227,8 +227,8 @@ export function AcademicYearListPage() {
                           {/* Top Row: Name & Actions */}
                           <div className="flex items-start justify-between gap-4 mb-3.5">
                             <div className="space-y-0.5 flex-1 min-w-0">
-                              <h3 className="text-base font-black text-slate-900 tracking-tight leading-none truncate">{row.year}</h3>
-                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Academic Session</p>
+                              <h3 className="text-base font-bold text-slate-900 tracking-tight leading-none truncate">{row.year}</h3>
+                              <p className="text-[9px] font-bold text-slate-400 normal-case  mt-1">Academic Session</p>
                             </div>
                             
                             <div className="flex items-center gap-0.5">
@@ -252,7 +252,7 @@ export function AcademicYearListPage() {
                           {/* Middle Row: Timeline */}
                           <div className="mb-3.5 p-3 rounded-xl bg-slate-50/50 border border-slate-100/50 flex items-center justify-between">
                             <div className="flex-1">
-                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Session Dates</p>
+                              <p className="text-[8px] font-bold text-slate-400 normal-case  mb-1.5">Session Dates</p>
                               <div className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
                                 <span className="bg-white px-1.5 py-0.5 rounded-md border border-slate-100">{formatDate(row.start_date)}</span>
                                 <span className="text-slate-300">→</span>
@@ -260,15 +260,15 @@ export function AcademicYearListPage() {
                               </div>
                             </div>
                             <div className="text-right pl-3 border-l border-slate-200/50 ml-3">
-                               <p className="text-xs font-black text-slate-900 leading-none">{days || 0}</p>
-                               <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Days</p>
+                               <p className="text-xs font-bold text-slate-900 leading-none">{days || 0}</p>
+                               <p className="text-[7px] font-bold text-slate-400 normal-case  mt-0.5">Days</p>
                             </div>
                           </div>
 
                           {/* Bottom Row: Notes & Status Toggle */}
                           <div className="mt-auto pt-2 flex flex-col gap-3">
                             <div className="px-0.5">
-                               <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Notes</p>
+                               <p className="text-[8px] font-bold text-slate-400 normal-case  mb-1">Notes</p>
                                <p className="text-[10px] font-medium text-slate-500 line-clamp-1 leading-relaxed">
                                  {row.description || "No additional notes provided."}
                                </p>
@@ -277,12 +277,12 @@ export function AcademicYearListPage() {
                             <div className="flex items-center justify-between bg-slate-50/30 rounded-lg p-1.5 border border-slate-100/30">
                               <div className="flex items-center gap-1.5">
                                 {isActive ? (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest text-blue-600 bg-blue-50">
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold normal-case  text-blue-600 bg-blue-50">
                                     <span className="h-1 w-1 rounded-full bg-blue-500 animate-pulse" />
                                     Active
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest text-slate-400 bg-slate-100">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold normal-case  text-slate-400 bg-slate-100">
                                     Inactive
                                   </span>
                                 )}

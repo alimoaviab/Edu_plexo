@@ -286,7 +286,7 @@ export function DataTable<T>({
                   key={column.key}
                   onClick={() => handleSort(column.key)}
                   style={column.width ? { width: column.width } : undefined}
-                  className={`whitespace-nowrap border-b border-slate-200 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 ${
+                  className={`whitespace-nowrap border-b border-slate-200 px-3 py-2.5 text-[11px] font-semibold normal-case tracking-[0.14em] text-slate-500 ${
                     sortable && column.sortable !== false ? "cursor-pointer select-none hover:text-slate-700" : ""
                   } ${column.align === "right" ? "text-right" : column.align === "center" ? "text-center" : "text-left"}`}
                 >
@@ -301,7 +301,7 @@ export function DataTable<T>({
                 </th>
               ))}
               {rowActions && (
-                <th className="w-px border-b border-slate-200 px-4 py-3.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Actions</th>
+                <th className="w-px border-b border-slate-200 px-4 py-3.5 text-xs font-semibold normal-case tracking-[0.14em] text-slate-500">Actions</th>
               )}
             </tr>
           </thead>

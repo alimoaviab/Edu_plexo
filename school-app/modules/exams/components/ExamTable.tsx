@@ -15,7 +15,7 @@ export function ExamTable({ rows }: { rows: ExamRow[] }) {
             </div>
             <Badge
               variant={row.status === "scheduled" ? "primary" : row.status === "completed" ? "success" : "error"}
-              className="capitalize"
+              className="normal-case"
             >
               {row.status}
             </Badge>

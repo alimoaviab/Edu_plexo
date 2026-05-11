@@ -69,7 +69,7 @@ export function AcademicYearForm({
                     <div className="lg:col-span-4 h-full flex flex-col justify-end">
                         <div className="flex items-center justify-between p-3 rounded-[16px] border border-slate-100 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-200 transition-all duration-300 h-[60px]">
                             <div className="flex flex-col gap-0.5">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-900 leading-tight">Current Active</span>
+                                <span className="text-[10px] font-bold normal-case  text-slate-900 leading-tight">Current Active</span>
                                 <span className="text-[9px] font-medium text-slate-500 leading-tight">Mark as system default</span>
                             </div>
                             <label className="relative inline-flex cursor-pointer items-center">
@@ -128,14 +128,14 @@ export function AcademicYearForm({
                 <div className="-mx-6 -mb-6 mt-12 flex items-center justify-between border-t border-slate-100 bg-slate-50/40 px-8 py-4">
                     <Link
                         href="/admin/academic-years"
-                        className="flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-900"
+                        className="flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold normal-case  text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-900"
                     >
                         Discard Changes
                     </Link>
                     <Button
                         type="submit"
                         disabled={saving || !isValid}
-                        className="h-9.5 px-8 text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/10 active:scale-[0.98] transition-all bg-slate-900 hover:bg-slate-800 text-white rounded-lg"
+                        className="h-9.5 px-8 text-[10px] font-bold normal-case  shadow-xl shadow-slate-900/10 active:scale-[0.98] transition-all bg-slate-900 hover:bg-slate-800 text-white rounded-lg"
                     >
                         {saving ? "Deploying..." : "Publish Session"}
                     </Button>

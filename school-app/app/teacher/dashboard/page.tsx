@@ -84,14 +84,14 @@ export default function TeacherDashboardPage() {
         <section className="rounded-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-900 p-8 text-white shadow-2xl shadow-slate-950/20">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200/80">Welcome back</p>
-              <h1 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">{teacherName}</h1>
+              <p className="text-xs font-semibold normal-case tracking-[0.35em] text-cyan-200/80">Welcome back</p>
+              <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">{teacherName}</h1>
               <p className="mt-3 max-w-2xl text-sm text-slate-200 md:text-base">
                 {state.data.teacher.qualification || "Teacher portal"} · Employee No {state.data.teacher.employee_no}
               </p>
             </div>
             <div className="rounded-2xl bg-white/10 px-5 py-4 backdrop-blur-md">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100/70">Status</p>
+              <p className="text-xs font-semibold normal-case tracking-[0.25em] text-cyan-100/70">Status</p>
               <div className="mt-2 flex items-center gap-3">
                 <Badge variant="success" className="bg-emerald-400/15 text-emerald-100 border-emerald-300/20">
                   {state.data.teacher.status}
@@ -104,20 +104,20 @@ export default function TeacherDashboardPage() {
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Assigned Classes</p>
-            <p className="mt-3 text-3xl font-black text-cyan-700">{state.data.classes.length}</p>
+            <p className="text-xs font-semibold normal-case tracking-[0.2em] text-slate-500">Assigned Classes</p>
+            <p className="mt-3 text-3xl font-bold text-cyan-700">{state.data.classes.length}</p>
           </Card>
           <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Students</p>
-            <p className="mt-3 text-3xl font-black text-emerald-700">{assignedStudents}</p>
+            <p className="text-xs font-semibold normal-case tracking-[0.2em] text-slate-500">Students</p>
+            <p className="mt-3 text-3xl font-bold text-emerald-700">{assignedStudents}</p>
           </Card>
           <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Subjects</p>
-            <p className="mt-3 text-3xl font-black text-indigo-700">{state.data.subjects.length}</p>
+            <p className="text-xs font-semibold normal-case tracking-[0.2em] text-slate-500">Subjects</p>
+            <p className="mt-3 text-3xl font-bold text-indigo-700">{state.data.subjects.length}</p>
           </Card>
           <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Quick Tasks</p>
-            <p className="mt-3 text-3xl font-black text-amber-700">4</p>
+            <p className="text-xs font-semibold normal-case tracking-[0.2em] text-slate-500">Quick Tasks</p>
+            <p className="mt-3 text-3xl font-bold text-amber-700">4</p>
           </Card>
         </section>
 

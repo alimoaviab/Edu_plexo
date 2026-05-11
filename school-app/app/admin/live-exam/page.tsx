@@ -41,8 +41,8 @@ export default function LiveExamPage() {
                 <section className="rounded-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-900 p-8 text-white shadow-2xl shadow-slate-950/20">
                     <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-sky-200/80">School-wide exam management</p>
-                            <h1 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">Admin Live Exam Console</h1>
+                            <p className="text-xs font-semibold normal-case tracking-[0.35em] text-sky-200/80">School-wide exam management</p>
+                            <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">Admin Live Exam Console</h1>
                             <p className="mt-3 max-w-2xl text-sm text-slate-200 md:text-base">
                                 Monitor all ongoing examinations across the school, manage schedules, and review student performance in real-time.
                             </p>
@@ -58,18 +58,18 @@ export default function LiveExamPage() {
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     <div className="rounded-[2rem] border border-slate-200/70 bg-white p-6 shadow-sm">
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Active Exams</h3>
-                        <p className="mt-3 text-3xl font-black text-sky-700">-</p>
+                        <h3 className="text-[10px] font-bold normal-case tracking-[0.3em] text-slate-400">Active Exams</h3>
+                        <p className="mt-3 text-3xl font-bold text-sky-700">-</p>
                         <p className="mt-4 text-sm text-slate-500">Exams currently in progress.</p>
                     </div>
                     <div className="rounded-[2rem] border border-slate-200/70 bg-white p-6 shadow-sm">
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Scheduled Today</h3>
-                        <p className="mt-3 text-3xl font-black text-emerald-700">-</p>
+                        <h3 className="text-[10px] font-bold normal-case tracking-[0.3em] text-slate-400">Scheduled Today</h3>
+                        <p className="mt-3 text-3xl font-bold text-emerald-700">-</p>
                         <p className="mt-4 text-sm text-slate-500">Exams set for today's sessions.</p>
                     </div>
                     <div className="rounded-[2rem] border border-slate-200/70 bg-white p-6 shadow-sm">
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Total Participants</h3>
-                        <p className="mt-3 text-3xl font-black text-violet-700">-</p>
+                        <h3 className="text-[10px] font-bold normal-case tracking-[0.3em] text-slate-400">Total Participants</h3>
+                        <p className="mt-3 text-3xl font-bold text-violet-700">-</p>
                         <p className="mt-4 text-sm text-slate-500">Students registered for exams.</p>
                     </div>
                 </div>

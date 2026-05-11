@@ -51,7 +51,7 @@ export function TimetableGrid({ records, onEdit, onDelete, isCompact }: Timetabl
         <div className="min-w-[1200px]">
           {/* Header */}
           <div className="sticky top-0 z-40 grid grid-cols-[100px_repeat(6,1fr)] bg-slate-50/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
-            <div className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center justify-center border-r border-slate-200/60 bg-slate-100/50">
+            <div className="p-4 text-[10px] font-bold text-slate-400 normal-case tracking-[0.2em] flex items-center justify-center border-r border-slate-200/60 bg-slate-100/50">
               Time
             </div>
             {DAYS.map((day, idx) => {
@@ -59,7 +59,7 @@ export function TimetableGrid({ records, onEdit, onDelete, isCompact }: Timetabl
                 return (
                     <div key={day} className={`p-4 text-center border-r border-slate-200/60 last:border-r-0 ${isToday ? 'bg-blue-50/50' : ''}`}>
                         <div className="flex flex-col items-center gap-1">
-                            <span className={`text-[11px] font-black uppercase tracking-widest ${isToday ? 'text-blue-600' : 'text-slate-900'}`}>{day}</span>
+                            <span className={`text-[11px] font-bold normal-case  ${isToday ? 'text-blue-600' : 'text-slate-900'}`}>{day}</span>
                             {isToday && <div className="h-1 w-8 rounded-full bg-blue-600 animate-pulse" />}
                         </div>
                     </div>
@@ -73,7 +73,7 @@ export function TimetableGrid({ records, onEdit, onDelete, isCompact }: Timetabl
               <div key={time} className={`grid grid-cols-[100px_repeat(6,1fr)] ${isCompact ? 'min-h-[100px]' : 'min-h-[140px]'} group/row ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/20'}`}>
                 {/* Time Indicator - Sticky Column */}
                 <div className={`sticky left-0 z-30 border-r border-slate-200/60 flex flex-col items-center justify-center gap-1 transition-colors ${isCurrentTimeRow(time) ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50/80 backdrop-blur-sm'}`}>
-                  <span className={`text-[13px] font-black tracking-tight tabular-nums ${isCurrentTimeRow(time) ? 'text-white' : 'text-slate-900'}`}>{time}</span>
+                  <span className={`text-[13px] font-bold tracking-tight tabular-nums ${isCurrentTimeRow(time) ? 'text-white' : 'text-slate-900'}`}>{time}</span>
                   <div className={`h-1.5 w-1.5 rounded-full ${isCurrentTimeRow(time) ? 'bg-white/40 animate-ping' : 'bg-slate-300'}`} />
                 </div>
 

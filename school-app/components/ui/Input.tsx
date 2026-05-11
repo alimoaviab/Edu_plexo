@@ -18,7 +18,7 @@ export function Input({ label, error, helperText, leftIcon, id, className = "", 
   return (
     <div className="flex flex-col gap-1 w-full">
       {label && (
-        <label htmlFor={inputId} className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">
+        <label htmlFor={inputId} className="text-[11px] font-bold text-slate-500 normal-case  mb-1 px-1">
           {label}
           {props.required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
         </label>
@@ -34,7 +34,7 @@ export function Input({ label, error, helperText, leftIcon, id, className = "", 
           {...props}
           aria-describedby={describedBy}
           aria-invalid={!!error}
-          className={`w-full ${leftIcon ? "pl-11" : "px-3"} py-1.5 text-sm bg-surface border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 ${
+          className={`w-full ${leftIcon ? "pl-9" : "px-2"} py-1 text-sm bg-surface border rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 ${
             error ? "border-error focus:border-error focus:ring-error/20" : "border-border focus:border-primary"
           } ${className}`}
         />

@@ -268,7 +268,7 @@ export function AttendanceBulkForm({ initialClassId, onSaved }: AttendanceBulkFo
                                             </div>
                                             <div className="min-w-0 flex-1">
                                                 <p className="text-sm font-bold text-slate-900 truncate">{student.first_name} {student.last_name}</p>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{student.admission_no}</p>
+                                                <p className="text-[10px] font-bold text-slate-400 normal-case ">{student.admission_no}</p>
                                             </div>
                                         </div>
 
@@ -285,7 +285,7 @@ export function AttendanceBulkForm({ initialClassId, onSaved }: AttendanceBulkFo
                                                     className={`flex flex-col items-center justify-center py-2 rounded-xl transition-all ${status === btn.value ? btn.activeClass : btn.inactiveClass}`}
                                                 >
                                                     <span className="material-symbols-outlined text-[18px] mb-0.5">{btn.icon}</span>
-                                                    <span className="text-[9px] font-black uppercase tracking-tighter">{btn.label}</span>
+                                                    <span className="text-[9px] font-bold normal-case tracking-tighter">{btn.label}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -317,7 +317,7 @@ export function AttendanceBulkForm({ initialClassId, onSaved }: AttendanceBulkFo
             <div className="flex items-center justify-end gap-3 pt-6 border-t border-slate-100 sticky bottom-0 bg-white/80 backdrop-blur-md py-4 z-10">
                 <div className="hidden sm:flex items-center gap-4 mr-auto px-4 border-r border-slate-100">
                     <div className="text-right">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Marking Progress</p>
+                        <p className="text-[10px] font-bold text-slate-400 normal-case ">Marking Progress</p>
                         <p className="text-xs font-bold text-slate-700">{markedCount} / {classStudents.length} Verified</p>
                     </div>
                 </div>

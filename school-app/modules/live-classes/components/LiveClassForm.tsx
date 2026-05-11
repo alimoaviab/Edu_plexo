@@ -189,7 +189,7 @@ export function LiveClassForm({
                <span className="material-symbols-outlined">video_camera_front</span>
             </div>
             <div>
-               <h4 className="text-sm font-bold text-blue-900 uppercase tracking-tight">Google Meet Integration</h4>
+               <h4 className="text-sm font-bold text-blue-900 normal-case tracking-tight">Google Meet Integration</h4>
                <p className="mt-2 text-xs text-blue-700/70 leading-relaxed font-medium">
                   Meeting links will be automatically generated and shared with students of the selected class once you save this session.
                </p>
@@ -203,14 +203,14 @@ export function LiveClassForm({
           type="button"
           variant="secondary"
           onClick={() => window.history.back()}
-          className="h-14 px-8 rounded-2xl text-[11px] font-black uppercase tracking-widest"
+          className="h-14 px-8 rounded-2xl text-[11px] font-bold normal-case "
         >
           Cancel
         </Button>
         <Button
           type="submit"
           disabled={loading}
-          className="h-14 px-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-600/20 text-[11px] font-black uppercase tracking-widest active:scale-95 transition-all"
+          className="h-14 px-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-600/20 text-[11px] font-bold normal-case  active:scale-95 transition-all"
         >
           {loading ? "Scheduling..." : "Schedule Live Session"}
         </Button>

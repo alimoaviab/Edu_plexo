@@ -51,7 +51,7 @@ export function SettingsForm({
                                 onChange={(e) => setForm({ ...form, established_year: e.target.value })}
                             />
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-black uppercase tracking-wider text-slate-400">Institutional Level</label>
+                                <label className="text-[11px] font-bold normal-case  text-slate-400">Institutional Level</label>
                                 <select 
                                     className="h-11 px-4 rounded-xl border border-slate-200 bg-white text-sm font-medium outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-600/5 transition-all"
                                     defaultValue="K-12"
@@ -86,7 +86,7 @@ export function SettingsForm({
                             />
                         </div>
                         <div className="flex flex-col gap-2">
-                            <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Official Address</label>
+                            <label className="text-[11px] font-bold text-slate-700 normal-case ">Official Address</label>
                             <textarea
                                 placeholder="123 Education St, Knowledge City"
                                 value={form.academy_address || ""}
@@ -102,7 +102,7 @@ export function SettingsForm({
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-black uppercase tracking-wider text-slate-400">Curriculum Standard</label>
+                                <label className="text-[11px] font-bold normal-case  text-slate-400">Curriculum Standard</label>
                                 <select className="h-11 px-4 rounded-xl border border-slate-200 bg-white text-sm font-medium outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-600/5 transition-all">
                                     <option>CBSE / National</option>
                                     <option>IB / International Baccalaureate</option>
@@ -111,7 +111,7 @@ export function SettingsForm({
                                 </select>
                             </div>
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[11px] font-black uppercase tracking-wider text-slate-400">Primary Language</label>
+                                <label className="text-[11px] font-bold normal-case  text-slate-400">Primary Language</label>
                                 <select className="h-11 px-4 rounded-xl border border-slate-200 bg-white text-sm font-medium outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-600/5 transition-all">
                                     <option>English (Global)</option>
                                     <option>Hindi (National)</option>
@@ -121,7 +121,7 @@ export function SettingsForm({
                         </div>
                         <div className="p-5 rounded-[2rem] border border-blue-50 bg-blue-50/30 flex items-center justify-between">
                             <div>
-                                <p className="text-[13px] font-black text-slate-800">Operational Lockdown</p>
+                                <p className="text-[13px] font-bold text-slate-800">Operational Lockdown</p>
                                 <p className="text-[11px] font-medium text-slate-500 mt-0.5">Automated attendance sealing after 24-hour window.</p>
                             </div>
                             <div className="h-6 w-11 rounded-full bg-blue-600 relative">
@@ -145,14 +145,14 @@ export function SettingsForm({
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-2">Primary Color</label>
+                                <label className="text-[11px] font-bold text-slate-700 normal-case  block mb-2">Primary Color</label>
                                 <div className="flex items-center gap-3">
                                     <div className="h-10 w-20 rounded-xl bg-blue-600 border border-slate-200 shadow-sm" />
                                     <input className="flex-1 h-10 border-b border-slate-200 outline-none text-sm font-bold text-slate-700 bg-transparent" defaultValue="#2563EB" />
                                 </div>
                             </div>
                             <div>
-                                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-2">Theme Identity</label>
+                                <label className="text-[11px] font-bold text-slate-700 normal-case  block mb-2">Theme Identity</label>
                                 <div className="flex gap-2">
                                     <div className="px-4 py-2 rounded-xl bg-slate-900 text-white text-[11px] font-bold">Dark UI</div>
                                     <div className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-[11px] font-bold">Light UI</div>
@@ -173,7 +173,7 @@ export function SettingsForm({
             <div className="mt-12 flex items-center justify-between pt-6 border-t border-slate-100 sticky bottom-0 bg-white/80 backdrop-blur-md py-4 z-10">
                 <div className="flex items-center gap-2 text-emerald-600">
                     <span className="material-symbols-outlined text-[18px]">cloud_done</span>
-                    <span className="text-[11px] font-bold uppercase tracking-wider">All changes staged</span>
+                    <span className="text-[11px] font-bold normal-case ">All changes staged</span>
                 </div>
                 <Button
                     type="submit"

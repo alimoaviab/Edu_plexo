@@ -106,8 +106,8 @@ export default function LoginPage() {
           className="bg-white rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-gray-100 p-6 md:p-9 relative z-10"
         >
           <div className="text-center mb-10">
-            <h2 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">Welcome Back!</h2>
-            <p className="text-gray-400 font-semibold uppercase tracking-[0.15em] text-xs">Log in to continue</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-2 tracking-tight">Welcome Back!</h2>
+            <p className="text-gray-400 font-semibold normal-case tracking-[0.15em] text-xs">Log in to continue</p>
           </div>
 
           {/* Role Selection Tabs */}
@@ -117,21 +117,21 @@ export default function LoginPage() {
                 key={role.key}
                 type="button"
                 onClick={() => setSelectedRole(role.key)}
-                className={`flex-1 py-3.5 px-2 rounded-xl text-xs font-black transition-all duration-300 flex items-center justify-center gap-2 ${
+                className={`flex-1 py-3.5 px-2 rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
                   selectedRole === role.key
                     ? "bg-white text-blue-600 shadow-sm border border-gray-100 scale-[1.02]"
                     : "text-gray-400 hover:text-gray-900"
                 }`}
               >
                 <span className="material-symbols-outlined text-[18px]">{role.icon}</span>
-                <span className="uppercase tracking-widest">{role.label}</span>
+                <span className="normal-case ">{role.label}</span>
               </button>
             ))}
           </div>
 
           <form className="space-y-8" onSubmit={handleSubmit}>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Email Address</label>
+              <label className="text-[10px] font-bold text-gray-400 normal-case  ml-2">Email Address</label>
               <div 
                 className="relative group"
                 onMouseEnter={() => setIsEmailHovered(true)}
@@ -150,7 +150,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Password</label>
+              <label className="text-[10px] font-bold text-gray-400 normal-case  ml-2">Password</label>
               <div className="relative group">
                 <input
                   name="password"
@@ -186,18 +186,18 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || success}
-              className={`w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-black text-lg rounded-2xl shadow-[0_10px_20px_rgba(37,99,235,0.2)] hover:shadow-[0_15px_25px_rgba(37,99,235,0.3)] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-4 disabled:opacity-50 ${success ? 'bg-green-500 shadow-[0_10px_20px_rgba(34,197,94,0.2)]' : ''}`}
+              className={`w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg rounded-2xl shadow-[0_10px_20px_rgba(37,99,235,0.2)] hover:shadow-[0_15px_25px_rgba(37,99,235,0.3)] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-4 disabled:opacity-50 ${success ? 'bg-green-500 shadow-[0_10px_20px_rgba(34,197,94,0.2)]' : ''}`}
             >
               {loading ? (
                 <div className="w-6 h-6 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
               ) : success ? (
                 <>
-                  <span className="uppercase tracking-widest">Authenticated!</span>
+                  <span className="normal-case ">Authenticated!</span>
                   <span className="material-symbols-outlined">check_circle</span>
                 </>
               ) : (
                 <>
-                  <span className="uppercase tracking-widest">Sign In</span>
+                  <span className="normal-case ">Sign In</span>
                   <span className="material-symbols-outlined">arrow_forward</span>
                 </>
               )}

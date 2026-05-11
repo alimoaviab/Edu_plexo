@@ -41,7 +41,7 @@ export function StudentTable({ students }: { students: StudentRow[] }) {
             key: "status",
             label: "Status",
             render: (row: StudentRow) => (
-                <Badge variant={row.status === "active" ? "success" : "gray"} className="capitalize">
+                <Badge variant={row.status === "active" ? "success" : "gray"} className="normal-case">
                     {row.status}
                 </Badge>
             )

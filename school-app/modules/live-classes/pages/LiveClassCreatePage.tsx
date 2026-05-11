@@ -112,7 +112,7 @@ export function LiveClassCreatePage({ role }: LiveClassCreatePageProps) {
 
       <Card className="p-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Schedule New Live Session</h2>
+          <h2 className="text-2xl font-bold text-slate-900 normal-case tracking-tight">Schedule New Live Session</h2>
           <p className="text-sm text-slate-500 mt-1 font-medium">
             Setup a live video session for your students. Meeting links will be automatically shared.
           </p>

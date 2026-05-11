@@ -59,7 +59,7 @@ export function TeacherForm({
     return (
         <form id="teacher-form-quick" onSubmit={handleSubmit} className="space-y-8">
             <div className="space-y-6">
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Account Credentials</h3>
+                <h3 className="text-sm font-semibold text-gray-400 normal-case ">Account Credentials</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
                         label="Email Address"
@@ -84,7 +84,7 @@ export function TeacherForm({
             </div>
 
             <div className="space-y-6 border-t border-border pt-6">
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Personal Details</h3>
+                <h3 className="text-sm font-semibold text-gray-400 normal-case ">Personal Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
                         label="First Name"
@@ -124,7 +124,7 @@ export function TeacherForm({
             </div>
 
             <div className="space-y-6 border-t border-border pt-6">
-                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Professional Assignment</h3>
+                <h3 className="text-sm font-semibold text-gray-400 normal-case ">Professional Assignment</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
                         label="Subject Specialization"

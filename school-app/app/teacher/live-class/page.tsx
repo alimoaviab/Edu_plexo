@@ -28,14 +28,14 @@ export default function TeacherLiveClassPage() {
         <section className="rounded-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-900 p-8 text-white shadow-2xl shadow-slate-950/20">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-sky-200/80">Live teaching workspace</p>
-              <h1 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">Manage Live Classes</h1>
+              <p className="text-xs font-semibold normal-case tracking-[0.35em] text-sky-200/80">Live teaching workspace</p>
+              <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">Manage Live Classes</h1>
               <p className="mt-3 max-w-2xl text-sm text-slate-200 md:text-base">
                 Launch, monitor, and track your live sessions with students in a single portal.
               </p>
             </div>
             <div className="rounded-2xl bg-white/10 px-5 py-4 backdrop-blur-md">
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-sky-100/70">Status</p>
+              <p className="text-xs font-semibold normal-case tracking-[0.25em] text-sky-100/70">Status</p>
               <div className="mt-2 flex items-center gap-3">
                 <span className="inline-flex h-3.5 w-3.5 rounded-full bg-emerald-400" />
                 <span className="text-sm text-slate-200">Ready to schedule</span>
@@ -49,8 +49,8 @@ export default function TeacherLiveClassPage() {
             <div key={item.title} className="rounded-[2rem] border border-slate-200/70 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">{item.title}</p>
-                  <p className={`mt-3 text-3xl font-black ${item.tone}`}>{item.value}</p>
+                  <p className="text-[10px] font-bold normal-case tracking-[0.3em] text-slate-400">{item.title}</p>
+                  <p className={`mt-3 text-3xl font-bold ${item.tone}`}>{item.value}</p>
                 </div>
                 <span className="material-symbols-outlined text-3xl text-slate-300">{item.icon}</span>
               </div>

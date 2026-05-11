@@ -68,7 +68,7 @@ export function SettingsPage() {
                     <div className="mt-8 p-4 rounded-2xl bg-blue-50 border border-blue-100">
                         <div className="flex items-center gap-2 text-blue-600 mb-2">
                             <span className="material-symbols-outlined text-[18px]">verified</span>
-                            <span className="text-[10px] font-black uppercase tracking-widest">Enterprise Plan</span>
+                            <span className="text-[10px] font-bold normal-case ">Enterprise Plan</span>
                         </div>
                         <p className="text-[11px] font-medium text-blue-700 leading-relaxed">
                             Your institutional data is protected with 256-bit encryption.

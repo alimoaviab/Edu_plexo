@@ -44,7 +44,7 @@ export const MobileExperienceSection = () => {
                       {/* Stats Card */}
                       <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4 flex justify-between items-center relative overflow-hidden">
                          <div className="relative z-10">
-                            <div className="text-xs text-slate-500 mb-1 font-semibold uppercase tracking-wider">Attendance</div>
+                            <div className="text-xs text-slate-500 mb-1 font-semibold normal-case ">Attendance</div>
                             <div className="text-2xl font-extrabold text-slate-900">98%</div>
                          </div>
                          <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center text-green-600 font-extrabold text-xl relative z-10">A+</div>

@@ -72,15 +72,15 @@ export default function ParentAttendancePage() {
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">Present</p>
+                <p className="text-xs font-medium normal-case tracking-wide text-emerald-700">Present</p>
                 <p className="mt-1 text-2xl font-bold text-emerald-900">{student.total_present}</p>
               </div>
               <div className="rounded-2xl bg-rose-50 px-4 py-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-rose-700">Absent</p>
+                <p className="text-xs font-medium normal-case tracking-wide text-rose-700">Absent</p>
                 <p className="mt-1 text-2xl font-bold text-rose-900">{student.total_absent}</p>
               </div>
               <div className="rounded-2xl bg-slate-100 px-4 py-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-600">Excused</p>
+                <p className="text-xs font-medium normal-case tracking-wide text-slate-600">Excused</p>
                 <p className="mt-1 text-2xl font-bold text-slate-900">{student.total_excused}</p>
               </div>
             </div>
@@ -93,7 +93,7 @@ export default function ParentAttendancePage() {
                     <span className="text-sm font-medium text-slate-700">{record.date}</span>
                     <Badge
                       variant={record.status === "present" ? "success" : record.status === "absent" ? "error" : record.status === "late" ? "warning" : "secondary"}
-                      className="capitalize"
+                      className="normal-case"
                     >
                       {record.status}
                     </Badge>

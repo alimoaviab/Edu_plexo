@@ -52,12 +52,12 @@ export function HomeworkPage({ role }: HomeworkPageProps) {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tight">Homework Management</h1>
+          <h1 className="text-3xl font-bold text-slate-900 normal-case tracking-tight">Homework Management</h1>
           <p className="text-slate-500 font-medium mt-1">Assign and manage homework for your classes.</p>
         </div>
         <Button
           onClick={() => router.push(role === "ADMIN" ? "/admin/homework/create" : "/teacher/homework/create")}
-          className="h-14 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-600/20 text-[11px] font-black uppercase tracking-widest"
+          className="h-14 px-8 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-xl shadow-indigo-600/20 text-[11px] font-bold normal-case "
         >
           <span className="material-symbols-outlined mr-2">add</span>
           New Homework
@@ -82,14 +82,14 @@ export function HomeworkPage({ role }: HomeworkPageProps) {
             <Card key={hw._id} className="p-6 group hover:shadow-2xl transition-all duration-300 border-slate-100 hover:border-indigo-100 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-full">
+                  <div className="px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-bold normal-case  rounded-full">
                     {hw.class_name}
                   </div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <div className="text-[10px] font-bold text-slate-400 normal-case ">
                     Due: {hw.due_at}
                   </div>
                 </div>
-                <h3 className="text-lg font-black text-slate-900 mb-2 uppercase tracking-tight group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-lg font-bold text-slate-900 mb-2 normal-case tracking-tight group-hover:text-indigo-600 transition-colors">
                   {hw.title}
                 </h3>
                 <p className="text-sm text-slate-500 font-medium line-clamp-2 mb-4">
@@ -99,16 +99,16 @@ export function HomeworkPage({ role }: HomeworkPageProps) {
                   <div className="h-6 w-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
                     <span className="material-symbols-outlined text-sm font-bold">book</span>
                   </div>
-                  <span className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">{hw.subject_name}</span>
+                  <span className="text-[11px] font-bold text-slate-600 normal-case ">{hw.subject_name}</span>
                 </div>
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-[10px] font-black uppercase">
+                  <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 text-[10px] font-bold normal-case">
                     {hw.teacher_name?.substring(0, 2).toUpperCase()}
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{hw.teacher_name}</span>
+                  <span className="text-[10px] font-bold text-slate-500 normal-case ">{hw.teacher_name}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button

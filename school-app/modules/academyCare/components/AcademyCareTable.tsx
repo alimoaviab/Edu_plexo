@@ -23,7 +23,7 @@ export function AcademyCareTable({
                 >
                     <div className="mb-3 flex items-start justify-between gap-2">
                         <h4 className="text-base font-bold text-gray-900">{row.year}</h4>
-                        <Badge variant={row.status === "active" ? "success" : "gray"} className="capitalize">
+                        <Badge variant={row.status === "active" ? "success" : "gray"} className="normal-case">
                             {row.status}
                         </Badge>
                     </div>

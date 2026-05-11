@@ -98,13 +98,13 @@ export function ClassCreatePage() {
           ) : !isDependencyLoading && !hasAcademicYears ? (
             <div className="py-12 flex flex-col items-center text-center">
               <div className="h-16 w-16 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 mb-4 border border-amber-100">
-                <span className="material-symbols-outlined text-3xl font-black">priority_high</span>
+                <span className="material-symbols-outlined text-3xl font-bold">priority_high</span>
               </div>
-              <h3 className="text-xl font-black text-slate-900 mb-2">Academic Cycle Required</h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Academic Cycle Required</h3>
               <p className="text-sm text-slate-500 mb-6 max-w-xs">Initialization cannot proceed without an active academic year configuration.</p>
               <Link 
                 href="/admin/academic-years"
-                className="h-11 px-6 rounded-xl bg-slate-900 text-[11px] font-black uppercase tracking-widest text-white hover:bg-slate-800 transition-all shadow-lg active:scale-95"
+                className="h-11 px-6 rounded-xl bg-slate-900 text-[11px] font-bold normal-case  text-white hover:bg-slate-800 transition-all shadow-lg active:scale-95"
               >
                 Create Academic Session
               </Link>
@@ -161,7 +161,8 @@ export function ClassCreatePage() {
         icon="calendar_month"
         primaryActionLabel="Publish Session"
         onPrimaryAction={() => {
-          document.getElementById("academic-year-form-quick")?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          const form = document.getElementById("academic-year-form-quick") as HTMLFormElement;
+          if (form) form.requestSubmit();
         }}
       >
         <div className="space-y-4">
@@ -190,7 +191,8 @@ export function ClassCreatePage() {
         icon="person_add"
         primaryActionLabel="Add Teacher"
         onPrimaryAction={() => {
-          document.getElementById("teacher-form-quick")?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          const form = document.getElementById("teacher-form-quick") as HTMLFormElement;
+          if (form) form.requestSubmit();
         }}
       >
         <div className="space-y-4">

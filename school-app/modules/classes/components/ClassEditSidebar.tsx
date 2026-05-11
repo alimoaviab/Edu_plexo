@@ -50,7 +50,7 @@ export function ClassEditSidebar({
         const newErrors: Record<string, string> = {};
         if (!currentForm.name.trim()) newErrors.name = "Class name is required";
         if (!currentForm.academy_care_id.trim())
-            newErrors.academy_care_id = "Academy care is required";
+            newErrors.academy_care_id = "Academy Year is required";
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }
@@ -102,9 +102,9 @@ export function ClassEditSidebar({
                     <div>
                         <div className="flex items-center gap-2 mb-0.5">
                            <div className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
-                           <h2 className="text-xs font-black tracking-[0.15em] text-slate-900 uppercase">Class Configuration</h2>
+                           <h2 className="text-xs font-bold tracking-[0.15em] text-slate-900 normal-case">Class Configuration</h2>
                         </div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Academic Node — {classItem.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 normal-case ">Academic Node — {classItem.name}</p>
                     </div>
                     <button
                         onClick={handleClose}
@@ -121,14 +121,14 @@ export function ClassEditSidebar({
                         <div className="space-y-5">
                             <div className="flex items-center gap-3">
                                 <div className="h-6 w-6 rounded-lg bg-blue-50 flex items-center justify-center">
-                                  <span className="material-symbols-outlined text-blue-600 text-sm font-black">badge</span>
+                                  <span className="material-symbols-outlined text-blue-600 text-sm font-bold">badge</span>
                                 </div>
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">01. Identity Profile</span>
+                                <span className="text-[10px] font-bold normal-case tracking-[0.2em] text-slate-400">01. Identity Profile</span>
                             </div>
                             
                             <div className="grid gap-5 pl-1">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 pl-1">Name <span className="text-red-500">*</span></label>
+                                    <label className="text-[10px] font-bold normal-case  text-slate-500 pl-1">Name <span className="text-red-500">*</span></label>
                                     <input
                                         type="text"
                                         value={currentForm.name}
@@ -136,12 +136,12 @@ export function ClassEditSidebar({
                                         placeholder="e.g. Class 10-A"
                                         className={`h-11 w-full px-4 text-sm font-bold border rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all ${errors.name ? "border-red-500 bg-red-50/30" : "border-slate-200 bg-white focus:border-blue-400"}`}
                                     />
-                                    {errors.name && <p className="text-[9px] font-black text-red-500 uppercase tracking-widest pl-1">{errors.name}</p>}
+                                    {errors.name && <p className="text-[9px] font-bold text-red-500 normal-case  pl-1">{errors.name}</p>}
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 pl-1">Room Allocation</label>
+                                        <label className="text-[10px] font-bold normal-case  text-slate-500 pl-1">Room Allocation</label>
                                         <input
                                             type="text"
                                             value={currentForm.room_number}
@@ -151,11 +151,11 @@ export function ClassEditSidebar({
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 pl-1">Session Cycle <span className="text-red-500">*</span></label>
+                                        <label className="text-[10px] font-bold normal-case  text-slate-500 pl-1">Session Cycle <span className="text-red-500">*</span></label>
                                         <select
                                             value={currentForm.academy_care_id}
                                             onChange={(e) => setForm({ ...form, academy_care_id: e.target.value })}
-                                            className={`h-11 w-full px-3 text-[11px] font-black uppercase tracking-tight border rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all ${errors.academy_care_id ? "border-red-500 bg-red-50/30" : "border-slate-200 bg-white focus:border-blue-400 text-slate-700"}`}
+                                            className={`h-11 w-full px-3 text-[11px] font-bold normal-case tracking-tight border rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all ${errors.academy_care_id ? "border-red-500 bg-red-50/30" : "border-slate-200 bg-white focus:border-blue-400 text-slate-700"}`}
                                         >
                                             <option value="">Select Cycle</option>
                                             {academyCareOptions.map((opt) => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
@@ -164,7 +164,7 @@ export function ClassEditSidebar({
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 pl-1">Strategic Description</label>
+                                    <label className="text-[10px] font-bold normal-case  text-slate-500 pl-1">Strategic Description</label>
                                     <textarea
                                         value={currentForm.description}
                                         onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -180,9 +180,9 @@ export function ClassEditSidebar({
                         <div className="space-y-4 pt-4">
                             <div className="flex items-center gap-3">
                                 <div className="h-6 w-6 rounded-lg bg-emerald-50 flex items-center justify-center">
-                                  <span className="material-symbols-outlined text-emerald-600 text-sm font-black">school</span>
+                                  <span className="material-symbols-outlined text-emerald-600 text-sm font-bold">school</span>
                                 </div>
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">02. Faculty Assignment (Optional)</span>
+                                <span className="text-[10px] font-bold normal-case tracking-[0.2em] text-slate-400">02. Faculty Assignment (Optional)</span>
                             </div>
                             <div className="pl-1">
                                 <select
@@ -209,9 +209,9 @@ export function ClassEditSidebar({
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="h-6 w-6 rounded-lg bg-purple-50 flex items-center justify-center">
-                                        <span className="material-symbols-outlined text-purple-600 text-sm font-black">schema</span>
+                                        <span className="material-symbols-outlined text-purple-600 text-sm font-bold">schema</span>
                                     </div>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">03. Academic Spectrum *</span>
+                                    <span className="text-[10px] font-bold normal-case tracking-[0.2em] text-slate-400">03. Academic Spectrum *</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <input
@@ -262,7 +262,7 @@ export function ClassEditSidebar({
                                     ))}
                                 </select>
                                 {errors.subjects ? (
-                                    <p className="text-[9px] font-black text-red-500 uppercase tracking-widest mt-2 px-1">{errors.subjects}</p>
+                                    <p className="text-[9px] font-bold text-red-500 normal-case  mt-2 px-1">{errors.subjects}</p>
                                 ) : (
                                     <p className="text-[9px] text-slate-400 mt-2 italic px-1">Update curriculum mappings for this session</p>
                                 )}
@@ -275,14 +275,14 @@ export function ClassEditSidebar({
                 <div className="shrink-0 flex items-center gap-3 border-t border-slate-100 bg-white px-6 py-5 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
                     <button
                         onClick={handleClose}
-                        className="h-11 flex-1 rounded-xl border border-slate-200 px-4 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-95"
+                        className="h-11 flex-1 rounded-xl border border-slate-200 px-4 text-[10px] font-bold normal-case  text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-95"
                     >
                         Discard
                     </button>
                     <button
                         onClick={() => void handleSubmit({ preventDefault: () => {} } as any)}
                         disabled={isSaving || !currentForm.name || !currentForm.academy_care_id}
-                        className="h-11 flex-[2] rounded-xl bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 active:scale-95 disabled:opacity-30 flex items-center justify-center gap-2"
+                        className="h-11 flex-[2] rounded-xl bg-slate-900 text-[10px] font-bold normal-case  text-white shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 active:scale-95 disabled:opacity-30 flex items-center justify-center gap-2"
                     >
                         {isSaving ? (
                             <>

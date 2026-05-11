@@ -93,7 +93,7 @@ export function TeacherEditSidebar({
 
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
                     <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                        <h3 className="text-xs font-semibold text-gray-500 normal-case  mb-4">
                             Personal Details
                         </h3>
                         <div className="space-y-4">
@@ -140,7 +140,7 @@ export function TeacherEditSidebar({
                     </div>
 
                     <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                        <h3 className="text-xs font-semibold text-gray-500 normal-case  mb-4">
                             Contact Information
                         </h3>
                         <div className="space-y-4">
@@ -178,7 +178,7 @@ export function TeacherEditSidebar({
                     </div>
 
                     <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                        <h3 className="text-xs font-semibold text-gray-500 normal-case  mb-4">
                             Academic Assignment
                         </h3>
                         <div className="space-y-4">
@@ -244,7 +244,7 @@ export function TeacherEditSidebar({
                     </div>
 
                     <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
+                        <h3 className="text-xs font-semibold text-gray-500 normal-case  mb-4">
                             Security
                         </h3>
                         <div>

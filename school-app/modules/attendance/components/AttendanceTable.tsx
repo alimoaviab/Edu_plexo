@@ -35,7 +35,7 @@ export function AttendanceTable({ rows }: { rows: AttendanceRecordRow[] }) {
                     late: "warning",
                     excused: "secondary"
                 };
-                return <Badge variant={variants[row.status] || "gray"} className="capitalize">{row.status}</Badge>;
+                return <Badge variant={variants[row.status] || "gray"} className="normal-case">{row.status}</Badge>;
             }
         },
         {

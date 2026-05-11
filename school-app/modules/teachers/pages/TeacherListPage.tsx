@@ -62,19 +62,19 @@ export function TeacherListPage() {
     {
       key: "employee_no",
       label: "Employee ID",
-      render: (row) => <span className="font-black text-[10px] text-blue-600 uppercase tracking-widest">{row.employee_no}</span>,
+      render: (row) => <span className="font-bold text-[10px] text-blue-600 normal-case ">{row.employee_no}</span>,
     },
     {
       key: "name",
       label: "Faculty Member",
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[10px] font-black uppercase">
+          <div className="h-8 w-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold normal-case">
             {row.first_name.substring(0, 1)}{row.last_name.substring(0, 1)}
           </div>
           <div>
             <p className="font-bold text-slate-900 leading-none mb-1">{row.first_name} {row.last_name}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{row.email}</p>
+            <p className="text-[10px] text-slate-400 font-bold normal-case tracking-tighter">{row.email}</p>
           </div>
         </div>
       ),
@@ -91,12 +91,12 @@ export function TeacherListPage() {
       render: (row) => (
         <div className="flex flex-wrap gap-1">
           {row.subjects.slice(0, 2).map((s) => (
-            <Badge key={s} variant="secondary" className="text-[9px] font-black uppercase tracking-tighter px-1.5 py-0">
+            <Badge key={s} variant="secondary" className="text-[9px] font-bold normal-case tracking-tighter px-1.5 py-0">
               {s}
             </Badge>
           ))}
           {row.subjects.length > 2 && (
-            <Badge variant="secondary" className="text-[9px] font-black px-1.5 py-0 text-slate-400">+{row.subjects.length - 2}</Badge>
+            <Badge variant="secondary" className="text-[9px] font-bold px-1.5 py-0 text-slate-400">+{row.subjects.length - 2}</Badge>
           )}
         </div>
       ),
@@ -107,7 +107,7 @@ export function TeacherListPage() {
       render: (row) => (
         <Badge
           variant={row.status === "active" ? "success" : row.status === "on_leave" ? "warning" : "gray"}
-          className="capitalize text-[9px] font-black uppercase tracking-widest px-2"
+          className="normal-case text-[9px] font-bold normal-case  px-2"
         >
           {row.status.replace("_", " ")}
         </Badge>
@@ -164,11 +164,11 @@ export function TeacherListPage() {
         ].map((stat, i) => (
           <div key={i} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-              <h3 className="text-xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
+              <p className="text-[10px] font-bold text-slate-400 normal-case  mb-1">{stat.label}</p>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
             </div>
             <div className={`h-8 w-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
-               <span className="material-symbols-outlined text-lg font-black">{stat.icon}</span>
+               <span className="material-symbols-outlined text-lg font-bold">{stat.icon}</span>
             </div>
           </div>
         ))}
@@ -220,13 +220,13 @@ export function TeacherListPage() {
             </button>
           </div>
           <div className="h-6 w-px bg-slate-200" />
-          <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest px-2 whitespace-nowrap">
+          <span className="text-[10px] font-bold text-slate-900 normal-case  px-2 whitespace-nowrap">
             {filteredRows.length} <span className="text-slate-400">FACULTY</span>
           </span>
           <div className="h-6 w-px bg-slate-200" />
           <Link
             href="/admin/teachers/create"
-            className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-black uppercase tracking-widest text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+            className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-bold normal-case  text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
           >
             <span className="material-symbols-outlined text-lg">person_add</span>
             Add Faculty
@@ -247,9 +247,9 @@ export function TeacherListPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredRows.map((row) => (
                 <div key={row._id} className="premium-card group relative flex flex-col p-0 overflow-hidden transition-all duration-500 bg-white border-slate-200/60 hover:shadow-2xl hover:shadow-slate-200/80 hover:-translate-y-1">
-                  <div className="p-5">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="h-12 w-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-sm font-black uppercase shadow-lg group-hover:scale-110 transition-transform">
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xs font-bold normal-case shadow-lg group-hover:scale-110 transition-transform">
                         {row.first_name.substring(0, 1)}{row.last_name.substring(0, 1)}
                       </div>
                       <div className="flex items-center gap-1 bg-slate-50/50 rounded-lg p-1 border border-slate-100">
@@ -272,43 +272,43 @@ export function TeacherListPage() {
                       </div>
                     </div>
 
-                    <div className="mb-6">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors truncate">{row.first_name} {row.last_name}</h3>
-                        <Badge variant={row.status === "active" ? "success" : row.status === "on_leave" ? "warning" : "gray"} className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0">
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="text-base font-bold text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors truncate">{row.first_name} {row.last_name}</h3>
+                        <Badge variant={row.status === "active" ? "success" : row.status === "on_leave" ? "warning" : "gray"} className="text-[7px] font-bold normal-case  px-1 py-0">
                           {row.status}
                         </Badge>
                       </div>
-                      <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{row.employee_no}</p>
+                      <p className="text-[9px] font-bold text-blue-600 normal-case ">{row.employee_no}</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 mb-6">
-                      <div className="bg-slate-50/50 rounded-xl p-2.5 border border-slate-100/50">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Qualification</p>
-                        <p className="text-[10px] font-bold text-slate-700 truncate">{row.qualification || "B.Ed"}</p>
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      <div className="bg-slate-50/50 rounded-lg p-2 border border-slate-100/50">
+                        <p className="text-[7px] font-bold text-slate-400 normal-case  mb-0.5">Qualification</p>
+                        <p className="text-[9px] font-bold text-slate-700 truncate">{row.qualification || "B.Ed"}</p>
                       </div>
-                      <div className="bg-slate-50/50 rounded-xl p-2.5 border border-slate-100/50">
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Specialization</p>
-                        <p className="text-[10px] font-bold text-slate-700 truncate">{row.subjects[0] || "—"}</p>
+                      <div className="bg-slate-50/50 rounded-lg p-2 border border-slate-100/50">
+                        <p className="text-[7px] font-bold text-slate-400 normal-case  mb-0.5">Specialization</p>
+                        <p className="text-[9px] font-bold text-slate-700 truncate">{row.subjects[0] || "—"}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                        <div className="flex items-center gap-2 text-slate-400">
                           <span className="material-symbols-outlined text-sm">mail</span>
-                          <span className="text-[10px] font-black uppercase tracking-widest truncate max-w-[120px]">{row.email}</span>
+                          <span className="text-[10px] font-bold normal-case  truncate max-w-[120px]">{row.email}</span>
                        </div>
                     </div>
                   </div>
                   
-                  <div className="mt-auto px-5 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-white transition-all">
-                     <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600 flex items-center gap-1 transition-colors">
-                        <span className="material-symbols-outlined text-sm">calendar_month</span>
+                  <div className="mt-auto px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-white transition-all">
+                     <button className="text-[9px] font-bold text-slate-400 normal-case  hover:text-blue-600 flex items-center gap-1 transition-colors">
+                        <span className="material-symbols-outlined text-xs">calendar_month</span>
                         Schedule
                      </button>
-                     <Link href={`/admin/teachers/${row._id}`} className="group/btn h-8 px-4 rounded-lg bg-blue-600 text-[10px] font-black text-white uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95">
+                     <Link href={`/admin/teachers/${row._id}`} className="group/btn h-7 px-3 rounded-lg bg-blue-600 text-[9px] font-bold text-white normal-case  hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95">
                         Hub
-                        <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
+                        <span className="material-symbols-outlined text-xs transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
                      </Link>
                   </div>
                 </div>
@@ -331,18 +331,18 @@ export function TeacherListPage() {
 
       {/* Pagination Footer - Premium ERP Style */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        <p className="text-[10px] font-bold text-slate-400 normal-case ">
           Showing <span className="text-blue-600">1</span> to <span className="text-slate-900">{filteredRows.length}</span> of <span className="text-slate-900">{state.data?.length}</span> Faculty Records
         </p>
         <div className="flex items-center gap-2">
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
             <span className="material-symbols-outlined text-base">chevron_left</span>
             Previous
           </button>
           <div className="flex items-center gap-1">
-            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-black text-white shadow-lg shadow-blue-600/20">1</button>
+            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-bold text-white shadow-lg shadow-blue-600/20">1</button>
           </div>
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
             Next
             <span className="material-symbols-outlined text-base">chevron_right</span>
           </button>

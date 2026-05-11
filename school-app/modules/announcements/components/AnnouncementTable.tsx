@@ -15,7 +15,7 @@ export function AnnouncementTable({ rows }: { rows: AnnouncementRecordRow[] }) {
                     normal: "secondary",
                     low: "gray"
                 };
-                return <Badge variant={variants[row.priority] || "gray"} className="capitalize">{row.priority}</Badge>;
+                return <Badge variant={variants[row.priority] || "gray"} className="normal-case">{row.priority}</Badge>;
             }
         },
         {
@@ -32,7 +32,7 @@ export function AnnouncementTable({ rows }: { rows: AnnouncementRecordRow[] }) {
             key: "target",
             label: "Target",
             render: (row: AnnouncementRecordRow) => (
-                <Badge variant="gray" className="capitalize">{row.target_type}</Badge>
+                <Badge variant="gray" className="normal-case">{row.target_type}</Badge>
             )
         },
         {
@@ -44,7 +44,7 @@ export function AnnouncementTable({ rows }: { rows: AnnouncementRecordRow[] }) {
                     draft: "warning",
                     archived: "gray"
                 };
-                return <Badge variant={variants[row.status] || "gray"} className="capitalize">{row.status}</Badge>;
+                return <Badge variant={variants[row.status] || "gray"} className="normal-case">{row.status}</Badge>;
             }
         },
         {

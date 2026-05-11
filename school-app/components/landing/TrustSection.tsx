@@ -48,7 +48,7 @@ export const TrustSection = () => {
               <div className="text-4xl md:text-6xl font-extrabold text-slate-900 mb-2 tracking-tight">
                 {stat.value}
               </div>
-              <div className="text-sm md:text-lg text-slate-500 font-semibold uppercase tracking-wider">
+              <div className="text-sm md:text-lg text-slate-500 font-semibold normal-case ">
                 {stat.label}
               </div>
             </motion.div>

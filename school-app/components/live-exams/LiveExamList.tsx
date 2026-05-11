@@ -56,7 +56,7 @@ export const LiveExamList: React.FC<LiveExamListProps> = ({ role }) => {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-bold text-slate-900">{exam.title}</h3>
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getStatusColor(exam.status)}`}>
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold normal-case  ${getStatusColor(exam.status)}`}>
                   {exam.status}
                 </span>
               </div>

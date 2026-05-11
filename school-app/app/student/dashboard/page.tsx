@@ -151,8 +151,8 @@ async function loadStudentId(userStudentId?: string) {
 function MetricCard({ label, value, tone }: { label: string; value: string | number; tone: string }) {
     return (
         <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</p>
-            <p className={`mt-3 text-3xl font-black ${tone}`}>{value}</p>
+            <p className="text-xs font-semibold normal-case tracking-[0.2em] text-slate-500">{label}</p>
+            <p className={`mt-3 text-3xl font-bold ${tone}`}>{value}</p>
         </Card>
     );
 }
@@ -242,14 +242,14 @@ export default function StudentDashboardPage() {
                 <section className="rounded-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-cyan-900 p-8 text-white shadow-2xl shadow-slate-950/20">
                     <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
                         <div className="max-w-3xl">
-                            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-cyan-200/80">Welcome back</p>
-                            <h1 className="mt-3 text-3xl font-black tracking-tight md:text-5xl">{profile.student.name}</h1>
+                            <p className="text-xs font-semibold normal-case tracking-[0.35em] text-cyan-200/80">Welcome back</p>
+                            <h1 className="mt-3 text-3xl font-bold tracking-tight md:text-5xl">{profile.student.name}</h1>
                             <p className="mt-3 text-sm text-slate-200 md:text-base">
                                 {profile.student.class} {profile.student.section ? `- ${profile.student.section}` : ""} · {profile.student.academic_year}
                             </p>
                         </div>
                         <div className="rounded-2xl bg-white/10 px-5 py-4 backdrop-blur-md">
-                            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100/70">Current status</p>
+                            <p className="text-xs font-semibold normal-case tracking-[0.25em] text-cyan-100/70">Current status</p>
                             <div className="mt-2 flex items-center gap-3">
                                 <Badge variant="success" className="bg-emerald-400/15 text-emerald-100 border-emerald-300/20">
                                     {profile.student.status}
@@ -305,12 +305,12 @@ export default function StudentDashboardPage() {
                         <h2 className="text-xl font-bold text-slate-900">Student details</h2>
                         <div className="mt-5 space-y-4">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Guardian</p>
+                                <p className="text-xs font-semibold normal-case tracking-wide text-slate-400">Guardian</p>
                                 <p className="mt-1 font-semibold text-slate-900">{profile.guardian.name || "Not set"}</p>
                                 <p className="text-sm text-slate-500">{profile.guardian.phone || profile.guardian.email || "No contact details"}</p>
                             </div>
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Subjects</p>
+                                <p className="text-xs font-semibold normal-case tracking-wide text-slate-400">Subjects</p>
                                 <div className="mt-2 flex flex-wrap gap-2">
                                     {profile.enrolled_subjects.length > 0 ? (
                                         profile.enrolled_subjects.map((subject) => (
@@ -324,7 +324,7 @@ export default function StudentDashboardPage() {
                                 </div>
                             </div>
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Alerts</p>
+                                <p className="text-xs font-semibold normal-case tracking-wide text-slate-400">Alerts</p>
                                 <p className="mt-1 text-sm text-slate-600">
                                     {alerts?.alerts_count ?? 0} alerts, {alerts?.total_assignments_pending ?? 0} homework items, {alerts?.total_pending_fees ?? 0} fee balance.
                                 </p>

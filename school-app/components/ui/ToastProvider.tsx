@@ -21,7 +21,7 @@ export function ToastProvider() {
       const customEvent = event as CustomEvent<{ message: string; tone: ToastTone }>;
       const { message, tone } = customEvent.detail;
       const id = `${Date.now()}-${Math.random()}`;
-      setToasts((prev) => [...prev, { id, message, tone }]);
+      setToasts([{ id, message, tone }]);
     };
 
     window.addEventListener("edu:toast", handleToast);

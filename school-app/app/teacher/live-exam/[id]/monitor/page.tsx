@@ -51,7 +51,7 @@ export default function LiveExamMonitorPage() {
                     <span className="material-symbols-outlined text-[18px]">groups</span>
                     {submissions.length} Students Active
                 </span>
-                <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase ${exam.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                <span className={`rounded-full px-3 py-1 text-xs font-bold normal-case ${exam.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
                     {exam.status}
                 </span>
             </div>
@@ -63,7 +63,7 @@ export default function LiveExamMonitorPage() {
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="border-b border-slate-100 text-xs font-bold uppercase tracking-wider text-slate-400">
+                            <tr className="border-b border-slate-100 text-xs font-bold normal-case  text-slate-400">
                                 <th className="pb-4 px-2">Student</th>
                                 <th className="pb-4">Status</th>
                                 <th className="pb-4">Progress</th>
@@ -83,12 +83,12 @@ export default function LiveExamMonitorPage() {
                                                 <p className="font-semibold text-slate-900">
                                                     {sub.student_id?.user_id?.profile?.first_name} {sub.student_id?.user_id?.profile?.last_name}
                                                 </p>
-                                                <p className="text-[10px] text-slate-400 uppercase tracking-tight">ID: {sub.student_id?.student_id || "N/A"}</p>
+                                                <p className="text-[10px] text-slate-400 normal-case tracking-tight">ID: {sub.student_id?.student_id || "N/A"}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="py-4">
-                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${sub.status === 'submitted' ? 'bg-slate-100 text-slate-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold normal-case ${sub.status === 'submitted' ? 'bg-slate-100 text-slate-700' : 'bg-emerald-100 text-emerald-700'}`}>
                                             {sub.status.replace('_', ' ')}
                                         </span>
                                     </td>
@@ -128,15 +128,15 @@ export default function LiveExamMonitorPage() {
                     <h3 className="text-lg font-bold text-slate-900 mb-4">Exam Info</h3>
                     <div className="space-y-3">
                         <div>
-                            <p className="text-[10px] font-bold uppercase text-slate-400">Total Marks</p>
+                            <p className="text-[10px] font-bold normal-case text-slate-400">Total Marks</p>
                             <p className="text-lg font-bold text-slate-700">{exam.total_marks}</p>
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold uppercase text-slate-400">Duration</p>
+                            <p className="text-[10px] font-bold normal-case text-slate-400">Duration</p>
                             <p className="text-lg font-bold text-slate-700">{exam.duration} Minutes</p>
                         </div>
                         <div>
-                            <p className="text-[10px] font-bold uppercase text-slate-400">Subject</p>
+                            <p className="text-[10px] font-bold normal-case text-slate-400">Subject</p>
                             <p className="text-sm font-semibold text-slate-700">{exam.subject_id?.name || "Subject"}</p>
                         </div>
                     </div>

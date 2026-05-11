@@ -98,12 +98,12 @@ export function ClassListPage() {
       label: "Class Identity",
       render: (row) => (
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-black text-xs">
+          <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs">
             {row.name.substring(0, 2).toUpperCase()}
           </div>
           <div>
             <p className="font-bold text-slate-900 leading-none mb-1">{row.name}</p>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Academic Node</p>
+            <p className="text-[10px] text-slate-400 font-bold normal-case tracking-tighter">Academic Node</p>
           </div>
         </div>
       ),
@@ -125,12 +125,12 @@ export function ClassListPage() {
       render: (row) => (
         <div className="flex -space-x-2">
           {(row.teacher_names || row.teacher_ids || []).slice(0, 3).map((t, i) => (
-            <div key={i} className="h-6 w-6 rounded-full border-2 border-white bg-blue-100 flex items-center justify-center text-[8px] font-black text-blue-700" title={t}>
+            <div key={i} className="h-6 w-6 rounded-full border-2 border-white bg-blue-100 flex items-center justify-center text-[8px] font-bold text-blue-700" title={t}>
               {t.split(' ').map(n => n[0]).join('').substring(0, 2)}
             </div>
           ))}
           {(row.teacher_names || row.teacher_ids || []).length > 3 && (
-            <div className="h-6 w-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-black text-slate-500">
+            <div className="h-6 w-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-500">
               +{(row.teacher_names || row.teacher_ids || []).length - 3}
             </div>
           )}
@@ -194,11 +194,11 @@ export function ClassListPage() {
         ].map((stat) => (
           <div key={stat.label} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-              <h3 className="text-xl font-black text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
+              <p className="text-[10px] font-bold text-slate-400 normal-case  mb-1">{stat.label}</p>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
             </div>
             <div className={`h-8 w-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
-              <span className="material-symbols-outlined text-lg font-black">{stat.icon}</span>
+              <span className="material-symbols-outlined text-lg font-bold">{stat.icon}</span>
             </div>
           </div>
         ))}
@@ -237,13 +237,13 @@ export function ClassListPage() {
             </button>
           </div>
           <div className="h-6 w-px bg-slate-200" />
-          <span className="text-xs font-black text-slate-900 uppercase tracking-widest px-2 whitespace-nowrap">
+          <span className="text-xs font-bold text-slate-900 normal-case  px-2 whitespace-nowrap">
             {filteredRows.length} <span className="text-slate-400">Total Units</span>
           </span>
           <div className="h-6 w-px bg-slate-200" />
           <Link
             href="/admin/classes/create"
-            className="inline-flex h-8 items-center gap-2 px-4 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 backdrop-blur-md border border-slate-900/10 rounded-lg hover:bg-slate-800 transition-all shadow-sm active:scale-95"
+            className="inline-flex h-8 items-center gap-2 px-4 text-[10px] font-bold normal-case  text-white bg-blue-600 backdrop-blur-md border border-slate-900/10 rounded-lg hover:bg-slate-800 transition-all shadow-sm active:scale-95"
           >
             <span className="material-symbols-outlined text-base">add_box</span>
             Register Class
@@ -271,7 +271,7 @@ export function ClassListPage() {
                     <div className="p-5">
                       <div className="flex items-start justify-between mb-4">
                         <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm transition-transform group-hover:scale-110">
-                          <span className="material-symbols-outlined font-black">door_front</span>
+                          <span className="material-symbols-outlined font-bold">door_front</span>
                         </div>
                         <div className="flex items-center gap-1 bg-slate-50/50 rounded-lg p-1 border border-slate-100">
                           <button
@@ -293,7 +293,7 @@ export function ClassListPage() {
 
                       <div className="mb-6">
                         <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-black text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">{row.name}</h3>
+                          <h3 className="text-lg font-bold text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">{row.name}</h3>
                         </div>
                         <p className="text-[11px] font-bold text-slate-500 leading-relaxed line-clamp-2">
                           {row.description || "Foundational academic group module."}
@@ -302,9 +302,9 @@ export function ClassListPage() {
 
                       <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
                         <div className="space-y-1">
-                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Faculty Head</p>
+                          <p className="text-[8px] font-bold text-slate-400 normal-case ">Faculty Head</p>
                           <div className="flex items-center gap-2">
-                            <div className="h-6 w-6 rounded-full bg-slate-900 text-[8px] font-black text-white flex items-center justify-center uppercase shadow-sm">
+                            <div className="h-6 w-6 rounded-full bg-slate-900 text-[8px] font-bold text-white flex items-center justify-center normal-case shadow-sm">
                               {(row.teacher_names?.[0] || 'T').substring(0, 1)}
                             </div>
                             <p className="text-[10px] font-bold text-slate-700 truncate">
@@ -313,9 +313,9 @@ export function ClassListPage() {
                           </div>
                         </div>
                         <div className="space-y-1">
-                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Room Allocation</p>
+                          <p className="text-[8px] font-bold text-slate-400 normal-case ">Room Allocation</p>
                           <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-slate-900 text-xs font-black">location_on</span>
+                            <span className="material-symbols-outlined text-slate-900 text-xs font-bold">location_on</span>
                             <p className="text-[10px] font-bold text-slate-700">{row.room_number || "Open Node"}</p>
                           </div>
                         </div>
@@ -330,7 +330,7 @@ export function ClassListPage() {
                               </Badge>
                             ))}
                             {row.subjects.length > 3 && (
-                              <Badge variant="secondary" className="bg-slate-50 text-slate-400 text-[9px] font-black">+{row.subjects.length - 3}</Badge>
+                              <Badge variant="secondary" className="bg-slate-50 text-slate-400 text-[9px] font-bold">+{row.subjects.length - 3}</Badge>
                             )}
                           </div>
                         </div>
@@ -340,7 +340,7 @@ export function ClassListPage() {
                     <div className="mt-auto px-5 py-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-white transition-all">
                       <div className="flex items-center gap-2">
                          <span className="material-symbols-outlined text-slate-400 text-sm">calendar_month</span>
-                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                         <p className="text-[10px] font-bold text-slate-400 normal-case ">
                            {row.academy_care_year || row.academy_care_id}
                          </p>
                       </div>
@@ -354,7 +354,7 @@ export function ClassListPage() {
                         </Link>
                         <button
                           onClick={() => setEditingClass(row)}
-                          className="group/btn h-8 px-4 rounded-lg bg-blue-600 text-[10px] font-black text-white uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95"
+                          className="group/btn h-8 px-4 rounded-lg bg-blue-600 text-[10px] font-bold text-white normal-case  hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95"
                         >
                           Manage
                           <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
@@ -383,18 +383,18 @@ export function ClassListPage() {
 
       {/* Pagination Footer - Premium ERP Style */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        <p className="text-[10px] font-bold text-slate-400 normal-case ">
           Showing <span className="text-blue-600">1</span> to <span className="text-slate-900">{filteredRows.length}</span> of <span className="text-slate-900">{filteredRows.length}</span> Academic Units
         </p>
         <div className="flex items-center gap-2">
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
             <span className="material-symbols-outlined text-base">chevron_left</span>
             Previous
           </button>
           <div className="flex items-center gap-1">
-            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-black text-white shadow-lg ">1</button>
+            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-bold text-white shadow-lg ">1</button>
           </div>
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
             Next
             <span className="material-symbols-outlined text-base">chevron_right</span>
           </button>

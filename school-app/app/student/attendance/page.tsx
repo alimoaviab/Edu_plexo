@@ -73,7 +73,7 @@ export default function StudentAttendancePage() {
                 <Card>
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div>
-                            <h2 className="text-2xl font-black text-slate-900">{report.student}</h2>
+                            <h2 className="text-2xl font-bold text-slate-900">{report.student}</h2>
                             <p className="text-sm text-slate-500">{report.class} · {report.academic_year}</p>
                         </div>
                         <Badge variant={report.attendance_summary.attendance_percentage >= 90 ? "success" : report.attendance_summary.attendance_percentage >= 75 ? "warning" : "error"}>
@@ -88,8 +88,8 @@ export default function StudentAttendancePage() {
                             ["Leave", report.attendance_summary.leave_days]
                         ].map(([label, value]) => (
                             <div key={label as string} className="rounded-2xl border border-slate-200 p-4">
-                                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                                <p className="mt-1 text-2xl font-black text-slate-900">{value}</p>
+                                <p className="text-xs font-semibold normal-case tracking-wide text-slate-400">{label}</p>
+                                <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
                             </div>
                         ))}
                     </div>

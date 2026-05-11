@@ -80,7 +80,7 @@ export function SubjectEditSidebar({ isOpen, subject, onClose, onSave, isSaving 
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
                     <div>
                         <h2 className="text-[16px] font-bold text-slate-900">{subject ? "Modify Subject" : "New Subject Entry"}</h2>
-                        <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Curriculum Inventory</p>
+                        <p className="text-[11px] font-medium text-slate-400 normal-case ">Curriculum Inventory</p>
                     </div>
                     <button
                         onClick={handleClose}
@@ -94,13 +94,13 @@ export function SubjectEditSidebar({ isOpen, subject, onClose, onSave, isSaving 
                     <section>
                         <div className="flex items-center gap-2 mb-4">
                             <span className="h-1 w-4 rounded-full bg-blue-600" />
-                            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                            <h3 className="text-[11px] font-bold text-slate-400 normal-case ">
                                 Basic Information
                             </h3>
                         </div>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <label className="block text-[11px] font-bold text-slate-700 normal-case  mb-1.5">
                                     Subject Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
@@ -116,7 +116,7 @@ export function SubjectEditSidebar({ isOpen, subject, onClose, onSave, isSaving 
                                 )}
                             </div>
                             <div>
-                                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <label className="block text-[11px] font-bold text-slate-700 normal-case  mb-1.5">
                                     Subject Code
                                 </label>
                                 <input
@@ -128,7 +128,7 @@ export function SubjectEditSidebar({ isOpen, subject, onClose, onSave, isSaving 
                                 />
                             </div>
                             <div>
-                                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <label className="block text-[11px] font-bold text-slate-700 normal-case  mb-1.5">
                                     Description
                                 </label>
                                 <textarea
@@ -145,7 +145,7 @@ export function SubjectEditSidebar({ isOpen, subject, onClose, onSave, isSaving 
                     <section>
                         <div className="flex items-center gap-2 mb-4">
                             <span className="h-1 w-4 rounded-full bg-blue-600" />
-                            <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                            <h3 className="text-[11px] font-bold text-slate-400 normal-case ">
                                 Operational Status
                             </h3>
                         </div>

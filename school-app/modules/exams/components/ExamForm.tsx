@@ -125,18 +125,9 @@ export function ExamForm({
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-10">
+        <form onSubmit={handleSubmit} className="space-y-6">
             {/* Section: Academic Context */}
-            <section className="space-y-6">
-                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                        <span className="material-symbols-outlined text-[24px]">school</span>
-                    </div>
-                    <div>
-                        <h3 className="text-[15px] font-bold text-slate-900">Academic Context</h3>
-                        <p className="text-[11px] font-medium text-slate-400">Select target class and associated curriculum subject</p>
-                    </div>
-                </div>
+            <section className="space-y-4">
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Select
@@ -174,33 +165,11 @@ export function ExamForm({
                     />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Assigned Examiner</label>
-                        <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/50">
-                            <div className="h-8 w-8 rounded-full bg-slate-900 flex items-center justify-center text-[10px] font-black text-white">
-                                {classTeacher?.name?.substring(0, 1) || "?"}
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-xs font-bold text-slate-900">{classTeacher?.name || "Unassigned"}</p>
-                                <p className="text-[10px] text-slate-400 font-medium">Primary Faculty Head</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
             </section>
 
             {/* Section: Basic Details */}
-            <section className="space-y-6">
-                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
-                        <span className="material-symbols-outlined text-[24px]">description</span>
-                    </div>
-                    <div>
-                        <h3 className="text-[15px] font-bold text-slate-900">Exam Details</h3>
-                        <p className="text-[11px] font-medium text-slate-400">Define the assessment title and instructions</p>
-                    </div>
-                </div>
+            <section className="space-y-4">
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
@@ -225,16 +194,7 @@ export function ExamForm({
             </section>
 
             {/* Section: Assessment Parameters */}
-            <section className="space-y-6">
-                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                        <span className="material-symbols-outlined text-[24px]">analytics</span>
-                    </div>
-                    <div>
-                        <h3 className="text-[15px] font-bold text-slate-900">Assessment Parameters</h3>
-                        <p className="text-[11px] font-medium text-slate-400">Set grading scales and operational status</p>
-                    </div>
-                </div>
+            <section className="space-y-4">
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
@@ -259,7 +219,7 @@ export function ExamForm({
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Exam Description & Instructions</label>
+                    <label className="text-[11px] font-bold text-slate-700 normal-case ">Exam Description & Instructions</label>
                     <textarea
                         placeholder="Add syllabus coverage or student instructions..."
                         value={form.description || ""}
