@@ -408,9 +408,9 @@ export function SchoolShell({
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`premium-nav-item group flex h-7.5 items-center gap-2 px-2.5 py-1 text-[12px] font-bold ${isActive ? "premium-nav-item-active" : "text-slate-500 hover:bg-slate-50"}`}
+                        className={`premium-nav-item group flex h-7.5 items-center gap-2 px-2.5 py-1 text-[12px] font-bold ${isActive ? "premium-nav-item-active" : "text-black hover:bg-slate-50"}`}
                       >
-                        <span className={`material-symbols-outlined text-[15px] transition-colors ${isActive ? "font-bold text-white" : "text-slate-400 group-hover:text-blue-600"}`}>
+                        <span className={`material-symbols-outlined text-[15px] transition-colors ${isActive ? "font-bold text-white" : "text-black/70 group-hover:text-blue-600"}`}>
                           {item.icon}
                         </span>
                         <span className="truncate tracking-tight">{item.label}</span>
