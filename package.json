@@ -16,7 +16,8 @@
     "test:settings": "node test-settings.js",
     "test:exams": "node test-exams.js",
     "test:results": "node test-results.js",
-    "test:all": "node test-all.js"
+    "test:all": "node test-all.js",
+    "seed:demo": "ts-node scripts/seed-demo-data.ts"
   },
   "devDependencies": {
     "turbo": "^2.5.0",

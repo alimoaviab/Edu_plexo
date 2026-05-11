@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { authenticateRequest } from "@edu/shared/auth/middleware";
 import { createAgentGraph } from "@edu/shared/ai/core/graph";
 import { HumanMessage, AIMessageChunk } from "@langchain/core/messages";
+import { 
+  checkChatbotAccess, 
+  validateChatbotRequest, 
+  addSchoolIsolation,
+  logChatbotAccess 
+} from "@edu/shared/ai/middleware/security";
 
 export async function POST(request: Request) {
   try {
@@ -15,37 +21,62 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // ✅ SECURITY CHECK 1: Check if user can access chatbot (Admin only)
+    const accessCheck = checkChatbotAccess(ctx);
+    if (!accessCheck.canAccessChatbot) {
+      logChatbotAccess(ctx, "", "error");
+      return NextResponse.json(
+        { 
+          error: "Access Denied", 
+          message: accessCheck.reason || "Chatbot is only available for school administrators"
+        }, 
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { message, thread_id } = body;
 
-    if (!message) {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    // ✅ SECURITY CHECK 2: Validate and sanitize message
+    const validation = validateChatbotRequest(ctx, message);
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
+
+    const sanitizedMessage = validation.sanitizedMessage!;
+
+    // ✅ SECURITY CHECK 3: Add school isolation to context
+    const secureCtx = addSchoolIsolation(ctx);
+
+    // Log access for audit trail
+    logChatbotAccess(secureCtx, sanitizedMessage, "request");
 
     const graph = createAgentGraph();
 
     let complexity: "simple" | "moderate" | "complex" = "moderate";
-    if (message.length < 100 && !message.toLowerCase().includes("analyze")) {
+    if (sanitizedMessage.length < 100 && !sanitizedMessage.toLowerCase().includes("analyze")) {
       complexity = "simple";
-    } else if (message.length > 500 || message.toLowerCase().includes("deep analysis")) {
+    } else if (sanitizedMessage.length > 500 || sanitizedMessage.toLowerCase().includes("deep analysis")) {
       complexity = "complex";
     }
 
     const config = {
       configurable: {
         thread_id: thread_id || `thread_${Date.now()}`,
-        context: ctx
+        context: secureCtx // ✅ Pass secure context with school isolation
       }
     };
 
-    // Use streamEvents for streaming capability (optional if client wants to read stream)
-    // We will return a streaming response.
-
+    // Use streamEvents for streaming capability
     const stream = await graph.streamEvents(
       {
-        messages: [new HumanMessage({ content: message })],
-        context: ctx,
-        complexity: complexity
+        messages: [new HumanMessage({ content: sanitizedMessage })],
+        context: secureCtx,
+        complexity: complexity,
+        // ✅ Add school info for personalization
+        schoolName: secureCtx.school_name || "Your School",
+        userName: secureCtx.user?.name,
+        userRole: secureCtx.user?.role
       },
       { ...config, version: "v2" }
     );
@@ -62,12 +93,14 @@ export async function POST(request: Request) {
                 const text = typeof chunk.content === "string" ? chunk.content : JSON.stringify(chunk.content);
                 controller.enqueue(encoder.encode(`{"type": "chunk", "content": ${JSON.stringify(text)}}\n`));
               }
-            // } else if (event.event === "on_tool_start") {
-            //    controller.enqueue(encoder.encode(`{"type": "tool", "content": "Running tool ${event.name}..."}\n`));
             }
           }
+          
+          // Log successful response
+          logChatbotAccess(secureCtx, sanitizedMessage, "response");
         } catch (err: any) {
-           controller.enqueue(encoder.encode(`{"type": "error", "content": ${JSON.stringify(err.message)}}\n`));
+          controller.enqueue(encoder.encode(`{"type": "error", "content": ${JSON.stringify(err.message)}}\n`));
+          logChatbotAccess(secureCtx, sanitizedMessage, "error");
         } finally {
           controller.close();
         }
