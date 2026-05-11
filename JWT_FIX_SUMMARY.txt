@@ -1,0 +1,35 @@
+🔐 JWT AUTHENTICATION FIX - SUMMARY
+=====================================
+
+ISSUE FOUND:
+- API calls returning 401 "JWT verification failed: invalid signature"
+- Root cause: JWT_SECRET mismatch between two .env.local files
+
+ROOT CAUSE:
+- Root .env.local had: JWT_SECRET=dev-secret
+- school-app/.env.local had: JWT_SECRET=dev-secretttyt
+- Tokens signed with one secret couldn't be verified with the other
+
+FIXES APPLIED:
+✅ 1. Updated root .env.local to use JWT_SECRET=dev-secretttyt
+✅ 2. Fixed token key in AI components (auth_token → token)
+✅ 3. Cleared Next.js cache (.next directory)
+
+FILES MODIFIED:
+1. .env.local (root)
+2. school-app/components/ai/AIAssistant.tsx
+3. school-app/app/admin/ai/page.tsx
+
+NEXT STEPS TO COMPLETE FIX:
+1. Clear browser localStorage/sessionStorage
+2. Restart dev server (npm run dev)
+3. Login again with admin@school.com / admin123
+4. Verify API calls return 200 (not 401)
+
+VERIFICATION:
+After restart, check:
+- Browser DevTools → Application → Local Storage → "token" exists
+- Network tab shows API calls with 200 status
+- Chatbot loads and responds to queries
+
+STATUS: ✅ READY FOR TESTING

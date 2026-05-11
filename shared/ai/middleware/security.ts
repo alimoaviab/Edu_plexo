@@ -20,7 +20,7 @@ export interface ChatbotAccessControl {
  */
 export function checkChatbotAccess(ctx: RequestContext): ChatbotAccessControl {
   // 1. Check if user is authenticated
-  if (!ctx.user || !ctx.user.id) {
+  if (!ctx.user_id) {
     return {
       canAccessChatbot: false,
       reason: "User not authenticated",
@@ -29,7 +29,7 @@ export function checkChatbotAccess(ctx: RequestContext): ChatbotAccessControl {
   }
 
   // 2. Check user role - ONLY ADMIN can access chatbot
-  const userRole = ctx.user.role?.toLowerCase();
+  const userRole = ctx.role?.toLowerCase();
   
   if (userRole !== "admin" && userRole !== "administrator") {
     return {
@@ -147,8 +147,8 @@ export function logChatbotAccess(
   const logEntry = {
     timestamp: new Date().toISOString(),
     school_id: ctx.school_id,
-    user_id: ctx.user?.id,
-    user_role: ctx.user?.role,
+    user_id: ctx.user_id,
+    user_role: ctx.role,
     action,
     message: message.substring(0, 100), // Log first 100 chars only
     ip: ctx.ip || "unknown"

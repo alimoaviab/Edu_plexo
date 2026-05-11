@@ -69,6 +69,14 @@ export interface RequestContext {
   actor_email?: string;
   ip?: string;
   user_agent?: string;
+  // AI/Security specific extensions
+  school_name?: string;
+  user?: {
+    id: string;
+    name: string;
+    role: string;
+  };
+  filters?: Record<string, any>;
 }
 
 export interface ServiceError {

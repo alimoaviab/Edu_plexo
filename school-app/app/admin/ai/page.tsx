@@ -94,7 +94,7 @@ export default function AdminAIPage() {
     let currentThreadId = activeThreadId;
 
     try {
-      const token = typeof window !== "undefined" ? (localStorage.getItem("auth_token") || sessionStorage.getItem("auth_token")) : "";
+      const token = typeof window !== "undefined" ? (localStorage.getItem("token") || sessionStorage.getItem("token")) : "";
 
       const response = await fetch("/api/ai", {
         method: "POST",

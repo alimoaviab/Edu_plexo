@@ -14,5 +14,18 @@ export const AgentState = Annotation.Root({
   complexity: Annotation<"simple" | "moderate" | "complex">({
     reducer: (x, y) => y ?? x,
     default: () => "moderate",
+  }),
+  // ✅ Personalization fields
+  schoolName: Annotation<string>({
+    reducer: (x, y) => y ?? x,
+    default: () => "Your School",
+  }),
+  userName: Annotation<string | undefined>({
+    reducer: (x, y) => y ?? x,
+    default: () => undefined,
+  }),
+  userRole: Annotation<string | undefined>({
+    reducer: (x, y) => y ?? x,
+    default: () => undefined,
   })
 });

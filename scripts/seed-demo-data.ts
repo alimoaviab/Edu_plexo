@@ -139,6 +139,7 @@ async function seedData() {
 
     // Get database
     const db = mongoose.connection.db;
+    if (!db) throw new Error("Database connection failed");
 
     // Clear existing data (optional - comment out if you want to keep existing data)
     console.log("🗑️  Clearing existing demo data...");
@@ -171,26 +172,45 @@ async function seedData() {
     await db.collection("users").insertOne({
       name: "Admin User",
       email: "admin@school.com",
-      password: hashedPassword,
+      password_hash: hashedPassword,
       role: "admin",
       school_id: schoolId,
       phone: "0300-1234567",
+      status: "active",
       created_at: new Date(),
       updated_at: new Date()
     });
     console.log("✅ Admin user created: admin@school.com / admin123\n");
+
+    // 2.5. Create Academic Year
+    console.log("📅 Creating academic year...");
+    const academicYearResult = await db.collection("academic_years").insertOne({
+      school_id: schoolId,
+      name: "2025-2026",
+      start_date: new Date("2025-01-01"),
+      end_date: new Date("2025-12-31"),
+      is_current: true,
+      status: "active",
+      created_at: new Date(),
+      updated_at: new Date()
+    });
+    const academicYearId = academicYearResult.insertedId.toString();
+    console.log(`✅ Academic year created: ${academicYearId}\n`);
 
     // 3. Create 20 Teachers
     console.log("👨‍🏫 Creating 20 teachers...");
     const teachers = [];
     for (let i = 0; i < 20; i++) {
       const teacher = {
-        name: teacherNames[i],
-        email: `teacher${i + 1}@school.com`,
+        employee_no: `EMP${String(i + 1).padStart(4, "0")}`,
+        first_name: teacherNames[i].split(" ")[0],
+        last_name: teacherNames[i].split(" ").slice(1).join(" "),
         phone: generatePhone(),
         subjects: [randomItem(subjects), randomItem(subjects)],
         school_id: schoolId,
         qualification: randomItem(["B.Ed", "M.Ed", "M.A", "M.Sc", "B.A"]),
+        status: "active",
+        joined_at: new Date(),
         created_at: new Date(),
         updated_at: new Date()
       };
@@ -207,12 +227,14 @@ async function seedData() {
     for (let grade = 1; grade <= 10; grade++) {
       for (const section of ["A", "B"]) {
         const cls = {
-          name: `Grade ${grade}`,
+          name: `Grade ${grade}-${section}`,
           section: section,
-          grade: grade,
+          grade: String(grade),
           capacity: 30,
           school_id: schoolId,
-          teacher_id: teacherIds[classIndex % teacherIds.length],
+          academy_care_id: academicYearId,
+          class_teacher_id: teacherIds[classIndex % teacherIds.length],
+          status: "active",
           created_at: new Date(),
           updated_at: new Date()
         };
@@ -260,7 +282,8 @@ async function seedData() {
       if (studentCount >= 500) break;
     }
     
-    await db.collection("students").insertMany(students);
+    const studentsResult = await db.collection("students").insertMany(students);
+    const studentIds = Object.values(studentsResult.insertedIds);
     console.log(`✅ Created ${students.length} students\n`);
 
     // 6. Create Attendance Records (for today)
@@ -269,11 +292,11 @@ async function seedData() {
     today.setHours(0, 0, 0, 0);
     
     const attendanceRecords = [];
-    for (const student of students) {
+    for (let i = 0; i < studentIds.length; i++) {
       const isPresent = Math.random() > 0.1; // 90% attendance rate
       attendanceRecords.push({
-        student_id: student._id,
-        class_id: student.class_id,
+        student_id: studentIds[i],
+        class_id: students[i].class_id,
         school_id: schoolId,
         date: today,
         status: isPresent ? "present" : "absent",
@@ -313,14 +336,14 @@ async function seedData() {
     // 8. Create Fee Records
     console.log("💰 Creating fee records...");
     const feeRecords = [];
-    for (const student of students) {
+    for (let i = 0; i < studentIds.length; i++) {
       const monthlyFee = 5000;
       const paid = Math.random() > 0.3 ? monthlyFee : Math.floor(Math.random() * monthlyFee);
       
       feeRecords.push({
-        student_id: student._id,
+        student_id: studentIds[i],
         school_id: schoolId,
-        class_id: student.class_id,
+        class_id: students[i].class_id,
         monthly_fee: monthlyFee,
         paid: paid,
         pending: monthlyFee - paid,

@@ -75,8 +75,8 @@ export async function POST(request: Request) {
         complexity: complexity,
         // ✅ Add school info for personalization
         schoolName: secureCtx.school_name || "Your School",
-        userName: secureCtx.user?.name,
-        userRole: secureCtx.user?.role
+        userName: secureCtx.user?.name || secureCtx.actor_email || "Admin",
+        userRole: secureCtx.user?.role || secureCtx.role
       },
       { ...config, version: "v2" }
     );

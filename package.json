@@ -20,6 +20,7 @@
     "seed:demo": "ts-node scripts/seed-demo-data.ts"
   },
   "devDependencies": {
+    "ts-node": "^10.9.2",
     "turbo": "^2.5.0",
     "typescript": "^5.8.0"
   },
@@ -29,6 +30,8 @@
     }
   },
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.3",
     "dequal": "^2.0.3",
     "googleapis": "^171.4.0",
     "lucide-react": "^1.14.0"

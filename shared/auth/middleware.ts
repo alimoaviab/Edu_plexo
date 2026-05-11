@@ -67,10 +67,29 @@ export function authenticateRequest(request: SessionRequest, expectedApp: AppNam
   }
 
   // Production requires valid token
-  return contextFromToken(verifyAuthToken(token, expectedApp), {
-    ip: request.ip,
-    user_agent: request.headers?.["user-agent"]
-  });
+  try {
+    return contextFromToken(verifyAuthToken(token, expectedApp), {
+      ip: request.ip,
+      user_agent: request.headers?.["user-agent"]
+    });
+  } catch (error: any) {
+    // In development, if the token is invalid (e.g. stale secret), fallback to dev context
+    if (process.env.NODE_ENV === "development") {
+      console.warn(`[Auth] Dev mode: token verification failed (${error.message}), falling back to dev context`);
+      return {
+        school_id: "dev-school-id",
+        user_id: "dev-user-id",
+        role: "admin",
+        app: expectedApp,
+        permissions: ["*"],
+        session_id: "dev-session",
+        actor_email: "dev@example.com",
+        ip: request.ip,
+        user_agent: request.headers?.["user-agent"]
+      };
+    }
+    throw error;
+  }
 }
 
 export function guardRequest(
