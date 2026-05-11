@@ -130,130 +130,114 @@ export function TimetableForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="flex flex-col xl:flex-row gap-10">
-        <div className="flex-1 space-y-8">
-           <FormSection title="Academic Details" description="Define the subject and staff assigned.">
-             <div className="grid grid-cols-1 gap-6">
-                <Select
-                  label="Class Section"
-                  value={form.class_id}
-                  onChange={(e) => setForm({ ...form, class_id: e.target.value })}
-                  options={[{ label: "Select class", value: "" }, ...classOptions.map(o => ({ label: o.label, value: o.id }))]}
-                  error={errors.class_id}
-                  required
-                />
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Main Form Fields */}
+        <div className="lg:col-span-8 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <Select
+              label="Class Section"
+              value={form.class_id}
+              onChange={(e) => setForm({ ...form, class_id: e.target.value })}
+              options={[{ label: "Select class", value: "" }, ...classOptions.map(o => ({ label: o.label, value: o.id }))]}
+              error={errors.class_id}
+              required
+              className="h-14 text-base rounded-2xl"
+            />
+            <Select
+              label="Subject"
+              value={form.subject_id}
+              onChange={(e) => setForm({ ...form, subject_id: e.target.value })}
+              options={[{ label: "Select subject", value: "" }, ...subjectOptions.map(o => ({ label: o.label, value: o.id }))]}
+              error={errors.subject_id}
+              required
+              className="h-14 text-base rounded-2xl"
+            />
+          </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <Select
-                      label="Subject"
-                      value={form.subject_id}
-                      onChange={(e) => setForm({ ...form, subject_id: e.target.value })}
-                      options={[{ label: "Select subject", value: "" }, ...subjectOptions.map(o => ({ label: o.label, value: o.id }))]}
-                      error={errors.subject_id}
-                      required
-                    />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <Select
+              label="Teacher / Lecturer"
+              value={form.teacher_id}
+              onChange={(e) => setForm({ ...form, teacher_id: e.target.value })}
+              options={[{ label: "Select teacher", value: "" }, ...teacherOptions.map(o => ({ label: o.label, value: o.id }))]}
+              error={errors.teacher_id}
+              required
+              className="h-14 text-base rounded-2xl"
+            />
+            <Select
+              label="Day of Week"
+              value={form.day_of_week}
+              onChange={(e) => setForm({ ...form, day_of_week: e.target.value as any })}
+              options={DAY_OPTIONS.map(d => ({ label: d.label, value: d.value }))}
+              error={errors.day_of_week}
+              className="h-14 text-base rounded-2xl"
+            />
+          </div>
 
-                    <Select
-                      label="Teacher / Lecturer"
-                      value={form.teacher_id}
-                      onChange={(e) => setForm({ ...form, teacher_id: e.target.value })}
-                      options={[{ label: "Select teacher", value: "" }, ...teacherOptions.map(o => ({ label: o.label, value: o.id }))]}
-                      error={errors.teacher_id}
-                      required
-                    />
-                </div>
-             </div>
-           </FormSection>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <Input
+              label="Period Number"
+              type="number"
+              min="1"
+              max="20"
+              value={form.period_number}
+              onChange={(e) => setForm({ ...form, period_number: parseInt(e.target.value) || 1 })}
+              error={errors.period_number}
+              required
+              className="h-14 text-base rounded-2xl"
+            />
+            <Input
+              label="Start Time"
+              type="time"
+              value={form.start_time}
+              onChange={(e) => setForm({ ...form, start_time: e.target.value })}
+              error={errors.start_time}
+              required
+              className="h-14 text-base rounded-2xl px-4"
+            />
+            <Input
+              label="End Time"
+              type="time"
+              value={form.end_time}
+              onChange={(e) => setForm({ ...form, end_time: e.target.value })}
+              error={errors.end_time}
+              required
+              className="h-14 text-base rounded-2xl px-4"
+            />
+          </div>
 
-           <FormSection title="Timing & Location" description="When and where will this take place?">
-             <div className="grid grid-cols-1 gap-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <Select
-                      label="Day of Week"
-                      value={form.day_of_week}
-                      onChange={(e) => setForm({ ...form, day_of_week: e.target.value as any })}
-                      options={DAY_OPTIONS.map(d => ({ label: d.label, value: d.value }))}
-                      error={errors.day_of_week}
-                    />
-
-                    <Input
-                      label="Period Number"
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={form.period_number}
-                      onChange={(e) => setForm({ ...form, period_number: parseInt(e.target.value) || 1 })}
-                      error={errors.period_number}
-                      required
-                    />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <Input
-                      label="Start Time"
-                      type="time"
-                      value={form.start_time}
-                      onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-                      error={errors.start_time}
-                      required
-                    />
-
-                    <Input
-                      label="End Time"
-                      type="time"
-                      value={form.end_time}
-                      onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-                      error={errors.end_time}
-                      required
-                    />
-                </div>
-
-                <Input
-                  label="Room / Hall Number"
-                  placeholder="e.g., Science Lab 2"
-                  value={form.room || ""}
-                  onChange={(e) => setForm({ ...form, room: e.target.value })}
-                />
-             </div>
-           </FormSection>
+          <Input
+            label="Room / Hall Number"
+            placeholder="e.g., Science Lab 2"
+            value={form.room || ""}
+            onChange={(e) => setForm({ ...form, room: e.target.value })}
+            className="h-14 text-base rounded-2xl"
+          />
         </div>
 
-        <div className="space-y-6">
-           <div className="bg-slate-50 rounded-[2rem] p-8 border border-slate-200 border-dashed">
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6">Live Schedule Preview</h4>
-              <div className="max-w-[300px] mx-auto">
-                 <PeriodCard slot={previewRecord} conflicts={conflicts} isCompact={false} />
-              </div>
+        {/* Sidebar Preview */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="bg-slate-50 rounded-[2.5rem] p-6 border border-slate-200 border-dashed h-full flex flex-col justify-center min-h-[300px]">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-6 text-center">Live Schedule Preview</h4>
+            <div className="max-w-[240px] mx-auto w-full">
+              <PeriodCard slot={previewRecord} conflicts={conflicts} isCompact={false} />
+            </div>
 
-              {conflicts.length > 0 && (
-                <div className="mt-8 p-4 bg-red-50 rounded-2xl border border-red-100 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="flex items-center gap-2 text-red-600 mb-2">
-                        <span className="material-symbols-outlined text-sm font-bold">warning</span>
-                        <p className="text-[11px] font-black uppercase tracking-widest">Conflict Detected</p>
-                    </div>
-                    <p className="text-[10px] font-bold text-red-500/80 leading-relaxed uppercase tracking-tight">
-                        {conflicts[0].type === 'teacher' && "This teacher is already assigned to another class during this time."}
-                        {conflicts[0].type === 'room' && "The selected room is already occupied during this time."}
-                        {conflicts[0].type === 'class' && "This class already has a different subject scheduled at this time."}
-                    </p>
+            {conflicts.length > 0 && (
+              <div className="mt-6 p-4 bg-red-50 rounded-2xl border border-red-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex items-center gap-2 text-red-600 mb-2">
+                  <span className="material-symbols-outlined text-sm font-bold">warning</span>
+                  <p className="text-[11px] font-black uppercase tracking-widest">Conflict Detected</p>
                 </div>
-              )}
-           </div>
-
-           <div className="bg-blue-600/5 rounded-2xl p-6 border border-blue-100">
-              <div className="flex items-start gap-4">
-                 <div className="h-8 w-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[20px]">lightbulb</span>
-                 </div>
-                 <div className="space-y-1">
-                    <p className="text-xs font-black text-blue-700 uppercase tracking-tight">Pro Tip</p>
-                    <p className="text-[10px] font-bold text-blue-600/70 leading-relaxed uppercase tracking-tight">
-                        Use the "Auto-Generate" feature in the main workspace to fill gaps in the schedule based on subject requirements.
-                    </p>
-                 </div>
+                <p className="text-[10px] font-bold text-red-500/80 leading-relaxed uppercase tracking-tight">
+                  {conflicts[0].type === 'teacher' && "This teacher is already assigned to another class during this time."}
+                  {conflicts[0].type === 'room' && "The selected room is already occupied during this time."}
+                  {conflicts[0].type === 'class' && "This class already has a different subject scheduled at this time."}
+                </p>
               </div>
-           </div>
+            )}
+          </div>
         </div>
       </div>
 

@@ -1,17 +1,16 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Button, Input, Select } from "../../../components/ui";
 import { ServiceResult } from "@edu/shared/types/core";
-import { ExamFormInput, ExamOption } from "../types/exam.types";
+import { serviceRequest } from "../../../services/service-client";
+import { ExamFormInput } from "../types/exam.types";
 
 export function ExamForm({
   classes,
-  allSubjects,
   onCreate
 }: {
   classes: any[];
-  allSubjects: any[];
   onCreate: (input: ExamFormInput) => Promise<ServiceResult<unknown>>;
 }) {
     const [form, setForm] = useState<ExamFormInput>({
@@ -27,17 +26,69 @@ export function ExamForm({
     });
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [classSubjectOptions, setClassSubjectOptions] = useState<Array<{ label: string; value: string }>>([]);
+    const [loadingSubjects, setLoadingSubjects] = useState(false);
 
-    // Derive options based on selection
     const selectedClass = classes.find(c => c.id === form.class_id || c._id === form.class_id);
-    
-    // INTERSECTION LOGIC: Only show subjects that exist in both the class AND the global subjects list
-    // This removes the "Static" subjects (Mathematics, etc.) unless the user actually added them.
-    const availableSubjects = (selectedClass?.subjects || []).map((s: any) => {
-        const subjectName = typeof s === 'string' ? s : s.name;
-        return allSubjects.find(as => as.name === subjectName || as._id === s.id);
-    }).filter(Boolean); // Filter out subjects not found in the database
     const classTeacher = selectedClass?.class_teacher;
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadClassSubjects(classId: string) {
+            if (!classId) {
+                setClassSubjectOptions([]);
+                return;
+            }
+
+            setLoadingSubjects(true);
+            try {
+                const result = await serviceRequest<{ subjects?: any[] }>(`/api/classes/${classId}/subjects`);
+                if (!result.ok) {
+                    throw new Error(result.error.message || "Failed to load class subjects");
+                }
+
+                const subjects = (result.data?.subjects ?? [])
+                    .map((subject: any) => ({
+                        label: subject.name || String(subject._id),
+                        value: subject.name || String(subject._id)
+                    }))
+                    .filter((option: { label: string; value: string }) => Boolean(option.value));
+
+                if (!cancelled) {
+                    setClassSubjectOptions(subjects);
+                }
+            } catch {
+                if (!cancelled) {
+                    setClassSubjectOptions([]);
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoadingSubjects(false);
+                }
+            }
+        }
+
+        void loadClassSubjects(form.class_id);
+
+        return () => {
+            cancelled = true;
+        };
+    }, [form.class_id]);
+
+    const availableSubjects = classSubjectOptions.length > 0
+        ? classSubjectOptions
+        : (selectedClass?.subjects || []).map((s: any) => {
+            if (typeof s === "string") {
+                return { label: s, value: s };
+            }
+
+            const value = s.name || s.subject || s.id || s._id;
+            return {
+                label: s.name || String(value),
+                value: String(value)
+            };
+        }).filter((option: any) => Boolean(option?.value));
 
     function validate() {
         const newErrors: Record<string, string> = {};
@@ -110,17 +161,14 @@ export function ExamForm({
                     />
 
                     <Select
-                        label="Academic Subject"
+                        label="Class Subject"
                         value={form.subject}
                         onChange={(e) => setForm({ ...form, subject: e.target.value })}
                         options={[
-                            { label: "Select subject", value: "" },
-                            ...availableSubjects.map((s: any) => ({ 
-                                label: typeof s === 'string' ? s : s.name, 
-                                value: typeof s === 'string' ? s : s.name 
-                            }))
+                            { label: loadingSubjects ? "Loading subjects..." : "Select subject", value: "" },
+                            ...availableSubjects
                         ]}
-                        disabled={!form.class_id}
+                        disabled={!form.class_id || loadingSubjects}
                         error={errors.subject}
                         required
                     />

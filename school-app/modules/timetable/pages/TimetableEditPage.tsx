@@ -8,24 +8,30 @@ import { useSafeAsync } from "../../../hooks/useSafeAsync";
 import { serviceRequest } from "../../../services/service-client";
 import { TimetableForm } from "../components/TimetableForm";
 import { useTimetable } from "../hooks/useTimetable";
-import { TimetableFormInput } from "../types/timetable.types";
+import { TimetableFormInput, TimetableRecord, getDayLabel } from "../types/timetable.types";
 import { showToast } from "../../../utils/toast";
 import { findTimetableConflicts } from "../utils/conflicts";
-import { useSearchParams } from "next/navigation";
+import * as service from "../services/timetable.service";
 
-export function TimetableCreatePage() {
+interface TimetableEditPageProps {
+  id: string;
+}
+
+export function TimetableEditPage({ id }: TimetableEditPageProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialClassId = searchParams.get("class_id") || undefined;
-  const { state: timetableState, addTimetable } = useTimetable();
+  const { state: timetableState, updateTimetable } = useTimetable();
 
+  const { state: recordState, run: runRecord } = useSafeAsync<TimetableRecord>();
   const { state: classState, run: runClasses } = useSafeAsync<Array<{ _id: string; name: string }>>();
   const { state: teacherState, run: runTeachers } = useSafeAsync<Array<{ _id: string; name: string }>>();
   const { state: subjectState, run: runSubjects } = useSafeAsync<Array<{ _id: string; name: string }>>();
-  // academic year removed: no longer required or fetched
 
   const loadDependencies = useCallback(() => {
     return Promise.all([
+      runRecord(() => service.getTimetable(id).then(r => {
+          if (!r.ok) throw new Error(r.error.message);
+          return r.data;
+      })),
       runClasses(async () => {
         const result = await serviceRequest<Array<{ _id: string; name: string }>>("/api/classes");
         if (!result.ok) throw new Error(result.error.message || "Failed to load classes");
@@ -41,23 +47,26 @@ export function TimetableCreatePage() {
         if (!result.ok) throw new Error(result.error.message || "Failed to load subjects");
         return result.data;
       }),
-      // academic years not fetched
     ]);
-  }, [runClasses, runTeachers, runSubjects]);
+  }, [id, runRecord, runClasses, runTeachers, runSubjects]);
 
   useEffect(() => {
     void loadDependencies().catch(() => { });
   }, [loadDependencies]);
 
   const isLoading =
+    recordState.status === "loading" ||
     classState.status === "loading" ||
     teacherState.status === "loading" ||
     subjectState.status === "loading" ||
-    classState.status === "idle";
+    recordState.status === "idle";
 
-  async function handleCreate(input: TimetableFormInput) {
+  async function handleUpdate(input: TimetableFormInput) {
     try {
-      const conflicts = findTimetableConflicts(timetableState.data || [], input);
+      // Exclude current record from conflict check
+      const otherRecords = (timetableState.data || []).filter(r => r._id !== id);
+      const conflicts = findTimetableConflicts(otherRecords, input);
+      
       if (conflicts.length > 0) {
         return {
           ok: false,
@@ -65,28 +74,28 @@ export function TimetableCreatePage() {
         };
       }
 
-      const result = await addTimetable(input);
+      const result = await updateTimetable(id, input);
       if (result.ok) {
-        showToast("Timetable entry created successfully", "success");
+        showToast("Timetable entry updated successfully", "success");
         router.push("/admin/timetable");
         router.refresh();
       } else {
-        showToast(result.error.message || "Failed to create entry", "error");
+        showToast(result.error.message || "Failed to update entry", "error");
       }
       return result;
     } catch (error: any) {
-      console.error("[TimetableCreatePage] Error:", error);
-      showToast(error.message || "Failed to create entry", "error");
+      console.error("[TimetableEditPage] Error:", error);
+      showToast(error.message || "Failed to update entry", "error");
       return { ok: false, error: { message: error.message } };
     }
   }
 
-  if (classState.status === "error" || teacherState.status === "error" || subjectState.status === "error") {
+  if (recordState.status === "error" || classState.status === "error" || teacherState.status === "error" || subjectState.status === "error") {
     return (
       <DataState
         variant="error"
-        title="Failed to load dependencies"
-        message={classState.error || teacherState.error || subjectState.error}
+        title="Failed to load data"
+        message={recordState.error || classState.error || teacherState.error || subjectState.error}
       />
     );
   }
@@ -94,7 +103,18 @@ export function TimetableCreatePage() {
   const classOptions = (classState.data ?? []).map(o => ({ id: o._id, label: o.name }));
   const teacherOptions = (teacherState.data ?? []).map(o => ({ id: o._id, label: o.name }));
   const subjectOptions = (subjectState.data ?? []).map(o => ({ id: o._id, label: o.name }));
-  // academicYearOptions removed
+
+  const initialValues = recordState.data ? {
+    class_id: recordState.data.class_id,
+    subject_id: recordState.data.subject_id,
+    teacher_id: recordState.data.teacher_id,
+    day_of_week: getDayLabel(recordState.data.day_of_week) as any,
+    period_number: recordState.data.period_number,
+    start_time: recordState.data.start_time,
+    end_time: recordState.data.end_time,
+    room: recordState.data.room,
+    section: recordState.data.section
+  } : undefined;
 
   return (
     <div className="max-w-full mx-auto space-y-6">
@@ -108,9 +128,9 @@ export function TimetableCreatePage() {
 
       <Card>
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900">Add Timetable Entry</h2>
+          <h2 className="text-xl font-bold text-gray-900">Edit Timetable Entry</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Create a new schedule entry for a class, subject, and teacher.
+            Modify the schedule entry for this class, subject, and teacher.
           </p>
         </div>
 
@@ -124,12 +144,12 @@ export function TimetableCreatePage() {
           </div>
         ) : (
           <TimetableForm
-            onCreate={handleCreate}
+            onCreate={handleUpdate}
             classOptions={classOptions}
             teacherOptions={teacherOptions}
             subjectOptions={subjectOptions}
-            initialClassId={initialClassId}
             isLoading={isLoading}
+            initialValues={initialValues}
           />
         )}
       </Card>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Card, Skeleton, DataState } from "../../../components/ui";
 import { useSafeAsync } from "../../../hooks/useSafeAsync";
@@ -16,29 +15,21 @@ export function ExamCreatePage() {
   const pathname = usePathname();
   const { addExam } = useExams();
   const { state: classState, run: runClasses } = useSafeAsync<any[]>();
-  const { state: subjectState, run: runSubjects } = useSafeAsync<any[]>();
 
   const loadData = useCallback(() => {
-    const p1 = runClasses(async () => {
+    return runClasses(async () => {
       const result = await serviceRequest<any[]>("/api/classes");
       if (!result.ok) throw new Error(result.error.message || "Failed to load classes");
       return result.data;
     });
-    const p2 = runSubjects(async () => {
-      const result = await serviceRequest<any[]>("/api/subjects");
-      if (!result.ok) throw new Error(result.error.message || "Failed to load subjects");
-      return result.data;
-    });
-    return Promise.all([p1, p2]);
-  }, [runClasses, runSubjects]);
+  }, [runClasses]);
 
   useEffect(() => {
     void loadData().catch(() => {});
   }, [loadData]);
 
-  const isDependencyLoading = 
-    classState.status === "idle" || classState.status === "loading" ||
-    subjectState.status === "idle" || subjectState.status === "loading";
+  const isDependencyLoading =
+    classState.status === "idle" || classState.status === "loading";
 
   async function handleCreate(input: ExamFormInput) {
     const result = await addExam(input);
@@ -61,8 +52,8 @@ export function ExamCreatePage() {
       </div>
 
       <Card className="p-6 md:p-8">
-        {classState.status === "error" || subjectState.status === "error" ? (
-          <DataState variant="error" title="Failed to load data" message={classState.error || subjectState.error} />
+        {classState.status === "error" ? (
+          <DataState variant="error" title="Failed to load classes" message={classState.error} />
         ) : isDependencyLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-10 w-full" />
@@ -74,7 +65,6 @@ export function ExamCreatePage() {
         ) : (
           <ExamForm 
             classes={classState.data ?? []} 
-            allSubjects={subjectState.data ?? []}
             onCreate={handleCreate} 
           />
         )}

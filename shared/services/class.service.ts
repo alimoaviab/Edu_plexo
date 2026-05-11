@@ -9,6 +9,17 @@ function toClassName(classRow: any): string {
   return `${classRow.name ?? ""}${section}`.trim();
 }
 
+function normalizeSubjects(classRow: any) {
+  const source = Array.isArray(classRow.subject_ids) && classRow.subject_ids.length > 0
+    ? classRow.subject_ids
+    : classRow.subjects ?? [];
+
+  return source.map((subject: any) => {
+    if (typeof subject === "string") return subject;
+    return subject?.name || String(subject?._id ?? subject?.id ?? subject ?? "");
+  }).filter(Boolean);
+}
+
 function toClassSummary(classRow: any) {
   const classTeacher = Array.isArray(classRow.teacher_ids) && classRow.teacher_ids.length > 0
     ? classRow.teacher_ids[0]
@@ -29,9 +40,7 @@ function toClassSummary(classRow: any) {
     academic_year: classRow.academic_year ?? classRow.academy_care_year ?? "",
     class_teacher_id: classTeacher ? String(classTeacher) : "",
     teacher_ids: (classRow.teacher_ids ?? []).map((value: unknown) => String(value)),
-    subjects: (classRow.subjects ?? []).map((subject: any) =>
-      typeof subject === "string" ? subject : (subject.name || String(subject))
-    ),
+    subjects: normalizeSubjects(classRow),
     room_number: classRow.room_number ?? "",
     description: classRow.description ?? "",
     status: classRow.status ?? "active"
@@ -107,11 +116,7 @@ export async function listClasses(ctx: RequestContext, query: any = {}): Promise
           phone: row.class_teacher_id.phone ?? ""
         }
         : null,
-      subjects: (row.subject_ids ?? []).map((subject: any) => ({
-        id: String(subject._id),
-        name: subject.name,
-        code: subject.code ?? ""
-      }))
+      subjects: normalizeSubjects(row)
     }));
   });
 }
@@ -155,12 +160,7 @@ export async function getClass(ctx: RequestContext, id: string): Promise<Service
           phone: (cls as any).class_teacher_id.phone ?? ""
         }
         : null,
-      subjects: ((cls as any).subject_ids ?? []).map((subject: any) => ({
-        id: String(subject._id),
-        name: subject.name,
-        code: subject.code ?? "",
-        teacher: (cls as any).class_teacher_id ? `${(cls as any).class_teacher_id.first_name || ""} ${(cls as any).class_teacher_id.last_name || ""}`.trim() : ""
-      })),
+      subjects: normalizeSubjects(cls),
       students: enrolledStudents,
       fee_structure: (cls as any).fee_structure ?? {
         total_annual: 0,

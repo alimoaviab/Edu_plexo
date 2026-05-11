@@ -3,48 +3,30 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { SchoolShell } from "../../../layouts/SchoolShell";
-import { CreateLiveClassModal } from "../../../components/live-classes/CreateLiveClassModal";
 import { LiveClassList } from "../../../components/live-classes/LiveClassList";
+import { useRouter } from "next/navigation";
 import { Video, Calendar, Users, RefreshCw, PlusCircle, LayoutDashboard, Clock, Activity, Settings, UserCheck } from "lucide-react";
 
 export default function LiveClassPage() {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const router = useRouter();
     const [reloadKey, setReloadKey] = useState(0);
-    const [classesData, setClassesData] = useState<any[]>([]);
-    const [subjectsData, setSubjectsData] = useState<any[]>([]);
     const [teachersData, setTeachersData] = useState<any[]>([]);
     const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
-        const loadFormData = async () => {
+        const loadCounts = async () => {
             try {
-                const [classesRes, subjectsRes, teachersRes, liveRes] = await Promise.all([
-                    fetch("/api/school/my-classes"),
-                    fetch("/api/school/subjects"),
-                    fetch("/api/teachers"),
-                    fetch("/api/live/classes") // fetch live separately to get accurate counts
-                ]);
-
-                if (classesRes.ok) {
-                    const data = await classesRes.json();
-                    setClassesData(data.classes || []);
-                }
-
-                if (subjectsRes.ok) {
-                    const data = await subjectsRes.json();
-                    setSubjectsData(data.data || []);
-                }
-
+                const teachersRes = await fetch("/api/teachers");
                 if (teachersRes.ok) {
                     const data = await teachersRes.json();
                     setTeachersData(data.data || []);
                 }
             } catch (error) {
-                console.error("Failed to load live class form data", error);
+                console.error("Failed to load counts", error);
             }
         };
 
-        loadFormData();
+        loadCounts();
     }, []);
 
     // Simulate sync
@@ -87,7 +69,7 @@ export default function LiveClassPage() {
                             <RefreshCw className={`h-5 w-5 ${isSyncing ? 'animate-spin text-indigo-600' : ''}`} />
                         </button>
                         <button
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => router.push("/admin/live-class/create")}
                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors"
                         >
                             <PlusCircle className="h-4 w-4" />
@@ -241,15 +223,6 @@ export default function LiveClassPage() {
                 </div>
             </div>
 
-            <CreateLiveClassModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSuccess={() => setReloadKey((prev) => prev + 1)}
-                classes={classesData}
-                subjects={subjectsData}
-                teachers={teachersData}
-                showTeacherField={true}
-            />
         </SchoolShell>
     );
 }

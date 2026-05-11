@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { SchoolShell } from "../../../layouts/SchoolShell";
 import { LiveClassList } from "../../../components/live-classes/LiveClassList";
-import { CreateLiveClassModal } from "../../../components/live-classes/CreateLiveClassModal";
 import { useState, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 const stats = [
   { title: "My Live Classes", value: "-", detail: "Classes scheduled", icon: "video_camera_back", tone: "text-sky-700" },
@@ -14,36 +14,12 @@ const stats = [
 ];
 
 export default function TeacherLiveClassPage() {
+  const router = useRouter();
   const { status } = useSession();
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [listKey, setListKey] = useState(0); // To force refresh list
-  const [classesData, setClassesData] = useState([]);
-  const [subjectsData, setSubjectsData] = useState([]);
 
   useEffect(() => {
-    // Fetch filter data for modal
-    const fetchFormData = async () => {
-      try {
-        const [classesRes, subjectsRes] = await Promise.all([
-          fetch("/api/school/my-classes"), // or teacher/classes depending on exact API layout
-          fetch("/api/school/subjects")
-        ]);
-
-        if (classesRes.ok) {
-          const data = await classesRes.json();
-          // API returns { classes: [...] }
-          setClassesData(data.classes || []);
-        }
-        if (subjectsRes.ok) {
-           const data = await subjectsRes.json();
-           // API returns { ok: true, data: [...] }
-           setSubjectsData(data.data || []);
-        }
-      } catch (e) {
-        console.error("Failed to load form data", e);
-      }
-    };
-    fetchFormData();
+    // Counts or other data can be fetched here if needed
   }, []);
 
   return (
@@ -106,7 +82,7 @@ export default function TeacherLiveClassPage() {
               <h2 className="text-xl font-bold text-slate-900">Quick actions</h2>
               <div className="mt-5 space-y-3">
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => router.push("/teacher/live-class/create")}
                     className="w-full flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-4 text-sm font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
                   >
                     <span>Create Live Class</span>
@@ -145,13 +121,6 @@ export default function TeacherLiveClassPage() {
         </div>
       </div>
 
-      <CreateLiveClassModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={() => setListKey(prev => prev + 1)}
-        classes={classesData}
-        subjects={subjectsData}
-      />
     </SchoolShell>
   );
 }

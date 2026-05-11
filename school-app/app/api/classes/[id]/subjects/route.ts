@@ -37,8 +37,12 @@ export async function GET(
             );
         }
 
+        const subjects = (classData.subject_ids && classData.subject_ids.length > 0)
+            ? classData.subject_ids
+            : (Array.isArray((classData as any).subjects) ? (classData as any).subjects : []);
+
         return NextResponse.json({
-            subjects: classData.subject_ids || []
+            subjects
         });
     } catch (error: any) {
         console.error("[GET /api/classes/[id]/subjects] Error:", error);
@@ -52,6 +56,7 @@ export async function GET(
 /**
  * POST /api/classes/[id]/subjects
  * Add subjects to a class
+ * Supports both single subject_id and array subject_ids
  */
 export async function POST(
     request: NextRequest,
@@ -65,33 +70,56 @@ export async function POST(
         const { id } = await params;
 
         const body = await request.json();
-        const { subject_ids } = body;
+        const { subject_id, subject_ids } = body;
 
-        if (!Array.isArray(subject_ids)) {
+        // Support both single subject_id and array subject_ids
+        let subjectIdsToAdd: string[] = [];
+        
+        if (subject_id) {
+            // Single subject
+            subjectIdsToAdd = [subject_id];
+        } else if (Array.isArray(subject_ids)) {
+            // Array of subjects
+            subjectIdsToAdd = subject_ids;
+        } else {
             return NextResponse.json(
-                { error: "subject_ids must be an array" },
+                { error: "Either subject_id or subject_ids array is required" },
                 { status: 400 }
             );
         }
 
         // Validate all subject IDs exist and are active
         const subjects = await SubjectModel.find({
-            _id: { $in: subject_ids.map((id: string) => new Types.ObjectId(id)) },
+            _id: { $in: subjectIdsToAdd.map((id: string) => new Types.ObjectId(id)) },
             school_id: session.school_id,
             status: "active"
         });
 
-        if (subjects.length !== subject_ids.length) {
+        if (subjects.length !== subjectIdsToAdd.length) {
             return NextResponse.json(
                 { error: "Some subjects not found or are inactive" },
                 { status: 400 }
             );
         }
 
-        // Update class with subject IDs
+        // Get current class to merge subjects
+        const currentClass = await ClassModel.findById(id);
+        if (!currentClass) {
+            return NextResponse.json(
+                { error: "Class not found" },
+                { status: 404 }
+            );
+        }
+
+        // Merge new subjects with existing ones (avoid duplicates)
+        const existingSubjectIds = (currentClass.subject_ids || []).map((id: Types.ObjectId) => id.toString());
+        const newSubjectIds = subjectIdsToAdd.filter(id => !existingSubjectIds.includes(id));
+        const mergedSubjectIds = [...existingSubjectIds, ...newSubjectIds].map(id => new Types.ObjectId(id));
+
+        // Update class with merged subject IDs
         const classData = (await ClassModel.findByIdAndUpdate(
             id,
-            { subject_ids },
+            { subject_ids: mergedSubjectIds },
             { new: true }
         )
             .populate({
@@ -108,13 +136,16 @@ export async function POST(
         }
 
         return NextResponse.json({
-            message: "Subjects added to class",
-            subjects: classData.subject_ids || []
+            ok: true,
+            data: {
+                message: "Subjects added to class",
+                subjects: classData.subject_ids || []
+            }
         });
     } catch (error: any) {
         console.error("[POST /api/classes/[id]/subjects] Error:", error);
         return NextResponse.json(
-            { error: error.message || "Failed to add subjects" },
+            { ok: false, error: { message: error.message || "Failed to add subjects" } },
             { status: error.status || 500 }
         );
     }

@@ -40,6 +40,10 @@ export function updateTimetable(id: string, input: Partial<TimetableFormInput>) 
   });
 }
 
+export function getTimetable(id: string) {
+  return serviceRequest<TimetableRecord>(`/api/timetable/${id}`);
+}
+
 export function deleteTimetable(id: string) {
   return serviceRequest<{ success: boolean; id: string }>(`/api/timetable/${id}`, {
     method: "DELETE"

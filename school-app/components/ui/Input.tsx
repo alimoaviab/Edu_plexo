@@ -17,9 +17,9 @@ export function Input({ label, error, helperText, id, className = "", ...props }
   return (
     <div className="flex flex-col gap-1 w-full">
       {label && (
-        <label htmlFor={inputId} className="text-[13px] font-semibold text-slate-700">
+        <label htmlFor={inputId} className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1 px-1">
           {label}
-          {props.required && <span className="text-error ml-0.5" aria-hidden="true">*</span>}
+          {props.required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
         </label>
       )}
       <input
