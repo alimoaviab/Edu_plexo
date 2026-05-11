@@ -8,14 +8,11 @@ import { useClasses } from "../../classes/hooks/useClasses";
 import { useSubjects } from "../../subjects/hooks/useSubjects";
 import { StudentRow, StudentPatchInput } from "../types/student.types";
 import { showToast } from "../../../utils/toast";
-import { StudentEditSidebar } from "../components/StudentEditSidebar";
 
 export function StudentListPage() {
   const { state, updateStudent, deleteStudent } = useStudents();
   const { state: classesState } = useClasses();
   const { data: subjectsData } = useSubjects();
-  const [editingStudent, setEditingStudent] = useState<StudentRow | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -98,17 +95,7 @@ export function StudentListPage() {
       icon: "edit",
       label: "Edit Student",
       variant: "ghost",
-      onClick: async (row) => {
-        const first_name = window.prompt("First name", row.first_name)?.trim();
-        if (!first_name) {
-          return;
-        }
-        const last_name = window.prompt("Last name", row.last_name)?.trim();
-        if (!last_name) {
-          return;
-        }
-        await updateStudent(row._id, { first_name, last_name });
-      },
+      onClick: (row) => window.location.href = `/admin/students/${row._id}/edit`,
     },
     {
       icon: "delete",
@@ -243,12 +230,12 @@ export function StudentListPage() {
                         {row.first_name.substring(0, 1)}{row.last_name.substring(0, 1)}
                       </div>
                       <div className="flex items-center gap-1 bg-slate-50/50 rounded-lg p-1 border border-slate-100">
-                        <button 
-                          onClick={() => setEditingStudent(row)}
+                        <Link 
+                          href={`/admin/students/${row._id}/edit`}
                           className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all"
                         >
                           <span className="material-symbols-outlined text-base">edit</span>
-                        </button>
+                        </Link>
                         <button 
                           onClick={async () => {
                             if (window.confirm(`Delete ${row.first_name}?`)) {
@@ -296,10 +283,13 @@ export function StudentListPage() {
                         <span className="material-symbols-outlined text-sm">assignment_ind</span>
                         Dossier
                      </button>
-                     <button className="group/btn h-8 px-4 rounded-lg bg-blue-600 text-[10px] font-black text-white uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95">
+                     <Link 
+                        href={`/admin/students/${row._id}/edit`}
+                        className="group/btn h-8 px-4 rounded-lg bg-blue-600 text-[10px] font-black text-white uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95"
+                     >
                         Profile
                         <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
-                     </button>
+                     </Link>
                   </div>
                 </div>
               ))}
@@ -339,23 +329,6 @@ export function StudentListPage() {
         </div>
       </div>
 
-
-      <StudentEditSidebar
-        student={editingStudent}
-        isOpen={editingStudent !== null}
-        classOptions={classOptions}
-        subjectOptions={subjectOptions}
-        onClose={() => setEditingStudent(null)}
-        onSave={async (id, data) => {
-          setIsSaving(true);
-          try {
-            await updateStudent(id, data as StudentPatchInput);
-          } finally {
-            setIsSaving(false);
-          }
-        }}
-        isSaving={isSaving}
-      />
     </div>
   );
 }

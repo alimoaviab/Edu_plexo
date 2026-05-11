@@ -9,16 +9,12 @@ import { useClasses } from "../../classes/hooks/useClasses";
 import { useSubjects } from "../../subjects/hooks/useSubjects";
 import { TeacherRow, TeacherFormInput } from "../types/teacher.types";
 import { showToast } from "../../../utils/toast";
-import { TeacherEditSidebar } from "../components/TeacherEditSidebar";
 
 export function TeacherListPage() {
   const pathname = usePathname();
   const { state, updateTeacher, deleteTeacher } = useTeachers();
   const { state: classesState } = useClasses();
   const { data: subjectsData } = useSubjects();
-  
-  const [editingTeacher, setEditingTeacher] = useState<TeacherRow | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "on_leave" | "inactive">("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -128,7 +124,7 @@ export function TeacherListPage() {
       icon: "edit",
       label: "Edit Record",
       variant: "ghost",
-      onClick: (row) => setEditingTeacher(row),
+      onClick: (row) => window.location.href = `/admin/teachers/${row._id}/edit`,
     },
     {
       icon: "delete",
@@ -253,12 +249,12 @@ export function TeacherListPage() {
                         {row.first_name.substring(0, 1)}{row.last_name.substring(0, 1)}
                       </div>
                       <div className="flex items-center gap-1 bg-slate-50/50 rounded-lg p-1 border border-slate-100">
-                        <button 
-                          onClick={() => setEditingTeacher(row)}
+                        <Link 
+                          href={`/admin/teachers/${row._id}/edit`}
                           className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all"
                         >
                           <span className="material-symbols-outlined text-base">edit</span>
-                        </button>
+                        </Link>
                         <button 
                           onClick={async () => {
                             if (window.confirm(`Delete ${row.first_name}?`)) {
@@ -348,23 +344,6 @@ export function TeacherListPage() {
           </button>
         </div>
       </div>
-
-      <TeacherEditSidebar
-        teacher={editingTeacher}
-        isOpen={editingTeacher !== null}
-        classOptions={classOptions}
-        subjectOptions={subjectOptions}
-        onClose={() => setEditingTeacher(null)}
-        onSave={async (id, data) => {
-          setIsSaving(true);
-          try {
-            await updateTeacher(id, data as Partial<TeacherFormInput>);
-          } finally {
-            setIsSaving(false);
-          }
-        }}
-        isSaving={isSaving}
-      />
     </div>
   );
 }

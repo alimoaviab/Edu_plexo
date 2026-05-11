@@ -6,22 +6,19 @@ import { Badge, Button, Card, DataState, PageHeader, Skeleton, TableSkeleton } f
 import { useAcademicYears } from "../hooks/useAcademicYears";
 import { AcademicYearRow, AcademicYearUpdateInput } from "../types/academicYear.types";
 import { showToast } from "../../../utils/toast";
-import { AcademicYearEditSidebar } from "../components/AcademicYearEditSidebar";
 import { AcademicYearTable } from "../components/AcademicYearTable";
 import { ConfirmModal } from "../../../components/ui/ConfirmModal";
+import { useEscapeKey } from "../../../hooks/useEscapeKey";
 
 type ViewMode = "grid" | "list";
 
 export function AcademicYearListPage() {
   const { state, page, setPage, updateAcademicYear, deleteAcademicYear } = useAcademicYears();
-  const [editingYear, setEditingYear] = useState<AcademicYearRow | null>(null);
   const [deletingYear, setDeletingYear] = useState<AcademicYearRow | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed" | "cancelled">("all");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  
   const years = state.data?.data ?? [];
   const meta = state.data?.meta;
   const activeYear = years.find((year) => year.is_active);
@@ -101,13 +98,11 @@ export function AcademicYearListPage() {
     return <DataState variant="error" title="Failed to load academic years" message={state.error} />;
   }
 
-  const isDrawerOpen = editingYear !== null;
-
   return (
     <>
       <div className="space-y-8 relative min-h-[87vh] pb-20">
         {/* Stats Section - Premium SaaS Style */}
-        <div className={`grid gap-4 transition-all duration-500 ease-in-out ${isDrawerOpen ? "grid-cols-1 md:grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}>
+        <div className={`grid gap-4 transition-all duration-500 ease-in-out grid-cols-2 md:grid-cols-4`}>
           {[
             { label: "Total Sessions", value: years.length, icon: "calendar_today", color: "text-slate-500", bg: "bg-slate-500/5" },
             { label: "Active Year", value: activeYear?.year || "None", icon: "auto_awesome", color: "text-blue-600", bg: "bg-blue-600/5" },
@@ -125,7 +120,7 @@ export function AcademicYearListPage() {
           ))}
           <Link 
             href="/admin/academic-years/create" 
-            className={`premium-card p-4 flex items-center justify-between bg-white border-slate-200 group hover:bg-blue-600 hover:border-blue-600 transition-all shadow-sm ${isDrawerOpen ? "hidden md:flex" : ""}`}
+            className={`premium-card p-4 flex items-center justify-between bg-white border-slate-200 group hover:bg-blue-600 hover:border-blue-600 transition-all shadow-sm`}
           >
             <div>
               <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] block mb-1 group-hover:text-blue-100 transition-colors">Setup Control</span>
@@ -215,7 +210,6 @@ export function AcademicYearListPage() {
                   {filteredYears.map((row) => {
                     const days = durationInDays(row.start_date, row.end_date);
                     const isActive = row.is_active;
-                    const isEditing = editingYear?._id === row._id;
                     
                     const statusConfig = {
                       active: "text-emerald-600 bg-emerald-50 border-emerald-100",
@@ -230,7 +224,7 @@ export function AcademicYearListPage() {
                         key={row._id}
                         className={`premium-card group relative flex flex-col p-6 transition-all duration-300 bg-white border-slate-200/60 hover:shadow-2xl hover:shadow-slate-200/40 hover:-translate-y-1.5 ${
                           isActive ? "ring-2 ring-blue-600/30" : ""
-                        } ${isEditing ? "border-blue-400 bg-blue-50/5" : ""}`}
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-6 mb-6">
                           <div className="space-y-1.5">
@@ -262,13 +256,13 @@ export function AcademicYearListPage() {
                               {isActive ? "Active" : "Inactive"}
                             </button>
                             <div className="w-px h-4 bg-slate-100 mx-1" />
-                            <button 
-                              onClick={(e) => { e.preventDefault(); setEditingYear(row); }}
+                            <Link 
+                              href={`/admin/academic-years/${row._id}/edit`}
                               className="h-9 w-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-blue-600 transition-all border border-transparent hover:border-slate-100"
                               title="Edit"
                             >
                               <span className="material-symbols-outlined text-[20px]">edit</span>
-                            </button>
+                            </Link>
                             <button 
                               onClick={(e) => { e.preventDefault(); setDeletingYear(row); }}
                               className="h-9 w-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all border border-transparent hover:border-slate-100"
@@ -304,13 +298,13 @@ export function AcademicYearListPage() {
                           </div>
                         </div>
 
-                        <button 
-                          onClick={() => setEditingYear(row)}
+                        <Link 
+                          href={`/admin/academic-years/${row._id}/edit`}
                           className="w-full h-10 flex items-center justify-center gap-2 rounded-xl bg-blue-600 text-[11px] font-black text-white uppercase tracking-[0.15em] hover:bg-blue-600 transition-all active:scale-[0.98] shadow-lg shadow-slate-900/10 hover:shadow-blue-600/20"
                         >
                           Manage Session
                           <span className="material-symbols-outlined text-[16px]">arrow_right_alt</span>
-                        </button>
+                        </Link>
                       </div>
                     );
                   })}
@@ -319,7 +313,6 @@ export function AcademicYearListPage() {
                 <div className="premium-card overflow-hidden border-slate-200/60 shadow-sm bg-white rounded-2xl">
                   <AcademicYearTable 
                     years={filteredYears} 
-                    onEdit={setEditingYear}
                     onDelete={setDeletingYear}
                     onSetActive={handleSetCurrent}
                   />
@@ -364,22 +357,6 @@ export function AcademicYearListPage() {
         </div>
       </div>
 
-      <AcademicYearEditSidebar
-        academicYear={editingYear}
-        isOpen={editingYear !== null}
-        onClose={() => setEditingYear(null)}
-        onSave={async (id, data) => {
-          setIsSaving(true);
-          try {
-            await updateAcademicYear(id, data as AcademicYearUpdateInput);
-            setEditingYear(null);
-            showToast("Academic year updated successfully", "success");
-          } finally {
-            setIsSaving(false);
-          }
-        }}
-        isSaving={isSaving}
-      />
 
       <ConfirmModal
         isOpen={deletingYear !== null}
