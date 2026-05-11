@@ -172,7 +172,7 @@ export default function TeacherDashboardPage() {
                 </Badge>
                 <span className="text-sm text-slate-200">{state.data.teacher.email}</span>
               </div>
-            </Card>
+            </div>
 
             {/* Upcoming Exams & Tasks Grid */}
             <div className="grid gap-6 md:grid-cols-2">
@@ -235,7 +235,7 @@ export default function TeacherDashboardPage() {
           </Card>
           <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
             <p className="text-xs font-semibold normal-case tracking-[0.2em] text-slate-500">Students</p>
-            <p className="mt-3 text-3xl font-bold text-emerald-700">{assignedStudents}</p>
+            <p className="mt-3 text-3xl font-bold text-emerald-700">{stats.totalStudents}</p>
           </Card>
           <Card className="border-0 bg-white/80 backdrop-blur-sm shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
             <p className="text-xs font-semibold normal-case tracking-[0.2em] text-slate-500">Subjects</p>
@@ -297,10 +297,9 @@ export default function TeacherDashboardPage() {
               )}
             </div>
           </Card>
+        </section>
       </div>
-    </div>
-      </div >
-    </SchoolShell >
+    </SchoolShell>
   );
 }
 
