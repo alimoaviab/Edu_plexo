@@ -1,14 +1,9 @@
 import mongoose, { Schema, Types, model, models } from "mongoose";
-import { schemaOptions } from "./base";
+import { schemaOptions, tenantField } from "./base";
 
 const announcementSchema = new Schema(
   {
-    school_id: {
-      type: Types.ObjectId,
-      ref: "School",
-      required: true,
-      index: true,
-    },
+    school_id: tenantField,
     title: {
       type: String,
       required: true,
@@ -36,5 +31,8 @@ export interface AnnouncementModel {
   created_by: string;
 }
 
-export const AnnouncementDocModel = models.Announcement || model("Announcement", announcementSchema);
+if (models.Announcement) {
+  delete (models as any).Announcement;
+}
+export const AnnouncementDocModel = model("Announcement", announcementSchema);
 export type AnnouncementModelDoc = mongoose.HydratedDocument<AnnouncementModel & mongoose.Document>;

@@ -65,6 +65,9 @@ export function useAuth() {
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("profile_id");
+    localStorage.removeItem("class_id");
+    localStorage.removeItem("student_id");
     setUser(null);
     router.push("/auth/login");
   };

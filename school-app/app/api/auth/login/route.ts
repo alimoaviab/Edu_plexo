@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { Types } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 import { connectDb } from "@edu/shared/db/connect";
 import { signAuthToken } from "@edu/shared/auth/jwt";
@@ -69,14 +70,32 @@ export async function POST(request: NextRequest) {
 
         // Additional data integrity checks for specific roles
         if (user.role === "teacher") {
-            const teacher = await TeacherModel.findOne({ user_id: user._id, status: "active" });
+            let teacher = await TeacherModel.findOne({ user_id: user._id, status: "active" });
+            
+            // AUTO-RECOVERY: If no link exists, try to link by email
             if (!teacher) {
-                return NextResponse.json({ message: "Teacher portfolio not found or inactive" }, { status: 403 });
+                console.log(`[Login] Attempting auto-recovery for teacher: ${user.email}`);
+                teacher = await TeacherModel.findOne({ 
+                    school_id: user.school_id, 
+                    email: user.email.toLowerCase(),
+                    user_id: { $exists: false }
+                });
+
+                if (teacher) {
+                    console.log(`[Login] Auto-linked teacher ${teacher._id} to user ${user._id}`);
+                    await TeacherModel.updateOne({ _id: teacher._id }, { $set: { user_id: user._id } });
+                }
+            }
+
+            if (!teacher) {
+                // We allow login but the dashboard will show "Incomplete Profile"
+                // Alternatively, we could block login, but showing the onboarding state is better UX.
+                console.warn(`[Login] Teacher profile missing for user: ${user.email}`);
             }
         } else if (user.role === "parent") {
             const parent = await ParentModel.findOne({ user_id: user._id, status: "active" });
             if (!parent) {
-                return NextResponse.json({ message: "Parent profile not found or inactive" }, { status: 403 });
+                console.warn(`[Login] Parent profile missing for user: ${user.email}`);
             }
         }
 

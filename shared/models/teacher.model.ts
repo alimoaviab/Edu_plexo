@@ -4,7 +4,9 @@ import { requiredString, schemaOptions, tenantField } from "./base";
 const teacherSchema = new Schema(
   {
     school_id: tenantField,
+    academic_year_id: { type: Types.ObjectId, ref: "AcademicYear", index: true },
     user_id: { type: Types.ObjectId, ref: "User", index: true },
+    email: { type: String, lowercase: true, trim: true, index: true },
     employee_no: requiredString,
     first_name: requiredString,
     last_name: { type: String, trim: true, default: "" },
@@ -26,6 +28,7 @@ const teacherSchema = new Schema(
 
 teacherSchema.index({ school_id: 1, employee_no: 1 }, { unique: true });
 teacherSchema.index({ school_id: 1, user_id: 1 }, { sparse: true });
+teacherSchema.index({ school_id: 1, academic_year_id: 1, status: 1 });
 teacherSchema.index({ school_id: 1, subjects: 1, status: 1 });
 
 export const TeacherModel = models.Teacher || model("Teacher", teacherSchema);

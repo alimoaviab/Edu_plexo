@@ -71,6 +71,9 @@ export default function LoginPage() {
 
       setSuccess(true);
       localStorage.setItem("token", result.token);
+      if (result.profile_id) localStorage.setItem("profile_id", result.profile_id);
+      if (result.class_id) localStorage.setItem("class_id", result.class_id);
+      if (result.student_id) localStorage.setItem("student_id", result.student_id);
       
       const roleRoutes: Record<string, string> = {
         admin: "/admin/dashboard",

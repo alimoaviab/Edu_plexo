@@ -93,7 +93,9 @@ export async function createTeacher(
 
     const created = await TeacherModel.create({
       school_id: ctx.school_id,
+      academic_year_id: ctx.active_academic_year_id,
       user_id: user._id,
+      email: parsed.email.toLowerCase(),
       employee_no: await nextEmployeeNumber(ctx.school_id),
       first_name: parsed.first_name,
       last_name: parsed.last_name ?? "",

@@ -97,6 +97,7 @@ function toObjectId(value: unknown, fieldName: string): Types.ObjectId {
 export function toClientRecord(row: any) {
   const classEntity = row.class_id as any;
   const teacherEntity = row.teacher_id as any;
+  const subjectEntity = row.subject_id as any;
 
   const classId = typeof classEntity === "object" && classEntity?._id
     ? String(classEntity._id)
@@ -104,13 +105,18 @@ export function toClientRecord(row: any) {
   const teacherId = typeof teacherEntity === "object" && teacherEntity?._id
     ? String(teacherEntity._id)
     : String(row.teacher_id);
+  const subjectId = typeof subjectEntity === "object" && subjectEntity?._id
+    ? String(subjectEntity._id)
+    : String(row.subject_id);
 
   return {
     _id: String(row._id),
     class_id: classId,
     class_name: (typeof classEntity === "object" ? classEntity?.name : "") || "",
-    subject_id: row.subject_id ? String(row.subject_id) : "",
-    subject_name: row.subject || "",
+    section: (typeof classEntity === "object" ? classEntity?.section : "") || "",
+    subject_id: subjectId,
+    subject_name: (typeof subjectEntity === "object" ? subjectEntity?.name : row.subject) || "",
+    subject_code: (typeof subjectEntity === "object" ? subjectEntity?.code : "") || "",
     teacher_id: teacherId,
     teacher_name:
       typeof teacherEntity === "object"
@@ -284,30 +290,50 @@ export async function listTimetable(
 
   try {
     await connectDb();
-    const classIds = await resolveClassIdsForAcademyCare(ctx, query.academy_care_id);
-    const filter: any = tenantFilter(ctx);
+    
+    // 1. Resolve Academic Year (Priority: Query > Active Year)
+    let academicYearId = query.academic_year_id;
+    if (!academicYearId) {
+      const active = await AcademicYearModel.findOne(tenantFilter(ctx, { is_active: true }))
+        .select("_id")
+        .lean();
+      if (active) academicYearId = String(active._id);
+    }
 
+    // 2. Build Base Filter
+    const filter: any = tenantFilter(ctx);
+    
+    // 3. Apply Academic Year Scoping (Strict)
+    if (academicYearId) {
+      filter.academic_year_id = new Types.ObjectId(academicYearId);
+    }
+
+    // 4. Apply Primary Filters
     if (query.class_id) {
       filter.class_id = toObjectId(query.class_id, "class_id");
-    } else {
-      filter.class_id = { $in: classIds };
     }
+    
     if (query.teacher_id) {
       filter.teacher_id = toObjectId(query.teacher_id, "teacher_id");
     }
+
+    // 5. Apply Temporal Filters
     if (query.day) {
       const dayFromName = normalizeDay(query.day);
       if (dayFromName) filter.day = dayFromName;
     }
+    
     if (query.day_of_week !== undefined) {
-      const dayFromNumber = dayNumberToName(Number(query.day_of_week));
-      if (dayFromNumber) filter.day = dayFromNumber;
+      const dayName = DAY_NUMBER_TO_NAME[Number(query.day_of_week)];
+      if (dayName) filter.day = dayName;
     }
 
+    // 6. Execute with Populates
     const timetable = await TimetableModel.find(filter)
-      .populate("class_id", "name")
-      .populate("teacher_id", "first_name last_name")
-      .sort({ day: 1, start_time: 1 })
+      .populate({ path: "class_id", select: "name section" })
+      .populate({ path: "teacher_id", select: "first_name last_name" })
+      .populate({ path: "subject_id", select: "name code" })
+      .sort({ day_of_week: 1, start_time: 1 })
       .lean();
 
     return {
@@ -316,6 +342,7 @@ export async function listTimetable(
       data: timetable.map(toClientRecord),
     };
   } catch (error) {
+    console.error("[listTimetable] Error:", error);
     return toErrorResult("FETCH_FAILED", "Failed to fetch timetable", error);
   }
 }
