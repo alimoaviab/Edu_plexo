@@ -120,7 +120,7 @@ export function ExamListPage({ filters }: { filters?: { class_id?: string; subje
           { label: "Total Exams", value: state.data?.length || 0, icon: "analytics", color: "text-blue-600", bg: "bg-blue-600/5" },
           { label: "Scheduled", value: state.data?.filter(e => e.status === "scheduled").length || 0, icon: "event", color: "text-amber-600", bg: "bg-amber-600/5" },
           { label: "Completed", value: state.data?.filter(e => e.status === "completed").length || 0, icon: "task_alt", color: "text-emerald-600", bg: "bg-emerald-600/5" },
-          { label: "Avg. Marks", value: "85%", icon: "monitoring", color: "text-purple-600", bg: "bg-purple-600/5" },
+          { label: "Pending Marks", value: state.data?.filter(e => e.status === "scheduled").length || 0, icon: "edit_note", color: "text-purple-600", bg: "bg-purple-600/5" },
         ].map((stat, i) => (
           <div key={i} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
             <div>
@@ -256,16 +256,19 @@ export function ExamListPage({ filters }: { filters?: { class_id?: string; subje
                   </div>
                   
                   <div className="mt-auto px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-white transition-all">
-                     <button className="text-[9px] font-bold text-slate-400 normal-case  hover:text-blue-600 flex items-center gap-1 transition-colors">
-                        <span className="material-symbols-outlined text-xs">visibility</span>
-                        Details
-                     </button>
                      <Link 
-                       href={`${pathname.includes("/teacher") ? "/teacher" : "/admin"}/results?exam_id=${exam._id}`}
-                       className="group/btn h-7 px-3 rounded-lg bg-blue-600 text-[9px] font-bold text-white normal-case  hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95"
+                       href={`${pathname.includes("/teacher") ? "/teacher" : "/admin"}/exams/marks?exam_id=${exam._id}`}
+                       className="text-[9px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700 flex items-center gap-1.5 transition-colors"
+                     >
+                        <span className="material-symbols-outlined text-[14px]">edit_note</span>
+                        Enter Marks
+                     </Link>
+                     <Link 
+                       href={`${pathname.includes("/teacher") ? "/teacher" : "/admin"}/exams/results?exam_id=${exam._id}`}
+                       className="group/btn h-7 px-3 rounded-lg bg-slate-900 text-[9px] font-black text-white uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 shadow-sm active:scale-95"
                      >
                         Results
-                        <span className="material-symbols-outlined text-xs transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
+                        <span className="material-symbols-outlined text-[12px] transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
                      </Link>
                   </div>
                 </div>

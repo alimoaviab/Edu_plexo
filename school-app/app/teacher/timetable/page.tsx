@@ -125,70 +125,73 @@ export default function TeacherTimetablePage() {
 
   if (state.status === "loading" || state.status === "idle") {
     return (
-      <SchoolShell eyebrow="Teacher Dashboard" title="My Timetable">
+      <SchoolShell eyebrow="TEACHER HUB" title="Timetable Matrix">
         <div className="space-y-6">
-          <Skeleton className="h-40 w-full rounded-[2.5rem]" />
+          <Skeleton className="h-56 w-full rounded-[2rem]" />
           <div className="grid grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
           </div>
-          <Skeleton className="h-96 w-full rounded-[2.5rem]" />
+          <Skeleton className="h-[500px] w-full rounded-[2rem]" />
         </div>
       </SchoolShell>
     );
   }
 
   return (
-    <SchoolShell eyebrow="Teacher Workspace" title="Timetable">
-      <div className="space-y-8 pb-20">
+    <SchoolShell eyebrow="TEACHER ANALYTICS" title="Academic Schedule">
+      <div className="space-y-4 pb-10 max-w-[1400px] mx-auto px-4">
         
-        {/* Live Status Banner */}
-        <section className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        {/* Modern Live Status Banner - Compact */}
+        <section className="grid lg:grid-cols-12 gap-4 items-stretch">
+          <div className="lg:col-span-9 h-full">
             <LiveClassWidget live={liveSchedule} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <StatSmallCard label="Today" value={stats.todayCount} sub="Classes" icon={<Calendar className="h-4 w-4" />} color="text-blue-600" bg="bg-blue-50" />
-            <StatSmallCard label="Weekly" value={stats.weeklyCount} sub="Periods" icon={<Clock className="h-4 w-4" />} color="text-indigo-600" bg="bg-indigo-50" />
-            <StatSmallCard label="Subjects" value={stats.uniqueSubjects} sub="Assigned" icon={<BookOpen className="h-4 w-4" />} color="text-emerald-600" bg="bg-emerald-50" />
-            <StatSmallCard label="Classes" value={stats.uniqueClasses} sub="Sections" icon={<Users className="h-4 w-4" />} color="text-purple-600" bg="bg-purple-50" />
+          <div className="lg:col-span-3 grid grid-cols-2 gap-3 h-full">
+            <StatSmallCard label="Today" value={stats.todayCount} sub="Classes" icon="calendar_today" color="text-blue-600" bg="bg-blue-600/5" />
+            <StatSmallCard label="Weekly" value={stats.weeklyCount} sub="Periods" icon="schedule" color="text-indigo-600" bg="bg-indigo-600/5" />
+            <StatSmallCard label="Subjects" value={stats.uniqueSubjects} sub="Assigned" icon="menu_book" color="text-emerald-600" bg="bg-emerald-600/5" />
+            <StatSmallCard label="Sections" value={stats.uniqueClasses} sub="Classes" icon="groups" color="text-purple-600" bg="bg-purple-600/5" />
           </div>
         </section>
 
-        {/* Filters Toolbar */}
-        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border border-blue-100 shadow-sm rounded-2xl p-2.5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1 min-w-[300px]">
-            <div className="relative flex-1 group">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-              <Input 
-                placeholder="Search subject, class or room..." 
-                className="pl-11 border-0 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-100 transition-all rounded-xl h-11"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+        {/* Unified Filters Toolbar - Ultra Compact Sticky */}
+        <div className="sticky top-[68px] z-[30]">
+          <div className="bg-white/90 backdrop-blur-2xl border border-slate-200/60 shadow-lg shadow-slate-200/20 rounded-xl p-1.5 flex flex-col md:flex-row md:items-center justify-between gap-2">
+            <div className="flex flex-1 items-center gap-2 max-w-xl">
+              <div className="relative flex-1 group">
+                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-base text-slate-400 group-focus-within:text-blue-600 transition-colors">search</span>
+                <input 
+                  placeholder="Quick Search..." 
+                  className="h-8 w-full rounded-lg border border-slate-200 bg-white/50 pl-9 pr-2 text-[11px] font-bold text-slate-700 outline-none transition-all focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-600/5 placeholder:text-slate-400"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="h-4 w-px bg-slate-200" />
+              <Select 
+                options={academicYears} 
+                value={filters.academicYear} 
+                onChange={(val) => setFilters(prev => ({ ...prev, academicYear: val }))}
+                className="border-0 bg-transparent h-8 text-[9px] font-black text-slate-900 uppercase tracking-widest min-w-[110px]"
               />
             </div>
-            <div className="h-8 w-px bg-slate-200" />
-            <Select 
-              options={academicYears} 
-              value={filters.academicYear} 
-              onChange={(val) => setFilters(prev => ({ ...prev, academicYear: val }))}
-              className="border-0 bg-transparent h-11 text-xs font-bold text-slate-600"
-            />
-          </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-              <ViewToggle active={viewMode === "weekly"} onClick={() => setViewMode("weekly")} icon={<LayoutGrid className="h-4 w-4" />} label="Grid" />
-              <ViewToggle active={viewMode === "agenda"} onClick={() => setViewMode("agenda")} icon={<List className="h-4 w-4" />} label="Agenda" />
-              <ViewToggle active={viewMode === "today"} onClick={() => setViewMode("today")} icon={<CalendarDays className="h-4 w-4" />} label="Today" />
+            <div className="flex items-center gap-1.5">
+              <div className="flex bg-slate-100/50 p-0.5 rounded-lg border border-slate-200/60">
+                <ViewToggle active={viewMode === "weekly"} onClick={() => setViewMode("weekly")} icon="grid_view" label="Grid" />
+                <ViewToggle active={viewMode === "agenda"} onClick={() => setViewMode("agenda")} icon="view_agenda" label="Agenda" />
+                <ViewToggle active={viewMode === "today"} onClick={() => setViewMode("today")} icon="event_note" label="Today" />
+              </div>
+              <div className="h-4 w-px bg-slate-200 mx-0.5" />
+              <Button variant="secondary" className="h-8 rounded-lg px-3 border-slate-200 font-black text-[9px] uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-all">
+                <span className="material-symbols-outlined text-base mr-1.5">tune</span>
+                Filter
+              </Button>
             </div>
-            <Button variant="secondary" className="h-11 rounded-xl border-blue-100 font-bold text-blue-600 bg-blue-50/50 hover:bg-blue-50">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
-            </Button>
           </div>
         </div>
 
-        {/* Main Content View */}
+        {/* Main Workspace Area */}
         <AnimatePresence mode="wait">
           {processedData.length > 0 ? (
             <motion.div 
@@ -213,44 +216,57 @@ export default function TeacherTimetablePage() {
 
 function LiveClassWidget({ live }: { live: { current?: TimetableRecord, next?: TimetableRecord } | null }) {
   return (
-    <Card className="h-full border-0 bg-gradient-to-br from-blue-600 to-indigo-700 p-8 rounded-[2.5rem] text-white shadow-xl shadow-blue-200/50 relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-8 opacity-10">
-        <Calendar className="h-32 w-32" />
-      </div>
-      
-      <div className="relative z-10 flex flex-col justify-between h-full">
+    <Card className="h-full border-0 bg-[#1D4ED8] relative overflow-hidden rounded-[1.5rem] text-white shadow-xl shadow-blue-600/20 group">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-indigo-700 to-blue-800 animate-gradient-x opacity-95" />
+      <div className="absolute top-[-40%] right-[-10%] h-64 w-64 rounded-full bg-white/5 blur-[80px]" />
+      <div className="relative z-10 p-6 flex flex-col justify-between h-full">
         <div>
-          <Badge className="bg-white/20 text-white border-0 backdrop-blur-md mb-4 px-3 py-1 font-black uppercase tracking-widest text-[10px]">
-            {live?.current ? "Ongoing Session" : "Next Session"}
-          </Badge>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/70">
+              {live?.current ? "Live" : "Upcoming"}
+            </span>
+          </div>
           
-          {live?.current ? (
-            <div className="space-y-2">
-              <h2 className="text-4xl font-black tracking-tight">{live.current.subject_name}</h2>
-              <div className="flex items-center gap-4 text-blue-100 font-bold">
-                <div className="flex items-center gap-1.5"><Users className="h-4 w-4" /> {live.current.class_name} {live.current.section}</div>
-                <div className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /> Room {live.current.room}</div>
-              </div>
-            </div>
-          ) : live?.next ? (
-            <div className="space-y-2">
-              <h2 className="text-4xl font-black tracking-tight">{live.next.subject_name}</h2>
-              <p className="text-blue-100 font-bold">Starts at {live.next.start_time}</p>
-            </div>
-          ) : (
-            <h2 className="text-4xl font-black tracking-tight">No more classes today</h2>
-          )}
+          <AnimatePresence mode="wait">
+            {live?.current ? (
+              <motion.div key="current" className="space-y-3">
+                <h2 className="text-2xl font-black tracking-tight leading-none">{live.current.subject_name}</h2>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-lg text-[10px] font-bold uppercase">
+                    <span className="material-symbols-outlined text-sm">groups</span> {live.current.class_name} {live.current.section}
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1 rounded-lg text-[10px] font-bold uppercase">
+                    <span className="material-symbols-outlined text-sm">meeting_room</span> Room {live.current.room}
+                  </div>
+                </div>
+              </motion.div>
+            ) : live?.next ? (
+              <motion.div key="next" className="space-y-2">
+                <h2 className="text-xl font-black tracking-tight text-white/90">{live.next.subject_name}</h2>
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-lg text-[10px] font-bold">
+                  <span className="material-symbols-outlined text-sm">timer</span> Starts {live.next.start_time}
+                </div>
+              </motion.div>
+            ) : (
+              <h2 className="text-xl font-black tracking-tight text-white/30 italic py-4">No sessions active</h2>
+            )}
+          </AnimatePresence>
         </div>
 
-        <div className="mt-8 flex items-center justify-between gap-4">
-          {live?.current && (
-            <Button className="bg-white text-blue-600 hover:bg-blue-50 rounded-2xl h-14 px-8 font-black shadow-lg shadow-black/10">
-              TAKE ATTENDANCE <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          )}
-          {live?.next && !live.current && (
-            <p className="text-sm font-bold text-blue-100 italic">Preparing for next class...</p>
-          )}
+        <div className="mt-6 flex items-center justify-between">
+          <div className="flex -space-x-2">
+             {[1,2,3].map(i => (
+               <div key={i} className="h-7 w-7 rounded-full border-2 border-blue-700 bg-blue-500/50 flex items-center justify-center overflow-hidden">
+                  <span className="material-symbols-outlined text-xs text-white/40">person</span>
+               </div>
+             ))}
+          </div>
+          
+          <button className="group/btn relative inline-flex items-center gap-2 px-4 h-9 bg-white rounded-lg text-blue-700 transition-all hover:pr-6 active:scale-95 text-[10px] font-black uppercase tracking-widest">
+            <span>Attendance</span>
+            <span className="material-symbols-outlined text-sm group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
+          </button>
         </div>
       </div>
     </Card>
@@ -262,28 +278,30 @@ function WeeklyGridView({ data }: { data: TimetableRecord[] }) {
   const timeSlots = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00"];
 
   return (
-    <div className="bg-white rounded-[2.5rem] border border-blue-50 shadow-xl shadow-slate-200/40 overflow-hidden">
-      <div className="overflow-x-auto">
+    <div className="bg-white rounded-2xl border border-slate-200/60 shadow-xl shadow-slate-200/30 overflow-hidden">
+      <div className="overflow-x-auto custom-scrollbar">
         <div className="min-w-[1000px]">
-          <div className="grid grid-cols-[100px_repeat(6,1fr)] border-b border-slate-100 bg-slate-50/50">
-            <div className="p-4"></div>
+          <div className="grid grid-cols-[100px_repeat(6,1fr)] bg-slate-50/50 border-b border-slate-100">
+            <div className="p-3"></div>
             {days.map(d => (
-              <div key={d} className="p-4 text-center">
-                <span className="text-xs font-black uppercase tracking-widest text-slate-500">{getDayLabel(d)}</span>
+              <div key={d} className="p-3 text-center border-l border-slate-100/50">
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block mb-0.5">{getDayLabel(d)}</span>
+                <span className="text-[10px] font-black text-slate-900 tracking-tight">Cycle {d}</span>
               </div>
             ))}
           </div>
 
           <div className="relative">
             {timeSlots.map((time, idx) => (
-              <div key={time} className="grid grid-cols-[100px_repeat(6,1fr)] border-b border-slate-50 last:border-0 min-h-[100px]">
-                <div className="p-4 text-right border-r border-slate-50">
-                  <span className="text-[10px] font-black text-slate-400">{time}</span>
+              <div key={time} className="grid grid-cols-[100px_repeat(6,1fr)] border-b border-slate-50 last:border-0 group/row">
+                <div className="p-4 text-right border-r border-slate-100 bg-slate-50/20 group-hover/row:bg-blue-50/20 transition-colors">
+                  <span className="text-[10px] font-black text-slate-900 tracking-tighter block leading-none">{time}</span>
+                  <span className="text-[8px] font-black text-slate-400 mt-0.5 uppercase">P{idx + 1}</span>
                 </div>
                 {days.map(day => {
                   const items = data.filter(i => i.day_of_week === day && i.start_time.startsWith(time.split(":")[0]));
                   return (
-                    <div key={day} className="p-2 border-r border-slate-50 last:border-0 relative">
+                    <div key={day} className="p-1 border-r border-slate-50 last:border-0 relative min-h-[90px] group/cell hover:bg-slate-50/40 transition-colors">
                       {items.map(item => (
                         <PeriodCard key={item._id} item={item} />
                       ))}
@@ -300,33 +318,42 @@ function WeeklyGridView({ data }: { data: TimetableRecord[] }) {
 }
 
 function PeriodCard({ item }: { item: TimetableRecord }) {
-  // Simple color mapping based on subject
-  const getSubjectColor = (name: string) => {
+  const getSubjectStyles = (name: string) => {
     const n = name.toLowerCase();
-    if (n.includes("math")) return "bg-blue-50 text-blue-600 border-blue-100";
-    if (n.includes("sci") || n.includes("phy") || n.includes("che") || n.includes("bio")) return "bg-emerald-50 text-emerald-600 border-emerald-100";
-    if (n.includes("eng")) return "bg-indigo-50 text-indigo-600 border-indigo-100";
-    if (n.includes("comp") || n.includes("it")) return "bg-violet-50 text-violet-600 border-violet-100";
-    return "bg-slate-50 text-slate-600 border-slate-100";
+    if (n.includes("math")) return "bg-blue-500/5 border-blue-500/20 text-blue-700";
+    if (n.includes("sci") || n.includes("phy") || n.includes("che") || n.includes("bio")) return "bg-emerald-500/5 border-emerald-500/20 text-emerald-700";
+    if (n.includes("eng")) return "bg-amber-500/5 border-amber-500/20 text-amber-700";
+    if (n.includes("comp") || n.includes("it")) return "bg-purple-500/5 border-purple-500/20 text-purple-700";
+    return "bg-slate-500/5 border-slate-500/20 text-slate-700";
   };
+
+  const style = getSubjectStyles(item.subject_name);
 
   return (
     <motion.div 
-      whileHover={{ scale: 1.02, y: -2 }}
-      className={`p-3 rounded-2xl border ${getSubjectColor(item.subject_name)} h-full flex flex-col justify-between shadow-sm hover:shadow-md transition-all group cursor-pointer`}
+      whileHover={{ y: -2, scale: 1.02 }}
+      className={`absolute inset-1 p-2 rounded-xl border ${style} flex flex-col justify-between shadow-sm hover:shadow-lg transition-all group cursor-pointer overflow-hidden backdrop-blur-[1px]`}
     >
+      <div className="absolute top-0 right-0 p-1 opacity-5">
+        <span className="material-symbols-outlined text-2xl">calendar_today</span>
+      </div>
+      
       <div>
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] font-black uppercase tracking-widest">{item.start_time} - {item.end_time}</span>
-          <MoreVertical className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <span className="text-[8px] font-black tracking-tighter opacity-70">
+            {item.start_time}
+          </span>
+          <span className="material-symbols-outlined text-[10px] opacity-0 group-hover:opacity-100 transition-all">more_vert</span>
         </div>
-        <h4 className="text-sm font-black tracking-tight leading-tight mb-1">{item.subject_name}</h4>
-        <p className="text-[10px] font-bold opacity-80 uppercase tracking-wider">{item.class_name} {item.section}</p>
+        <h4 className="text-[10px] font-black tracking-tight leading-tight truncate">{item.subject_name}</h4>
+        <p className="text-[8px] font-bold opacity-60 uppercase tracking-widest">{item.class_name} {item.section}</p>
       </div>
-      <div className="mt-2 flex items-center justify-between">
-        <span className="text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
-          <MapPin className="h-2.5 w-2.5" /> Room {item.room}
-        </span>
+
+      <div className="mt-auto pt-1.5 border-t border-current/5 flex items-center justify-between">
+        <div className="flex items-center gap-0.5">
+          <span className="material-symbols-outlined text-[11px]">meeting_room</span>
+          <span className="text-[8px] font-black uppercase">R{item.room}</span>
+        </div>
       </div>
     </motion.div>
   );
@@ -343,15 +370,20 @@ function AgendaView({ data }: { data: TimetableRecord[] }) {
   }, [data]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 max-w-4xl mx-auto py-2">
       {grouped.map(([day, items]) => (
         <div key={day} className="space-y-4">
-          <h3 className="text-sm font-black uppercase tracking-[0.2em] text-slate-400 ml-4 flex items-center gap-3">
-            {getDayLabel(Number(day))}
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-white border border-slate-200 shadow-sm flex items-center justify-center">
+               <span className="text-[11px] font-black text-blue-600">{day}</span>
+            </div>
+            <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">
+              {getDayLabel(Number(day))}
+            </h3>
             <div className="h-px flex-1 bg-slate-100" />
-          </h3>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {items.map(item => (
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {items.sort((a,b) => a.start_time.localeCompare(b.start_time)).map(item => (
               <AgendaCard key={item._id} item={item} />
             ))}
           </div>
@@ -363,27 +395,20 @@ function AgendaView({ data }: { data: TimetableRecord[] }) {
 
 function AgendaCard({ item }: { item: TimetableRecord }) {
   return (
-    <Card className="p-6 border-0 bg-white shadow-xl shadow-slate-200/30 rounded-3xl group hover:border-blue-200 hover:shadow-blue-100 transition-all border border-transparent">
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div className="h-12 w-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-black shadow-inner">
-          {item.subject_name.substring(0, 1)}
-        </div>
-        <div className="flex-1">
-          <h4 className="text-lg font-black text-slate-900 tracking-tight">{item.subject_name}</h4>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">{item.class_name} • Section {item.section}</p>
+    <Card className="p-4 border-slate-200/60 bg-white shadow-md rounded-2xl group hover:shadow-xl transition-all">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-slate-50 border border-slate-100 text-slate-300 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
+             <span className="material-symbols-outlined text-xl">school</span>
+          </div>
+          <div>
+            <h4 className="text-sm font-black text-slate-900 tracking-tight leading-none mb-1">{item.subject_name}</h4>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.class_name} • {item.section}</p>
+          </div>
         </div>
         <div className="text-right">
-          <p className="text-sm font-black text-slate-900 leading-none">{item.start_time}</p>
-          <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">{item.end_time}</p>
-        </div>
-      </div>
-      <div className="flex items-center justify-between pt-6 border-t border-slate-50">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
-          <MapPin className="h-3.5 w-3.5" /> Room {item.room}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" className="h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border-slate-100">Details</Button>
-          <Button className="h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest bg-blue-600 shadow-lg shadow-blue-100">Attend</Button>
+          <span className="text-[10px] font-black text-slate-900 block">{item.start_time}</span>
+          <span className="text-[8px] font-black text-slate-400 uppercase">{item.end_time}</span>
         </div>
       </div>
     </Card>
@@ -401,40 +426,40 @@ function TodayView({ data }: { data: TimetableRecord[] }) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 py-8">
-      <div className="flex items-center gap-6">
-        <div className="h-16 w-16 rounded-3xl bg-blue-600 text-white flex items-center justify-center text-2xl font-black shadow-xl shadow-blue-200">
-          {todayClasses.length}
-        </div>
-        <div>
-          <h3 className="text-2xl font-black text-slate-900 tracking-tight">Today's Lectures</h3>
-          <p className="text-slate-500 font-medium">{getDayLabel(today)}, {new Date().toLocaleDateString()}</p>
+    <div className="max-w-3xl mx-auto space-y-6 py-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="h-12 w-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-xl font-black shadow-lg shadow-blue-600/20">
+            {todayClasses.length}
+          </div>
+          <div>
+            <h3 className="text-xl font-black text-slate-900 tracking-tight">Active Sessions</h3>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-[9px] mt-0.5">{getDayLabel(today)} • {new Date().toLocaleDateString()}</p>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-6 relative before:absolute before:left-6 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
+      <div className="space-y-4 relative before:absolute before:left-5 before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-100">
         {todayClasses.map((item, idx) => (
-          <div key={item._id} className="relative pl-14 group">
-            <div className="absolute left-[21px] top-4 h-2.5 w-2.5 rounded-full bg-white border-2 border-blue-600 group-hover:scale-150 transition-transform shadow-sm z-10" />
-            <Card className="p-6 border border-slate-50 bg-white shadow-lg shadow-slate-200/30 rounded-[2rem] hover:shadow-xl hover:shadow-blue-100/40 hover:-translate-y-1 transition-all">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-5">
-                  <div className="h-10 w-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center font-black">
+          <div key={item._id} className="relative pl-12 group">
+            <div className="absolute left-[17px] top-4 h-2.5 w-2.5 rounded-full bg-white border-2 border-blue-600 shadow-sm z-10" />
+            <Card className="p-4 border-slate-100 bg-white shadow-md rounded-[1.25rem] hover:shadow-xl hover:-translate-y-0.5 transition-all">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-8 w-8 rounded-lg bg-slate-50 text-slate-300 flex items-center justify-center font-black text-xs">
                     {idx + 1}
                   </div>
                   <div>
-                    <h4 className="text-lg font-black text-slate-900 tracking-tight">{item.subject_name}</h4>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{item.class_name} {item.section}</p>
+                    <h4 className="text-base font-black text-slate-900 tracking-tight leading-none mb-1">{item.subject_name}</h4>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{item.class_name} {item.section}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-8">
+                <div className="flex items-center gap-6">
                   <div className="text-right">
-                    <p className="text-sm font-black text-slate-900 leading-none flex items-center gap-2">
-                      <Clock className="h-3.5 w-3.5 text-blue-600" /> {item.start_time}
-                    </p>
-                    <p className="text-[10px] font-black text-slate-400 mt-1 uppercase tracking-widest">{item.room}</p>
+                    <p className="text-sm font-black text-slate-900 leading-none">{item.start_time}</p>
+                    <p className="text-[8px] font-black text-slate-400 mt-1 uppercase tracking-widest">R{item.room}</p>
                   </div>
-                  <Button className="rounded-2xl h-12 px-6 font-black bg-blue-600 shadow-lg shadow-blue-100">START</Button>
+                  <button className="h-10 px-5 rounded-xl bg-blue-600 text-white font-black text-[9px] uppercase tracking-widest shadow-md">Initiate</button>
                 </div>
               </div>
             </Card>
@@ -445,60 +470,58 @@ function TodayView({ data }: { data: TimetableRecord[] }) {
   );
 }
 
-function StatSmallCard({ label, value, sub, icon, color, bg }: { label: string; value: number | string; sub: string; icon: any; color: string; bg: string }) {
+function StatSmallCard({ label, value, sub, icon, color, bg }: { label: string; value: number | string; sub: string; icon: string; color: string; bg: string }) {
   return (
-    <div className="bg-white border border-blue-50 rounded-2xl p-4 shadow-sm flex flex-col justify-between group hover:border-blue-200 transition-all">
-      <div className={`h-8 w-8 rounded-xl ${bg} ${color} flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform`}>
-        {icon}
+    <div className="bg-white border border-slate-200/60 rounded-2xl p-3 shadow-sm flex flex-col justify-between group hover:border-blue-400/30 transition-all">
+      <div className={`h-8 w-8 rounded-xl ${bg} ${color} flex items-center justify-center shadow-sm`}>
+        <span className="material-symbols-outlined text-lg">{icon}</span>
       </div>
-      <div className="mt-4">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{label}</p>
+      <div className="mt-3">
+        <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">{label}</p>
         <div className="flex items-baseline gap-1">
-          <span className={`text-2xl font-black tracking-tight ${color}`}>{value}</span>
-          <span className="text-[10px] font-bold text-slate-400 uppercase">{sub}</span>
+          <span className={`text-xl font-black tracking-tighter ${color}`}>{value}</span>
+          <span className="text-[8px] font-bold text-slate-400 uppercase">{sub}</span>
         </div>
       </div>
     </div>
   );
 }
 
-function ViewToggle({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: any; label: string }) {
+function ViewToggle({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: string; label: string }) {
   return (
     <button 
       onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${active ? "bg-white text-blue-600 shadow-sm font-black" : "text-slate-400 font-bold"}`}
+      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${active ? "bg-white text-blue-600 shadow-sm font-black ring-1 ring-slate-200" : "text-slate-400 font-bold hover:text-slate-600"}`}
     >
-      {icon}
-      <span className="text-[10px] uppercase tracking-widest">{label}</span>
+      <span className="material-symbols-outlined text-base">{icon}</span>
+      <span className="text-[8px] uppercase tracking-[0.1em]">{label}</span>
     </button>
   );
 }
 
 function EmptyScheduleState({ onRefresh }: { onRefresh: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-blue-50">
-      <div className="h-24 w-24 bg-blue-50 rounded-full flex items-center justify-center mb-6 relative">
-        <Calendar className="h-10 w-10 text-blue-300" />
-        <div className="absolute -top-1 -right-1 h-8 w-8 bg-white shadow-lg rounded-full flex items-center justify-center">
-          <AlertCircle className="h-5 w-5 text-amber-500 animate-pulse" />
-        </div>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex flex-col items-center justify-center py-20 bg-white rounded-[2rem] border border-slate-200/60 shadow-lg relative overflow-hidden"
+    >
+      <div className="h-20 w-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-6 shadow-inner">
+        <span className="material-symbols-outlined text-3xl text-slate-200">calendar_add_on</span>
       </div>
-      <h3 className="text-2xl font-black text-slate-900">No Schedule Assigned Yet</h3>
-      <p className="text-slate-500 mt-3 font-medium max-w-sm text-center leading-relaxed">
-        Your school administrator has not assigned your timetable periods yet. Please contact management for access.
+      <h3 className="text-xl font-black text-slate-900 tracking-tight">Ledger Empty</h3>
+      <p className="text-slate-400 mt-2 font-bold max-w-xs text-center uppercase tracking-widest text-[9px] px-6">
+        Scheduler has not yet published periods. Synchronize or contact support.
       </p>
-      <div className="mt-8 flex gap-3">
-        <Button onClick={onRefresh} className="rounded-2xl px-8 h-14 font-black bg-blue-600 shadow-xl shadow-blue-100">
-          <RefreshCcw className="h-4 w-4 mr-2" /> REFRESH
-        </Button>
-        <Button variant="secondary" className="rounded-2xl px-8 h-14 font-black border-slate-200">
-          CONTACT ADMIN
-        </Button>
+      <div className="mt-8 flex items-center gap-3">
+        <button onClick={onRefresh} className="flex items-center gap-2 px-6 h-12 bg-blue-600 rounded-xl text-white text-[9px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 transition-all">
+          <span>Synchronize</span>
+          <span className="material-symbols-outlined text-base animate-spin-slow">refresh</span>
+        </button>
       </div>
-    </div>
+    </motion.div>
   );
 }
-
 function MoreVertical(props: any) {
   return (
     <svg {...props} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

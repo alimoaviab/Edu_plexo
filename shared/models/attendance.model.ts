@@ -9,6 +9,7 @@ const attendanceSchema = new Schema(
     class_id: { type: Types.ObjectId, ref: "Class", required: true, index: true },
     teacher_id: { type: Types.ObjectId, ref: "Teacher", default: null, index: true },
     date: { type: Date, required: true, index: true },
+    period: { type: Number, index: true }, // Support for specific lecture/period
     status: {
       type: String,
       enum: ["present", "absent", "late", "excused"],
@@ -26,7 +27,7 @@ const attendanceSchema = new Schema(
   { ...schemaOptions, collection: "attendance" }
 );
 
-attendanceSchema.index({ school_id: 1, academic_year_id: 1, student_id: 1, date: 1 }, { unique: true });
+attendanceSchema.index({ school_id: 1, academic_year_id: 1, student_id: 1, date: 1, period: 1 }, { unique: true });
 attendanceSchema.index({ school_id: 1, academic_year_id: 1, class_id: 1, date: 1 });
 attendanceSchema.index({ school_id: 1, academic_year_id: 1, status: 1, date: -1 });
 

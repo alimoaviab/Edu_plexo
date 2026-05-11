@@ -13,12 +13,15 @@ import { FaqSection } from "../components/landing/FaqSection";
 import { CtaSection } from "../components/landing/CtaSection";
 import { Footer } from "../components/landing/Footer";
 
+import { SmoothScroll } from "../components/landing/SmoothScroll";
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-slate-50 selection:bg-blue-100 selection:text-blue-900 font-sans">
-      <Navbar />
-      <main>
-        <HeroSection />
+      <SmoothScroll>
+        <Navbar />
+        <main>
+          <HeroSection />
         <TrustSection />
         <FeaturesSection />
         <DashboardShowcase />
@@ -30,8 +33,9 @@ export default function HomePage() {
         <PricingSection />
         <FaqSection />
         <CtaSection />
-      </main>
-      <Footer />
+        </main>
+        <Footer />
+      </SmoothScroll>
     </div>
   );
 }

@@ -25,6 +25,7 @@ export async function getHomework(
       .populate("class_id", "name")
       .populate("teacher_id", "first_name last_name")
       .populate({ path: "subject_id", select: "name", strictPopulate: false })
+      .populate("submissions.student_id", "first_name last_name admission_no")
       .lean();
 
     if (!row) throw new Error("Homework not found.");
@@ -143,6 +144,15 @@ export async function createHomework(
       throw new Error(`Selected subject "${parsed.subject_id}" was not found and could not be resolved.`);
     }
 
+    // Fetch active students for this class to initialize submissions
+    const { StudentModel } = await import("../models/student.model");
+    const activeStudents = await StudentModel.find(
+      tenantFilter(ctx, { 
+        class_id: new Types.ObjectId(parsed.class_id),
+        status: "active" 
+      })
+    ).select("_id").lean();
+
     const created = await HomeworkModel.create({
       school_id: ctx.school_id,
       academic_year_id: ctx.active_academic_year_id || (classroom as any).academy_care_id,
@@ -154,7 +164,12 @@ export async function createHomework(
       instructions: parsed.instructions ?? "",
       due_at: dueAt,
       status: parsed.status,
-      submissions: []
+      submissions: activeStudents.map(student => ({
+        student_id: student._id,
+        status: "pending",
+        attachment_urls: [],
+        feedback: ""
+      }))
     });
 
     await writeAuditLog(ctx, {

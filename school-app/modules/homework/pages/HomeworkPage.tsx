@@ -179,14 +179,23 @@ export function HomeworkPage({ role }: HomeworkPageProps) {
                 
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
+                    onClick={() => router.push(role === "ADMIN" ? `/admin/homework/${hw._id}/review` : `/teacher/homework/${hw._id}/review`)}
+                    className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-all"
+                    title="Review Submissions"
+                  >
+                    <span className="material-symbols-outlined text-lg">grading</span>
+                  </button>
+                  <button
                     onClick={() => router.push(role === "ADMIN" ? `/admin/homework/edit/${hw._id}` : `/teacher/homework/edit/${hw._id}`)}
                     className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all"
+                    title="Edit Homework"
                   >
                     <span className="material-symbols-outlined text-lg">edit</span>
                   </button>
                   <button
                     onClick={() => handleDelete(hw._id)}
                     className="h-8 w-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
+                    title="Delete Homework"
                   >
                     <span className="material-symbols-outlined text-lg">delete</span>
                   </button>

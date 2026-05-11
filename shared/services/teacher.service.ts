@@ -18,6 +18,20 @@ async function nextEmployeeNumber(schoolId: string) {
   return `TCH-${String(count + 1).padStart(4, "0")}`;
 }
 
+export async function resolveTeacherClassIds(ctx: RequestContext): Promise<Types.ObjectId[]> {
+  const teacher = (await TeacherModel.findOne(
+    tenantFilter(ctx, { user_id: new Types.ObjectId(ctx.user_id) })
+  )
+    .select("class_ids")
+    .lean()) as { class_ids?: unknown[] } | null;
+
+  if (!teacher?.class_ids?.length) {
+    return [];
+  }
+
+  return teacher.class_ids.map((id) => new Types.ObjectId(String(id)));
+}
+
 export async function listTeachers(
   ctx: RequestContext,
   filter: { academy_care_id?: string } = {}

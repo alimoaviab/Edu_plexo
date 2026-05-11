@@ -33,6 +33,7 @@ export const roleAccessMatrix: Record<Role, RoleAccess> = {
   },
   teacher: {
     settings: ["view"],
+    students: ["view"],
     teachers: ["view"],
     subjects: ["view"],
     classes: ["view"],

@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
     
     const result = await listResults(ctx, { academy_care_id, exam_id, student_id });
     return NextResponse.json(result, { status: result.ok ? 200 : result.error.status ?? 400 });
-  } catch {
-    return NextResponse.json(fail("UNAUTHORIZED", "Authentication required.", 401), { status: 401 });
+  } catch (error: any) {
+    return NextResponse.json(fail("SERVER_ERROR", error.message || "Internal server error", 500), { status: 500 });
   }
 }
 
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const result = await saveResult(ctx, body);
     return NextResponse.json(result, { status: result.ok ? 201 : result.error.status ?? 400 });
-  } catch {
-    return NextResponse.json(fail("UNAUTHORIZED", "Authentication required.", 401), { status: 401 });
+  } catch (error: any) {
+    return NextResponse.json(fail("SERVER_ERROR", error.message || "Internal server error", 500), { status: 500 });
   }
 }

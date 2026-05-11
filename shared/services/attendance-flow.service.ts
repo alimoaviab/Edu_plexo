@@ -278,7 +278,8 @@ export async function markAttendanceBatch(
             const updated = await AttendanceModel.findOneAndUpdate(
                 tenantFilter(ctx, {
                     student_id: new Types.ObjectId(studentId),
-                    date: attendanceDate
+                    date: attendanceDate,
+                    period: parsed.period ?? undefined
                 }),
                 {
                     $set: {
@@ -287,6 +288,7 @@ export async function markAttendanceBatch(
                         class_id: new Types.ObjectId(parsed.class_id),
                         student_id: new Types.ObjectId(studentId),
                         date: attendanceDate,
+                        period: parsed.period ?? undefined,
                         status: statusResult.data,
                         marked_by: new Types.ObjectId(ctx.user_id),
                         source: "manual"

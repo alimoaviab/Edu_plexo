@@ -52,6 +52,20 @@ export async function listExams(
   });
 }
 
+export async function getExam(ctx: RequestContext, id: string): Promise<ServiceResult<unknown>> {
+  return serviceTry(async () => {
+    await connectDb();
+    assertPermission(ctx, "exams", "view");
+
+    const row = await ExamModel.findOne(tenantFilter(ctx, { _id: id }))
+      .populate("class_id", "name")
+      .lean();
+
+    if (!row) throw new Error("Exam not found");
+    return mapExamRecord(row);
+  });
+}
+
 export async function createExam(ctx: RequestContext, input: ExamCreateInput): Promise<ServiceResult<unknown>> {
   return serviceTry(async () => {
     await connectDb();

@@ -9,12 +9,13 @@ import {
   TeacherAttendanceSummary
 } from "../types/attendance.types";
 
-export function listAttendance(filters?: { class_id?: string; student_id?: string; date?: string }) {
+export function listAttendance(filters?: { class_id?: string; student_id?: string; date?: string; period?: number }) {
   const baseQuery = getAcademyCareQuery();
   let filterQuery = "";
   if (filters?.class_id) filterQuery += `&class_id=${filters.class_id}`;
   if (filters?.student_id) filterQuery += `&student_id=${filters.student_id}`;
   if (filters?.date) filterQuery += `&date=${filters.date}`;
+  if (filters?.period !== undefined) filterQuery += `&period=${filters.period}`;
 
   return serviceRequest<AttendanceRecordRow[]>(`/api/attendance${baseQuery}${filterQuery}`);
 }

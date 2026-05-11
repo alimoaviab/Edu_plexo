@@ -11,6 +11,7 @@ import { ControlledError, RequestContext, ServiceResult } from "../types/core";
 import { serviceTry } from "../utils/result";
 import { AttendanceCreateInput, AttendanceUpdateInput, attendanceCreateSchema, attendanceUpdateSchema } from "../validation/attendance.schema";
 import { resolveClassIdsForAcademyCare } from "./_academy-care-filter";
+import { resolveTeacherClassIds } from "./teacher.service";
 import { writeAuditLog } from "./audit.service";
 
 type AttendanceFilter = {
@@ -19,20 +20,6 @@ type AttendanceFilter = {
   academy_care_id?: string;
   date?: string;
 };
-
-async function resolveTeacherClassIds(ctx: RequestContext): Promise<Types.ObjectId[]> {
-  const teacher = (await TeacherModel.findOne(
-    tenantFilter(ctx, { user_id: new Types.ObjectId(ctx.user_id) })
-  )
-    .select("class_ids")
-    .lean()) as { class_ids?: unknown[] } | null;
-
-  if (!teacher?.class_ids?.length) {
-    return [];
-  }
-
-  return teacher.class_ids.map((id) => new Types.ObjectId(String(id)));
-}
 
 function hasClassAccess(classIds: Types.ObjectId[], classId: string): boolean {
   return classIds.some((id) => String(id) === classId);
@@ -53,14 +40,17 @@ export async function listAttendance(
 
     const query: Record<string, unknown> = tenantFilter(ctx);
 
-    let classIds = await resolveClassIdsForAcademyCare(ctx, filter.academy_care_id);
-
     if (ctx.role === "teacher") {
       const teacherClassIds = await resolveTeacherClassIds(ctx);
-      classIds = intersectClassIds(classIds, teacherClassIds);
-    }
-
-    if (ctx.role === "student") {
+      if (filter.class_id) {
+        if (!hasClassAccess(teacherClassIds, filter.class_id)) {
+           throw new ControlledError("FORBIDDEN", "You can only view attendance for assigned classes.", 403);
+        }
+        query.class_id = new Types.ObjectId(filter.class_id);
+      } else {
+        query.class_id = { $in: teacherClassIds };
+      }
+    } else if (ctx.role === "student") {
       const selfStudent = (await StudentModel.findOne(
         tenantFilter(ctx, { user_id: new Types.ObjectId(ctx.user_id) })
       )
@@ -77,21 +67,25 @@ export async function listAttendance(
       if (filter.student_id && filter.student_id !== String(selfStudent._id)) {
         throw new ControlledError("FORBIDDEN", "You can only view your own attendance.", 403);
       }
-      if (filter.class_id && filter.class_id !== String(selfStudent.class_id)) {
-        throw new ControlledError("FORBIDDEN", "You can only view attendance for your class.", 403);
-      }
+    } else if (filter.class_id) {
+        query.class_id = new Types.ObjectId(filter.class_id);
     }
 
-    if (ctx.role !== "student" && filter.class_id) {
-      if (ctx.role === "teacher" && !hasClassAccess(classIds, filter.class_id)) {
-        throw new ControlledError("FORBIDDEN", "You can only view attendance for assigned classes.", 403);
-      }
-      query.class_id = new Types.ObjectId(filter.class_id);
-    } else if (ctx.role !== "student") {
-      query.class_id = { $in: classIds };
+    if (filter.academy_care_id) {
+      query.academic_year_id = new Types.ObjectId(filter.academy_care_id);
     }
+
     if (ctx.role !== "student" && filter.student_id) {
       query.student_id = new Types.ObjectId(filter.student_id);
+    }
+
+    if (filter.date) {
+      const d = new Date(filter.date);
+      const start = new Date(d);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(d);
+      end.setHours(23, 59, 59, 999);
+      query.date = { $gte: start, $lte: end };
     }
 
     const rows = await AttendanceModel.find(query)

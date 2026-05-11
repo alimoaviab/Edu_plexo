@@ -13,6 +13,7 @@ export const attendanceCreateSchema = z.object({
   student_id: z.string().min(12),
   class_id: z.string().min(12),
   date: z.coerce.date(),
+  period: z.number().int().min(1).max(12).optional(),
   status: attendanceStatusSchema,
   note: z.string().trim().max(300).optional().or(z.literal(""))
 });
@@ -20,6 +21,7 @@ export const attendanceCreateSchema = z.object({
 export const attendanceBulkMarkSchema = z.object({
   class_id: z.string().min(12),
   date: attendanceDateSchema,
+  period: z.number().int().min(1).max(12).optional(),
   academic_year_id: z.string().min(12).optional().or(z.literal("")),
   records: z.record(attendanceStatusSchema)
 });
