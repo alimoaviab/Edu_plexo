@@ -7,7 +7,6 @@ import { PageHeader, Breadcrumb } from "../components/ui";
 import { AIAssistant } from "../components/ai/AIAssistant";
 import { getSelectedAcademyCareId, setSelectedAcademyCareId } from "../services/academy-care-context";
 import { useAuth, Role } from "../hooks/useAuth";
-import { useEscapeKey } from "../hooks/useEscapeKey";
 
 type NavItem = {
   label: string;
@@ -198,11 +197,8 @@ export function SchoolShell({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [academyYears, setAcademyYears] = useState<Array<{ _id: string; year: string; is_active: boolean }>>([]);
   const [selectedAcademyCareId, setSelectedAcademyCareIdState] = useState<string>("");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [showAIAssistant, setShowAIAssistant] = useState(false);
-
-  useEscapeKey(() => setShowAIAssistant(false), showAIAssistant);
 
   const navGroups = useMemo(() => {
     if (!user) return [];

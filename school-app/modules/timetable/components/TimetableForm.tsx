@@ -142,7 +142,6 @@ export function TimetableForm({
                   options={[{ label: "Select class", value: "" }, ...classOptions.map(o => ({ label: o.label, value: o.id }))]}
                   error={errors.class_id}
                   required
-                  className="h-14 text-base px-4"
                 />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -153,7 +152,6 @@ export function TimetableForm({
                       options={[{ label: "Select subject", value: "" }, ...subjectOptions.map(o => ({ label: o.label, value: o.id }))]}
                       error={errors.subject_id}
                       required
-                      className="h-14 text-base px-4"
                     />
 
                     <Select
@@ -163,7 +161,6 @@ export function TimetableForm({
                       options={[{ label: "Select teacher", value: "" }, ...teacherOptions.map(o => ({ label: o.label, value: o.id }))]}
                       error={errors.teacher_id}
                       required
-                      className="h-14 text-base px-4"
                     />
                 </div>
              </div>
@@ -178,7 +175,6 @@ export function TimetableForm({
                       onChange={(e) => setForm({ ...form, day_of_week: e.target.value as any })}
                       options={DAY_OPTIONS.map(d => ({ label: d.label, value: d.value }))}
                       error={errors.day_of_week}
-                      className="h-14 text-base px-4"
                     />
 
                     <Input
@@ -190,7 +186,6 @@ export function TimetableForm({
                       onChange={(e) => setForm({ ...form, period_number: parseInt(e.target.value) || 1 })}
                       error={errors.period_number}
                       required
-                      className="h-14 text-base px-4"
                     />
                 </div>
 
@@ -202,7 +197,6 @@ export function TimetableForm({
                       onChange={(e) => setForm({ ...form, start_time: e.target.value })}
                       error={errors.start_time}
                       required
-                      className="h-14 text-base px-4"
                     />
 
                     <Input
@@ -212,7 +206,6 @@ export function TimetableForm({
                       onChange={(e) => setForm({ ...form, end_time: e.target.value })}
                       error={errors.end_time}
                       required
-                      className="h-14 text-base px-4"
                     />
                 </div>
 
@@ -221,7 +214,6 @@ export function TimetableForm({
                   placeholder="e.g., Science Lab 2"
                   value={form.room || ""}
                   onChange={(e) => setForm({ ...form, room: e.target.value })}
-                  className="h-14 text-base px-4"
                 />
              </div>
            </FormSection>

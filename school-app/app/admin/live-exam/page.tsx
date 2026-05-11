@@ -4,9 +4,36 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { SchoolShell } from "../../../layouts/SchoolShell";
 import { LiveExamList } from "../../../components/live-exams/LiveExamList";
+import { CreateLiveExamModal } from "../../../components/live-exams/CreateLiveExamModal";
 
 export default function LiveExamPage() {
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [listKey, setListKey] = useState(0);
+    const [classesData, setClassesData] = useState([]);
+    const [subjectsData, setSubjectsData] = useState([]);
+
+    useEffect(() => {
+        const fetchFormData = async () => {
+            try {
+                const [classesRes, subjectsRes] = await Promise.all([
+                    fetch("/api/school/my-classes"),
+                    fetch("/api/school/subjects")
+                ]);
+
+                if (classesRes.ok) {
+                    const data = await classesRes.json();
+                    setClassesData(data.classes || []);
+                }
+                if (subjectsRes.ok) {
+                    const data = await subjectsRes.json();
+                    setSubjectsData(data.data || []);
+                }
+            } catch (e) {
+                console.error("Failed to load form data", e);
+            }
+        };
+        fetchFormData();
+    }, []);
 
     return (
         <SchoolShell title="Live Exams" eyebrow="Admin">
@@ -20,12 +47,12 @@ export default function LiveExamPage() {
                                 Monitor all ongoing examinations across the school, manage schedules, and review student performance in real-time.
                             </p>
                         </div>
-                        <Link
-                            href="/admin/live-exam/create"
+                        <button
+                            onClick={() => setIsModalOpen(true)}
                             className="rounded-2xl bg-white px-6 py-4 text-sm font-bold text-slate-950 shadow-lg shadow-white/10 transition hover:bg-slate-100"
                         >
                             Schedule New Exam
-                        </Link>
+                        </button>
                     </div>
                 </section>
 
@@ -64,6 +91,14 @@ export default function LiveExamPage() {
                     <LiveExamList key={listKey} role="ADMIN" />
                 </div>
             </div>
+
+            <CreateLiveExamModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={() => setListKey((prev) => prev + 1)}
+                classes={classesData}
+                subjects={subjectsData}
+            />
         </SchoolShell>
     );
 }

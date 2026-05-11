@@ -9,10 +9,7 @@
     "start": "next start --hostname 0.0.0.0 --port ${PORT:-3000}",
     "check": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "seed:data": "node scripts/seed-school-data.js",
-    "validate:ai": "ts-node ../shared/ai/scripts/validate-env.ts",
-    "verify:ai": "cd .. && ./verify-ai-system.sh",
-    "clean:ai": "cd .. && ./clean-and-rebuild.sh"
+    "seed:data": "node scripts/seed-school-data.js"
   },
   "dependencies": {
     "@edu/shared": "file:../shared",

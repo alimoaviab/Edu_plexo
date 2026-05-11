@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { SchoolShell } from "../../../layouts/SchoolShell";
 import { LiveExamList } from "../../../components/live-exams/LiveExamList";
+import { CreateLiveExamModal } from "../../../components/live-exams/CreateLiveExamModal";
 
 const stats = [
   { title: "Scheduled Exams", value: "-", detail: "Upcoming sessions", icon: "quiz", tone: "text-sky-700" },
@@ -12,8 +13,33 @@ const stats = [
 ];
 
 export default function TeacherLiveExamPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [listKey, setListKey] = useState(0);
+  const [classesData, setClassesData] = useState([]);
+  const [subjectsData, setSubjectsData] = useState([]);
 
+  useEffect(() => {
+    const fetchFormData = async () => {
+      try {
+        const [classesRes, subjectsRes] = await Promise.all([
+          fetch("/api/school/my-classes"),
+          fetch("/api/school/subjects")
+        ]);
+
+        if (classesRes.ok) {
+          const data = await classesRes.json();
+          setClassesData(data.classes || []);
+        }
+        if (subjectsRes.ok) {
+          const data = await subjectsRes.json();
+          setSubjectsData(data.data || []);
+        }
+      } catch (e) {
+        console.error("Failed to load form data", e);
+      }
+    };
+    fetchFormData();
+  }, []);
 
   return (
     <SchoolShell title="Live Exams" eyebrow="Teacher">
@@ -74,13 +100,13 @@ export default function TeacherLiveExamPage() {
             <div className="rounded-[2rem] border border-slate-200/70 bg-white p-6 shadow-sm">
               <h2 className="text-xl font-bold text-slate-900">Quick actions</h2>
               <div className="mt-5 space-y-3">
-                <Link
-                    href="/teacher/live-exam/create"
+                <button
+                    onClick={() => setIsModalOpen(true)}
                     className="w-full flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-4 text-sm font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
                   >
                     <span>Create Live Exam</span>
                     <span className="material-symbols-outlined text-slate-400">add_circle</span>
-                </Link>
+                </button>
                 <Link
                     href="/teacher/exams"
                     className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-4 text-sm font-semibold text-slate-900 transition hover:border-slate-300 hover:bg-slate-50"
@@ -106,6 +132,13 @@ export default function TeacherLiveExamPage() {
         </div>
       </div>
 
+      <CreateLiveExamModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={() => setListKey(prev => prev + 1)}
+        classes={classesData}
+        subjects={subjectsData}
+      />
     </SchoolShell>
   );
 }

@@ -9,15 +9,17 @@ import { useTeachers } from "../../teachers/hooks/useTeachers";
 import { useSubjects } from "../../subjects/hooks/useSubjects";
 import { ClassRow, ClassFormInput } from "../types/class.types";
 import { showToast } from "../../../utils/toast";
+import { ClassEditSidebar } from "../components/ClassEditSidebar";
 import { useSafeAsync } from "../../../hooks/useSafeAsync";
 import { ConfirmModal } from "../../../components/ui/ConfirmModal";
-import { useEscapeKey } from "../../../hooks/useEscapeKey";
 
 export function ClassListPage() {
   const { state, updateClass, deleteClass } = useClasses();
   const { state: academyCareState } = useAcademyCare();
   const { state: teachersState } = useTeachers();
+  const [editingClass, setEditingClass] = useState<ClassRow | null>(null);
   const [deletingClass, setDeletingClass] = useState<ClassRow | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
@@ -142,7 +144,7 @@ export function ClassListPage() {
       icon: "settings",
       label: "Configure",
       variant: "ghost",
-      onClick: (row) => window.location.href = `/admin/classes/${row._id}/edit`,
+      onClick: (row) => setEditingClass(row),
     },
     {
       icon: "calendar_month",
@@ -177,11 +179,13 @@ export function ClassListPage() {
     return <DataState variant="error" title="Failed to load classes" message={state.error} />;
   }
 
+  const isDrawerOpen = editingClass !== null;
+
   return (
     <div className="space-y-8 relative min-h-[87vh] pb-10">
 
       {/* Stats Section - Compact & Readable */}
-      <div className={`grid gap-4 transition-all duration-500 ease-in-out grid-cols-2 md:grid-cols-4`}>
+      <div className={`grid gap-4 transition-all duration-500 ease-in-out ${isDrawerOpen ? "grid-cols-1 md:grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}>
         {[
           { label: "Total Classes", value: (state.data || []).length, icon: "groups", color: "text-slate-500", bg: "bg-slate-500/5" },
           { label: "Active Now", value: (state.data || []).filter(c => c.status === "active").length, icon: "sensors", color: "text-blue-600", bg: "bg-blue-600/5" },
@@ -247,18 +251,22 @@ export function ClassListPage() {
         </div>
       </div>
 
-      <div className={`flex transition-all duration-500 ease-in-out gap-0`}>
-        <div className={`flex-1 min-w-0 transition-all duration-500 ease-in-out w-full`}>
+      <div className={`flex transition-all duration-500 ease-in-out ${isDrawerOpen ? "gap-6" : "gap-0"}`}>
+        <div className={`flex-1 min-w-0 transition-all duration-500 ease-in-out ${isDrawerOpen ? "w-[calc(100%-400px)]" : "w-full"}`}>
           {(state.data || []).length === 0 ? (
             <DataState variant="empty" title="No classes registered" message="Begin building your school architecture by adding your first classroom." />
           ) : filteredRows.length === 0 ? (
             <DataState variant="empty" title="No matching groups" message="Try refining your filter parameters." />
           ) : (
             viewMode === "grid" ? (
-              <div className={`grid gap-4 transition-all duration-500 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4`}>
+              <div className={`grid gap-4 transition-all duration-500 ${isDrawerOpen
+                ? "grid-cols-1 lg:grid-cols-2"
+                : "grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+                }`}>
                 {filteredRows.map((row) =>                   <div
                     key={row._id}
-                    className={`premium-card group relative flex flex-col p-0 overflow-hidden transition-all duration-500 bg-white border-slate-200/60 hover:shadow-2xl hover:shadow-slate-200/80 hover:-translate-y-1`}
+                    className={`premium-card group relative flex flex-col p-0 overflow-hidden transition-all duration-500 bg-white border-slate-200/60 hover:shadow-2xl hover:shadow-slate-200/80 hover:-translate-y-1 ${editingClass?._id === row._id ? "ring-2 ring-blue-600 border-blue-400 translate-x-2" : ""
+                      }`}
                   >
                     <div className="p-5">
                       <div className="flex items-start justify-between mb-4">
@@ -266,13 +274,13 @@ export function ClassListPage() {
                           <span className="material-symbols-outlined font-black">door_front</span>
                         </div>
                         <div className="flex items-center gap-1 bg-slate-50/50 rounded-lg p-1 border border-slate-100">
-                          <Link
-                            href={`/admin/classes/${row._id}/edit`}
+                          <button
+                            onClick={() => setEditingClass(row)}
                             title="Configure"
                             className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all"
                           >
                             <span className="material-symbols-outlined text-base">settings</span>
-                          </Link>
+                          </button>
                           <button
                             onClick={() => setDeletingClass(row)}
                             title="Remove"
@@ -344,13 +352,13 @@ export function ClassListPage() {
                         >
                           <span className="material-symbols-outlined text-lg">calendar_month</span>
                         </Link>
-                        <Link
-                          href={`/admin/classes/${row._id}/edit`}
+                        <button
+                          onClick={() => setEditingClass(row)}
                           className="group/btn h-8 px-4 rounded-lg bg-blue-600 text-[10px] font-black text-white uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95"
                         >
                           Manage
                           <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
-                        </Link>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -370,6 +378,7 @@ export function ClassListPage() {
             )
           )}
         </div>
+        {isDrawerOpen && <div className="hidden lg:block w-[384px] flex-shrink-0 transition-all duration-500" />}
       </div>
 
       {/* Pagination Footer - Premium ERP Style */}
@@ -392,6 +401,30 @@ export function ClassListPage() {
         </div>
       </div>
 
+      <ClassEditSidebar
+        isOpen={editingClass !== null}
+        classItem={editingClass}
+        academyCareOptions={academyCareOptions}
+        teacherOptions={teacherOptions}
+        subjectOptions={subjectOptions}
+        onClose={() => setEditingClass(null)}
+        onSave={async (id, data) => {
+          setIsSaving(true);
+          try {
+            await updateClass(id, data as ClassFormInput);
+            showToast("Class updated successfully");
+            setEditingClass(null);
+          } catch (err: any) {
+            showToast(err.message || "Failed to update class");
+          } finally {
+            setIsSaving(false);
+          }
+        }}
+        onAddSubject={async (name) => {
+          await createSubject({ name, status: "active" });
+        }}
+        isSaving={isSaving}
+      />
 
       <ConfirmModal
         isOpen={deletingClass !== null}

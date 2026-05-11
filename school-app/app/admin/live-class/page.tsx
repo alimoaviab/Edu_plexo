@@ -8,6 +8,7 @@ import { LiveClassList } from "../../../components/live-classes/LiveClassList";
 import { Video, Calendar, Users, RefreshCw, PlusCircle, LayoutDashboard, Clock, Activity, Settings, UserCheck } from "lucide-react";
 
 export default function LiveClassPage() {
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [reloadKey, setReloadKey] = useState(0);
     const [classesData, setClassesData] = useState<any[]>([]);
     const [subjectsData, setSubjectsData] = useState<any[]>([]);
@@ -85,13 +86,13 @@ export default function LiveClassPage() {
                         >
                             <RefreshCw className={`h-5 w-5 ${isSyncing ? 'animate-spin text-indigo-600' : ''}`} />
                         </button>
-                        <Link
-                            href="/admin/live-class/create"
+                        <button
+                            onClick={() => setIsModalOpen(true)}
                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors"
                         >
                             <PlusCircle className="h-4 w-4" />
                             Schedule Session
-                        </Link>
+                        </button>
                     </div>
                 </div>
 
@@ -239,6 +240,16 @@ export default function LiveClassPage() {
                     </div>
                 </div>
             </div>
+
+            <CreateLiveClassModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={() => setReloadKey((prev) => prev + 1)}
+                classes={classesData}
+                subjects={subjectsData}
+                teachers={teachersData}
+                showTeacherField={true}
+            />
         </SchoolShell>
     );
 }

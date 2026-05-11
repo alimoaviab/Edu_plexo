@@ -5,10 +5,12 @@ import { AcademicYearRow } from "../types/academicYear.types";
 
 export function AcademicYearTable({ 
     years, 
+    onEdit, 
     onDelete,
     onSetActive
 }: { 
     years: AcademicYearRow[]; 
+    onEdit: (row: AcademicYearRow) => void;
     onDelete: (row: AcademicYearRow) => void;
     onSetActive: (row: AcademicYearRow) => void;
 }) {
@@ -92,13 +94,13 @@ export function AcademicYearTable({
                         {row.is_active ? "Active" : "Inactive"}
                     </button>
                     <div className="w-px h-3 bg-slate-100 mx-0.5" />
-                    <a 
-                        href={`/admin/academic-years/${row._id}/edit`}
+                    <button 
+                        onClick={() => onEdit(row)}
                         className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-slate-50 hover:text-blue-600 transition-colors"
                         title="Edit"
                     >
                         <span className="material-symbols-outlined text-[18px]">edit_note</span>
-                    </a>
+                    </button>
                     <button 
                         onClick={() => onDelete(row)}
                         className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
@@ -107,12 +109,12 @@ export function AcademicYearTable({
                         <span className="material-symbols-outlined text-[18px]">delete</span>
                     </button>
                     <div className="w-px h-3 bg-slate-100 mx-0.5" />
-                    <a 
-                        href={`/admin/academic-years/${row._id}/edit`}
-                        className="flex h-7 px-3 items-center rounded bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all shadow-sm active:scale-95"
+                    <button 
+                        onClick={() => onEdit(row)}
+                        className="h-7 px-3 rounded bg-blue-600 text-[10px] font-black uppercase tracking-widest text-white hover:bg-blue-700 transition-all shadow-sm active:scale-95"
                     >
                         Open
-                    </a>
+                    </button>
                 </div>
             )
         }

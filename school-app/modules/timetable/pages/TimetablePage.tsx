@@ -14,14 +14,15 @@ import { useSearchParams, useRouter } from "next/navigation";
 
 import { TimetableToolbar } from "../components/TimetableToolbar";
 import { findTimetableConflicts } from "../utils/conflicts";
-import { useEscapeKey } from "../../../hooks/useEscapeKey";
 
 export function TimetablePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const urlClassId = searchParams.get("class_id") || "";
   const [classId, setClassId] = useState<string>(urlClassId);
+  const [isAdding, setIsAdding] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<TimetableRecord | null>(null);
   const [selectedClassId, setSelectedClassId] = useState<string>(urlClassId);
 
   useEffect(() => {
@@ -69,7 +70,8 @@ export function TimetablePage() {
   };
 
   const handleEdit = (record: TimetableRecord) => {
-    router.push(`/admin/timetable/entry?edit_id=${record._id}${classId ? `&class_id=${classId}` : ''}`);
+    setEditingRecord(record);
+    setIsAdding(true);
   };
 
   const handleClassChange = (newId: string) => {
@@ -82,7 +84,15 @@ export function TimetablePage() {
     }
   };
 
-
+  const handleSave = async (data: TimetableFormInput) => {
+    if (editingRecord) {
+      await updateTimetable(editingRecord._id, data);
+    } else {
+      await addTimetable(data);
+    }
+    setIsAdding(false);
+    setEditingRecord(null);
+  };
 
   return (
     <div className="space-y-8 pb-10">
@@ -90,7 +100,7 @@ export function TimetablePage() {
         classId={classId}
         onClassChange={handleClassChange}
         classOptions={classOptions}
-        onNewEntry={() => router.push(`/admin/timetable/entry${classId ? `?class_id=${classId}` : ''}`)}
+        onNewEntry={() => { setEditingRecord(null); setIsAdding(true); }}
         selectedClass={selectedClass}
         conflictsCount={conflictsCount}
         isCompact={isCompact}
@@ -111,6 +121,55 @@ export function TimetablePage() {
         </div>
       )}
 
+      {isAdding && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-white/20 animate-in zoom-in-95 duration-300">
+            <div className="p-6 md:p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/20">
+                   <span className="material-symbols-outlined text-[24px]">
+                     {editingRecord ? "edit_calendar" : "add_task"}
+                   </span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+                    {editingRecord ? "Edit Entry" : "New Schedule Entry"}
+                  </h3>
+                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">
+                    {selectedClassForForm ? selectedClassForForm.name : "Academic Scheduling"}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsAdding(false)} 
+                className="h-10 w-10 flex items-center justify-center rounded-xl bg-white text-slate-400 hover:text-slate-600 border border-slate-200 transition-all active:scale-95 shadow-sm shrink-0"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="p-6 md:p-8 overflow-y-auto">
+              <TimetableForm
+                onCreate={handleSave}
+                classOptions={classOptions}
+                teacherOptions={teacherOptions}
+                subjectOptions={subjectOptions}
+                initialClassId={selectedClassId}
+                initialValues={editingRecord ? {
+                   class_id: editingRecord.class_id,
+                   subject_id: editingRecord.subject_id,
+                   teacher_id: editingRecord.teacher_id,
+                   day_of_week: getDayLabel(editingRecord.day_of_week) as any,
+                   period_number: editingRecord.period_number,
+                   start_time: editingRecord.start_time,
+                   end_time: editingRecord.end_time,
+                   room: editingRecord.room,
+                   section: editingRecord.section
+                } : undefined}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

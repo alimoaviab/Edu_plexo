@@ -4,15 +4,38 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { DataTable, DataTableColumn, RowAction, Badge, DataState, Skeleton, TableSkeleton } from "../../../components/ui";
 import { useSubjects } from "../hooks/useSubjects";
+import { SubjectEditSidebar } from "../components/SubjectEditSidebar";
 import { SubjectRow, SubjectFormInput } from "../types";
 import { showToast } from "@/utils/toast";
 
 export function SubjectListPage() {
   const { data, isLoading, error, createSubject, updateSubject, deleteSubject } = useSubjects();
 
+  const [editingSubject, setEditingSubject] = useState<SubjectRow | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  async function handleSave(id: string | null, formData: SubjectFormInput) {
+    try {
+      setIsSaving(true);
+      if (id) {
+        await updateSubject(id, formData);
+        showToast("Subject updated successfully");
+      } else {
+        await createSubject(formData);
+        showToast("Subject created successfully");
+      }
+      setEditingSubject(null);
+      setIsAdding(false);
+    } catch (err: any) {
+      showToast(err.message || "Failed to save subject");
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   async function handleDelete(id: string) {
     if (!window.confirm("Are you sure you want to delete this subject?")) return;
@@ -88,7 +111,7 @@ export function SubjectListPage() {
     {
       icon: "settings",
       label: "Configure",
-      onClick: (row) => window.location.href = `/admin/subjects/${row._id}/edit`,
+      onClick: (row) => setEditingSubject(row),
     },
     {
       icon: "delete",
@@ -181,13 +204,13 @@ export function SubjectListPage() {
             {filteredRows.length} <span className="text-slate-400">SUBJECTS</span>
           </span>
           <div className="h-6 w-px bg-slate-200" />
-          <Link
-            href="/admin/subjects/create"
+          <button
+            onClick={() => setIsAdding(true)}
             className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-black uppercase tracking-widest text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
           >
             <span className="material-symbols-outlined text-lg">add_box</span>
             Register Subject
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -213,13 +236,13 @@ export function SubjectListPage() {
                         <span className="material-symbols-outlined font-black">menu_book</span>
                       </div>
                       <div className="flex items-center gap-1 bg-slate-50/50 rounded-lg p-1 border border-slate-100">
-                        <Link
-                          href={`/admin/subjects/${row._id}/edit`}
+                        <button
+                          onClick={() => setEditingSubject(row)}
                           title="Configure"
                           className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all"
                         >
                           <span className="material-symbols-outlined text-base">settings</span>
-                        </Link>
+                        </button>
                         <button
                           onClick={() => handleDelete(row._id)}
                           title="Remove"
@@ -272,13 +295,13 @@ export function SubjectListPage() {
                          {row.academic_year || "All Sessions"}
                        </p>
                     </div>
-                    <Link
-                      href={`/admin/subjects/${row._id}/edit`}
+                    <button
+                      onClick={() => setEditingSubject(row)}
                       className="group/btn h-8 px-4 rounded-lg bg-blue-600 text-[10px] font-black text-white uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95"
                     >
                       Manage
                       <span className="material-symbols-outlined text-sm transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
-                    </Link>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -317,6 +340,17 @@ export function SubjectListPage() {
           </button>
         </div>
       </div>
+
+      <SubjectEditSidebar
+        isOpen={isAdding || editingSubject !== null}
+        subject={editingSubject}
+        onClose={() => {
+          setIsAdding(false);
+          setEditingSubject(null);
+        }}
+        onSave={handleSave}
+        isSaving={isSaving}
+      />
     </div>
   );
 }
