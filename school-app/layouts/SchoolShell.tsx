@@ -332,7 +332,7 @@ export function SchoolShell({
   };
 
   return (
-    <div className="flex min-h-screen bg-background text-slate-900 font-sans">
+    <div className="flex h-screen bg-background text-slate-900 font-sans overflow-hidden">
       {showAIAssistant ? (
         <div className="fixed inset-0 z-50 pointer-events-none">
            <div className="pointer-events-auto">
@@ -452,7 +452,7 @@ export function SchoolShell({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0 flex flex-col bg-background">
+      <main className="flex-1 min-w-0 flex flex-col bg-background h-screen overflow-hidden">
         <header className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-slate-200/40 bg-white/70 px-4 backdrop-blur-md md:px-5">
           <div className="flex items-center gap-3 flex-1">
             <button
@@ -511,7 +511,7 @@ export function SchoolShell({
           </div>
         </header>
 
-        <div key={pathname} className="mx-auto w-full max-w-[1600px] animate-fade-in-up px-4 py-4 md:px-6">
+        <div key={pathname} className="w-full flex-1 overflow-y-auto animate-fade-in-up px-2 py-2 md:px-4 custom-scrollbar">
           {actions && (
             <div className="mb-4 flex items-center justify-end gap-2">
               {actions}

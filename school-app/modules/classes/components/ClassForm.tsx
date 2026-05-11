@@ -159,9 +159,9 @@ export function ClassForm({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-4">
             {/* Summary Bar */}
-            <div className="flex items-center gap-6 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 text-[11px] font-black uppercase tracking-widest text-slate-500">
+            <div className="flex items-center gap-4 p-1.5 bg-slate-50/50 rounded-xl border border-slate-100 text-[11px] font-black uppercase tracking-widest text-slate-500">
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-sm text-blue-600">visibility</span>
                     <span>{subjectCount} subjects</span>
@@ -178,13 +178,13 @@ export function ClassForm({
 
             {/* Validation Banner */}
             {subjectCount === 0 && (
-                <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100 text-amber-700 text-xs font-bold">
+                <div className="flex items-center gap-3 p-2.5 bg-amber-50 rounded-xl border border-amber-100 text-amber-700 text-xs font-bold">
                     <span className="material-symbols-outlined text-sm">info</span>
                     Add at least 1 subject to continue
                 </div>
             )}
 
-            <div className="premium-card p-5 bg-white border border-slate-200 shadow-sm rounded-xl space-y-6">
+            <div className="premium-card p-3 bg-white border border-slate-200 shadow-sm rounded-xl space-y-3">
                 {/* Basic Info Section */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <Input
@@ -338,7 +338,7 @@ export function ClassForm({
                 </div>
 
                 {/* Subjects Section */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Subjects</h3>
                         <div className="flex items-center gap-2">
@@ -363,9 +363,9 @@ export function ClassForm({
                         </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-1.5">
                         {form.subjects.map((subject, index) => (
-                            <div key={index} className="flex items-center gap-4 p-3 bg-slate-50/50 rounded-2xl border border-slate-100 group">
+                            <div key={index} className="flex items-center gap-2 p-1.5 bg-slate-50/50 rounded-xl border border-slate-100 group">
                                 <div className="flex-1">
                                     <input
                                         placeholder="Subject Name"
@@ -377,7 +377,7 @@ export function ClassForm({
                                         <p className="text-[10px] text-red-500 font-bold px-3">Required</p>
                                     )}
                                 </div>
-                                <div className="w-20">
+                                <div className="w-14">
                                     <input
                                         type="number"
                                         value={subject.total_marks}
@@ -385,7 +385,7 @@ export function ClassForm({
                                         className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-black text-slate-900"
                                     />
                                 </div>
-                                <div className="w-20">
+                                <div className="w-14">
                                     <input
                                         type="number"
                                         value={subject.passing_marks}
@@ -406,7 +406,7 @@ export function ClassForm({
                 </div>
 
                 {/* Grade Thresholds Section */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Grade Thresholds</h3>
                         <div className="flex items-center gap-2">
@@ -431,17 +431,17 @@ export function ClassForm({
                         </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-1.5">
                         {form.grade_thresholds.map((grade, index) => (
-                            <div key={index} className="flex items-center gap-4 p-3 bg-slate-50/50 rounded-2xl border border-slate-100 group">
-                                <div className="w-16">
+                            <div key={index} className="flex items-center gap-2 p-1.5 bg-slate-50/50 rounded-xl border border-slate-100 group">
+                                <div className="w-10">
                                     <input
                                         value={grade.grade}
                                         onChange={(e) => updateGrade(index, "grade", e.target.value)}
                                         className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-black text-slate-900"
                                     />
                                 </div>
-                                <div className="w-20">
+                                <div className="w-14">
                                     <input
                                         type="number"
                                         value={grade.min_score}
@@ -449,7 +449,7 @@ export function ClassForm({
                                         className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-black text-blue-600"
                                     />
                                 </div>
-                                <div className="w-20">
+                                <div className="w-14">
                                     <input
                                         type="number"
                                         value={grade.max_score}
@@ -491,7 +491,7 @@ export function ClassForm({
                     disabled={saving}
                     className="min-w-[140px] h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-md transition-all text-[10px] font-black uppercase tracking-widest"
                 >
-                    {saving ? "Saving..." : "Create Unit"}
+                    {saving ? "Saving..." : "Save class"}
                 </Button>
             </div>
         </form>

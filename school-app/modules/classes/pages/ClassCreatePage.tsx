@@ -83,17 +83,12 @@ export function ClassCreatePage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-20 px-6">
-      <div className="mb-12">
-        <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">Create Class</h1>
-        <p className="text-slate-500 font-medium">
-          Set up a new class with subjects and grading.
-        </p>
-      </div>
+    <div className="w-full py-2 px-6">
+      {/* Heading removed per user request */}
 
 
-      <div className="premium-card p-0 overflow-hidden border-slate-200/60 bg-white shadow-2xl shadow-slate-200/50 rounded-3xl mt-8">
-        <div className="p-6 md:p-10">
+      <div className="premium-card p-0 overflow-hidden border-slate-200/60 bg-white shadow-2xl shadow-slate-200/50 rounded-3xl">
+        <div className="p-4 md:p-6">
           {academicYearState.status === "error" ? (
             <DataState variant="error" title="Infrastructure Sync Failed" message={academicYearState.error} />
           ) : teacherState.status === "error" ? (
