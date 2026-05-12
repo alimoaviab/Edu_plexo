@@ -10,6 +10,7 @@ import { AcademicYearEditSidebar } from "../components/AcademicYearEditSidebar";
 import { AcademicYearTable } from "../components/AcademicYearTable";
 import { ConfirmModal } from "../../../components/ui/ConfirmModal";
 import { setSelectedAcademicYearId } from "../../../services/academic-year-context";
+import { ConstraintSidebar } from "../components/ConstraintSidebar";
 
 type ViewMode = "grid" | "list";
 
@@ -22,6 +23,7 @@ export function AcademicYearListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed" | "cancelled">("all");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [constraintError, setConstraintError] = useState<{ title: string; message: string; reason?: string } | null>(null);
   
   const years = state.data?.data ?? [];
   const meta = state.data?.meta;
@@ -62,6 +64,13 @@ export function AcademicYearListPage() {
       if (result.ok) {
         showToast(`${deletingYear.year} deleted successfully`, "success");
         setDeletingYear(null);
+      } else if ((result.error as any)?.code === "CONSTRAINT_ERROR") {
+        setConstraintError({
+          title: "Deletion Restricted",
+          message: "You cannot delete this academic year because it is currently the only active session in the system.",
+          reason: (result.error as any).message
+        });
+        setDeletingYear(null);
       }
     } finally {
       setIsDeleting(false);
@@ -80,6 +89,12 @@ export function AcademicYearListPage() {
           nextActiveState ? `${year.year} set as active` : `${year.year} deactivated`, 
           "success"
         );
+      } else if ((result as any).error?.code === "CONSTRAINT_ERROR") {
+        setConstraintError({
+            title: "Deactivation Restricted",
+            message: "System policy requires at least one academic year to remain active at all times to maintain data integrity.",
+            reason: (result as any).error.message
+        });
       }
     } catch (error: any) {
       showToast(error.message || "Failed to update academic year", "error");
@@ -374,6 +389,30 @@ export function AcademicYearListPage() {
 
 
 
+      <AcademicYearEditSidebar 
+        academicYear={editingYear}
+        isOpen={editingYear !== null}
+        onClose={() => setEditingYear(null)}
+        isSaving={isSaving}
+        onSave={async (id, data) => {
+            setIsSaving(true);
+            try {
+                const result = await updateAcademicYear(id, data);
+                if (result.ok) {
+                    showToast("Session updated successfully", "success");
+                    setEditingYear(null);
+                } else if ((result as any).error?.code === "CONSTRAINT_ERROR") {
+                    setConstraintError({
+                        title: "Update Restricted",
+                        message: "This session cannot be deactivated because it is currently the only active academic year in the system.",
+                        reason: (result as any).error.message
+                    });
+                }
+            } finally {
+                setIsSaving(false);
+            }
+        }}
+      />
       <ConfirmModal
         isOpen={deletingYear !== null}
         title="Delete Academic Session"
@@ -383,6 +422,13 @@ export function AcademicYearListPage() {
         isLoading={isDeleting}
         onConfirm={handleDelete}
         onCancel={() => setDeletingYear(null)}
+      />
+      <ConstraintSidebar 
+        isOpen={constraintError !== null}
+        onClose={() => setConstraintError(null)}
+        title={constraintError?.title || ""}
+        message={constraintError?.message || ""}
+        reason={constraintError?.reason}
       />
     </>
   );

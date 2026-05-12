@@ -257,6 +257,13 @@ export async function deleteAcademicYear(
       throw new Error("Academic year not found.");
     }
 
+    if (existing.is_active) {
+      const activeCount = await AcademicYearModel.countDocuments(tenantFilter(ctx, { is_active: true }));
+      if (activeCount <= 1) {
+        throw new ControlledError("CONSTRAINT_ERROR", "At least one academic year must remain active. You cannot delete the only active session.", 400);
+      }
+    }
+
     await AcademicYearModel.findOneAndDelete(tenantFilter(ctx, { _id: id }));
 
     await writeAuditLog(ctx, {
