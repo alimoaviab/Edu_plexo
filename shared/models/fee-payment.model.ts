@@ -12,7 +12,7 @@ const feePaymentSchema = new Schema(
         payment_date: { type: Date, required: true, index: true },
         payment_method: {
             type: String,
-            enum: ["cash", "cheque", "bank_transfer", "card", "online"],
+            enum: ["cash", "bank", "jazzcash", "easypaisa", "card", "cheque"],
             required: true,
             index: true
         },

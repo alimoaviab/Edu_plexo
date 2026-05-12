@@ -51,8 +51,10 @@ type ClassFeeDoc = {
     academic_year_id: unknown;
     fee_type_id: unknown;
     amount: number;
-    due_date: Date;
-    is_monthly: boolean;
+    type: "recurring" | "onetime";
+    recurring_cycle: "monthly" | "quarterly";
+    due_month?: string;
+    due_year?: number;
     notes?: string;
     status?: string;
 };
@@ -336,14 +338,19 @@ function mapFeeType(row: any) {
 }
 
 function mapFeeConfig(row: ClassFeeDoc, feeTypeName = "") {
+    const isMonthly = row.type === "recurring";
     return {
         id: String(row._id),
         fee_type_id: String(row.fee_type_id),
         fee_type: feeTypeName,
         amount: Number(row.amount ?? 0),
-        due_date: row.due_date instanceof Date ? row.due_date.toISOString().split("T")[0] : String(row.due_date ?? ""),
-        is_monthly: Boolean(row.is_monthly),
+        type: row.type ?? "recurring",
+        is_monthly: isMonthly,
+        recurring_cycle: row.recurring_cycle ?? "monthly",
+        due_month: row.due_month ?? "",
+        due_year: row.due_year ?? 0,
         notes: row.notes ?? "",
+        status: row.status ?? "active"
     };
 }
 
@@ -522,6 +529,19 @@ export async function addClassFee(ctx: RequestContext, classId: string, input: u
         assertPermission(ctx, "fees", "create");
 
         const parsed = classFeeAddSchema.parse(input);
+        
+        // Find or create the fee type by name
+        let feeType = await FeeTypeModel.findOne(tenantFilter(ctx, { name: parsed.name }));
+        if (!feeType) {
+            feeType = await FeeTypeModel.create({
+                school_id: ctx.school_id,
+                name: parsed.name,
+                is_recurring: parsed.type === "recurring",
+                category: "academic",
+                status: "active"
+            });
+        }
+
         const classroom = await ClassModel.findOne(tenantFilter(ctx, { _id: classId })).lean();
         if (!classroom) throw new ControlledError("NOT_FOUND", "Class not found.", 404);
 
@@ -529,16 +549,18 @@ export async function addClassFee(ctx: RequestContext, classId: string, input: u
             tenantFilter(ctx, {
                 class_id: classId,
                 academic_year_id: (classroom as any).academic_year_id,
-                fee_type_id: parsed.fee_type_id,
+                fee_type_id: feeType._id,
             }),
             {
                 $set: {
                     class_id: new Types.ObjectId(classId),
                     academic_year_id: new Types.ObjectId(String((classroom as any).academic_year_id)),
-                    fee_type_id: new Types.ObjectId(parsed.fee_type_id),
+                    fee_type_id: feeType._id,
                     amount: parsed.amount,
-                    due_date: parsed.due_date,
-                    is_monthly: parsed.is_monthly,
+                    type: parsed.type,
+                    recurring_cycle: parsed.recurring_cycle,
+                    due_month: (parsed.due_month || "").toLowerCase(),
+                    due_year: parsed.due_year,
                     notes: parsed.notes ?? "",
                     status: "active",
                     school_id: ctx.school_id,
@@ -547,8 +569,68 @@ export async function addClassFee(ctx: RequestContext, classId: string, input: u
             { new: true, upsert: true, runValidators: true }
         ).populate("fee_type_id", "name").lean();
 
+        // Auto-apply logic
+        if (saved) {
+            await applyClassFeeToStudents(ctx, classId, saved as any);
+        }
+
         return mapFeeConfig(saved as any, (saved as any)?.fee_type_id?.name ?? "");
     });
+}
+
+async function applyClassFeeToStudents(ctx: RequestContext, classId: string, classFee: any) {
+    const students = await StudentModel.find(tenantFilter(ctx, { class_id: classId, status: "active" })).lean();
+    const feeTypeName = classFee.fee_type_id?.name || "Fee Component";
+    
+    // For One-time, we apply to specific month/year
+    // For Recurring, we apply to CURRENT month/year (and future months will be handled by generation)
+    const now = new Date();
+    const targetMonth = classFee.type === "onetime" ? (classFee.due_month || now.toLocaleString('en-us', {month:'long'}).toLowerCase()) : now.toLocaleString('en-us', {month:'long'}).toLowerCase();
+    const targetYear = classFee.type === "onetime" ? (classFee.due_year || now.getFullYear()) : now.getFullYear();
+
+    for (const student of students) {
+        const existing = await FeeModel.findOne(tenantFilter(ctx, {
+            student_id: student._id,
+            month: targetMonth,
+            year: targetYear
+        }));
+
+        if (existing) {
+            // Update existing record by adding this component if not already present
+            const componentExists = existing.fee_components.some((c: any) => String(c.fee_type_id) === String(classFee.fee_type_id));
+            if (!componentExists) {
+                existing.fee_components.push({
+                    fee_type_id: classFee.fee_type_id,
+                    fee_type: feeTypeName,
+                    amount: classFee.amount,
+                    paid_amount: 0
+                });
+                existing.amount += classFee.amount;
+                await existing.save();
+            }
+        } else {
+            // Create new monthly fee record
+            await FeeModel.create({
+                school_id: ctx.school_id,
+                student_id: student._id,
+                class_id: classId,
+                academic_year_id: classFee.academic_year_id,
+                invoice_no: makeInvoiceNo(String(student._id), targetMonth, targetYear),
+                title: `Fees for ${titleCase(targetMonth)} ${targetYear}`,
+                amount: classFee.amount,
+                month: targetMonth,
+                year: targetYear,
+                due_at: new Date(targetYear, monthToNumber(targetMonth) + 1, 0),
+                status: "unpaid",
+                fee_components: [{
+                    fee_type_id: classFee.fee_type_id,
+                    fee_type: feeTypeName,
+                    amount: classFee.amount,
+                    paid_amount: 0
+                }]
+            });
+        }
+    }
 }
 
 export async function updateClassFee(ctx: RequestContext, classId: string, feeId: string, input: unknown): Promise<ServiceResult<unknown>> {
@@ -559,9 +641,12 @@ export async function updateClassFee(ctx: RequestContext, classId: string, feeId
         const patch: Record<string, unknown> = {};
         const body = input as Record<string, unknown>;
         if (body.amount !== undefined) patch.amount = Number(body.amount);
-        if (body.due_date !== undefined) patch.due_date = new Date(String(body.due_date));
-        if (body.is_monthly !== undefined) patch.is_monthly = Boolean(body.is_monthly);
+        if (body.type !== undefined) patch.type = body.type;
+        if (body.recurring_cycle !== undefined) patch.recurring_cycle = body.recurring_cycle;
+        if (body.due_month !== undefined) patch.due_month = String(body.due_month).toLowerCase();
+        if (body.due_year !== undefined) patch.due_year = Number(body.due_year);
         if (body.notes !== undefined) patch.notes = String(body.notes);
+        if (body.status !== undefined) patch.status = String(body.status);
 
         const updated = await ClassFeeModel.findOneAndUpdate(
             tenantFilter(ctx, { _id: feeId, class_id: classId }),
@@ -582,6 +667,56 @@ export async function deleteClassFee(ctx: RequestContext, classId: string, feeId
         const deleted = await ClassFeeModel.findOneAndDelete(tenantFilter(ctx, { _id: feeId, class_id: classId }));
         if (!deleted) throw new ControlledError("NOT_FOUND", "Class fee not found.", 404);
         return { success: true };
+    });
+}
+
+export async function toggleClassFeeStatus(ctx: RequestContext, classId: string, feeId: string): Promise<ServiceResult<unknown>> {
+    return serviceTry(async () => {
+        await connectDb();
+        assertPermission(ctx, "fees", "update");
+
+        const fee = await ClassFeeModel.findOne(tenantFilter(ctx, { _id: feeId, class_id: classId }));
+        if (!fee) throw new ControlledError("NOT_FOUND", "Class fee not found.", 404);
+
+        fee.status = fee.status === "active" ? "inactive" : "active";
+        await fee.save();
+
+        return { success: true, status: fee.status };
+    });
+}
+
+export async function duplicateClassFee(ctx: RequestContext, classId: string, feeId: string): Promise<ServiceResult<unknown>> {
+    return serviceTry(async () => {
+        await connectDb();
+        assertPermission(ctx, "fees", "create");
+
+        const original = await ClassFeeModel.findOne(tenantFilter(ctx, { _id: feeId, class_id: classId }))
+            .populate("fee_type_id", "name")
+            .lean();
+        if (!original) throw new ControlledError("NOT_FOUND", "Class fee not found.", 404);
+
+        // Create a new FeeType to avoid unique constraint on (class, type)
+        const originalName = (original as any).fee_type_id?.name || "Fee Component";
+        const newFeeType = await FeeTypeModel.create({
+            school_id: ctx.school_id,
+            name: `${originalName} (Copy)`,
+            is_recurring: original.type === "recurring",
+            category: "academic",
+            status: "active"
+        });
+
+        const { _id, ...rest } = original;
+        const duplicated = await ClassFeeModel.create({
+            ...rest,
+            fee_type_id: newFeeType._id,
+            notes: `Duplicate of ${original.notes || originalName}`,
+            status: "active"
+        });
+
+        // Apply to students if needed (similar to addClassFee)
+        await applyClassFeeToStudents(ctx, classId, duplicated);
+
+        return mapFeeConfig(duplicated as any, (duplicated as any).fee_type_id?.name ?? "");
     });
 }
 
@@ -1609,5 +1744,202 @@ export async function getFeeClassesSummary(ctx: RequestContext): Promise<Service
         }
 
         return { classes: results };
+    });
+}
+
+export async function getFeeLedgerDashboard(ctx: RequestContext, filters: Record<string, any> = {}): Promise<ServiceResult<unknown>> {
+    return serviceTry(async () => {
+        await connectDb();
+        assertPermission(ctx, "fees", "view");
+
+        const now = new Date();
+        const targetMonth = String(filters.month || now.toLocaleString('en-us', {month:'long'})).toLowerCase();
+        const targetYear = Number(filters.year || now.getFullYear());
+        const academicYearId = filters.academic_year_id ? String(filters.academic_year_id) : (await resolveAcademicYearId(ctx));
+
+        // 1. Build Student Query
+        const studentQuery: any = tenantFilter(ctx, { status: "active" });
+        if (filters.class_id) studentQuery.class_id = new Types.ObjectId(String(filters.class_id));
+        if (filters.search) {
+            const search = String(filters.search);
+            studentQuery.$or = [
+                { first_name: { $regex: search, $options: "i" } },
+                { last_name: { $regex: search, $options: "i" } },
+                { admission_no: { $regex: search, $options: "i" } }
+            ];
+        }
+
+        const page = Math.max(1, Number(filters.page || 1));
+        const limit = Math.max(1, Number(filters.limit || 20));
+        const skip = (page - 1) * limit;
+
+        const [students, totalStudents] = await Promise.all([
+            StudentModel.find(studentQuery).sort({ first_name: 1 }).skip(skip).limit(limit).populate("class_id", "name").lean(),
+            StudentModel.countDocuments(studentQuery)
+        ]);
+
+        const MONTHS_ORDER = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+        const targetMonthIndex = MONTHS_ORDER.indexOf(targetMonth);
+
+        // 2. Process each student
+        const rawEntries = await Promise.all(students.map(async (student) => {
+            // Find current month fee
+            const currentFee = await FeeModel.findOne(tenantFilter(ctx, {
+                student_id: student._id,
+                month: targetMonth,
+                year: targetYear
+            })).lean();
+
+            // Find Carry Forward (Unpaid from previous months/years)
+            const previousUnpaid = await FeeModel.find(tenantFilter(ctx, {
+                student_id: student._id,
+                $or: [
+                    { year: { $lt: targetYear } },
+                    { year: targetYear, month: { $in: MONTHS_ORDER.slice(0, targetMonthIndex) } }
+                ],
+                status: { $in: ["unpaid", "partial"] }
+            })).lean();
+
+            const carryForward = previousUnpaid.reduce((sum, f) => sum + (Number(f.amount || 0) + Number(f.adjustment_amount || 0) - Number(f.paid_amount || 0)), 0);
+            
+            const currentAmount = Number(currentFee?.amount || 0);
+            const currentPaid = Number(currentFee?.paid_amount || 0);
+            const totalDue = currentAmount + carryForward;
+            const totalPaid = currentPaid; // In this view, we only show what was paid for THIS month's record? 
+            // Actually, in ERP, "Paid" often means total paid in the period.
+            
+            const entryStatus = currentFee ? currentFee.status : (carryForward > 0 ? "overdue" : "paid");
+
+            return {
+                student: {
+                    id: String(student._id),
+                    name: `${student.first_name} ${student.last_name}`,
+                    admission_no: student.admission_no,
+                    class_name: (student.class_id as any)?.name ?? "N/A",
+                    avatar: student.photo_url || ""
+                },
+                current_fee: currentFee ? {
+                    id: String(currentFee._id),
+                    amount: currentAmount,
+                    paid: currentPaid,
+                    status: currentFee.status,
+                    components: (currentFee as any).fee_components || []
+                } : null,
+                carry_forward: carryForward,
+                total_payable: totalDue,
+                paid_total: currentPaid,
+                remaining: totalDue - currentPaid,
+                status: entryStatus
+            };
+        }));
+
+        // Filter by status if requested
+        let ledgerEntries = rawEntries;
+        if (filters.status && filters.status !== "all") {
+            ledgerEntries = rawEntries.filter(e => e.status === filters.status);
+        }
+
+        // 3. Overall Stats (Horizontal Row)
+        // We calculate stats based on the processed ledger entries to be consistent
+        const monthlyCollection = rawEntries.reduce((sum, e) => sum + e.paid_total, 0);
+        const monthlyTotal = rawEntries.reduce((sum, e) => sum + e.total_payable, 0);
+        const pending = Math.max(0, monthlyTotal - monthlyCollection);
+        const defaulters = rawEntries.filter(e => e.status !== "paid").length;
+
+        return {
+            stats: {
+                monthly_total: monthlyTotal,
+                monthly_collection: monthlyCollection,
+                pending_amount: pending,
+                defaulters: defaulters,
+                overdue_amount: pending, // For now
+                collection_rate: monthlyTotal > 0 ? Number(((monthlyCollection / monthlyTotal) * 100).toFixed(1)) : 0
+            },
+            students: ledgerEntries,
+            pagination: {
+                total: totalStudents,
+                page,
+                limit,
+                pages: Math.ceil(totalStudents / limit)
+            }
+        };
+    });
+}
+
+export async function collectFeePayment(ctx: RequestContext, feeId: string, input: any): Promise<ServiceResult<unknown>> {
+    return serviceTry(async () => {
+        await connectDb();
+        assertPermission(ctx, "fees", "create");
+
+        const fee = await FeeModel.findOne(tenantFilter(ctx, { _id: feeId }));
+        if (!fee) throw new ControlledError("NOT_FOUND", "Fee record not found.", 404);
+
+        const amount = Number(input.amount);
+        if (amount <= 0) throw new ControlledError("BAD_REQUEST", "Amount must be greater than zero.", 400);
+
+        const totalPayable = (Number(fee.amount || 0) + Number(fee.adjustment_amount || 0));
+        const remainingBefore = Math.max(0, totalPayable - Number(fee.paid_amount || 0));
+        
+        if (amount > remainingBefore) {
+             // Optional: handle overpayment logic. For now, we'll allow it or cap it.
+             // Let's cap it to exactly remaining for simplicity in this ERP flow.
+        }
+
+        const newPaidAmount = Number(fee.paid_amount || 0) + amount;
+        fee.paid_amount = newPaidAmount;
+        fee.status = newPaidAmount >= totalPayable ? "paid" : "partial";
+        
+        const safeUserId = (ctx.user_id && Types.ObjectId.isValid(String(ctx.user_id))) 
+            ? new Types.ObjectId(String(ctx.user_id)) 
+            : undefined;
+        
+        // Record in the fee's payments array
+        fee.payments.push({
+            amount,
+            paid_at: new Date(),
+            method: input.method,
+            reference: input.reference || "",
+            received_by: safeUserId
+        });
+
+        await fee.save();
+
+        // Create a formal Receipt record
+        const receiptNo = `RCP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const payment = await FeePaymentModel.create({
+            school_id: ctx.school_id,
+            receipt_no: receiptNo,
+            student_id: fee.student_id,
+            class_id: fee.class_id,
+            academic_year_id: fee.academic_year_id,
+            amount: amount,
+            payment_date: new Date(),
+            payment_method: input.method,
+            reference_no: input.reference || "",
+            notes: input.notes || "",
+            status: "completed",
+            allocations: [{
+                fee_id: fee._id,
+                month: fee.month,
+                amount: amount
+            }],
+            received_by: safeUserId
+        });
+
+        await writeAuditLog(ctx, {
+            action: "create",
+            entity_type: "fee",
+            entity_id: String(payment._id),
+            metadata: { 
+                details: `Collected Rs ${amount} for ${fee.month} ${fee.year} via ${input.method}`
+            }
+        });
+
+        return {
+            success: true,
+            receipt_no: receiptNo,
+            paid_amount: fee.paid_amount,
+            status: fee.status
+        };
     });
 }

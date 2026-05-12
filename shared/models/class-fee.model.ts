@@ -8,8 +8,15 @@ const classFeeSchema = new Schema(
         academic_year_id: { type: Types.ObjectId, ref: "AcademicYear", required: true, index: true },
         fee_type_id: { type: Types.ObjectId, ref: "FeeType", required: true, index: true },
         amount: { type: Number, required: true, min: 0 },
-        due_date: { type: Date, required: true, index: true },
-        is_monthly: { type: Boolean, default: true, index: true },
+        
+        // Fee Type Logic
+        type: { type: String, enum: ["recurring", "onetime"], default: "recurring", index: true },
+        recurring_cycle: { type: String, enum: ["monthly", "quarterly"], default: "monthly" },
+        
+        // Target Logic (for One-time or specific starts)
+        due_month: { type: String, trim: true }, // e.g., "may"
+        due_year: { type: Number },
+        
         notes: { type: String, trim: true, default: "" },
         status: { type: String, enum: ["active", "inactive"], default: "active", index: true }
     },

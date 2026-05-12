@@ -214,11 +214,13 @@ export function SchoolShell({
   children,
   title,
   eyebrow,
+  description,
   actions,
 }: {
   children: React.ReactNode;
   title: string;
   eyebrow: string;
+  description?: string;
   actions?: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -428,13 +430,13 @@ export function SchoolShell({
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`premium-nav-item group flex h-7.5 items-center gap-2 px-2.5 py-1 text-[12px] font-bold ${isActive ? "premium-nav-item-active" : "text-blue-950 hover:bg-blue-50/50"}`}
+                        className={`premium-nav-item group flex h-6.5 items-center gap-2 px-2.5 py-1 text-[11px] font-bold ${isActive ? "premium-nav-item-active" : "text-blue-950 hover:bg-blue-50/50"}`}
                       >
-                        <span className={`material-symbols-outlined text-[15px] transition-colors ${isActive ? "font-bold text-white" : "text-blue-600/50 group-hover:text-blue-600"}`}>
+                        <span className={`material-symbols-outlined text-[14px] transition-colors ${isActive ? "font-bold text-white" : "text-blue-600/50 group-hover:text-blue-600"}`}>
                           {item.icon}
                         </span>
                         <span className="truncate tracking-tight">{item.label}</span>
-                        {isActive && !isCollapsed && <span className="ml-auto h-1 w-1 rounded-full bg-white/80" />}
+                        {isActive && !isCollapsed && <span className="ml-auto h-0.5 w-0.5 rounded-full bg-white/80" />}
                       </Link>
                     );
                   })}
@@ -472,27 +474,27 @@ export function SchoolShell({
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 flex flex-col bg-background h-screen overflow-hidden relative z-30">
-        <header className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-slate-200/40 bg-white/70 px-4 backdrop-blur-md md:px-5">
+        <header className="sticky top-0 z-10 flex h-10 items-center justify-between border-b border-slate-200/40 bg-white/70 px-4 backdrop-blur-md">
           <div className="flex items-center gap-3 flex-1">
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="rounded p-1 transition-colors hover:bg-blue-50 lg:hidden"
             >
-              <span className="material-symbols-outlined text-slate-600 text-[20px]">menu</span>
+              <span className="material-symbols-outlined text-slate-600 text-[18px]">menu</span>
             </button>
-            <div className="relative max-w-[520px] w-full hidden xl:block">
+            <div className="relative max-w-[420px] w-full hidden xl:block">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-slate-400">search</span>
               <input
                 type="text"
                 placeholder="Quick search..."
-                className="w-full rounded-lg border border-slate-100 bg-slate-50/50 py-2 pl-10 pr-3 text-[13px] text-slate-600 placeholder:text-slate-400 transition-all focus:border-blue-200 focus:bg-white focus:outline-none"
+                className="w-full rounded-lg border border-slate-100 bg-slate-50/50 py-1.5 pl-9 pr-3 text-[11px] font-bold text-slate-600 placeholder:text-slate-400/60 transition-all focus:border-blue-200 focus:bg-white focus:outline-none"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <div className="hidden sm:flex items-center gap-2 rounded border border-slate-100 bg-white px-2 py-0.5">
-              <span className="material-symbols-outlined text-xs text-slate-300">calendar_today</span>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2 rounded-md border border-slate-100 bg-white px-2 py-1">
+              <span className="material-symbols-outlined text-[14px] text-slate-400">calendar_today</span>
               <select
                 value={selectedAcademyCareId}
                 disabled={user.role === "student"}
@@ -502,7 +504,7 @@ export function SchoolShell({
                   setSelectedAcademicYearId(nextId);
                   window.location.reload();
                 }}
-                className={`bg-transparent text-[10px] font-bold text-slate-500 focus:outline-none ${user.role === "student" ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+                className={`bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-500 focus:outline-none ${user.role === "student" ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
               >
                 {academyYears.map((row) => (
                   <option key={row._id} value={row._id}>
@@ -528,12 +530,24 @@ export function SchoolShell({
           </div>
         </header>
 
-        <div key={pathname} className="w-full flex-1 overflow-y-auto animate-fade-in-up px-2 py-2 md:px-4 custom-scrollbar relative z-20">
-          {actions && (
-            <div className="mb-4 flex items-center justify-end gap-2">
-              {actions}
+        <div key={pathname} className="w-full flex-1 overflow-y-auto animate-fade-in-up px-4 py-6 md:px-8 custom-scrollbar relative z-20">
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="h-px w-4 bg-blue-600/30" />
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600/60">{eyebrow}</p>
             </div>
-          )}
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-black tracking-tight text-slate-900">{title}</h1>
+                {description && <p className="mt-1 text-sm font-medium text-slate-500 max-w-2xl">{description}</p>}
+              </div>
+              {actions && (
+                <div className="flex items-center gap-2">
+                  {actions}
+                </div>
+              )}
+            </div>
+          </div>
           {children}
         </div>
       </main>

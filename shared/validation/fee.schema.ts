@@ -24,10 +24,12 @@ export const feeTypeCreateSchema = z.object({
 });
 
 export const classFeeItemSchema = z.object({
-  fee_type_id: z.string().min(12),
+  name: z.string().min(1).max(120),
   amount: z.number().min(0),
-  due_date: z.coerce.date(),
-  is_monthly: z.boolean().default(true),
+  type: z.enum(["recurring", "onetime"]).default("recurring"),
+  recurring_cycle: z.enum(["monthly", "quarterly"]).optional().default("monthly"),
+  due_month: z.string().optional(),
+  due_year: z.number().int().optional(),
   notes: z.string().max(500).optional().default("")
 });
 

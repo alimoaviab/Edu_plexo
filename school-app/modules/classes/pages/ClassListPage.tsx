@@ -114,7 +114,7 @@ export function ClassListPage() {
   const rowActions: RowAction<ClassRow>[] = [
     { icon: "edit_note", label: "Configure", onClick: (row) => router.push(`/admin/classes/${row._id}/edit`) },
     { icon: "schedule", label: "Timetable", onClick: (row) => router.push(`/admin/timetable?class_id=${row._id}`) },
-    { icon: "payments", label: "Fee Status", onClick: (row) => router.push(`/admin/fee?class_id=${row._id}`) },
+    { icon: "payments", label: "Fee Structure", onClick: (row) => router.push(`/admin/classes/${row._id}/fees`) },
     { icon: "delete", label: "Remove", variant: "danger", onClick: (row) => setDeletingClass(row) },
   ];
 
@@ -207,7 +207,7 @@ export function ClassListPage() {
                       classItem={row}
                       onEdit={(item) => router.push(`/admin/classes/${item._id}/edit`)}
                       onDelete={setDeletingClass}
-                      onFee={(item) => router.push(`/admin/fee?class_id=${item._id}`)}
+                      onFee={(item) => router.push(`/admin/classes/${item._id}/fees`)}
                     />
                   ))}
                 </div>
