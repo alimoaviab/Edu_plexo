@@ -48,7 +48,7 @@ export default function StudentAttendancePage() {
 
     if (state.status === "idle" || state.status === "loading") {
         return (
-            <SchoolShell eyebrow="Student Portal" title="Attendance">
+            <SchoolShell eyebrow="Parent Portal" title="Attendance">
                 <div className="space-y-4">
                     <Skeleton className="h-24 w-full" />
                     <Skeleton className="h-44 w-full" />
@@ -59,7 +59,7 @@ export default function StudentAttendancePage() {
 
     if (state.status === "error") {
         return (
-            <SchoolShell eyebrow="Student Portal" title="Attendance">
+            <SchoolShell eyebrow="Parent Portal" title="Attendance">
                 <DataState variant="error" title="Attendance unavailable" message={state.error} />
             </SchoolShell>
         );
@@ -68,7 +68,7 @@ export default function StudentAttendancePage() {
     const report = state.data;
 
     return (
-        <SchoolShell eyebrow="Student Portal" title="Attendance">
+        <SchoolShell eyebrow="Parent Portal" title="Attendance">
             <div className="space-y-6">
                 <Card>
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">

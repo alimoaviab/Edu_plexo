@@ -1,102 +1,121 @@
-import { NextResponse } from "next/server";
+import { getRequestContext, getQuery, handleApiResponse } from "@/lib/api-utils";
+import { connectDb } from "@edu/shared/db/connect";
+import * as academicYearService from "@edu/shared/services/academic-year.service";
+import * as classService from "@edu/shared/services/class.service";
+import * as studentService from "@edu/shared/services/student.service";
+import * as teacherService from "@edu/shared/services/teacher.service";
+import * as subjectService from "@edu/shared/services/subject.service";
+import * as attendanceService from "@edu/shared/services/attendance.service";
+import * as examService from "@edu/shared/services/exam.service";
+import * as resultService from "@edu/shared/services/result.service";
+import * as homeworkService from "@edu/shared/services/homework.service";
+import * as eventService from "@edu/shared/services/event.service";
+import * as announcementService from "@edu/shared/services/announcement.service";
+import * as feeFlowService from "@edu/shared/services/fee-flow.service";
 
-function createMockJwt(role: string, email: string) {
-  const base64Url = (value: string) =>
-    Buffer.from(value)
-      .toString("base64")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/g, "");
+async function executeServiceAction(path: string[], method: string, ctx: any, query: any, body: any) {
+    const resource = path[0];
+    const id = path[1];
 
-  const header = base64Url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = base64Url(
-    JSON.stringify({
-      sub: "mock-user-id",
-      actor_email: email,
-      role,
-      school_id: "mock-school-id",
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 8,
-    })
-  );
+    await connectDb();
 
-  return `${header}.${payload}.mock-signature`;
+    switch (resource) {
+        case "academic-years":
+            if (method === "GET") return id ? academicYearService.getAcademicYear(ctx, id) : academicYearService.listAcademicYears(ctx);
+            if (method === "POST") return academicYearService.createAcademicYear(ctx, body);
+            if (method === "PATCH" && id) return academicYearService.updateAcademicYear(ctx, id, body);
+            break;
+
+        case "classes":
+            if (method === "GET") return id ? classService.getClass(ctx, id) : classService.listClasses(ctx, query);
+            if (method === "POST") return classService.createClass(ctx, body);
+            if (method === "PATCH" && id) return classService.updateClass(ctx, id, body);
+            if (method === "DELETE" && id) return classService.deleteClass(ctx, id);
+            break;
+
+        case "students":
+            if (method === "GET") return id ? studentService.getStudent(ctx, id) : studentService.listStudents(ctx, query);
+            if (method === "POST") return studentService.createStudent(ctx, body);
+            if (method === "PATCH" && id) return studentService.updateStudent(ctx, id, body);
+            break;
+
+        case "teachers":
+            if (method === "GET") return id ? teacherService.getTeacher(ctx, id) : teacherService.listTeachers(ctx, query);
+            if (method === "POST") return teacherService.createTeacher(ctx, body);
+            if (method === "PATCH" && id) return teacherService.updateTeacher(ctx, id, body);
+            break;
+
+        case "subjects":
+            if (method === "GET") return id ? subjectService.getSubject(ctx, id) : subjectService.listSubjects(ctx, query);
+            if (method === "POST") return subjectService.createSubject(ctx, body);
+            if (method === "PATCH" && id) return subjectService.updateSubject(ctx, id, body);
+            break;
+
+        case "attendance":
+            if (method === "GET") return attendanceService.listAttendance(ctx, query);
+            if (method === "POST") return attendanceService.markAttendanceBulk(ctx, body);
+            break;
+
+        case "exams":
+            if (method === "GET") return id ? examService.getExam(ctx, id) : examService.listExams(ctx, query);
+            if (method === "POST") return examService.createExam(ctx, body);
+            break;
+
+        case "results":
+            if (method === "GET") return resultService.listResults(ctx, query);
+            if (method === "POST") return resultService.saveExamResults(ctx, id, body);
+            break;
+
+        case "homework":
+            if (method === "GET") return id ? homeworkService.getHomework(ctx, id) : homeworkService.listHomework(ctx, query);
+            if (method === "POST") return homeworkService.createHomework(ctx, body);
+            break;
+
+        case "events":
+            if (method === "GET") return id ? eventService.getEvent(ctx, id) : eventService.listEvents(ctx, query);
+            if (method === "POST") return eventService.createEvent(ctx, body);
+            break;
+
+        case "announcements":
+            if (method === "GET") return id ? announcementService.getAnnouncement(ctx, id) : announcementService.listAnnouncements(ctx, query);
+            if (method === "POST") return announcementService.createAnnouncement(ctx, body);
+            break;
+            
+        case "fees":
+            if (method === "GET" && path.includes("ledger")) return feeFlowService.getFeeLedgerDashboard(ctx, query);
+            break;
+    }
+
+    return { ok: false, error: { code: "NOT_FOUND", message: `Method ${method} for ${resource} not implemented` } };
 }
 
-function ok(data: any = null) {
-  return NextResponse.json({ ok: true, success: true, data });
-}
-
-function notFound(message = "Not found") {
-  return NextResponse.json(
-    { ok: false, success: false, message, error: { code: "NOT_FOUND", message } },
-    { status: 404 }
-  );
-}
-
-export async function GET(_req: Request, context: any) {
-  const params = await context.params;
-  const slug = params?.slug || [];
-  const first = slug[0] || "";
-
-  // Return sensible defaults for common list endpoints
-  if (["classes", "teachers", "exams", "academic-years", "subjects", "students", "results", "attendance", "events", "behavior", "leave"].includes(first)) {
-    return ok([]);
-  }
-
-  if (first === "auth") {
-    // /api/auth/session or similar
-    return ok(null);
-  }
-
-  return notFound();
+export async function GET(req: Request, context: any) {
+    const ctx = getRequestContext(req);
+    const query = getQuery(req);
+    const params = await context.params;
+    const slug = params?.slug || [];
+    return handleApiResponse(await executeServiceAction(slug, "GET", ctx, query, null));
 }
 
 export async function POST(req: Request, context: any) {
-  const params = await context.params;
-  const slug = params?.slug || [];
-  const first = slug[0] || "";
-
-  if (first === "auth" && slug[1] === "login") {
-    let body: any = {};
-    try {
-      body = await req.json();
-    } catch {
-      body = {};
-    }
-
-    const role = body?.role || "admin";
-    const email = body?.email || "demo@school.com";
-    const token = createMockJwt(role, email);
-
-    return NextResponse.json({
-      ok: true,
-      success: true,
-      role,
-      token,
-      profile_id: "mock-profile-id",
-      class_id: role === "student" ? "mock-class-id" : undefined,
-      student_id: role === "student" ? "mock-student-id" : undefined,
-      data: {
-        role,
-        token,
-        profile_id: "mock-profile-id",
-        class_id: role === "student" ? "mock-class-id" : undefined,
-        student_id: role === "student" ? "mock-student-id" : undefined,
-      },
-    });
-  }
-
-  // Accept create/submit operations and return success
-  if (first) return ok({ success: true });
-  return notFound();
+    const ctx = getRequestContext(req);
+    const params = await context.params;
+    const slug = params?.slug || [];
+    const body = await req.json().catch(() => ({}));
+    return handleApiResponse(await executeServiceAction(slug, "POST", ctx, {}, body));
 }
 
-export async function PATCH(_req: Request, context: any) {
-  await context.params;
-  return ok({ success: true });
+export async function PATCH(req: Request, context: any) {
+    const ctx = getRequestContext(req);
+    const params = await context.params;
+    const slug = params?.slug || [];
+    const body = await req.json().catch(() => ({}));
+    return handleApiResponse(await executeServiceAction(slug, "PATCH", ctx, {}, body));
 }
 
-export async function DELETE(_req: Request, context: any) {
-  await context.params;
-  return ok({ success: true });
+export async function DELETE(req: Request, context: any) {
+    const ctx = getRequestContext(req);
+    const params = await context.params;
+    const slug = params?.slug || [];
+    return handleApiResponse(await executeServiceAction(slug, "DELETE", ctx, {}, null));
 }

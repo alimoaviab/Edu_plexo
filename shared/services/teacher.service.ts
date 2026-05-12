@@ -209,6 +209,30 @@ export async function updateTeacher(
   });
 }
 
+export async function getTeacher(
+  ctx: RequestContext,
+  id: string
+): Promise<ServiceResult<unknown>> {
+  return serviceTry(async () => {
+    await connectDb();
+    assertPermission(ctx, "teachers", "view");
+
+    const teacher = await TeacherModel.findOne(tenantFilter(ctx, { _id: id })).lean();
+    if (!teacher) {
+      throw new Error("Teacher not found.");
+    }
+
+    const user = teacher.user_id ? await UserModel.findById(teacher.user_id).lean() : null;
+
+    return {
+      ...teacher,
+      _id: String(teacher._id),
+      email: user?.email ?? teacher.email ?? "",
+      phone: teacher.phone ?? user?.profile?.phone ?? ""
+    };
+  });
+}
+
 export async function deleteTeacher(
   ctx: RequestContext,
   id: string

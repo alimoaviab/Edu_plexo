@@ -8,7 +8,7 @@ export default function StudentExamsPage() {
     const { user } = useAuth();
 
     return (
-        <SchoolShell eyebrow="Student Portal" title="Exams">
+        <SchoolShell eyebrow="Parent Portal" title="Exams">
             <ExamListPage filters={user?.classId ? { class_id: user.classId } : undefined} />
         </SchoolShell>
     );

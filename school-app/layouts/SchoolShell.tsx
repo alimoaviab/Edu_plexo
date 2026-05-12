@@ -130,10 +130,10 @@ const parentNavGroups: NavGroup[] = [
 
 const studentNavGroups: NavGroup[] = [
   {
-    label: "Overview",
+    label: "Parent Portal",
     items: [
       { label: "Dashboard", href: "/student/dashboard", icon: "dashboard" },
-      { label: "Profile", href: "/student/profile", icon: "person" },
+      { label: "My Profile", href: "/student/profile", icon: "person" },
     ],
   },
   {
@@ -458,7 +458,7 @@ export function SchoolShell({
               <>
                 <div className="flex flex-col min-w-0 text-left flex-1">
                   <span className="truncate text-[10px] font-bold text-slate-900">{user.email.split('@')[0]}</span>
-                  <span className="text-[8px] font-bold normal-case  text-slate-400">{user.role.replace('_', ' ')}</span>
+                  <span className="text-[8px] font-bold normal-case  text-slate-400">{user.role === 'student' ? 'Parent/Student' : user.role.replace('_', ' ')}</span>
                 </div>
                 <button
                   onClick={logout}

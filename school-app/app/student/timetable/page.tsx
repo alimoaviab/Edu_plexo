@@ -11,7 +11,7 @@ export default function StudentTimetablePage() {
     const { state } = useTimetable(user?.classId ? { class_id: user.classId } : undefined);
 
     return (
-        <SchoolShell eyebrow="Student Portal" title="Timetable">
+        <SchoolShell eyebrow="Parent Portal" title="Timetable">
             <div className="space-y-6">
                 <div>
                     <h2 className="text-lg font-bold text-gray-900">Weekly Schedule</h2>

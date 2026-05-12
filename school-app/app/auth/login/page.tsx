@@ -11,7 +11,7 @@ type Role = "admin" | "teacher" | "student";
 const ROLES: { key: Role; label: string; icon: string }[] = [
   { key: "admin", label: "Admin", icon: "admin_panel_settings" },
   { key: "teacher", label: "Teacher", icon: "local_library" },
-  { key: "student", label: "Student", icon: "face" },
+  { key: "student", label: "Parent Portal", icon: "family_restroom" },
 ];
 
 const ROLE_ROUTES: Record<string, string> = {

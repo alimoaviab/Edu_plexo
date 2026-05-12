@@ -45,7 +45,7 @@ export default function StudentAnnouncementsPage() {
 
     if (state.status === "idle" || state.status === "loading") {
         return (
-            <SchoolShell eyebrow="Student Portal" title="Announcements">
+            <SchoolShell eyebrow="Parent Portal" title="Announcements">
                 <div className="space-y-4">
                     <Skeleton className="h-24 w-full" />
                     <Skeleton className="h-44 w-full" />
@@ -56,14 +56,14 @@ export default function StudentAnnouncementsPage() {
 
     if (state.status === "error") {
         return (
-            <SchoolShell eyebrow="Student Portal" title="Announcements">
+            <SchoolShell eyebrow="Parent Portal" title="Announcements">
                 <DataState variant="error" title="Announcements unavailable" message={state.error} />
             </SchoolShell>
         );
     }
 
     return (
-        <SchoolShell eyebrow="Student Portal" title="Announcements">
+        <SchoolShell eyebrow="Parent Portal" title="Announcements">
             <div className="space-y-4">
                 {state.data.announcements.map((announcement) => (
                     <Card key={announcement.id} className="space-y-3">

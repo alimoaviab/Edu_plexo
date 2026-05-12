@@ -171,6 +171,23 @@ export async function updateStudent(
   });
 }
 
+export async function getStudent(
+  ctx: RequestContext,
+  id: string
+): Promise<ServiceResult<unknown>> {
+  return serviceTry(async () => {
+    await connectDb();
+    assertPermission(ctx, "students", "view");
+
+    const student = await StudentModel.findOne(tenantFilter(ctx, { _id: id })).lean();
+    if (!student) {
+      throw new Error("Student not found.");
+    }
+
+    return student;
+  });
+}
+
 export async function deleteStudent(
   ctx: RequestContext,
   id: string

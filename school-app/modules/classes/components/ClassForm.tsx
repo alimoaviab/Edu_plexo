@@ -250,16 +250,16 @@ export function ClassForm({
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between px-0.5">
-                            <label className="text-[11px] font-bold text-slate-500 normal-case ">Academic year *</label>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between min-h-[32px] px-0.5">
+                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Academic year *</label>
                             {onCreateAcademicYear && (
                                 <button 
                                     type="button"
                                     onClick={onCreateAcademicYear}
-                                    className="h-8 px-3 rounded-full border border-blue-100 bg-blue-50/30 text-[10px] font-bold text-blue-600 normal-case  hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
+                                    className="h-7 px-3 rounded-lg border border-blue-100 bg-blue-50/50 text-[9px] font-black text-blue-600 uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2 active:scale-95 group"
                                 >
-                                    <span className="material-symbols-outlined text-[16px] group-hover:rotate-90 transition-transform">add_circle</span>
+                                    <span className="material-symbols-outlined text-[14px]">add_circle</span>
                                     New Session
                                 </button>
                             )}
@@ -277,14 +277,14 @@ export function ClassForm({
                         {academicYearOptions.length === 0 && (
                             <p className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 flex items-center gap-2">
                                 <span className="material-symbols-outlined text-[14px]">warning</span>
-                                No academic year found. Please create one to proceed.
+                                No academic year found.
                             </p>
                         )}
                     </div>
 
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between px-0.5">
-                            <label className="text-[11px] font-bold text-slate-500 normal-case ">Academic Incharge (Head Teacher)</label>
+                    <div className="space-y-2">
+                        <div className="flex items-center min-h-[32px] px-0.5">
+                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Academic Incharge (Head Teacher)</label>
                         </div>
                         <Select
                             value={form.class_teacher_id}
@@ -296,13 +296,15 @@ export function ClassForm({
                             className="h-11 rounded-xl"
                         />
                     </div>
-
                 </div>
 
                 {/* Subjects Section */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-bold text-slate-900 normal-case ">Subjects</h3>
+                <div className="space-y-6 pt-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div className="space-y-1">
+                            <h3 className="text-base font-black text-slate-900 tracking-tight">Class Curriculum</h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Assign subjects and marks</p>
+                        </div>
                         <div className="flex items-center gap-2">
                             <Button
                                 type="button"

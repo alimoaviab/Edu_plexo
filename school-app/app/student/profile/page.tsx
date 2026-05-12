@@ -54,7 +54,7 @@ export default function StudentProfilePage() {
 
     if (state.status === "idle" || state.status === "loading") {
         return (
-            <SchoolShell eyebrow="Student Portal" title="Student Profile">
+            <SchoolShell eyebrow="Parent Portal" title="Child Profile">
                 <div className="space-y-4">
                     <Skeleton className="h-28 w-full" />
                     <Skeleton className="h-44 w-full" />
@@ -65,7 +65,7 @@ export default function StudentProfilePage() {
 
     if (state.status === "error") {
         return (
-            <SchoolShell eyebrow="Student Portal" title="Student Profile">
+            <SchoolShell eyebrow="Parent Portal" title="Child Profile">
                 <DataState variant="error" title="Profile unavailable" message={state.error} />
             </SchoolShell>
         );
@@ -74,7 +74,7 @@ export default function StudentProfilePage() {
     const profile = state.data;
 
     return (
-        <SchoolShell eyebrow="Student Portal" title="Student Profile">
+        <SchoolShell eyebrow="Parent Portal" title="Child Profile">
             <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
                 <Card>
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">

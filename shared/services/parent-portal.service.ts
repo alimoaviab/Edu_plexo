@@ -67,24 +67,34 @@ function getGradeFromPercentage(percentage: number) {
 }
 
 async function resolveLinkedStudents(ctx: RequestContext, studentId?: string) {
-    if (ctx.role !== "parent") {
-        throw new ControlledError("FORBIDDEN", "Parent access required.", 403);
+    let linkedIds: string[] = [];
+
+    if (ctx.role === "parent") {
+        const links = await ParentModel.find(tenantFilter(ctx, { user_id: ctx.user_id, status: "active" }))
+            .select("student_id")
+            .lean();
+        linkedIds = links.map((link) => String(link.student_id));
+    } else if (ctx.role === "student") {
+        if (!Types.ObjectId.isValid(ctx.user_id)) {
+            throw new ControlledError("UNAUTHORIZED", "Invalid session identity.", 401);
+        }
+        const student = await StudentModel.findOne(tenantFilter(ctx, { user_id: new Types.ObjectId(ctx.user_id) })).select("_id").lean();
+        if (student) {
+            linkedIds = [String(student._id)];
+        }
+    } else {
+        throw new ControlledError("FORBIDDEN", "Unauthorized access to student portal.", 403);
     }
 
-    const links = await ParentModel.find(tenantFilter(ctx, { user_id: ctx.user_id, status: "active" }))
-        .select("student_id")
-        .lean();
-
-    const linkedIds = links.map((link) => String(link.student_id));
     if (linkedIds.length === 0) {
-        throw new ControlledError("NOT_FOUND", "No linked children found.", 404);
+        throw new ControlledError("NOT_FOUND", "No linked student profiles found.", 404);
     }
 
     if (studentId) {
         if (!linkedIds.includes(studentId)) {
-            throw new ControlledError("FORBIDDEN", "You can only view your own child's data.", 403);
+            throw new ControlledError("FORBIDDEN", "You do not have permission to view this student's data.", 403);
         }
-        linkedIds.splice(0, linkedIds.length, studentId);
+        linkedIds = [studentId];
     }
 
     const students = (await StudentModel.find(tenantFilter(ctx, { _id: { $in: linkedIds } }))
@@ -93,7 +103,7 @@ async function resolveLinkedStudents(ctx: RequestContext, studentId?: string) {
         .lean()) as ParentStudentDoc[];
 
     if (students.length === 0) {
-        throw new ControlledError("NOT_FOUND", "No linked children found.", 404);
+        throw new ControlledError("NOT_FOUND", "No student profiles found.", 404);
     }
 
     return students;

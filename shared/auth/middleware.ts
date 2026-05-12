@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 import { assertPermission } from "./rbac";
 import { contextFromToken, verifyAuthToken } from "./jwt";
 import { AppName, Feature, PermissionAction, RequestContext } from "../types/core";
@@ -25,41 +26,8 @@ export function authenticateRequest(request: SessionRequest, expectedApp: AppNam
 
     // Check if token looks like a valid JWT (starts with "eyJ")
     if (!token.startsWith("eyJ")) {
-      console.error(`[Auth] Malformed token detected. Format: ${token.substring(0, 30)}...`);
-
-      // In development, ignore malformed tokens and use dev context
-      if (process.env.NODE_ENV === "development") {
-        console.warn("[Auth] Dev mode: ignoring malformed token, using dev context");
-        return {
-          school_id: "dev-school-id",
-          user_id: "dev-user-id",
-          role: "admin",
-          app: expectedApp,
-          permissions: ["*"],
-          session_id: "dev-session",
-          actor_email: "dev@example.com",
-          ip: request.ip,
-          user_agent: request.headers?.["user-agent"]
-        };
-      }
-
       throw new Error("Invalid token format. Expected JWT starting with 'eyJ'.");
     }
-  }
-
-  // Development bypass: allow unauthenticated requests in dev mode
-  if (!token && process.env.NODE_ENV === "development") {
-    return {
-      school_id: "dev-school-id",
-      user_id: "dev-user-id",
-      role: "admin",
-      app: expectedApp,
-      permissions: ["*"],
-      session_id: "dev-session",
-      actor_email: "dev@example.com",
-      ip: request.ip,
-      user_agent: request.headers?.["user-agent"]
-    };
   }
 
   if (!token) {
@@ -69,42 +37,21 @@ export function authenticateRequest(request: SessionRequest, expectedApp: AppNam
   // Extract academic year from header
   const academicYearId = request.headers?.["x-academic-year-id"];
 
-  // Production requires valid token
-  try {
-    const ctx = contextFromToken(verifyAuthToken(token, expectedApp), {
-      ip: request.ip,
-      user_agent: request.headers?.["user-agent"]
-    });
+    // Production requires valid token
+    try {
+        const ctx = contextFromToken(verifyAuthToken(token, expectedApp), {
+            ip: request.ip,
+            user_agent: request.headers?.["user-agent"]
+        });
 
-    if (academicYearId && academicYearId !== "undefined") {
-      ctx.active_academic_year_id = academicYearId;
+        if (academicYearId && academicYearId !== "undefined") {
+            ctx.active_academic_year_id = academicYearId;
+        }
+
+        return ctx;
+    } catch (error: any) {
+        throw error;
     }
-
-    return ctx;
-  } catch (error: any) {
-    // In development, if the token is invalid (e.g. stale secret), fallback to dev context
-    if (process.env.NODE_ENV === "development") {
-      console.warn(`[Auth] Dev mode: token verification failed (${error.message}), falling back to dev context`);
-      const devCtx: RequestContext = {
-        school_id: "dev-school-id",
-        user_id: "dev-user-id",
-        role: "admin",
-        app: expectedApp,
-        permissions: ["*"],
-        session_id: "dev-session",
-        actor_email: "dev@example.com",
-        ip: request.ip,
-        user_agent: request.headers?.["user-agent"]
-      };
-
-      if (academicYearId && academicYearId !== "undefined") {
-        devCtx.active_academic_year_id = academicYearId;
-      }
-
-      return devCtx;
-    }
-    throw error;
-  }
 }
 
 export function guardRequest(

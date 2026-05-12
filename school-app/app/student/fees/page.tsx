@@ -61,7 +61,7 @@ export default function StudentFeesPage() {
 
     if (state.status === "idle" || state.status === "loading") {
         return (
-            <SchoolShell eyebrow="Student Portal" title="Fees">
+            <SchoolShell eyebrow="Parent Portal" title="Fees">
                 <div className="space-y-4">
                     <Skeleton className="h-28 w-full" />
                     <Skeleton className="h-44 w-full" />
@@ -72,7 +72,7 @@ export default function StudentFeesPage() {
 
     if (state.status === "error") {
         return (
-            <SchoolShell eyebrow="Student Portal" title="Fees">
+            <SchoolShell eyebrow="Parent Portal" title="Fees">
                 <DataState variant="error" title="Fee information unavailable" message={state.error} />
             </SchoolShell>
         );
@@ -81,7 +81,7 @@ export default function StudentFeesPage() {
     const report = state.data;
 
     return (
-        <SchoolShell eyebrow="Student Portal" title="Fees">
+        <SchoolShell eyebrow="Parent Portal" title="Fees">
             <div className="space-y-6">
                 <Card>
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">

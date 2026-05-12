@@ -207,7 +207,7 @@ export default function StudentDashboardPage() {
 
     if (state.status === "idle" || state.status === "loading") {
         return (
-            <SchoolShell eyebrow="Student Portal" title="Student Dashboard">
+            <SchoolShell eyebrow="Parent Portal" title="Parent Dashboard">
                 <div className="space-y-6">
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         <Skeleton className="h-28 w-full" />
@@ -223,7 +223,7 @@ export default function StudentDashboardPage() {
 
     if (state.status === "error") {
         return (
-            <SchoolShell eyebrow="Student Portal" title="Student Dashboard">
+            <SchoolShell eyebrow="Parent Portal" title="Parent Dashboard">
                 <DataState variant="error" title="Dashboard unavailable" message={state.error} />
             </SchoolShell>
         );
@@ -237,7 +237,7 @@ export default function StudentDashboardPage() {
     const alerts = state.data.stats?.dashboard.summary;
 
     return (
-        <SchoolShell eyebrow="Student Portal" title="Student Dashboard">
+        <SchoolShell eyebrow="Parent Portal" title="Parent Dashboard">
             <div className="space-y-8">
                 <section className="rounded-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-cyan-900 p-8 text-white shadow-2xl shadow-slate-950/20">
                     <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
