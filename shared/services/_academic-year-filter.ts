@@ -8,21 +8,30 @@ export async function resolveAcademicYearId(
     ctx: RequestContext,
     academicYearId?: string
 ): Promise<string | undefined> {
-    if (academicYearId) {
+    // If explicit ID provided, use it but we should ideally verify it belongs to the school
+    if (academicYearId && academicYearId !== "undefined") {
         return academicYearId;
     }
 
-    if (ctx.active_academic_year_id) {
+    // If context has an active year ID, use it
+    if (ctx.active_academic_year_id && ctx.active_academic_year_id !== "undefined") {
         return ctx.active_academic_year_id;
     }
 
+    // Fallback: Find the one marked as is_active: true for this school
     const active = (await AcademicYearModel.findOne(
-        tenantFilter(ctx, { is_active: true })
+        tenantFilter(ctx, { is_active: true, status: "active" })
     )
         .select("_id")
         .lean()) as { _id?: unknown } | null;
 
-    return active?._id ? String(active._id) : undefined;
+    if (!active) {
+        // In some cases we might want to allow this (e.g. creating the first academic year)
+        // but for data fetching, it should probably be required.
+        return undefined;
+    }
+
+    return String(active._id);
 }
 
 export async function resolveClassIdsForAcademicYear(

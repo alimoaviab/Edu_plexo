@@ -65,6 +65,21 @@ export const roleAccessMatrix: Record<Role, RoleAccess> = {
     timetable: ["view"],
     behavior: ["view"],
     events: ["view"]
+  },
+  student: {
+    settings: ["view"],
+    subjects: ["view"],
+    classes: ["view"],
+    attendance: ["view"],
+    homework: ["view"],
+    exams: ["view"],
+    results: ["view"],
+    fees: ["view"],
+    reports: ["view"],
+    notifications: ["view"],
+    announcements: ["view"],
+    timetable: ["view"],
+    events: ["view"]
   }
 };
 
