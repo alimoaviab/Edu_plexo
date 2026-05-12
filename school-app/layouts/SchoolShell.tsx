@@ -291,16 +291,35 @@ export function SchoolShell({
       try {
         const response = await fetch("/api/academic-years", { credentials: "include" });
         const payload = await response.json();
-        if (ignore || !payload?.ok || !Array.isArray(payload?.data)) {
+        if (ignore || !payload?.ok) {
           return;
         }
 
-        const rows = payload.data as Array<{ _id: string; year: string; is_active: boolean }>;
+        const data = payload?.data;
+        const rows = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.items)
+            ? data.items
+            : [];
+        if (!rows.length) {
+          return;
+        }
+
+        const normalizedRows = rows as Array<{ _id: string; id?: string; year: string; is_active: boolean }>;
         setAcademyYears(rows);
 
         const stored = getSelectedAcademicYearId();
-        const defaultId = stored || rows.find((row) => row.is_active)?._id || rows[0]?._id || "";
+        const hasStored = !!stored && normalizedRows.some((row) => (row._id || row.id) === stored);
+        const defaultId = (hasStored ? stored : undefined)
+          || normalizedRows.find((row) => row.is_active)?._id
+          || normalizedRows[0]?._id
+          || normalizedRows.find((row) => row.id)?._id
+          || "";
         if (!defaultId) return;
+
+        if (!hasStored && stored) {
+          localStorage.removeItem("academic_year_id");
+        }
 
         setSelectedAcademicYearIdState(defaultId);
         setSelectedAcademicYearId(defaultId);

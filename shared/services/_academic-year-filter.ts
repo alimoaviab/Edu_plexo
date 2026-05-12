@@ -8,9 +8,20 @@ export async function resolveAcademicYearId(
     ctx: RequestContext,
     academicYearId?: string
 ): Promise<string | undefined> {
-    // If explicit ID provided, use it but we should ideally verify it belongs to the school
+    // If explicit ID is provided, validate that it belongs to the current tenant.
+    // If invalid/stale, gracefully fall back to active academic year resolution.
     if (academicYearId && academicYearId !== "undefined") {
-        return academicYearId;
+        if (Types.ObjectId.isValid(academicYearId)) {
+            const explicit = (await AcademicYearModel.findOne(
+                tenantFilter(ctx, { _id: new Types.ObjectId(academicYearId) })
+            )
+                .select("_id")
+                .lean()) as { _id?: unknown } | null;
+
+            if (explicit?._id) {
+                return String(explicit._id);
+            }
+        }
     }
 
     // If context has an active year ID, use it

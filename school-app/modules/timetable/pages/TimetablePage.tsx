@@ -35,6 +35,13 @@ export function TimetablePage() {
   const { state: teachersState } = useTeachers();
   const { data: subjectsData } = useSubjects();
 
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('🔍 Timetable state:', state);
+    console.log('🔍 Class ID filter:', classId);
+    console.log('🔍 Data count:', state.data?.length || 0);
+  }, [state, classId]);
+
   const classOptions = useMemo(() =>
     (classesState.data || []).map(c => ({ id: c._id, label: c.name })),
     [classesState.data]);

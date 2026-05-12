@@ -64,9 +64,20 @@ export default function TeacherTimetablePage() {
   useEffect(() => {
     const fetchYears = async () => {
       try {
-        const result = await serviceRequest<any[]>("/api/academic-years");
+        const result = await serviceRequest<{ items?: Array<{ _id?: string; id?: string; year?: string; name?: string }> } | Array<{ _id?: string; id?: string; year?: string; name?: string }>>("/api/academic-years");
         if (result.ok) {
-          const years = result.data.map(y => ({ label: y.year, value: y.id }));
+          const rows = Array.isArray(result.data)
+            ? result.data
+            : Array.isArray(result.data?.items)
+              ? result.data.items
+              : [];
+          const years = rows
+            .map((y) => ({
+              label: y.year || y.name || "Academic Year",
+              value: y._id || y.id || ""
+            }))
+            .filter((y) => y.value);
+
           setAcademicYears(years);
           if (years.length > 0 && !filters.academicYear) {
             setFilters(prev => ({ ...prev, academicYear: years.find(y => y.label.includes("2024"))?.value || years[0].value }));

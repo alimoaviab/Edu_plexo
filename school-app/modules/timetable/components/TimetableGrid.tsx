@@ -20,6 +20,15 @@ interface TimetableGridProps {
 export function TimetableGrid({ records, onEdit, onDelete, isCompact }: TimetableGridProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  // Debug: Log records
+  useEffect(() => {
+    console.log('📊 TimetableGrid received records:', records);
+    console.log('📊 Total records:', records?.length || 0);
+    if (records && records.length > 0) {
+      console.log('📊 Sample record:', records[0]);
+    }
+  }, [records]);
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);

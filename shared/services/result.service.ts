@@ -23,11 +23,8 @@ export async function listResults(
       const teacherClassIds = await resolveTeacherClassIds(ctx);
       query.class_id = { $in: teacherClassIds };
     }
-    let academicYearId = filter.academic_year_id;
-    if (!academicYearId || academicYearId === "undefined") {
-      const { resolveAcademicYearId } = await import("./_academic-year-filter");
-      academicYearId = await resolveAcademicYearId(ctx);
-    }
+    const { resolveAcademicYearId } = await import("./_academic-year-filter");
+    const academicYearId = await resolveAcademicYearId(ctx, filter.academic_year_id);
 
     if (academicYearId) {
       query.academic_year_id = new Types.ObjectId(academicYearId);

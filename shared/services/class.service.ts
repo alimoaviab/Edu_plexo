@@ -32,7 +32,7 @@ function normalizeSubjects(classRow: any) {
       teacher_id: extractId(subject.teacher_id),
       starts_at: subject.starts_at || "",
       ends_at: subject.ends_at || "",
-      day_of_week: Number(subject.day_of_week || 1),
+      day_of_week: subject.day_of_week !== undefined ? Number(subject.day_of_week) : 1,
       timetable: subject.timetable || ""
     };
   });
@@ -230,7 +230,7 @@ export async function createClass(ctx: RequestContext, data: any): Promise<Servi
             ? [classTeacherId]
             : [],
         subject_ids: Array.isArray(data.subject_ids) ? data.subject_ids.map((value: string) => new Types.ObjectId(extractId(value))) : [],
-        subjects: Array.isArray(data.subjects) ? data.subjects : [],
+        subjects: normalizeSubjects(data),
         grade_thresholds: data.grade_thresholds ?? {},
         fee_structure: data.fee_structure ?? undefined
       });
@@ -279,9 +279,10 @@ export async function updateClass(ctx: RequestContext, id: string, data: any): P
     } else if (teacherIds.length > 0) {
       patch.teacher_ids = teacherIds.map((value: string) => new Types.ObjectId(value));
     }
-    if (subjectIds.length > 0) {
-      patch.subject_ids = subjectIds.map((value: string) => new Types.ObjectId(value));
+    if (data.subjects) {
+      patch.subjects = normalizeSubjects(data);
     }
+
     const updated = await ClassModel.findOneAndUpdate(filter, patch, { new: true, runValidators: true });
     if (!updated) throw new Error("Class not found");
     return updated;

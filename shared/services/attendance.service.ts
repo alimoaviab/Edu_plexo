@@ -72,12 +72,9 @@ export async function listAttendance(
         query.class_id = new Types.ObjectId(filter.class_id);
     }
 
-    // Resolve Academic Year strictly
-    let academicYearId = filter.academic_year_id;
-    if (!academicYearId || academicYearId === "undefined") {
-      const { resolveAcademicYearId } = await import("./_academic-year-filter");
-      academicYearId = await resolveAcademicYearId(ctx);
-    }
+    // Resolve Academic Year strictly (also validates explicit/stale IDs)
+    const { resolveAcademicYearId } = await import("./_academic-year-filter");
+    const academicYearId = await resolveAcademicYearId(ctx, filter.academic_year_id);
 
     if (academicYearId) {
       query.academic_year_id = new Types.ObjectId(academicYearId);

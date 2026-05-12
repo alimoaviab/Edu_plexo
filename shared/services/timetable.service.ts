@@ -314,12 +314,9 @@ export async function listTimetable(
   try {
     await connectDb();
     
-    // 1. Resolve Academic Year (Priority: Query > Active Year)
-    let academicYearId = query.academic_year_id;
-    if (!academicYearId || academicYearId === "undefined") {
-      const { resolveAcademicYearId } = await import("./_academic-year-filter");
-      academicYearId = await resolveAcademicYearId(ctx);
-    }
+    // 1. Resolve Academic Year (validates explicit/stale IDs too)
+    const { resolveAcademicYearId } = await import("./_academic-year-filter");
+    const academicYearId = await resolveAcademicYearId(ctx, query.academic_year_id);
 
     // 2. Build Base Filter
     const filter: any = tenantFilter(ctx);
