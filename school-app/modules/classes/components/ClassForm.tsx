@@ -297,89 +297,6 @@ export function ClassForm({
                         />
                     </div>
 
-                    <div className="space-y-1.5">
-                        <div className="flex items-center justify-between px-0.5">
-                            <label className="text-[11px] font-bold text-slate-500 normal-case ">Assigned faculty</label>
-                            {onCreateTeacher && (
-                                <button 
-                                    type="button"
-                                    onClick={onCreateTeacher}
-                                    className="h-8 px-3 rounded-full border border-blue-100 bg-blue-50/30 text-[10px] font-bold text-blue-600 normal-case  hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
-                                >
-                                    <span className="material-symbols-outlined text-[16px] group-hover:rotate-90 transition-transform">person_add</span>
-                                    Add Teacher
-                                </button>
-                            )}
-                        </div>
-                        
-                        <div className="relative group">
-                            <div className="flex flex-wrap gap-1.5 p-2 min-h-[44px] rounded-xl border border-slate-200 bg-white focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-600/5 transition-all">
-                                {form.teacher_ids?.map(id => {
-                                    const teacher = teacherOptions.find((t: { id: string; label: string }) => t.id === id);
-                                    return (
-                                        <span key={id} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold text-slate-700">
-                                            {teacher?.label || "Unknown"}
-                                            <button 
-                                                type="button"
-                                                onClick={() => setForm(prev => ({ ...prev, teacher_ids: prev.teacher_ids?.filter(t => t !== id) || [] }))}
-                                                className="text-slate-400 hover:text-red-500 transition-colors"
-                                            >
-                                                <span className="material-symbols-outlined text-sm">close</span>
-                                            </button>
-                                        </span>
-                                    );
-                                })}
-                                <input 
-                                    placeholder={form.teacher_ids?.length === 0 ? "Search and select teachers..." : "Add more..."}
-                                    className="flex-1 min-w-[120px] bg-transparent text-[11px] font-medium text-slate-700 outline-none placeholder:text-slate-400"
-                                    value={teacherSearch}
-                                    onChange={(e) => setTeacherSearch(e.target.value)}
-                                />
-                            </div>
-
-                            {/* Dropdown Results */}
-                            {teacherSearch && (
-                                <div className="absolute top-full left-0 right-0 mt-2 z-50 max-h-48 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-xl p-1.5 space-y-1">
-                                    {teacherOptions
-                                        .filter((t: { id: string; label: string }) => t.label.toLowerCase().includes(teacherSearch.toLowerCase()) && !form.teacher_ids?.includes(t.id))
-                                        .map((t: { id: string; label: string }) => (
-                                            <button
-                                                key={t.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    setForm(prev => ({ ...prev, teacher_ids: [...(prev.teacher_ids || []), t.id] }));
-                                                    setTeacherSearch("");
-                                                }}
-                                                className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-[11px] font-bold text-slate-700 transition-colors flex items-center gap-3"
-                                            >
-                                                <div className="h-6 w-6 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                                                    <span className="material-symbols-outlined text-[14px]">badge</span>
-                                                </div>
-                                                {t.label}
-                                            </button>
-                                        ))}
-                                    {teacherOptions.filter((t: { id: string; label: string }) => t.label.toLowerCase().includes(teacherSearch.toLowerCase()) && !form.teacher_ids?.includes(t.id)).length === 0 && (
-                                        <div className="px-3 py-4 text-center">
-                                            <p className="text-[10px] font-bold text-slate-400 normal-case ">No faculty found</p>
-                                            <button 
-                                                type="button"
-                                                onClick={onCreateTeacher}
-                                                className="mt-2 text-[10px] font-bold text-blue-600 normal-case hover:underline"
-                                            >
-                                                Create "{teacherSearch}" teacher
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                        {teacherOptions.length === 0 && !teacherSearch && (
-                            <p className="text-[10px] font-bold text-slate-400 flex items-center gap-2 pl-1">
-                                <span className="material-symbols-outlined text-[14px]">info</span>
-                                No teachers available in database.
-                            </p>
-                        )}
-                    </div>
                 </div>
 
                 {/* Subjects Section */}
@@ -442,7 +359,7 @@ export function ClassForm({
                                 {/* Day */}
                                 <div className="w-20">
                                     <select
-                                        value={subject.day_of_week || 1}
+                                        value={subject.day_of_week ?? 1}
                                         onChange={(e) => updateSubject(index, "day_of_week", parseInt(e.target.value))}
                                         className="w-full h-8 rounded-lg border border-slate-200 bg-white px-1 text-[9px] font-bold text-slate-600 outline-none focus:border-blue-300"
                                     >
@@ -458,7 +375,7 @@ export function ClassForm({
                                 </div>
 
                                 {/* Start Time */}
-                                <div className="w-20">
+                                <div className="w-24">
                                     <input
                                         type="time"
                                         value={subject.starts_at || ""}
@@ -469,23 +386,13 @@ export function ClassForm({
                                 </div>
 
                                 {/* End Time */}
-                                <div className="w-20">
+                                <div className="w-24">
                                     <input
                                         type="time"
                                         value={subject.ends_at || ""}
                                         onChange={(e) => updateSubject(index, "ends_at", e.target.value)}
                                         className="w-full h-8 rounded-lg border border-slate-200 bg-white px-1 text-[9px] font-bold text-slate-600 outline-none focus:border-blue-300"
                                         title="End Time"
-                                    />
-                                </div>
-
-                                {/* Timetable/Room */}
-                                <div className="flex-1 min-w-[70px]">
-                                    <input
-                                        placeholder="Room"
-                                        value={subject.timetable || ""}
-                                        onChange={(e) => updateSubject(index, "timetable", e.target.value)}
-                                        className="w-full h-8 rounded-lg border border-slate-200 bg-white px-1.5 text-[9px] font-bold text-slate-600 outline-none focus:border-blue-300"
                                     />
                                 </div>
 

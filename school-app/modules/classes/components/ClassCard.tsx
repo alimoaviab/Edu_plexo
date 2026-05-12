@@ -86,12 +86,12 @@ export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps
       <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
         <Link 
           href={`/admin/students?class_id=${classItem._id}`}
-          className="flex items-center gap-3 group/link hover:opacity-80 transition-all"
+          className="flex items-center gap-2 group/link hover:opacity-80 transition-all min-w-0"
         >
-          <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100 group-hover/link:bg-blue-600 group-hover/link:text-white transition-all">
+          <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100 group-hover/link:bg-blue-600 group-hover/link:text-white transition-all shrink-0">
             <span className="material-symbols-outlined text-base">group</span>
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col min-w-0">
             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Students</span>
             <span className="text-[12px] font-bold text-slate-900 leading-none">
               {classItem.enrolled_students || classItem.student_count || 0}
@@ -99,28 +99,31 @@ export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps
           </div>
         </Link>
         
+        <div className="flex items-center gap-1.5">
           <Link
             href={`/admin/timetable?class_id=${classItem._id}`}
-            className="h-8 w-8 flex items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all border border-emerald-100/50"
+            className="h-8 px-2 flex items-center gap-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all border border-emerald-100/50"
             title="Class Timetable"
           >
-            <span className="material-symbols-outlined text-base">schedule</span>
+            <span className="material-symbols-outlined text-[18px]">schedule</span>
+            <span className="text-[9px] font-bold">Timetable</span>
           </Link>
           <button
             onClick={() => onFee(classItem)}
-            className="h-8 px-3 flex items-center gap-2 rounded-lg bg-violet-50 text-violet-600 text-[9px] font-bold hover:bg-violet-100 transition-all border border-violet-100/50"
+            className="h-8 px-2 flex items-center gap-1.5 rounded-lg bg-violet-50 text-violet-600 text-[9px] font-bold hover:bg-violet-100 transition-all border border-violet-100/50"
           >
-            <span className="material-symbols-outlined text-base">payments</span>
+            <span className="material-symbols-outlined text-[18px]">payments</span>
             Fees
           </button>
           <Link
-            href={`/admin/classes/${classItem._id}`}
-            className="h-8 px-4 flex items-center gap-2 rounded-lg bg-blue-600 text-white text-[9px] font-bold hover:bg-blue-700 transition-all shadow-sm active:scale-95"
+            href={`/admin/attendance?class_id=${classItem._id}`}
+            className="h-8 px-2 flex items-center gap-1.5 rounded-lg bg-blue-600 text-white text-[9px] font-bold hover:bg-blue-700 transition-all shadow-sm active:scale-95"
           >
-            Manage
-            <span className="material-symbols-outlined text-base">arrow_forward</span>
+            <span className="material-symbols-outlined text-[18px]">how_to_reg</span>
+            Attendance
           </Link>
         </div>
       </div>
+    </div>
   );
 }

@@ -5,7 +5,7 @@ import { PeriodCard } from "./PeriodCard";
 import { findTimetableConflicts } from "../utils/conflicts";
 import { useMemo, useState, useEffect } from "react";
 
-const DAYS: DayOfWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAYS: DayOfWeek[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const TIME_SLOTS = [
   "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"
 ];
@@ -50,7 +50,7 @@ export function TimetableGrid({ records, onEdit, onDelete, isCompact }: Timetabl
       <div className="overflow-x-auto">
         <div className="min-w-[1200px]">
           {/* Header */}
-          <div className="sticky top-0 z-40 grid grid-cols-[100px_repeat(6,1fr)] bg-slate-50/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+          <div className="sticky top-0 z-40 grid grid-cols-[100px_repeat(7,1fr)] bg-slate-50/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
             <div className="p-4 text-[10px] font-bold text-slate-400 normal-case tracking-[0.2em] flex items-center justify-center border-r border-slate-200/60 bg-slate-100/50">
               Time
             </div>
@@ -70,7 +70,7 @@ export function TimetableGrid({ records, onEdit, onDelete, isCompact }: Timetabl
           {/* Time Rows */}
           <div className="divide-y divide-slate-100">
             {TIME_SLOTS.map((time, rowIdx) => (
-              <div key={time} className={`grid grid-cols-[100px_repeat(6,1fr)] ${isCompact ? 'min-h-[100px]' : 'min-h-[140px]'} group/row ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/20'}`}>
+              <div key={time} className={`grid grid-cols-[100px_repeat(7,1fr)] ${isCompact ? 'min-h-[100px]' : 'min-h-[140px]'} group/row ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/20'}`}>
                 {/* Time Indicator - Sticky Column */}
                 <div className={`sticky left-0 z-30 border-r border-slate-200/60 flex flex-col items-center justify-center gap-1 transition-colors ${isCurrentTimeRow(time) ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50/80 backdrop-blur-sm'}`}>
                   <span className={`text-[13px] font-bold tracking-tight tabular-nums ${isCurrentTimeRow(time) ? 'text-white' : 'text-slate-900'}`}>{time}</span>
@@ -80,10 +80,15 @@ export function TimetableGrid({ records, onEdit, onDelete, isCompact }: Timetabl
                 {/* Day Columns */}
                 {DAYS.map((day, dayIdx) => {
                   const dayNumber = dayIdx + 1;
-                  const slots = records.filter(r => 
-                    r.day_of_week === dayNumber && 
-                    r.start_time.startsWith(time.substring(0, 2))
-                  );
+                  const slots = (records || []).filter(r => {
+                    if (!r.start_time) return false;
+                    const rDay = Number(r.day_of_week);
+                    if (rDay !== dayNumber) return false;
+                    
+                    const rHour = parseInt(r.start_time.split(':')[0]);
+                    const tHour = parseInt(time.split(':')[0]);
+                    return rHour === tHour;
+                  });
 
                   const isToday = currentDayIndex === dayNumber;
 
