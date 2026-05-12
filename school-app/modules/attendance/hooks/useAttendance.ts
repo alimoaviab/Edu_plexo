@@ -72,5 +72,5 @@ export function useAttendance(filters?: { class_id?: string; student_id?: string
     });
   }, [loadAttendance]);
 
-  return { state, addAttendance, updateAttendance, deleteAttendance };
+  return { state, addAttendance, updateAttendance, deleteAttendance, refresh: loadAttendance };
 }

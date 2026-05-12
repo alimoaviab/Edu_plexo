@@ -24,8 +24,10 @@ export interface AttendanceFormInput {
 export interface AttendanceBulkInput {
   class_id: string;
   date: string;
+  period?: number;
   academic_year_id?: string;
   records: Record<string, AttendanceStatus>;
+  remarks?: Record<string, string>;
 }
 
 export interface AttendanceBulkResult {

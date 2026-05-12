@@ -20,21 +20,12 @@ interface TimetableGridProps {
 export function TimetableGrid({ records, onEdit, onDelete, isCompact }: TimetableGridProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Debug: Log records
-  useEffect(() => {
-    console.log('📊 TimetableGrid received records:', records);
-    console.log('📊 Total records:', records?.length || 0);
-    if (records && records.length > 0) {
-      console.log('📊 Sample record:', records[0]);
-    }
-  }, [records]);
-
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  const currentDayIndex = currentTime.getDay(); // 0 is Sunday, 1 is Monday
+  const currentDayIndex = currentTime.getDay(); 
   const currentHour = currentTime.getHours();
   const currentMinutes = currentTime.getMinutes();
   const timeInMinutes = currentHour * 60 + currentMinutes;
@@ -42,10 +33,8 @@ export function TimetableGrid({ records, onEdit, onDelete, isCompact }: Timetabl
   const isCurrentPeriod = (startTime: string, endTime: string, dayIdx: number) => {
     const dayNumber = dayIdx + 1;
     if (currentDayIndex !== dayNumber) return false;
-
     const start = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
     const end = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
-
     return timeInMinutes >= start && timeInMinutes < end;
   };
 
@@ -55,99 +44,93 @@ export function TimetableGrid({ records, onEdit, onDelete, isCompact }: Timetabl
   };
 
   return (
-    <div className="relative bg-white rounded-3xl border border-slate-200/60 overflow-hidden shadow-2xl shadow-slate-200/50">
-      <div className="overflow-x-auto">
-        <div className="min-w-[1200px]">
-          {/* Header */}
-          <div className="sticky top-0 z-40 grid grid-cols-[100px_repeat(7,1fr)] bg-slate-50/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
-            <div className="p-4 text-[10px] font-bold text-slate-400 normal-case tracking-[0.2em] flex items-center justify-center border-r border-slate-200/60 bg-slate-100/50">
-              Time
-            </div>
-            {DAYS.map((day, idx) => {
-                const isToday = currentDayIndex === idx + 1;
-                return (
-                    <div key={day} className={`p-4 text-center border-r border-slate-200/60 last:border-r-0 ${isToday ? 'bg-blue-50/50' : ''}`}>
-                        <div className="flex flex-col items-center gap-1">
-                            <span className={`text-[11px] font-bold normal-case  ${isToday ? 'text-blue-600' : 'text-slate-900'}`}>{day}</span>
-                            {isToday && <div className="h-1 w-8 rounded-full bg-blue-600 animate-pulse" />}
-                        </div>
-                    </div>
-                );
-            })}
+    <div className="bg-white rounded-3xl border border-slate-200/60 shadow-2xl shadow-slate-200/50 overflow-hidden">
+      <div className="overflow-x-auto scrollbar-hide">
+        <div className="min-w-[1000px]">
+          {/* Day Headers - Sticky Top */}
+          <div className="sticky top-0 z-50 grid grid-cols-[80px_repeat(7,1fr)] bg-white/90 backdrop-blur-xl border-b border-slate-200 shadow-sm">
+          <div className="flex items-center justify-center border-r border-slate-100 bg-slate-50/50">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Time</span>
           </div>
-
-          {/* Time Rows */}
-          <div className="divide-y divide-slate-100">
-            {TIME_SLOTS.map((time, rowIdx) => (
-              <div key={time} className={`grid grid-cols-[100px_repeat(7,1fr)] ${isCompact ? 'min-h-[100px]' : 'min-h-[140px]'} group/row ${rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/20'}`}>
-                {/* Time Indicator - Sticky Column */}
-                <div className={`sticky left-0 z-30 border-r border-slate-200/60 flex flex-col items-center justify-center gap-1 transition-colors ${isCurrentTimeRow(time) ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50/80 backdrop-blur-sm'}`}>
-                  <span className={`text-[13px] font-bold tracking-tight tabular-nums ${isCurrentTimeRow(time) ? 'text-white' : 'text-slate-900'}`}>{time}</span>
-                  <div className={`h-1.5 w-1.5 rounded-full ${isCurrentTimeRow(time) ? 'bg-white/40 animate-ping' : 'bg-slate-300'}`} />
-                </div>
-
-                {/* Day Columns */}
-                {DAYS.map((day, dayIdx) => {
-                  const dayNumber = dayIdx + 1;
-                  const slots = (records || []).filter(r => {
-                    if (!r.start_time) return false;
-                    const rDay = Number(r.day_of_week);
-                    if (rDay !== dayNumber) return false;
-                    
-                    const rHour = parseInt(r.start_time.split(':')[0]);
-                    const tHour = parseInt(time.split(':')[0]);
-                    return rHour === tHour;
-                  });
-
-                  const isToday = currentDayIndex === dayNumber;
-
-                  return (
-                    <div key={`${day}-${time}`} className={`p-3 border-r border-slate-200/60 last:border-r-0 relative transition-all duration-300 hover:bg-blue-50/30 ${isToday ? 'bg-blue-50/10' : ''}`}>
-                      {slots.length === 0 && (
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/row:opacity-100 transition-opacity">
-                              <div className="h-full w-full border-2 border-dashed border-slate-200/60 rounded-2xl m-2" />
-                          </div>
-                      )}
-                      
-                      <div className="space-y-3 relative z-10">
-                        {slots.map(slot => {
-                          const conflicts = findTimetableConflicts(records, slot);
-                          const active = isCurrentPeriod(slot.start_time, slot.end_time, dayIdx);
-                          
-                          return (
-                            <div key={slot._id} className={active ? 'ring-2 ring-blue-500 ring-offset-2 rounded-xl shadow-xl shadow-blue-500/20' : ''}>
-                                <PeriodCard 
-                                    slot={slot} 
-                                    conflicts={conflicts} 
-                                    onEdit={onEdit} 
-                                    onDelete={onDelete} 
-                                    isCompact={isCompact}
-                                />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+          {DAYS.map((day, idx) => {
+            const isToday = currentDayIndex === idx + 1;
+            return (
+              <div key={day} className={`py-4 flex flex-col items-center justify-center border-r border-slate-100 last:border-0 ${isToday ? 'bg-blue-50/30' : ''}`}>
+                <span className={`text-[10px] md:text-[11px] font-black uppercase tracking-widest ${isToday ? 'text-blue-600' : 'text-slate-900'}`}>
+                  {day.substring(0, 3)}
+                </span>
+                {isToday && <div className="mt-1 h-1 w-4 rounded-full bg-blue-600 shadow-lg shadow-blue-600/30" />}
               </div>
-            ))}
+            );
+          })}
+        </div>
+
+        {/* Grid Body */}
+        <div className="relative">
+          {TIME_SLOTS.map((time, rowIdx) => (
+            <div key={time} className={`grid grid-cols-[80px_repeat(7,1fr)] border-b border-slate-50 last:border-0 transition-colors hover:bg-slate-50/30 ${isCompact ? 'min-h-[80px]' : 'min-h-[120px]'}`}>
+              
+              {/* Time Sidebar - Sticky Left */}
+              <div className={`sticky left-0 z-40 flex flex-col items-center justify-center border-r border-slate-100 transition-all ${isCurrentTimeRow(time) ? 'bg-blue-600 text-white shadow-[4px_0_15px_rgba(37,99,235,0.2)]' : 'bg-slate-50/80 backdrop-blur-md'}`}>
+                <span className="text-[11px] md:text-xs font-black tabular-nums tracking-tighter">
+                  {time}
+                </span>
+                {isCurrentTimeRow(time) && (
+                  <div className="mt-1 h-1 w-1 rounded-full bg-white animate-ping" />
+                )}
+              </div>
+
+              {/* Day Cells */}
+              {DAYS.map((_, dayIdx) => {
+                const dayNumber = dayIdx + 1;
+                const slots = (records || []).filter(r => {
+                  if (!r.start_time) return false;
+                  const rDay = Number(r.day_of_week);
+                  if (rDay !== dayNumber) return false;
+                  return parseInt(r.start_time.split(':')[0]) === parseInt(time.split(':')[0]);
+                });
+
+                const isToday = currentDayIndex === dayNumber;
+
+                return (
+                  <div key={`${dayNumber}-${time}`} className={`p-2 border-r border-slate-50 last:border-0 relative ${isToday ? 'bg-blue-50/5' : ''}`}>
+                    <div className="flex flex-col gap-2 h-full">
+                      {slots.map(slot => {
+                        const conflicts = findTimetableConflicts(records, slot);
+                        const active = isCurrentPeriod(slot.start_time, slot.end_time, dayIdx);
+                        return (
+                          <div key={slot._id} className={`flex-1 ${active ? 'ring-2 ring-blue-500 ring-offset-1 rounded-xl' : ''}`}>
+                            <PeriodCard 
+                              slot={slot} 
+                              conflicts={conflicts} 
+                              onEdit={onEdit} 
+                              onDelete={onDelete} 
+                              isCompact={isCompact}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+          
+          {/* Current Time Indicator Line */}
+          {currentDayIndex >= 1 && currentDayIndex <= 7 && currentHour >= 8 && currentHour < 19 && (
+            <div 
+              className="absolute left-[60px] md:left-[80px] right-0 h-[1.5px] bg-blue-600/50 pointer-events-none z-30 flex items-center"
+              style={{ 
+                top: `${((timeInMinutes - 8 * 60) / (11 * 60)) * 100}%` 
+              }}
+            >
+              <div className="h-2.5 w-2.5 rounded-full bg-blue-600 -ml-[5px] shadow-[0_0_10px_rgba(37,99,235,0.8)] border-2 border-white" />
+            </div>
+          )}
           </div>
         </div>
       </div>
-
-      {/* Decorative Current Time Line */}
-      {currentDayIndex > 0 && currentDayIndex < 7 && (
-          <div 
-            className="absolute left-[100px] right-0 h-0.5 bg-blue-500/40 pointer-events-none z-20 flex items-center"
-            style={{ 
-                top: `${( (timeInMinutes - 8*60) / ( (18-8)*60 ) ) * 100}%`,
-                display: (currentHour >= 8 && currentHour < 18) ? 'flex' : 'none'
-            }}
-          >
-              <div className="h-3 w-3 rounded-full bg-blue-600 -ml-1.5 shadow-lg shadow-blue-600/50" />
-          </div>
-      )}
     </div>
   );
 }

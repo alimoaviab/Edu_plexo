@@ -161,10 +161,10 @@ const studentNavGroups: NavGroup[] = [
 
 function AdminActions() {
   const actions = [
-    { label: "Student", icon: "person_add", href: "/admin/students?action=new", color: "text-blue-600 border-blue-100 hover:bg-blue-50" },
-    { label: "Attendance", icon: "how_to_reg", href: "/admin/attendance", color: "text-emerald-600 border-emerald-100 hover:bg-emerald-50" },
-    { label: "Exam", icon: "add_task", href: "/admin/exams?action=new", color: "text-amber-600 border-amber-100 hover:bg-amber-50" },
-    { label: "Broadcast", icon: "campaign", href: "/admin/announcements?action=new", color: "text-purple-600 border-purple-100 hover:bg-purple-50" },
+    { label: "Student", icon: "person_add", href: "/admin/students?action=new", color: "text-blue-600 border-blue-200 hover:bg-blue-50" },
+    { label: "Attendance", icon: "how_to_reg", href: "/admin/attendance", color: "text-blue-600 border-blue-200 hover:bg-blue-50" },
+    { label: "Exam", icon: "add_task", href: "/admin/exams?action=new", color: "text-blue-600 border-blue-200 hover:bg-blue-50" },
+    { label: "Broadcast", icon: "campaign", href: "/admin/announcements?action=new", color: "text-blue-600 border-blue-200 hover:bg-blue-50" },
   ];
 
   return (
@@ -402,7 +402,7 @@ export function SchoolShell({
                 {!isCollapsed && (
                   <button
                     onClick={() => toggleGroup(group.label)}
-                    className="group flex w-full items-center justify-between px-2 py-1 text-[8px] font-bold normal-case tracking-[0.15em] text-slate-400 transition-colors hover:text-blue-600"
+                    className="group flex w-full items-center justify-between px-2 py-1 text-[8px] font-bold normal-case tracking-[0.15em] text-blue-600/40 transition-colors hover:text-blue-600"
                   >
                     <span>{group.label}</span>
                     <span className={`material-symbols-outlined text-[10px] transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>
@@ -417,7 +417,7 @@ export function SchoolShell({
                       <Tooltip key={item.href} text={item.label}>
                         <Link
                           href={item.href}
-                          className={`flex h-7 w-7 items-center justify-center rounded transition-all duration-200 ${isActive ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:bg-blue-50 hover:text-blue-600"}`}
+                          className={`flex h-7 w-7 items-center justify-center rounded transition-all duration-200 ${isActive ? "bg-blue-600 text-white shadow-sm" : "text-blue-600/50 hover:bg-blue-50 hover:text-blue-600"}`}
                         >
                           <span className={`material-symbols-outlined text-[15px] ${isActive ? "font-bold" : ""}`}>
                             {item.icon}
@@ -428,9 +428,9 @@ export function SchoolShell({
                       <Link
                         key={item.href}
                         href={item.href}
-                        className={`premium-nav-item group flex h-7.5 items-center gap-2 px-2.5 py-1 text-[12px] font-bold ${isActive ? "premium-nav-item-active" : "text-black hover:bg-slate-50"}`}
+                        className={`premium-nav-item group flex h-7.5 items-center gap-2 px-2.5 py-1 text-[12px] font-bold ${isActive ? "premium-nav-item-active" : "text-blue-950 hover:bg-blue-50/50"}`}
                       >
-                        <span className={`material-symbols-outlined text-[15px] transition-colors ${isActive ? "font-bold text-white" : "text-black/70 group-hover:text-blue-600"}`}>
+                        <span className={`material-symbols-outlined text-[15px] transition-colors ${isActive ? "font-bold text-white" : "text-blue-600/50 group-hover:text-blue-600"}`}>
                           {item.icon}
                         </span>
                         <span className="truncate tracking-tight">{item.label}</span>

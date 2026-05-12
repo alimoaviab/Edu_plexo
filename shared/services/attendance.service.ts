@@ -222,32 +222,71 @@ export async function markAttendanceBulk(
     const attendanceDate = new Date(date);
     attendanceDate.setHours(0, 0, 0, 0);
 
+    const toId = (id: string | undefined) => {
+      if (!id || id === "undefined") return undefined;
+      if (/^[0-9a-fA-F]{24}$/.test(id)) return new Types.ObjectId(id);
+      
+      // If it's a mock ID (like "dev-user-id"), we must convert it to a valid 24-char hex
+      // so Mongoose schema validation doesn't fail.
+      const hex = Buffer.from(id).toString('hex').padEnd(24, '0').substring(0, 24);
+      return new Types.ObjectId(hex);
+    };
+
     const studentIds = Object.keys(records);
-    const operations = studentIds.map((studentId) => ({
-      updateOne: {
-        filter: {
-          school_id: ctx.school_id,
-          academic_year_id: new Types.ObjectId(ayId),
-          class_id: new Types.ObjectId(class_id),
-          student_id: new Types.ObjectId(studentId),
-          date: attendanceDate,
-          period: period || 1
-        },
-        update: {
-          $set: {
-            status: records[studentId],
-            note: remarks?.[studentId] || "",
-            marked_by: new Types.ObjectId(ctx.user_id),
-            source: "manual",
-            updatedAt: new Date()
-          }
-        },
-        upsert: true
-      }
-    }));
+    
+    // Fetch students to get their actual database IDs and class_ids
+    const students = await StudentModel.find({
+      school_id: ctx.school_id,
+      _id: { $in: studentIds.map(id => toId(id)).filter(Boolean) }
+    }).select("_id class_id").lean();
+
+    // Map by BOTH original ID (if mock) and DB ID to ensure we can find them
+    const studentMap = new Map();
+    students.forEach(s => {
+      studentMap.set(String(s._id), s);
+    });
+
+    const operations = studentIds.map((studentId) => {
+      // Find the student by the ID provided from frontend
+      const idToFind = toId(studentId);
+      const student = students.find(s => String(s._id) === String(idToFind));
+      
+      if (!student) return null;
+
+      const studentClassId = student.class_id || class_id;
+      if (!studentClassId) return null;
+
+      const studentIdObj = student._id; // Use the REAL ID from database
+      const classIdObj = toId(studentClassId);
+      const ayIdObj = toId(ayId);
+      const userIdObj = toId(ctx.user_id);
+
+      return {
+        updateOne: {
+          filter: {
+            school_id: ctx.school_id,
+            academic_year_id: ayIdObj,
+            class_id: classIdObj,
+            student_id: studentIdObj,
+            date: attendanceDate,
+            period: period || 1
+          },
+          update: {
+            $set: {
+              status: records[studentId],
+              note: remarks?.[studentId] || "",
+              marked_by: userIdObj,
+              source: "manual",
+              updatedAt: new Date()
+            }
+          },
+          upsert: true
+        }
+      };
+    }).filter(Boolean);
 
     if (operations.length > 0) {
-      await AttendanceModel.bulkWrite(operations);
+      await AttendanceModel.bulkWrite(operations as any);
     }
 
     return { saved: operations.length };

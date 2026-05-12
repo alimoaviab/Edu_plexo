@@ -25,11 +25,12 @@ function normalizeSubjects(classRow: any) {
     : [];
 
   return source.map((subject: any) => {
+    const tid = extractId(subject.teacher_id);
     return {
       name: subject.name || "",
       total_marks: Number(subject.total_marks || 100),
       passing_marks: Number(subject.passing_marks || 33),
-      teacher_id: extractId(subject.teacher_id),
+      teacher_id: (tid && Types.ObjectId.isValid(tid)) ? new Types.ObjectId(tid) : undefined,
       starts_at: subject.starts_at || "",
       ends_at: subject.ends_at || "",
       day_of_week: subject.day_of_week !== undefined ? Number(subject.day_of_week) : 1,
@@ -225,15 +226,26 @@ export async function createClass(ctx: RequestContext, data: any): Promise<Servi
         capacity: Number(data.capacity ?? 0),
         class_teacher_id: classTeacherId,
         teacher_ids: Array.isArray(data.teacher_ids)
-          ? data.teacher_ids.map((value: string) => new Types.ObjectId(extractId(value)))
+          ? data.teacher_ids
+              .map((value: string) => extractId(value))
+              .filter((id: string) => id && Types.ObjectId.isValid(id))
+              .map((id: string) => new Types.ObjectId(id))
           : classTeacherId
             ? [classTeacherId]
             : [],
-        subject_ids: Array.isArray(data.subject_ids) ? data.subject_ids.map((value: string) => new Types.ObjectId(extractId(value))) : [],
+        subject_ids: Array.isArray(data.subject_ids) 
+          ? data.subject_ids
+              .map((value: string) => extractId(value))
+              .filter((id: string) => id && Types.ObjectId.isValid(id))
+              .map((id: string) => new Types.ObjectId(id)) 
+          : [],
         subjects: normalizeSubjects(data),
         grade_thresholds: data.grade_thresholds ?? {},
         fee_structure: data.fee_structure ?? undefined
       });
+
+      console.log(`[createClass] Saving class ${newClass.name} with ${newClass.subjects?.length} subjects`);
+      newClass.subjects?.forEach((s: any) => console.log(`  - Sub: ${s.name}, Time: ${s.starts_at} - ${s.ends_at}`));
       const saved = await newClass.save();
       return saved;
     } catch (error: any) {

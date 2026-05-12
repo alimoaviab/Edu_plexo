@@ -181,13 +181,46 @@ async function resolveSubjectNameAndId(ctx: RequestContext, data: any): Promise<
 
 async function assertNoScheduleConflict(
   ctx: RequestContext,
-  input: { classId: Types.ObjectId; teacherId: Types.ObjectId; day: string; startTime: string; endTime: string },
+  input: { classId: Types.ObjectId; teacherId: Types.ObjectId; day: string; startTime: string; endTime: string; room?: string },
   excludeId?: string
 ) {
-  void ctx;
-  void input;
-  void excludeId;
-  return;
+  const start = toMinutes(input.startTime);
+  const end = toMinutes(input.endTime);
+
+  const filter: any = tenantFilter(ctx, {
+    day: input.day,
+    academic_year_id: ctx.active_academic_year_id ? new Types.ObjectId(ctx.active_academic_year_id) : { $exists: true }
+  });
+
+  if (excludeId && Types.ObjectId.isValid(excludeId)) {
+    filter._id = { $ne: new Types.ObjectId(excludeId) };
+  }
+
+  // Find all records for the same day
+  const existing = await TimetableModel.find(filter).lean();
+
+  for (const record of existing) {
+    const rStart = toMinutes(record.start_time);
+    const rEnd = toMinutes(record.end_time);
+
+    const isOverlap = start < rEnd && end > rStart;
+    if (!isOverlap) continue;
+
+    // 1. Teacher Conflict
+    if (String(record.teacher_id) === String(input.teacherId)) {
+      throw new ControlledError("CONFLICT", `Teacher is already booked from ${record.start_time} to ${record.end_time}`, 409);
+    }
+
+    // 2. Room Conflict
+    if (input.room && record.room && record.room.trim().toLowerCase() === input.room.trim().toLowerCase()) {
+      throw new ControlledError("CONFLICT", `Room ${input.room} is already occupied from ${record.start_time} to ${record.end_time}`, 409);
+    }
+
+    // 3. Class Conflict
+    if (String(record.class_id) === String(input.classId)) {
+      throw new ControlledError("CONFLICT", `Class already has a lecture scheduled from ${record.start_time} to ${record.end_time}`, 409);
+    }
+  }
 }
 
 export async function createTimetable(
@@ -239,7 +272,8 @@ export async function createTimetable(
       teacherId,
       day,
       startTime,
-      endTime
+      endTime,
+      room: typeof (data as any).room === "string" ? (data as any).room.trim() : undefined
     });
 
     const timetable = await TimetableModel.create({
@@ -305,6 +339,26 @@ export async function getTimetable(
   }
 }
 
+function parseTimeToMinutes(time: string): number {
+  if (!time) return 0;
+  const match = time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+  if (!match) return 0;
+  let hours = parseInt(match[1]);
+  const minutes = parseInt(match[2]);
+  const period = match[3]?.toUpperCase();
+  
+  if (period === 'PM' && hours < 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+  
+  return hours * 60 + minutes;
+}
+
+function formatMinutesToTime(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
 export async function listTimetable(
   ctx: RequestContext,
   query: any = {}
@@ -314,39 +368,31 @@ export async function listTimetable(
   try {
     await connectDb();
     
-    // 1. Resolve Academic Year (validates explicit/stale IDs too)
+    // 1. Resolve Academic Year
     const { resolveAcademicYearId } = await import("./_academic-year-filter");
     const academicYearId = await resolveAcademicYearId(ctx, query.academic_year_id);
 
-    // 2. Build Base Filter
+    // 2. Build Base Filter for Manual Timetable Entries
     const filter: any = tenantFilter(ctx);
-    
-    // 3. Apply Academic Year Scoping (Strict)
     if (academicYearId) {
       filter.academic_year_id = new Types.ObjectId(academicYearId);
     }
-
-    // 4. Apply Primary Filters
     if (query.class_id) {
       filter.class_id = toObjectId(query.class_id, "class_id");
     }
-    
     if (query.teacher_id) {
       filter.teacher_id = toObjectId(query.teacher_id, "teacher_id");
     }
-
-    // 5. Apply Temporal Filters
     if (query.day) {
       const dayFromName = normalizeDay(query.day);
       if (dayFromName) filter.day = dayFromName;
     }
-    
     if (query.day_of_week !== undefined) {
       const dayName = DAY_NUMBER_TO_NAME[Number(query.day_of_week)];
       if (dayName) filter.day = dayName;
     }
 
-    // 6. Execute with Populates
+    // 3. Fetch Manual Timetable Entries
     const timetable = await TimetableModel.find(filter)
       .populate({ path: "class_id", select: "name section" })
       .populate({ path: "teacher_id", select: "first_name last_name" })
@@ -354,11 +400,20 @@ export async function listTimetable(
       .sort({ day_of_week: 1, start_time: 1 })
       .lean();
 
-    const records = timetable.map(toClientRecord);
+    const records = timetable.map(row => {
+      const rec = toClientRecord(row);
+      // Normalize times to HH:mm for the frontend grid
+      rec.start_time = formatMinutesToTime(parseTimeToMinutes(rec.start_time));
+      rec.end_time = formatMinutesToTime(parseTimeToMinutes(rec.end_time));
+      return rec;
+    });
 
-    // 7. Merge Class-Level Subject Schedules
+    // 4. Merge Class-Level Subject Schedules
     const classFilter = tenantFilter(ctx);
     if (query.class_id) {
+      // If a specific class is requested, we find it directly.
+      // We don't strictly filter by academicYearId here to avoid "missing data" 
+      // if the user is viewing a class from a different session context.
       classFilter._id = toObjectId(query.class_id, "class_id");
     } else if (academicYearId) {
       classFilter.academic_year_id = new Types.ObjectId(academicYearId);
@@ -369,39 +424,58 @@ export async function listTimetable(
       .select("name section subjects")
       .lean();
 
+    console.log(`[listTimetable] Found ${classes.length} classes for merge`);
+
     classes.forEach(cls => {
+      console.log(`[listTimetable] Class ${cls.name} has ${(cls.subjects || []).length} subjects`);
       (cls.subjects || []).forEach(sub => {
+        console.log(`[listTimetable] Subject ${sub.name}: starts=${sub.starts_at}, ends=${sub.ends_at}, day=${sub.day_of_week}`);
+        // Only include if both times are set
         if (sub.starts_at && sub.ends_at) {
-          const targetDays = sub.day_of_week === 0 ? [1, 2, 3, 4, 5, 6, 7] : [Number(sub.day_of_week || 1)];
+          const subStartMins = parseTimeToMinutes(sub.starts_at);
+          const subEndMins = parseTimeToMinutes(sub.ends_at);
+          
+          const normalizedStart = formatMinutesToTime(subStartMins);
+          const normalizedEnd = formatMinutesToTime(subEndMins);
+
+          const subDay = sub.day_of_week !== undefined ? Number(sub.day_of_week) : 1;
+          const targetDays = subDay === 0 ? [1, 2, 3, 4, 5, 6, 7] : [subDay];
           
           targetDays.forEach(dayNum => {
-            // If a day filter is active, only include if matches
+            // Filter by day if requested
             if (filter.day && DAY_NUMBER_TO_NAME[dayNum] !== filter.day) return;
             if (query.day_of_week !== undefined && dayNum !== Number(query.day_of_week)) return;
             
-            // Avoid duplicates if a specific timetable entry already exists for this slot
+            // Avoid duplicate with manual records
             const isDuplicate = records.some(r => 
-              r.class_id === String(cls._id) && 
-              r.day_of_week === dayNum && 
-              r.start_time === sub.starts_at
+              String(r.class_id) === String(cls._id) && 
+              Number(r.day_of_week) === dayNum && 
+              parseTimeToMinutes(r.start_time) === subStartMins
             );
 
             if (!isDuplicate) {
               const teacher = sub.teacher_id as any;
+              let teacherName = "Unassigned";
+              if (teacher) {
+                teacherName = (typeof teacher === "object" && teacher.first_name)
+                  ? `${teacher.first_name} ${teacher.last_name || ""}`.trim()
+                  : "Assigned";
+              }
+
               records.push({
-                _id: `class_sub_${cls._id}_${sub.name}_${dayNum}`,
+                _id: `cls_sub_${cls._id}_${sub.name}_${dayNum}_${subStartMins}`,
                 class_id: String(cls._id),
                 class_name: cls.name || "",
                 section: cls.section || "",
                 subject_id: "",
                 subject_name: sub.name || "",
                 subject_code: "",
-                teacher_id: teacher?._id ? String(teacher._id) : "",
-                teacher_name: teacher ? `${teacher.first_name || ""} ${teacher.last_name || ""}`.trim() : "Unassigned",
+                teacher_id: teacher?._id ? String(teacher._id) : (typeof teacher === "string" ? teacher : ""),
+                teacher_name: teacherName,
                 day_of_week: dayNum,
                 period_number: 0,
-                start_time: sub.starts_at,
-                end_time: sub.ends_at,
+                start_time: normalizedStart,
+                end_time: normalizedEnd,
                 room: sub.timetable || "",
                 is_class_schedule: true
               });
@@ -411,17 +485,13 @@ export async function listTimetable(
       });
     });
 
-    // Final Sort
+    // 5. Final Sort by day and time
     records.sort((a, b) => {
       if (a.day_of_week !== b.day_of_week) return a.day_of_week - b.day_of_week;
-      return toMinutes(a.start_time) - toMinutes(b.start_time);
+      return parseTimeToMinutes(a.start_time) - parseTimeToMinutes(b.start_time);
     });
 
-    return {
-      ok: true,
-      success: true,
-      data: records,
-    };
+    return { ok: true, success: true, data: records };
   } catch (error) {
     console.error("[listTimetable] Error:", error);
     return toErrorResult("FETCH_FAILED", "Failed to fetch timetable", error);
@@ -496,7 +566,8 @@ export async function updateTimetable(
         teacherId,
         day: nextDay,
         startTime: nextStartTime,
-        endTime: nextEndTime
+        endTime: nextEndTime,
+        room: typeof (data as any).room === "string" ? (data as any).room.trim() : undefined
       },
       id
     );

@@ -9,6 +9,7 @@ import { useAttendance } from "../hooks/useAttendance";
 import { AttendanceRecordRow } from "../types/attendance.types";
 import { showToast } from "../../../utils/toast";
 import { useQueryParams } from "../../../hooks/useQueryParams";
+import { AttendanceBulkForm } from "../components/AttendanceBulkForm";
 
 export function AttendanceListPage({ filters: initialFilters }: { filters?: { class_id?: string; student_id?: string; date?: string } }) {
   const { currentParams, updateQuery, withQuery } = useQueryParams();
@@ -33,7 +34,7 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
     }
   }, [currentParams.toString(), initialFilters?.class_id, initialFilters?.date]);
 
-  const { state, updateAttendance, deleteAttendance } = useAttendance({
+  const { state, updateAttendance, deleteAttendance, refresh } = useAttendance({
     class_id: activeFilters.class_id || undefined,
     date: activeFilters.date || undefined
   });
@@ -74,10 +75,15 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
 
   const stats = useMemo(() => {
     const data = state.data || [];
-    const selectedClass = (classState.data ?? []).find(c => c._id === activeFilters.class_id);
+    const classes = classState.data ?? [];
+    const selectedClass = classes.find(c => c._id === activeFilters.class_id);
+    
+    const totalStudents = activeFilters.class_id 
+      ? (selectedClass?.enrolled_students ?? 0) 
+      : classes.reduce((sum, c) => sum + (c.enrolled_students ?? 0), 0);
     
     return {
-      total: activeFilters.class_id ? (selectedClass?.enrolled_students ?? 0) : data.length,
+      total: totalStudents,
       present: data.filter(r => r.status === 'present').length,
       absent: data.filter(r => r.status === 'absent').length,
       late: data.filter(r => r.status === 'late').length,
@@ -256,98 +262,17 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
               List
             </button>
           </div>
-          <div className="h-6 w-px bg-slate-200" />
-          <button 
-             onClick={() => {
-                const basePath = pathname.includes("/teacher") ? "/teacher/attendance" : "/admin/attendance";
-               router.push(withQuery(`${basePath}/create`, { class_id: activeFilters.class_id }));
-             }}
-             disabled={!activeFilters.class_id}
-             className="inline-flex h-9 items-center gap-2 px-5 text-[11px] font-bold normal-case  text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95 disabled:opacity-50 disabled:shadow-none whitespace-nowrap"
-          >
-            <span className="material-symbols-outlined text-lg font-bold">fact_check</span>
-            Mark Attendance
-          </button>
         </div>
       </div>
 
       {/* Main Workspace Area */}
-      <div>
-        {state.status === "loading" ? (
-          <TableSkeleton />
-        ) : filteredData.length === 0 ? (
-          <DataState 
-            variant="empty" 
-            title={activeFilters.class_id && stats.total > 0 ? "Attendance Not Marked" : "No Attendance Records"} 
-            message={
-              activeFilters.class_id && stats.total > 0 
-                ? "Students are enrolled but attendance hasn't been recorded for this date yet." 
-                : activeFilters.search 
-                  ? "Adjust your filters to see more results." 
-                  : "Start tracking attendance for your active classes today."
-            } 
-          />
-        ) : (
-          viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredData.map((row) => (
-                <div key={row._id} className="premium-card group relative flex flex-col p-0 overflow-hidden transition-all duration-500 bg-white border-slate-200/60 hover:shadow-2xl hover:shadow-slate-200/80 hover:-translate-y-1">
-                  <div className="p-5">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xs font-bold normal-case shadow-sm group-hover:scale-110 transition-transform">
-                        {row.student_name.substring(0, 1)}
-                      </div>
-                      <Badge
-                        variant={
-                          row.status === "present" ? "success" :
-                          row.status === "absent" ? "error" :
-                          row.status === "late" ? "warning" : "gray"
-                        }
-                        className="normal-case text-[9px] font-bold  px-2 py-0.5"
-                      >
-                        {row.status}
-                      </Badge>
-                    </div>
-
-                    <div className="mb-6">
-                      <h3 className="text-lg font-bold text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors truncate">{row.student_name}</h3>
-                      <p className="text-[10px] font-bold text-slate-400 normal-case  mt-1">{row.admission_no} • {row.class_name}</p>
-                    </div>
-
-                    <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
-                      <div className="flex items-center gap-1.5 text-slate-400">
-                         <span className="material-symbols-outlined text-[16px]">calendar_today</span>
-                         <span className="text-[10px] font-bold normal-case ">{new Date(row.date).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-auto px-5 py-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-white transition-all">
-                     <button className="text-[10px] font-bold text-slate-400 normal-case  hover:text-blue-600 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">history</span>
-                        Log
-                     </button>
-                     <button className="text-[10px] font-bold text-blue-600 hover:underline normal-case  flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm">edit</span>
-                        Adjust
-                     </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="premium-card overflow-hidden border-slate-200/60 shadow-sm bg-white rounded-2xl">
-              <DataTable
-                columns={columns}
-                rows={filteredData}
-                rowKey={(row) => row._id}
-                sortable
-                paginated={10}
-                rowActions={pathname.includes("/parent") ? rowActions.filter(a => a.label === "View Details") : rowActions}
-              />
-            </div>
-          )
-        )}
+      <div className="bg-white rounded-2xl">
+        <AttendanceBulkForm 
+          initialClassId={activeFilters.class_id}
+          initialDate={activeFilters.date}
+          viewMode={viewMode as "grid" | "list"}
+          onSaved={() => refresh()}
+        />
       </div>
 
       {/* Pagination Footer - Premium ERP Style */}
