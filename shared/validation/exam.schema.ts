@@ -6,7 +6,7 @@ const examBaseSchema = z.object({
   title: z.string().min(1).max(120),
   starts_at: z.coerce.date(),
   max_marks: z.coerce.number().int().positive(),
-  status: z.enum(["scheduled", "completed", "cancelled"]).default("scheduled"),
+  status: z.enum(["scheduled", "completed", "cancelled", "results_published"]).default("scheduled"),
   description: z.string().max(500).optional().or(z.literal(""))
 });
 

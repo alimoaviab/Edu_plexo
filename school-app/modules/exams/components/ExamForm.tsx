@@ -213,20 +213,6 @@ export function ExamForm({
                     />
                 </div>
 
-                {/* Row 4: Status */}
-                <div className="pt-1">
-                    <Select
-                        label="Current Status"
-                        value={form.status}
-                        onChange={(e) => setForm({ ...form, status: e.target.value as ExamFormInput["status"] })}
-                        options={[
-                            { label: "Scheduled", value: "scheduled" },
-                            { label: "Completed", value: "completed" },
-                            { label: "Cancelled", value: "cancelled" }
-                        ]}
-                        className="bg-white border-slate-200 h-9.5 focus:border-slate-900 focus:ring-slate-900/5 transition-all text-sm"
-                    />
-                </div>
 
                 {/* Row 5: Description */}
                 <div className="pt-1">

@@ -8,16 +8,38 @@ import { serviceRequest } from "../../../services/service-client";
 import { ResultForm } from "../components/ResultForm";
 import { useResults } from "../hooks/useResults";
 import { ResultRow } from "../types/result.types";
+import { useClasses } from "../../classes/hooks/useClasses";
+import { useExams } from "../../exams/hooks/useExams";
+import { useQueryParams } from "../../../hooks/useQueryParams";
 
 export function ResultPage() {
-    const searchParams = useSearchParams();
-    const exam_id = searchParams.get("exam_id");
+    const { currentParams, updateQuery } = useQueryParams();
+    const exam_id = currentParams.get("exam_id") || "all";
+    const class_id = currentParams.get("class_id") || "all";
+    const today = new Date().toISOString().split('T')[0];
+    const date_filter = currentParams.get("date") || today;
     
-    const filters = exam_id ? { exam_id } : undefined;
-    const { state, addResult } = useResults(filters);
-    const [searchQuery, setSearchQuery] = useState("");
+    const { state: classState } = useClasses();
+    const { state: examListState } = useExams(class_id !== "all" ? { class_id } : {});
+
+    const { state, addResult } = useResults({ 
+        exam_id: exam_id !== "all" ? exam_id : undefined 
+    });
+    const [searchQuery, setSearchQuery] = useState(currentParams.get("search") || "");
     const [viewMode, setViewMode] = useState<"grid" | "list">("list");
     const [isAdding, setIsAdding] = useState(false);
+    
+    const [classFilter, setClassFilter] = useState(class_id);
+    const [examFilter, setExamFilter] = useState(exam_id);
+    const [dateFilter, setDateFilter] = useState(date_filter);
+
+    useEffect(() => {
+        setSearchQuery(currentParams.get("search") || "");
+        setClassFilter(currentParams.get("class_id") || "all");
+        setExamFilter(currentParams.get("exam_id") || "all");
+        setDateFilter(currentParams.get("date") || "");
+    }, [currentParams.toString()]);
+
     const { state: examState, run: runExams } = useSafeAsync<Array<{ _id: string; title: string; subject: string; class_name?: string; class_id?: string }>>();
     const { state: studentState, run: runStudents } = useSafeAsync<
         Array<{ _id: string; first_name: string; last_name: string; admission_no: string; class_id: string }>
@@ -60,16 +82,20 @@ export function ResultPage() {
         const rows = state.data || [];
         const q = searchQuery.trim().toLowerCase();
         return rows.filter((row) => {
-            return (
+            const queryMatch = 
                 q.length === 0 ||
                 row.student_name.toLowerCase().includes(q) ||
                 row.exam_title.toLowerCase().includes(q) ||
                 row.exam_subject.toLowerCase().includes(q) ||
                 (row.admission_no || "").toLowerCase().includes(q) ||
-                (row.class_name || "").toLowerCase().includes(q)
-            );
+                (row.class_name || "").toLowerCase().includes(q);
+            
+            const classMatch = classFilter === "all" ? true : row.class_id === classFilter;
+            const dateMatch = dateFilter === "" ? true : row.graded_at?.split('T')[0] === dateFilter;
+
+            return queryMatch && classMatch && dateMatch;
         });
-    }, [state.data, searchQuery]);
+    }, [state.data, searchQuery, classFilter, dateFilter]);
 
     const columns: DataTableColumn<ResultRow>[] = [
         {
@@ -178,11 +204,58 @@ export function ResultPage() {
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400">search</span>
                         <input
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setSearchQuery(val);
+                                updateQuery({ search: val });
+                            }}
                             placeholder="Search student, exam or admission no..."
                             className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-xs font-medium text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-600/5 placeholder:text-slate-400"
                         />
                     </div>
+                    <div className="h-6 w-px bg-slate-200" />
+                    <select
+                        value={classFilter}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setClassFilter(val);
+                            setExamFilter("all");
+                            updateQuery({ class_id: val, exam_id: "all" });
+                        }}
+                        className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+                    >
+                        <option value="all">All Classes</option>
+                        {(classState.data || []).map((c: any) => (
+                            <option key={c._id} value={c._id}>{c.name}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={examFilter}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setExamFilter(val);
+                            updateQuery({ exam_id: val });
+                        }}
+                        className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+                        disabled={classFilter === "all"}
+                    >
+                        <option value="all">Select Exam</option>
+                        {(examListState.data || []).map((e: any) => (
+                            <option key={e._id} value={e._id}>{e.title}</option>
+                        ))}
+                    </select>
+
+                    <input 
+                        type="date"
+                        value={dateFilter}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setDateFilter(val);
+                            updateQuery({ date: val });
+                        }}
+                        className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+                    />
                 </div>
 
                 <div className="flex items-center gap-3">

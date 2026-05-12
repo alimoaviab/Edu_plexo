@@ -53,17 +53,85 @@ export async function listExams(
     });
     
     if (ctx.role === "teacher") {
-      const { resolveTeacherClassIds } = await import("./teacher.service");
-      const teacherClassIds = await resolveTeacherClassIds(ctx);
-      query.class_id = { $in: teacherClassIds };
+      const teacherId = new Types.ObjectId(ctx.user_id);
+      
+      // Find all classes where this teacher is either the class teacher 
+      // OR assigned to a specific subject
+      const assignedClasses = await ClassModel.find(tenantFilter(ctx, {
+        $or: [
+          { class_teacher_id: teacherId },
+          { "subjects.teacher_id": teacherId }
+        ]
+      })).select("_id name subjects class_teacher_id").lean();
+
+      const teacherConditions: any[] = [];
+
+      assignedClasses.forEach(cls => {
+        if (String(cls.class_teacher_id) === ctx.user_id) {
+          // If class teacher, can see all exams for this class
+          teacherConditions.push({ class_id: cls._id });
+        } else {
+          // Otherwise, only exams for subjects they teach
+          const taughtSubjects = cls.subjects
+            .filter((s: any) => String(s.teacher_id) === ctx.user_id)
+            .map((s: any) => s.name);
+          
+          if (taughtSubjects.length > 0) {
+            teacherConditions.push({ 
+              class_id: cls._id, 
+              subject: { $in: taughtSubjects } 
+            });
+          }
+        }
+      });
+
+      if (teacherConditions.length === 0) {
+        return []; // No assignments
+      }
+      query.$or = teacherConditions;
     }
 
-    const rows = await ExamModel.find(query)
-      .populate("class_id", "name")
-      .sort({ starts_at: -1 })
-      .lean();
+    const rows = await ExamModel.aggregate([
+      { $match: query },
+      {
+        $lookup: {
+          from: "results",
+          localField: "_id",
+          foreignField: "exam_id",
+          as: "results"
+        }
+      },
+      {
+        $lookup: {
+          from: "classes",
+          localField: "class_id",
+          foreignField: "_id",
+          as: "class_info"
+        }
+      },
+      {
+        $project: {
+          school_id: 1,
+          class_id: 1,
+          subject: 1,
+          title: 1,
+          starts_at: 1,
+          max_marks: 1,
+          status: 1,
+          description: 1,
+          results_count: { $size: "$results" },
+          class_name: { $arrayElemAt: ["$class_info.name", 0] }
+        }
+      },
+      { $sort: { starts_at: -1 } }
+    ]);
 
-    return rows.map(mapExamRecord);
+    return rows.map(row => ({
+      ...row,
+      _id: String(row._id),
+      class_id: String(row.class_id),
+      starts_at: row.starts_at instanceof Date ? row.starts_at.toISOString().split("T")[0] : String(row.starts_at)
+    }));
   });
 }
 

@@ -74,52 +74,44 @@ export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps
         </div>
       </div>
 
-      {/* Description Section - High Density Notes */}
-      <div className="mb-6 px-0.5 min-h-[48px]">
-        <p className="text-[9px] font-bold text-slate-400 normal-case mb-1.5 tracking-tight">Architecture Notes</p>
-        <p className="text-[11px] font-medium text-slate-500 line-clamp-2 leading-relaxed">
-          {classItem.description || "Standard foundational academic node for the current session cycle."}
-        </p>
-      </div>
-
       {/* Meta Info Footer */}
-      <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between">
+      <div className="mt-auto pt-4 border-t border-slate-100 flex items-center justify-between gap-1">
         <Link 
           href={`/admin/students?class_id=${classItem._id}`}
-          className="flex items-center gap-2 group/link hover:opacity-80 transition-all min-w-0"
+          className="flex items-center gap-1.5 group/link hover:opacity-80 transition-all min-w-0"
         >
-          <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100 group-hover/link:bg-blue-600 group-hover/link:text-white transition-all shrink-0">
-            <span className="material-symbols-outlined text-base">group</span>
+          <div className="h-7 w-7 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100 group-hover/link:bg-blue-600 group-hover/link:text-white transition-all shrink-0">
+            <span className="material-symbols-outlined text-[14px]">group</span>
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Students</span>
-            <span className="text-[12px] font-bold text-slate-900 leading-none">
+            <span className="text-[7px] font-bold text-slate-400 uppercase tracking-wider">Students</span>
+            <span className="text-[11px] font-bold text-slate-900 leading-none">
               {classItem.enrolled_students || classItem.student_count || 0}
             </span>
           </div>
         </Link>
         
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           <Link
             href={`/admin/timetable?class_id=${classItem._id}`}
-            className="h-8 px-2 flex items-center gap-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all border border-emerald-100/50"
+            className="h-7 px-1.5 flex items-center gap-1 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-all border border-emerald-100/50"
             title="Class Timetable"
           >
-            <span className="material-symbols-outlined text-[18px]">schedule</span>
-            <span className="text-[9px] font-bold">Timetable</span>
+            <span className="material-symbols-outlined text-[16px]">schedule</span>
+            <span className="text-[8px] font-bold">Timetable</span>
           </Link>
           <button
             onClick={() => onFee(classItem)}
-            className="h-8 px-2 flex items-center gap-1.5 rounded-lg bg-violet-50 text-violet-600 text-[9px] font-bold hover:bg-violet-100 transition-all border border-violet-100/50"
+            className="h-7 px-1.5 flex items-center gap-1 rounded-lg bg-violet-50 text-violet-600 text-[8px] font-bold hover:bg-violet-100 transition-all border border-violet-100/50"
           >
-            <span className="material-symbols-outlined text-[18px]">payments</span>
+            <span className="material-symbols-outlined text-[16px]">payments</span>
             Fees
           </button>
           <Link
             href={`/admin/attendance?class_id=${classItem._id}`}
-            className="h-8 px-2 flex items-center gap-1.5 rounded-lg bg-blue-600 text-white text-[9px] font-bold hover:bg-blue-700 transition-all shadow-sm active:scale-95"
+            className="h-7 px-1.5 flex items-center gap-1 rounded-lg bg-blue-600 text-white text-[8px] font-bold hover:bg-blue-700 transition-all shadow-sm active:scale-95"
           >
-            <span className="material-symbols-outlined text-[18px]">how_to_reg</span>
+            <span className="material-symbols-outlined text-[16px]">how_to_reg</span>
             Attendance
           </Link>
         </div>

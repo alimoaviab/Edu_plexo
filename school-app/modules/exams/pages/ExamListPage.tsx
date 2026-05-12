@@ -8,20 +8,32 @@ import { useExams } from "../hooks/useExams";
 import { ExamRow } from "../types/exam.types";
 import { showToast } from "../../../utils/toast";
 import { useQueryParams } from "../../../hooks/useQueryParams";
+import { useClasses } from "../../classes/hooks/useClasses";
+import { Select } from "../../../components/ui";
 
 export function ExamListPage({ filters }: { filters?: { class_id?: string; subject?: string } }) {
   const pathname = usePathname();
   const { currentParams, updateQuery, withQuery } = useQueryParams();
-  const { state, updateExam, deleteExam } = useExams(filters);
+  const { state: classState } = useClasses();
+  
+  // Default date to today
+  const today = new Date().toISOString().split('T')[0];
+  
   const [searchQuery, setSearchQuery] = useState(currentParams.get("search") || "");
   const [statusFilter, setStatusFilter] = useState<"all" | "scheduled" | "completed" | "cancelled">((currentParams.get("status") as any) || "all");
+  const [classFilter, setClassFilter] = useState(currentParams.get("class_id") || "all");
+  const [dateFilter, setDateFilter] = useState(currentParams.get("date") || today);
   const [viewMode, setViewMode] = useState<"grid" | "list">((currentParams.get("view") as any) || "grid");
+
+  const { state, updateExam, deleteExam } = useExams(classFilter !== 'all' ? { class_id: classFilter } : filters);
 
   useEffect(() => {
     setSearchQuery(currentParams.get("search") || "");
     setStatusFilter((currentParams.get("status") as any) || "all");
+    setClassFilter(currentParams.get("class_id") || "all");
+    setDateFilter(currentParams.get("date") || today);
     setViewMode((currentParams.get("view") as any) || "grid");
-  }, [currentParams.toString()]);
+  }, [currentParams.toString(), today]);
 
   const filteredRows = useMemo(() => {
     const rows = state.data || [];
@@ -33,9 +45,12 @@ export function ExamListPage({ filters }: { filters?: { class_id?: string; subje
         row.subject.toLowerCase().includes(q) ||
         (row.class_name || "").toLowerCase().includes(q);
       const statusMatch = statusFilter === "all" ? true : row.status === statusFilter;
-      return queryMatch && statusMatch;
+      const classMatch = classFilter === "all" ? true : row.class_id === classFilter;
+      const dateMatch = dateFilter === "" ? true : row.starts_at === dateFilter;
+      
+      return queryMatch && statusMatch && classMatch && dateMatch;
     });
-  }, [state.data, searchQuery, statusFilter]);
+  }, [state.data, searchQuery, statusFilter, classFilter, dateFilter]);
 
   const columns: DataTableColumn<ExamRow>[] = [
     {
@@ -92,15 +107,21 @@ export function ExamListPage({ filters }: { filters?: { class_id?: string; subje
       onClick: (row) => alert(`Exam: ${row.title}`),
     },
     {
-      icon: "settings",
-      label: "Configure",
+      icon: "edit_note",
+      label: "Edit",
       onClick: (row) => alert(`Edit: ${row.title}`),
     },
     {
-      icon: "delete",
-      label: "Remove",
+      icon: "check_circle",
+      label: "Complete",
+      variant: "success" as any,
+      onClick: (row) => updateExam(row._id, { status: "completed" }),
+    },
+    {
+      icon: "cancel",
+      label: "Cancel",
       variant: "danger",
-      onClick: (row) => deleteExam(row._id),
+      onClick: (row) => updateExam(row._id, { status: "cancelled" }),
     },
   ];
 
@@ -166,13 +187,39 @@ export function ExamListPage({ filters }: { filters?: { class_id?: string; subje
               setStatusFilter(value);
               updateQuery({ status: value });
             }}
-            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
           >
             <option value="all">Lifecycle: All</option>
             <option value="scheduled">Scheduled</option>
             <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
+
+          <select
+            value={classFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              setClassFilter(value);
+              updateQuery({ class_id: value });
+            }}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+          >
+            <option value="all">All Classes</option>
+            {(classState.data || []).map((c: any) => (
+              <option key={c.id || c._id} value={c.id || c._id}>{c.name}</option>
+            ))}
+          </select>
+
+          <input 
+            type="date"
+            value={dateFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              setDateFilter(value);
+              updateQuery({ date: value });
+            }}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+          />
         </div>
 
         <div className="flex items-center gap-3">
@@ -236,14 +283,33 @@ export function ExamListPage({ filters }: { filters?: { class_id?: string; subje
                         <span className="material-symbols-outlined text-[20px] font-bold">description</span>
                       </div>
                       <div className="flex items-center gap-1 bg-slate-50/50 rounded-lg p-1 border border-slate-100">
-                        <button className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all">
-                          <span className="material-symbols-outlined text-base">settings</span>
+                        <button 
+                          className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all"
+                          title="Edit"
+                        >
+                          <span className="material-symbols-outlined text-base">edit_note</span>
                         </button>
                         <button 
-                          onClick={() => deleteExam(exam._id)}
-                          className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-white hover:text-red-500 hover:shadow-sm transition-all"
+                          onClick={() => updateExam(exam._id, { status: "completed" })}
+                          className={`h-7 w-7 flex items-center justify-center rounded transition-all ${
+                            exam.status === "completed" || exam.status === "results_published"
+                            ? "bg-emerald-500 text-white shadow-sm" 
+                            : "text-slate-400 hover:bg-white hover:text-emerald-500 hover:shadow-sm"
+                          }`}
+                          title="Mark as Completed"
                         >
-                          <span className="material-symbols-outlined text-base">delete</span>
+                          <span className="material-symbols-outlined text-base">check_circle</span>
+                        </button>
+                        <button 
+                          onClick={() => updateExam(exam._id, { status: "cancelled" })}
+                          className={`h-7 w-7 flex items-center justify-center rounded transition-all ${
+                            exam.status === "cancelled" 
+                            ? "bg-red-500 text-white shadow-sm" 
+                            : "text-slate-400 hover:bg-white hover:text-red-500 hover:shadow-sm"
+                          }`}
+                          title="Cancel Exam"
+                        >
+                          <span className="material-symbols-outlined text-base">cancel</span>
                         </button>
                       </div>
                     </div>
@@ -251,8 +317,8 @@ export function ExamListPage({ filters }: { filters?: { class_id?: string; subje
                     <div className="mb-4">
                       <div className="flex items-center gap-2 mb-0.5">
                         <h3 className="text-base font-bold text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">{exam.title}</h3>
-                        <Badge variant={exam.status === "completed" ? "success" : exam.status === "scheduled" ? "primary" : "gray"} className="text-[7px] font-bold normal-case  px-1 py-0">
-                          {exam.status}
+                        <Badge variant={exam.status === "completed" || exam.status === "results_published" ? "success" : exam.status === "scheduled" ? "primary" : "gray"} className="text-[7px] font-bold normal-case  px-1 py-0">
+                          {exam.status === "results_published" ? "Published" : exam.status}
                         </Badge>
                       </div>
                       <p className="text-[9px] font-bold text-blue-600 normal-case ">{exam.subject}</p>
@@ -264,8 +330,11 @@ export function ExamListPage({ filters }: { filters?: { class_id?: string; subje
                         <p className="text-[9px] font-bold text-slate-700 truncate">{exam.class_name || "Unassigned"}</p>
                       </div>
                       <div className="bg-slate-50/50 rounded-lg p-2 border border-slate-100/50">
-                        <p className="text-[7px] font-bold text-slate-400 normal-case  mb-0.5">Max Marks</p>
-                        <p className="text-[9px] font-bold text-slate-700">{exam.max_marks} Pts</p>
+                        <p className="text-[7px] font-bold text-slate-400 normal-case  mb-0.5">Graded Progress</p>
+                        <p className="text-[9px] font-bold text-emerald-600 flex items-center gap-1">
+                           <span className="material-symbols-outlined text-[10px]">done_all</span>
+                           {exam.results_count || 0} Students
+                        </p>
                       </div>
                     </div>
 
@@ -286,7 +355,7 @@ export function ExamListPage({ filters }: { filters?: { class_id?: string; subje
                         Enter Marks
                      </Link>
                      <Link 
-                       href={`${pathname.includes("/teacher") ? "/teacher" : "/admin"}/exams/results?exam_id=${exam._id}`}
+                       href={`${pathname.includes("/teacher") ? "/teacher" : "/admin"}/exams/marks?exam_id=${exam._id}`}
                        className="group/btn h-7 px-3 rounded-lg bg-slate-900 text-[9px] font-black text-white uppercase tracking-widest hover:bg-black transition-all flex items-center gap-2 shadow-sm active:scale-95"
                      >
                         Results

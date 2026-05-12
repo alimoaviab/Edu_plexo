@@ -8,17 +8,33 @@ import { useResults } from "../hooks/useResults";
 import { ResultRow } from "../types/result.types";
 import { showToast } from "../../../utils/toast";
 import { useQueryParams } from "../../../hooks/useQueryParams";
+import { useClasses } from "../../classes/hooks/useClasses";
+import { useExams } from "../../exams/hooks/useExams";
 
 export function ResultListPage({ filters }: { filters?: { exam_id?: string; student_id?: string } }) {
   const pathname = usePathname();
   const { currentParams, updateQuery, withQuery } = useQueryParams();
-  const { state, updateResult, deleteResult } = useResults(filters);
+  const { state: classState } = useClasses();
+  
   const [searchQuery, setSearchQuery] = useState(currentParams.get("search") || "");
   const [gradeFilter, setGradeFilter] = useState<string>(currentParams.get("grade") || "all");
+  const [classFilter, setClassFilter] = useState<string>(currentParams.get("class_id") || "all");
+  const [examFilter, setExamFilter] = useState<string>(currentParams.get("exam_id") || "all");
+  const today = new Date().toISOString().split('T')[0];
+  const [dateFilter, setDateFilter] = useState<string>(currentParams.get("date") || today);
+
+  const { state: examState } = useExams(classFilter !== "all" ? { class_id: classFilter } : {});
+  const { state, updateResult, deleteResult } = useResults({
+    exam_id: examFilter !== "all" ? examFilter : undefined,
+    ...(filters || {})
+  });
 
   useEffect(() => {
     setSearchQuery(currentParams.get("search") || "");
     setGradeFilter(currentParams.get("grade") || "all");
+    setClassFilter(currentParams.get("class_id") || "all");
+    setExamFilter(currentParams.get("exam_id") || "all");
+    setDateFilter(currentParams.get("date") || "");
   }, [currentParams.toString()]);
 
   const filteredRows = useMemo(() => {
@@ -30,10 +46,14 @@ export function ResultListPage({ filters }: { filters?: { exam_id?: string; stud
         row.exam_title.toLowerCase().includes(q) ||
         row.student_name.toLowerCase().includes(q) ||
         row.admission_no.toLowerCase().includes(q);
+      
       const gradeMatch = gradeFilter === "all" ? true : row.grade === gradeFilter;
-      return queryMatch && gradeMatch;
+      const classMatch = classFilter === "all" ? true : row.class_id === classFilter;
+      const dateMatch = dateFilter === "" ? true : row.graded_at?.split('T')[0] === dateFilter;
+
+      return queryMatch && gradeMatch && classMatch && dateMatch;
     });
-  }, [state.data, searchQuery, gradeFilter]);
+  }, [state.data, searchQuery, gradeFilter, classFilter, dateFilter]);
 
   const stats = useMemo(() => {
     const data = state.data || [];
@@ -195,7 +215,7 @@ export function ResultListPage({ filters }: { filters?: { exam_id?: string; stud
               setGradeFilter(value);
               updateQuery({ grade: value });
             }}
-            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
           >
             <option value="all">Evaluation: All</option>
             <option value="A+">Distinction (A+)</option>
@@ -203,6 +223,49 @@ export function ResultListPage({ filters }: { filters?: { exam_id?: string; stud
             <option value="B">Commendable (B)</option>
             <option value="F">Critical Re-eval (F)</option>
           </select>
+
+          <select
+            value={classFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              setClassFilter(value);
+              setExamFilter("all"); // Reset exam when class changes
+              updateQuery({ class_id: value, exam_id: "all" });
+            }}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+          >
+            <option value="all">All Classes</option>
+            {(classState.data || []).map((c: any) => (
+              <option key={c.id || c._id} value={c.id || c._id}>{c.name}</option>
+            ))}
+          </select>
+
+          <select
+            value={examFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              setExamFilter(value);
+              updateQuery({ exam_id: value });
+            }}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+            disabled={classFilter === "all"}
+          >
+            <option value="all">Select Exam</option>
+            {(examState.data || []).map((e: any) => (
+              <option key={e._id} value={e._id}>{e.title}</option>
+            ))}
+          </select>
+
+          <input 
+            type="date"
+            value={dateFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              setDateFilter(value);
+              updateQuery({ date: value });
+            }}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-[10px] font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+          />
         </div>
 
         <div className="flex items-center gap-3">
