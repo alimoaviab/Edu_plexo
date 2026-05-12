@@ -14,7 +14,7 @@ export default function EventListPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<EventRecordRow | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft" | "cancelled">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "scheduled" | "cancelled" | "completed">("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const filteredRows = useMemo(() => {
@@ -82,7 +82,7 @@ export default function EventListPage() {
       label: "Status",
       render: (row) => (
         <Badge
-          variant={row.status === "published" ? "success" : row.status === "cancelled" ? "error" : "warning"}
+          variant={row.status === "scheduled" ? "warning" : row.status === "completed" ? "success" : "error"}
           className="normal-case text-[9px] font-bold normal-case  px-2"
         >
           {row.status}
@@ -190,9 +190,9 @@ export default function EventListPage() {
             onChange={(e) => setStatusFilter(e.target.value as any)}
             className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
           >
-            <option value="all">Lifecycle: All</option>
-            <option value="published">Active Events</option>
-            <option value="draft">Draft Collection</option>
+            <option value="all">Status: All</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="completed">Completed</option>
             <option value="cancelled">Cancelled</option>
           </select>
         </div>
@@ -254,7 +254,7 @@ export default function EventListPage() {
                         <span className="material-symbols-outlined text-lg">event</span>
                       </div>
                       <Badge
-                        variant={row.status === "published" ? "success" : row.status === "cancelled" ? "error" : "warning"}
+                        variant={row.status === "scheduled" ? "warning" : row.status === "completed" ? "success" : "error"}
                         className="normal-case text-[9px] font-bold  px-2 py-0.5"
                       >
                         {row.status}

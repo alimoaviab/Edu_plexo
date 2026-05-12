@@ -33,13 +33,20 @@ export const LiveClassList: React.FC<LiveClassListProps> = ({ role }) => {
 
   const fetchClasses = async () => {
     try {
+      console.log('📥 Fetching live classes...');
       const res = await fetch("/api/live/classes");
       const json = await res.json();
+      
+      console.log('📥 API Response:', json);
+      
       if (json.success) {
+        console.log('✅ Classes fetched:', json.data);
         setClasses(json.data);
+      } else {
+        console.warn('⚠️ API returned success: false');
       }
     } catch (error) {
-      console.error("Failed to fetch live classes", error);
+      console.error("❌ Failed to fetch live classes", error);
     } finally {
       setLoading(false);
     }

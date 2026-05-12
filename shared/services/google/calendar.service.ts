@@ -78,6 +78,7 @@ export async function createCalendarEventWithMeet(
     };
     
     // Create the event
+    console.log('📤 Sending to Google Calendar API with conferenceDataVersion: 1');
     const response = await calendar.events.insert({
       calendarId: 'primary',
       conferenceDataVersion: 1, // REQUIRED for Meet link generation
@@ -87,14 +88,23 @@ export async function createCalendarEventWithMeet(
     
     const createdEvent = response.data;
     
-    // Extract Meet link
-    const meetingLink = createdEvent.hangoutLink || createdEvent.conferenceData?.entryPoints?.find(
-      ep => ep.entryPointType === 'video'
-    )?.uri;
+    // Debug logging
+    console.log('📥 Google Calendar API Response:');
+    console.log('  Event ID:', createdEvent.id);
+    console.log('  Summary:', createdEvent.summary);
+    console.log('  hangoutLink:', createdEvent.hangoutLink);
+    console.log('  conferenceData:', JSON.stringify(createdEvent.conferenceData, null, 2));
+    
+    // Extract Meet link - MUST use hangoutLink directly
+    const meetingLink = createdEvent.hangoutLink;
     
     if (!meetingLink) {
-      console.warn('Meet link not generated for event:', createdEvent.id);
+      console.error('❌ CRITICAL: hangoutLink not generated!');
+      console.error('Full event response:', JSON.stringify(createdEvent, null, 2));
+      throw new Error('Google Meet link generation failed - hangoutLink is missing. Check conferenceDataVersion and conferenceSolutionKey.');
     }
+    
+    console.log('✅ Meet link generated successfully:', meetingLink);
     
     return {
       id: createdEvent.id!,
@@ -102,7 +112,7 @@ export async function createCalendarEventWithMeet(
       description: createdEvent.description ?? undefined,
       startTime: createdEvent.start?.dateTime!,
       endTime: createdEvent.end?.dateTime!,
-      meetingLink: meetingLink ?? undefined,
+      meetingLink: meetingLink, // Direct assignment - guaranteed to be valid
       htmlLink: createdEvent.htmlLink!,
     };
   } catch (error: any) {

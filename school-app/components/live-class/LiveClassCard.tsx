@@ -1,11 +1,4 @@
-/**
- * Live Class Card Component
- * Displays a scheduled live class with Join button
- */
-
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat('en-US', {
@@ -55,6 +48,18 @@ interface LiveClassCardProps {
 
 export default function LiveClassCard({ liveClass, onDelete }: LiveClassCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Debug logging
+  useEffect(() => {
+    console.log('🎥 LiveClassCard Rendered:');
+    console.log('  Title:', liveClass.title);
+    console.log('  Meeting Link:', liveClass.meetingLink);
+    console.log('  Link Type:', typeof liveClass.meetingLink);
+    if (liveClass.meetingLink) {
+      console.log('  Link Valid URL:', liveClass.meetingLink.startsWith('https://'));
+      console.log('  Link Starts with meet.google.com:', liveClass.meetingLink.includes('meet.google.com'));
+    }
+  }, [liveClass]);
 
   const startTime = new Date(liveClass.startTime);
   const endTime = new Date(liveClass.endTime);
@@ -220,6 +225,11 @@ export default function LiveClassCard({ liveClass, onDelete }: LiveClassCardProp
             href={liveClass.meetingLink}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              console.log('🔗 Clicking Join button');
+              console.log('  Meeting Link:', liveClass.meetingLink);
+              console.log('  Opening in new tab...');
+            }}
             className={`flex-1 inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               isLive 
                 ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500 animate-pulse' 

@@ -19,10 +19,10 @@ export default function EventForm({ initial, onSubmit, onCancel }: Props) {
     start_time: initial?.start_time ?? "",
     end_time: initial?.end_time ?? "",
     location: initial?.location ?? "",
-    visibility: initial?.visibility ?? "public",
+    visibility: initial?.visibility ?? "all",
     target_class_ids: initial?.target_class_ids ?? [],
     organizer: initial?.organizer ?? "",
-    status: initial?.status ?? "draft"
+    status: initial?.status ?? "scheduled"
   });
 
   const handleChange = (field: keyof EventFormInput, value: any) => {
@@ -65,11 +65,10 @@ export default function EventForm({ initial, onSubmit, onCancel }: Props) {
             onChange={e => handleChange("event_type", e.target.value)}
             className="w-full border rounded px-3 py-2"
           >
+            <option value="academic">Academic</option>
             <option value="holiday">Holiday</option>
-            <option value="exam">Exam</option>
-            <option value="meeting">Meeting</option>
-            <option value="activity">Activity</option>
             <option value="sports">Sports</option>
+            <option value="cultural">Cultural</option>
             <option value="other">Other</option>
           </select>
         </div>
@@ -80,9 +79,7 @@ export default function EventForm({ initial, onSubmit, onCancel }: Props) {
             onChange={e => handleChange("visibility", e.target.value)}
             className="w-full border rounded px-3 py-2"
           >
-            <option value="public">Public</option>
-            <option value="teachers_only">Teachers Only</option>
-            <option value="students_only">Students Only</option>
+            <option value="all">All</option>
             <option value="specific_classes">Specific Classes</option>
           </select>
         </div>
@@ -158,9 +155,9 @@ export default function EventForm({ initial, onSubmit, onCancel }: Props) {
           onChange={e => handleChange("status", e.target.value)}
           className="w-full border rounded px-3 py-2"
         >
-          <option value="draft">Draft</option>
-          <option value="published">Published</option>
+          <option value="scheduled">Scheduled</option>
           <option value="cancelled">Cancelled</option>
+          <option value="completed">Completed</option>
         </select>
       </div>
 
