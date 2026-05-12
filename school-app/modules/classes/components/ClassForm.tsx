@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState, useEffect } from "react";
+import { FormEvent, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button, Input, Select } from "../../../components/ui";
 import { ClassFormInput, ClassSubject, GradeThreshold } from "../types/class.types";
@@ -13,6 +13,16 @@ const defaultGrades: GradeThreshold[] = [
     { grade: "D", min_score: 50, max_score: 59, description: "Satisfactory" },
 ];
 
+const defaultSubjects: ClassSubject[] = [
+    { name: "Urdu", total_marks: 100, passing_marks: 33 },
+    { name: "English", total_marks: 100, passing_marks: 33 },
+    { name: "Math", total_marks: 100, passing_marks: 33 },
+    { name: "Chemistry", total_marks: 100, passing_marks: 33 },
+    { name: "Physics", total_marks: 100, passing_marks: 33 },
+    { name: "Biology", total_marks: 100, passing_marks: 33 },
+    { name: "Computer", total_marks: 100, passing_marks: 33 },
+];
+
 const initialForm: ClassFormInput = {
     name: "",
     code: "",
@@ -20,7 +30,7 @@ const initialForm: ClassFormInput = {
     passing_percentage: 33,
     academic_year_id: "",
     teacher_ids: [],
-    subjects: [],
+    subjects: [...defaultSubjects],
     grade_thresholds: [...defaultGrades],
     room_number: "",
     description: ""
@@ -124,6 +134,8 @@ export function ClassForm({
             return { ...prev, subjects: newSubjects };
         });
     };
+
+    const subjectInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
     const applyPassPercentage = () => {
         setForm(prev => ({
@@ -365,9 +377,11 @@ export function ClassForm({
 
                     <div className="space-y-1.5">
                         {form.subjects.map((subject, index) => (
-                            <div key={index} className="flex items-center gap-2 p-1.5 bg-slate-50/50 rounded-xl border border-slate-100 group">
-                                <div className="flex-1">
+                            <div key={index} className="flex items-center gap-2 p-1.5 bg-slate-50/50 rounded-xl border border-slate-100 group transition-all hover:bg-white hover:border-blue-200">
+                                <div className="flex-1 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-[16px] text-slate-300 group-hover:text-blue-500 transition-colors">book</span>
                                     <input
+                                        ref={el => { subjectInputRefs.current[index] = el; }}
                                         placeholder="Subject Name"
                                         value={subject.name}
                                         onChange={(e) => updateSubject(index, "name", e.target.value)}
@@ -393,13 +407,24 @@ export function ClassForm({
                                         className="w-full text-center bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900"
                                     />
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => removeSubject(index)}
-                                    className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                                </button>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => subjectInputRefs.current[index]?.focus()}
+                                        className="p-1.5 text-slate-300 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100"
+                                        title="Edit subject"
+                                    >
+                                        <span className="material-symbols-outlined text-[18px]">edit_note</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeSubject(index)}
+                                        className="p-1.5 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                                        title="Delete subject"
+                                    >
+                                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
