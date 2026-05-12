@@ -209,6 +209,13 @@ export async function updateAcademicYear(
     const nextEndDate = parsed.end_date ?? existing.end_date;
     const nextIsActive = parsed.is_active ?? existing.is_active;
 
+    if (nextIsActive === false && existing.is_active === true) {
+        const activeCount = await AcademicYearModel.countDocuments(tenantFilter(ctx, { is_active: true }));
+        if (activeCount <= 1) {
+            throw new ControlledError("CONSTRAINT_ERROR", "At least one academic year must remain active for system operations.", 400);
+        }
+    }
+
     if (nextIsActive) {
       await AcademicYearModel.updateMany(tenantFilter(ctx), { $set: { is_active: false } });
     }

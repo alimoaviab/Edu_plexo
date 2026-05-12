@@ -15,12 +15,20 @@ const initialForm: AcademicYearFormInput = {
 
 export function AcademicYearForm({ 
     onCreate,
+    initialData,
     showFooter = true 
 }: { 
     onCreate: (input: AcademicYearFormInput) => Promise<unknown>,
+    initialData?: Partial<AcademicYearFormInput>,
     showFooter?: boolean
 }) {
-    const [form, setForm] = useState<AcademicYearFormInput>(initialForm);
+    const [form, setForm] = useState<AcademicYearFormInput>({
+        year: initialData?.year || "",
+        start_date: initialData?.start_date ? new Date(initialData.start_date).toISOString().split('T')[0] : "",
+        end_date: initialData?.end_date ? new Date(initialData.end_date).toISOString().split('T')[0] : "",
+        is_active: initialData?.is_active || false,
+        description: initialData?.description || ""
+    });
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -137,7 +145,7 @@ export function AcademicYearForm({
                         disabled={saving || !isValid}
                         className="h-9.5 px-8 text-[10px] font-bold normal-case  shadow-xl shadow-slate-900/10 active:scale-[0.98] transition-all bg-slate-900 hover:bg-slate-800 text-white rounded-lg"
                     >
-                        {saving ? "Deploying..." : "Publish Session"}
+                        {saving ? "Deploying..." : (initialData ? "Update Session" : "Publish Session")}
                     </Button>
                 </div>
             )}

@@ -138,7 +138,7 @@ export function AcademicYearListPage() {
         </div>
 
         {/* Operational Toolbar */}
-        <div className="premium-card p-2 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white/80 backdrop-blur-md sticky top-[72px] z-20 border-slate-200/60 shadow-sm rounded-xl">
+        <div className="premium-card p-2 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white/80 backdrop-blur-md border-slate-200/60 shadow-sm rounded-xl">
           <div className="flex flex-1 items-center gap-2 max-w-2xl">
             <div className="relative flex-1">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400">search</span>
@@ -232,13 +232,13 @@ export function AcademicYearListPage() {
                             </div>
                             
                             <div className="flex items-center gap-0.5">
-                              <button 
-                                onClick={(e) => { e.preventDefault(); setEditingYear(row); }}
+                              <Link 
+                                href={`/admin/academic-years/${row._id}/edit`}
                                 className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all"
                                 title="Edit Session"
                               >
                                 <span className="material-symbols-outlined text-[18px]">edit_note</span>
-                              </button>
+                              </Link>
                               <button 
                                 onClick={(e) => { e.preventDefault(); setDeletingYear(row); }}
                                 className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
@@ -315,35 +315,52 @@ export function AcademicYearListPage() {
             )}
 
             {/* Pagination - Standard ERP Style */}
-            <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-54">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-slate-500">
-                  Showing <span className="font-bold text-slate-900">{years.length}</span> of <span className="font-bold text-slate-900">{meta?.total || years.length}</span> sessions
-                </span>
+            {/* Refined Pagination - Professional ERP Alignment */}
+            <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6 pb-8">
+              <div className="flex flex-col gap-0.5">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Session Index</p>
+                <p className="text-[11px] font-medium text-slate-600">
+                  Displaying page <span className="font-bold text-slate-900">{page}</span> of <span className="font-bold text-slate-900">{meta?.pages || 1}</span> 
+                  <span className="mx-2 text-slate-300">|</span> 
+                  <span className="font-bold text-slate-900">{meta?.total || years.length}</span> total entries
+                </p>
               </div>
-              <div className="flex items-center gap-3">
+
+              <div className="flex items-center gap-1.5 bg-slate-50/50 p-1.5 rounded-xl border border-slate-200/40 shadow-sm">
                 <button
                   disabled={page === 1}
                   onClick={() => setPage(page - 1)}
-                  className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-400 border border-slate-200 transition-all hover:text-blue-600 hover:border-blue-200 disabled:opacity-20 disabled:hover:text-slate-400 disabled:hover:border-slate-200 group shadow-sm"
                 >
-                  <span className="material-symbols-outlined text-lg">chevron_left</span>
-                  Previous
+                  <span className="material-symbols-outlined text-[20px] group-active:scale-90 transition-transform">chevron_left</span>
                 </button>
                 
-                <div className="flex items-center gap-1.5 px-3">
-                   <span className="text-xs font-bold text-slate-900">{page}</span>
-                   <span className="text-xs font-medium text-slate-300">/</span>
-                   <span className="text-xs font-medium text-slate-500">{meta?.pages || 1}</span>
+                <div className="flex items-center gap-1 px-1">
+                  {Array.from({ length: meta?.pages || 1 }).map((_, i) => {
+                    const p = i + 1;
+                    const isActive = page === p;
+                    return (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        className={`h-9 w-9 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center ${
+                          isActive 
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" 
+                          : "text-slate-500 hover:bg-white hover:text-slate-900 hover:shadow-sm border border-transparent hover:border-slate-200"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <button
                   disabled={!meta || page === meta.pages}
                   onClick={() => setPage(page + 1)}
-                  className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition-all hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-slate-400 border border-slate-200 transition-all hover:text-blue-600 hover:border-blue-200 disabled:opacity-20 disabled:hover:text-slate-400 disabled:hover:border-slate-200 group shadow-sm"
                 >
-                  Next
-                  <span className="material-symbols-outlined text-lg">chevron_right</span>
+                  <span className="material-symbols-outlined text-[20px] group-active:scale-90 transition-transform">chevron_right</span>
                 </button>
               </div>
             </div>
@@ -351,22 +368,7 @@ export function AcademicYearListPage() {
         </div>
       </div>
 
-      <AcademicYearEditSidebar
-        academicYear={editingYear}
-        isOpen={editingYear !== null}
-        onClose={() => setEditingYear(null)}
-        onSave={async (id, data) => {
-          setIsSaving(true);
-          try {
-            await updateAcademicYear(id, data as AcademicYearUpdateInput);
-            setEditingYear(null);
-            showToast("Academic year updated successfully", "success");
-          } finally {
-            setIsSaving(false);
-          }
-        }}
-        isSaving={isSaving}
-      />
+
 
       <ConfirmModal
         isOpen={deletingYear !== null}

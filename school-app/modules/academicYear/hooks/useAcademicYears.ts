@@ -6,7 +6,7 @@ import { showToast } from "../../../utils/toast";
 import { AcademicYearRow, AcademicYearFormInput } from "../types/academicYear.types";
 import * as service from "../services/academicYear.service";
 
-export function useAcademicYears(initialPage = 1, limit = 9) {
+export function useAcademicYears(initialPage = 1, limit = 6) {
     const { state, run } = useSafeAsync<{ data: AcademicYearRow[]; meta?: { total: number; pages: number } }>();
     const [page, setPage] = useState(initialPage);
 
