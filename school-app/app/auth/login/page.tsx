@@ -87,22 +87,26 @@ export default function LoginPage() {
       });
 
       const result = await response.json();
+      const payload = result?.data && typeof result.data === "object" ? result.data : result;
 
       if (!response.ok) {
         throw new Error(result.message || "Login failed");
       }
 
       setSuccess(true);
-      localStorage.setItem("token", result.token);
-      if (result.profile_id) localStorage.setItem("profile_id", result.profile_id);
+      if (payload?.token) {
+        localStorage.setItem("token", payload.token);
+      }
+      if (payload?.profile_id) localStorage.setItem("profile_id", payload.profile_id);
       else localStorage.removeItem("profile_id");
-      if (result.class_id) localStorage.setItem("class_id", result.class_id);
+      if (payload?.class_id) localStorage.setItem("class_id", payload.class_id);
       else localStorage.removeItem("class_id");
-      if (result.student_id) localStorage.setItem("student_id", result.student_id);
+      if (payload?.student_id) localStorage.setItem("student_id", payload.student_id);
       else localStorage.removeItem("student_id");
       
       setTimeout(() => {
-        router.push(ROLE_ROUTES[result.role] || "/");
+        const targetRole = payload?.role || selectedRole;
+        router.push(ROLE_ROUTES[targetRole] || "/");
       }, 1500);
     } catch (err: any) {
       setError(err.message);
