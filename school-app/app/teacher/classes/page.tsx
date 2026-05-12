@@ -83,9 +83,14 @@ export default function TeacherClassesPage() {
     section: "all"
   });
 
+  const teacherId = useMemo(() => {
+    const profileId = user?.profileId;
+    return profileId && /^[a-fA-F0-9]{24}$/.test(profileId) ? profileId : "session";
+  }, [user?.profileId]);
+
   const fetchClasses = () => {
     void run(async () => {
-      const result = await serviceRequest<TeacherClassesResponse>(`/api/teachers/${user?.profileId || "session"}`);
+      const result = await serviceRequest<TeacherClassesResponse>(`/api/teachers/${teacherId}`);
       if (!result.ok) throw new Error(result.error.message || "Failed to load classes");
       return result.data;
     });
@@ -93,7 +98,7 @@ export default function TeacherClassesPage() {
 
   useEffect(() => {
     fetchClasses();
-  }, [user?.profileId]);
+  }, [teacherId]);
 
   const filteredClasses = useMemo(() => {
     if (!state.data?.classes) return [];
