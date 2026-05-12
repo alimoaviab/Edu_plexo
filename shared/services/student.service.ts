@@ -65,15 +65,20 @@ export async function createStudent(
 
     // 1. Resolve Academic Year
     const { AcademicYearModel } = await import("../models/academic-year.model");
-    const activeYear = await AcademicYearModel.findOne(tenantFilter(ctx, { is_active: true }))
-      .select("_id")
-      .lean() as any;
+    let academicYearId = ctx.active_academic_year_id;
 
-    if (!activeYear) {
-      throw new Error("No active academic year found for this school.");
+    if (!academicYearId) {
+      const activeYear = await AcademicYearModel.findOne(tenantFilter(ctx, { is_active: true }))
+        .select("_id")
+        .lean() as any;
+      
+      if (!activeYear) {
+        throw new Error("No active academic year found for this school.");
+      }
+      academicYearId = String(activeYear._id);
     }
 
-    const academicYear = activeYear as { _id: Types.ObjectId };
+    const academicYear = { _id: new Types.ObjectId(academicYearId) };
 
     let userId: Types.ObjectId | undefined;
     if (normalizedEmail) {

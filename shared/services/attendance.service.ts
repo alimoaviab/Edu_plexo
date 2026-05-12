@@ -74,6 +74,8 @@ export async function listAttendance(
 
     if (filter.academic_year_id) {
       query.academic_year_id = new Types.ObjectId(filter.academic_year_id);
+    } else if (ctx.active_academic_year_id) {
+      query.academic_year_id = new Types.ObjectId(ctx.active_academic_year_id);
     }
 
     if (ctx.role !== "student" && filter.student_id) {

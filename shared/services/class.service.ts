@@ -97,7 +97,15 @@ async function hydrateClassRows(ctx: RequestContext, rows: any[]) {
 export async function listClasses(ctx: RequestContext, query: any = {}): Promise<ServiceResult<any[]>> {
   return serviceTry(async () => {
     const filter = tenantFilter(ctx);
-    Object.assign(filter, query);
+    
+    if (query.academic_year_id) {
+      filter.academic_year_id = new Types.ObjectId(query.academic_year_id);
+    } else if (ctx.active_academic_year_id) {
+      filter.academic_year_id = new Types.ObjectId(ctx.active_academic_year_id);
+    }
+    
+    const { academic_year_id, ...restQuery } = query;
+    Object.assign(filter, restQuery);
 
     if (ctx.role === "teacher") {
       const { resolveTeacherClassIds } = await import("./teacher.service");

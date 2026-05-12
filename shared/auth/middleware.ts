@@ -66,17 +66,26 @@ export function authenticateRequest(request: SessionRequest, expectedApp: AppNam
     throw new Error("Authentication required.");
   }
 
+  // Extract academic year from header
+  const academicYearId = request.headers?.["x-academic-year-id"];
+
   // Production requires valid token
   try {
-    return contextFromToken(verifyAuthToken(token, expectedApp), {
+    const ctx = contextFromToken(verifyAuthToken(token, expectedApp), {
       ip: request.ip,
       user_agent: request.headers?.["user-agent"]
     });
+
+    if (academicYearId && academicYearId !== "undefined") {
+      ctx.active_academic_year_id = academicYearId;
+    }
+
+    return ctx;
   } catch (error: any) {
     // In development, if the token is invalid (e.g. stale secret), fallback to dev context
     if (process.env.NODE_ENV === "development") {
       console.warn(`[Auth] Dev mode: token verification failed (${error.message}), falling back to dev context`);
-      return {
+      const devCtx: RequestContext = {
         school_id: "dev-school-id",
         user_id: "dev-user-id",
         role: "admin",
@@ -87,6 +96,12 @@ export function authenticateRequest(request: SessionRequest, expectedApp: AppNam
         ip: request.ip,
         user_agent: request.headers?.["user-agent"]
       };
+
+      if (academicYearId && academicYearId !== "undefined") {
+        devCtx.active_academic_year_id = academicYearId;
+      }
+
+      return devCtx;
     }
     throw error;
   }

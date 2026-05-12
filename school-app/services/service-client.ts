@@ -26,6 +26,7 @@ export async function serviceRequest<T>(
         credentials: "include",
         headers: {
           "content-type": "application/json",
+          "x-academic-year-id": typeof window !== "undefined" ? window.localStorage.getItem("academic_year_id") ?? "" : "",
           // Only send Bearer token if it's a valid JWT
           ...(authHeader && authHeader.startsWith("eyJ") ? { authorization: `Bearer ${authHeader}` } : {}),
           ...(options.headers ?? {})

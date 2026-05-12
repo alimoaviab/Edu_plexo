@@ -105,9 +105,19 @@ export async function createTeacher(
       status: "active"
     });
 
+    // Resolve Academic Year
+    let academicYearId = ctx.active_academic_year_id;
+    if (!academicYearId) {
+      const { AcademicYearModel } = await import("../models/academic-year.model");
+      const activeYear = await AcademicYearModel.findOne(tenantFilter(ctx, { is_active: true }))
+        .select("_id")
+        .lean();
+      academicYearId = activeYear?._id ? String(activeYear._id) : undefined;
+    }
+
     const created = await TeacherModel.create({
       school_id: ctx.school_id,
-      academic_year_id: ctx.active_academic_year_id,
+      academic_year_id: academicYearId ? new Types.ObjectId(academicYearId) : undefined,
       user_id: user._id,
       email: parsed.email.toLowerCase(),
       employee_no: await nextEmployeeNumber(ctx.school_id),

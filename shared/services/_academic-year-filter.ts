@@ -12,6 +12,10 @@ export async function resolveAcademicYearId(
         return academicYearId;
     }
 
+    if (ctx.active_academic_year_id) {
+        return ctx.active_academic_year_id;
+    }
+
     const active = (await AcademicYearModel.findOne(
         tenantFilter(ctx, { is_active: true })
     )
