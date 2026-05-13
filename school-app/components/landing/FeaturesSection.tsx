@@ -84,7 +84,7 @@ export const FeaturesSection = () => {
             transition={{ delay: 0.1 }}
             className="text-lg text-slate-600 font-medium"
           >
-            Say goodbye to fragmented systems. EduManage brings all your core operations into one beautifully designed platform.
+            Say goodbye to fragmented systems. Eduplexo brings all your core operations into one beautifully designed platform.
           </motion.p>
         </div>
 

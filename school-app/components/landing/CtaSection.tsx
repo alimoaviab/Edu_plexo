@@ -31,7 +31,7 @@ export const CtaSection = () => {
               Ready to transform your school's future?
             </h2>
             <p className="text-xl text-slate-400 mb-12 leading-relaxed font-medium">
-              Join hundreds of innovative schools that trust EduManage to power their daily operations, engage parents, and empower teachers.
+              Join hundreds of innovative schools that trust Eduplexo to power their daily operations, engage parents, and empower teachers.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-12">

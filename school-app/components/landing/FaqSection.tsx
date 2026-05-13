@@ -9,7 +9,7 @@ export const FaqSection = () => {
 
   const faqs = [
     {
-      question: "How long does it take to set up EduManage?",
+      question: "How long does it take to set up Eduplexo?",
       answer: "We typically onboard new schools within 48 hours. Our team handles the entire data migration process from your legacy systems, completely free of charge, ensuring zero downtime for your operations."
     },
     {
@@ -49,7 +49,7 @@ export const FaqSection = () => {
             transition={{ delay: 0.1 }}
             className="text-lg text-slate-600 font-medium"
           >
-            Everything you need to know about migrating to EduManage.
+            Everything you need to know about migrating to Eduplexo.
           </motion.p>
         </div>
 

@@ -16,7 +16,7 @@ export const Footer = () => {
                 <BookOpen className="text-white w-5 h-5" />
               </div>
               <span className="text-xl font-bold text-slate-900">
-                EduManage
+                Eduplexo
               </span>
             </Link>
             <p className="text-slate-500 text-sm leading-relaxed max-w-xs mb-6">
@@ -70,7 +70,7 @@ export const Footer = () => {
 
         <div className="pt-8 border-t border-slate-200/60 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-slate-500">
-            © {new Date().getFullYear()} EduManage Inc. All rights reserved.
+            © {new Date().getFullYear()} Eduplexo Inc. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-sm text-slate-500">
             <span>Designed with</span>

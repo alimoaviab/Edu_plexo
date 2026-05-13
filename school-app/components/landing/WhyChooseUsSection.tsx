@@ -44,7 +44,7 @@ export const WhyChooseUsSection = () => {
               viewport={{ once: true, margin: "-50px" }}
               className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight"
             >
-              Why modern schools choose <span className="text-blue-600">EduManage</span>
+              Why modern schools choose <span className="text-blue-600">Eduplexo</span>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -88,7 +88,7 @@ export const WhyChooseUsSection = () => {
              >
                 <div className="absolute inset-0 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-3xl transform rotate-3 scale-105 opacity-10" />
                 <div className="bg-slate-900 rounded-3xl p-8 md:p-12 relative shadow-2xl overflow-hidden">
-                   <h3 className="text-3xl font-extrabold text-white mb-8">The EduManage Difference</h3>
+                   <h3 className="text-3xl font-extrabold text-white mb-8">The Eduplexo Difference</h3>
 
                    <ul className="space-y-6">
                      {[

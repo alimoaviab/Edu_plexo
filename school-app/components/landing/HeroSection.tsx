@@ -140,7 +140,7 @@ export const HeroSection = () => {
                     <div className="w-3.5 h-3.5 rounded-full bg-emerald-400 shadow-sm" />
                   </div>
                   <div className="mx-auto bg-slate-50 text-slate-400 text-xs font-semibold px-6 py-1.5 rounded-full border border-slate-200/50 shadow-inner">
-                    edumanage.enterprise.app
+                    eduplexo.app
                   </div>
                 </div>
 

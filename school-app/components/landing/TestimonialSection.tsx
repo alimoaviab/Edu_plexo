@@ -6,7 +6,7 @@ import { Star } from "lucide-react";
 
 const testimonials = [
   {
-    content: "EduManage completely transformed how we run our daily operations. Attendance takes seconds, and parent communication has never been easier.",
+    content: "Eduplexo completely transformed how we run our daily operations. Attendance takes seconds, and parent communication has never been easier.",
     author: "Sarah Jenkins",
     role: "School Principal, Oakridge Academy",
     avatar: "SJ"
@@ -45,7 +45,7 @@ export const TestimonialSection = () => {
             transition={{ delay: 0.1 }}
             className="text-lg text-slate-600 font-medium"
           >
-            Don't just take our word for it. Hear from the administrators and teachers who use EduManage every day.
+            Don't just take our word for it. Hear from the administrators and teachers who use Eduplexo every day.
           </motion.p>
         </div>
 
