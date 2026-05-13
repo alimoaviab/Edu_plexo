@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { serviceRequest } from "@/services/service-client";
 import { showToast } from "@/utils/toast";
-import DataState from "@/components/DataState";
+import { DataState } from "@/components/ui";
 
 interface Student {
     id: string;
