@@ -4,15 +4,13 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { serviceRequest } from "../services/service-client";
 
 type Child = {
-  link_id: string;
   student_id: string;
   student_name: string;
   admission_no: string;
+  class_id: string;
   class_name: string;
   class_section: string;
-  grade: string;
-  relationship: string;
-  is_primary: boolean;
+  academic_year: string;
   status: string;
 };
 
@@ -38,23 +36,32 @@ export function SelectedChildProvider({ children: reactChildren }: { children: R
       setLoading(true);
       setError(null);
 
-      const result = await serviceRequest<Child[]>("/api/parent/children");
+      const result = await serviceRequest<{ students: any[] }>("/api/parent/student-info");
 
-      if (result.ok && result.data) {
-        setChildren(result.data);
+      if (result.ok && result.data?.students) {
+        const mappedChildren: Child[] = result.data.students.map(s => ({
+          student_id: s.id,
+          student_name: s.name,
+          admission_no: s.roll_no,
+          class_id: s.class_id,
+          class_name: s.class,
+          class_section: s.section,
+          academic_year: s.academic_year,
+          status: s.status
+        }));
+
+        setChildren(mappedChildren);
 
         // Auto-select first child or primary child
-        if (result.data.length > 0) {
-          const primaryChild = result.data.find((c) => c.is_primary) || result.data[0];
-          
+        if (mappedChildren.length > 0) {
           // Check if there's a saved selection
           const savedChildId = localStorage.getItem("selected_child_id");
-          const savedChild = savedChildId ? result.data.find((c) => c.student_id === savedChildId) : null;
+          const savedChild = savedChildId ? mappedChildren.find((c) => c.student_id === savedChildId) : null;
           
-          setSelectedChild(savedChild || primaryChild);
+          setSelectedChild(savedChild || mappedChildren[0]);
           
-          if (savedChild || primaryChild) {
-            localStorage.setItem("selected_child_id", (savedChild || primaryChild).student_id);
+          if (savedChild || mappedChildren[0]) {
+            localStorage.setItem("selected_child_id", (savedChild || mappedChildren[0]).student_id);
           }
         }
       } else {

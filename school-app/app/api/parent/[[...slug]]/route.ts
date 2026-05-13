@@ -27,7 +27,7 @@ export async function GET(req: Request, context: any) {
             return handleApiResponse(await getStudentInfo(ctx, studentId));
         
         case "dashboard/stats":
-            return handleApiResponse(await getDashboardStats(ctx));
+            return handleApiResponse(await getDashboardStats(ctx, studentId));
             
         case "student-results":
             return handleApiResponse(await getStudentResultsReport(ctx, studentId));

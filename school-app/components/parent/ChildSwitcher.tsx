@@ -45,7 +45,7 @@ export function ChildSwitcher() {
 
   // Show dropdown for multiple children
   return (
-    <div ref={dropdownRef} className="relative">
+    <div ref={dropdownRef} className="relative z-[100]">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -70,10 +70,10 @@ export function ChildSwitcher() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full z-[110] mt-1 w-64 rounded-xl border border-slate-100 bg-white shadow-2xl shadow-slate-200/50">
+        <div className="absolute right-0 top-full z-[999] mt-1 w-64 rounded-xl border border-slate-100 bg-white shadow-2xl shadow-slate-200/50">
           <div className="p-1.5">
             <p className="px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-slate-400">
-              Switch Account
+              Switch Account ({children.length})
             </p>
             <div className="space-y-0.5">
               {children.map((child) => (

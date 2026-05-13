@@ -18,6 +18,11 @@ export function useResults(filters?: { exam_id?: string; student_id?: string }) 
         throw new Error(result.error.message || "Failed to load results");
       }
 
+      // Handle parent portal nested structure
+      if (result.data && !Array.isArray(result.data) && (result.data as any).exam_results) {
+          return (result.data as any).exam_results;
+      }
+
       return result.data;
     });
   }, [run, filterKey]);

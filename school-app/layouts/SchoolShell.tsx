@@ -481,9 +481,9 @@ export function SchoolShell({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0 flex flex-col bg-background h-screen overflow-hidden relative z-30">
-        <header className="sticky top-0 z-10 flex h-10 items-center justify-between border-b border-slate-200/40 bg-white/70 px-4 backdrop-blur-md">
-          <div className="flex items-center gap-3 flex-1">
+      <main className="flex-1 min-w-0 flex flex-col bg-background h-screen overflow-hidden relative z-0">
+        <header className="sticky top-0 z-50 flex h-10 items-center justify-between border-b border-slate-200/40 bg-white/70 px-4 backdrop-blur-md overflow-visible">
+          <div className="flex items-center gap-3 flex-1 overflow-visible">
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="rounded p-1 transition-colors hover:bg-blue-50 lg:hidden"
@@ -500,7 +500,7 @@ export function SchoolShell({
             </div>
           </div>
 
-          <div className="flex items-center gap-3 relative z-[100]">
+          <div className="flex items-center gap-3 relative z-[100] overflow-visible">
             {user.role === "parent" && <ChildSwitcher />}
             
             <div className="hidden sm:flex items-center gap-2 rounded-md border border-slate-100 bg-white px-2 py-1">
@@ -540,7 +540,7 @@ export function SchoolShell({
           </div>
         </header>
 
-        <div key={pathname} className="w-full flex-1 overflow-y-auto animate-fade-in-up px-4 py-6 md:px-8 custom-scrollbar relative z-20">
+        <div key={pathname} className="w-full flex-1 overflow-y-auto animate-fade-in-up px-4 py-6 md:px-8 custom-scrollbar relative z-10">
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-1">
               <span className="h-px w-4 bg-blue-600/30" />

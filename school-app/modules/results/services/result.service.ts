@@ -11,7 +11,12 @@ export function listResults(filters?: { exam_id?: string; student_id?: string })
   if (filters?.student_id) params.append("student_id", filters.student_id);
   
   const query = params.toString();
-  return serviceRequest<ResultRow[]>(`/api/results${query ? `?${query}` : ""}`);
+  
+  // Detect if we should use parent portal API
+  const isParentPortal = typeof window !== 'undefined' && window.location.pathname.includes('/parent');
+  const endpoint = isParentPortal ? `/api/parent/student-results` : `/api/results`;
+  
+  return serviceRequest<any>(`${endpoint}${query ? `?${query}` : ""}`);
 }
 
 export function saveResult(input: ResultFormInput) {

@@ -1,131 +1,192 @@
 "use client";
 
-import { Card } from "../../../components/ui";
+import { useEffect, useState } from "react";
 import { SchoolShell } from "../../../layouts/SchoolShell";
-import { colors, spacing, typography } from "@edu/shared/design-system/tokens";
-import { TimetablePreview } from "../../../modules/timetable/components/TimetablePreview";
-import { useAuth } from "../../../hooks/useAuth";
 import { useSelectedChild } from "../../../contexts/SelectedChildContext";
+import { serviceRequest } from "../../../services/service-client";
+import { TimetablePreview } from "../../../modules/timetable/components/TimetablePreview";
+import Link from "next/link";
 
-const summaries = [
-  { title: "Daily Summary", detail: "4 classes, 1 homework due, attendance marked" },
-  { title: "Academic Insights", detail: "Child's progress is steady in core subjects" },
-  { title: "Upcoming Tasks", detail: "Science project and Mathematics test next week" }
-];
+type DashboardStats = {
+  student_id: string;
+  name: string;
+  class: string;
+  current_grade: string;
+  attendance_percentage: number;
+  pending_fees: number;
+  pending_assignments: number;
+};
+
+type StudentInfo = {
+  roll_no: string;
+  class: string;
+  section: string;
+};
 
 export default function ParentDashboardPage() {
-  const { user } = useAuth();
-  const { selectedChild, loading } = useSelectedChild();
-  
-  if (loading) {
+  const { selectedChild, loading: contextLoading } = useSelectedChild();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [studentInfo, setStudentInfo] = useState<StudentInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!selectedChild) return;
+
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const [statsRes, infoRes] = await Promise.all([
+          serviceRequest<{ dashboard: { children_overview: DashboardStats[] } }>(
+            `/api/parent/dashboard/stats?student_id=${selectedChild.student_id}`
+          ),
+          serviceRequest<{ student: StudentInfo }>(
+            `/api/parent/student-info?student_id=${selectedChild.student_id}`
+          )
+        ]);
+
+        if (statsRes.ok && statsRes.data?.dashboard.children_overview[0]) {
+          setStats(statsRes.data.dashboard.children_overview[0]);
+        }
+        if (infoRes.ok && infoRes.data?.student) {
+          setStudentInfo(infoRes.data.student);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, [selectedChild]);
+
+  if (contextLoading || (loading && !stats)) {
     return (
       <SchoolShell eyebrow="Guardian Portal" title="Academic Oversight">
         <div className="flex items-center justify-center h-64">
-          <div className="h-9 w-9 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-100 border-t-blue-600" />
         </div>
       </SchoolShell>
     );
   }
 
-  if (!selectedChild) {
+  if (!selectedChild || !stats) {
     return (
       <SchoolShell eyebrow="Guardian Portal" title="Academic Oversight">
         <div className="flex flex-col items-center justify-center h-64 text-center">
-          <span className="material-symbols-outlined text-6xl text-slate-300 mb-4">family_restroom</span>
-          <h3 className="text-lg font-bold text-slate-700 mb-2">No Students Linked</h3>
-          <p className="text-sm text-slate-500">No students are linked to this parent account yet.</p>
+          <span className="material-symbols-outlined text-4xl text-slate-200 mb-3">family_restroom</span>
+          <h3 className="text-sm font-bold text-slate-700">No Student Selected</h3>
+          <p className="text-[11px] text-slate-400 mt-1">Please select a child from the switcher above.</p>
         </div>
       </SchoolShell>
     );
   }
-  
+
   return (
     <SchoolShell eyebrow="Guardian Portal" title="Academic Oversight">
-      {/* Welcome Section */}
-      <div className="mb-8 p-8 rounded-[2rem] bg-gradient-to-br from-indigo-900 to-slate-900 text-white shadow-2xl shadow-indigo-900/20 relative overflow-hidden">
+      {/* Compact Hero Strip */}
+      <div className="mb-6 p-6 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden relative">
         <div className="relative z-10">
-          <p className="text-[10px] font-bold normal-case tracking-[0.3em] text-indigo-300">Welcome, Guardian</p>
-          <h2 className="text-3xl font-bold mt-2 tracking-tight">
-            {selectedChild.student_name}'s Dashboard
-          </h2>
-          <p className="text-slate-300 mt-2 text-sm font-medium max-w-lg leading-relaxed">
-            Real-time monitoring of your ward's academic journey, attendance metrics, and institutional broadcasts.
-          </p>
-          <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 border border-white/20">
-            <span className="material-symbols-outlined text-[18px]">school</span>
-            <span className="text-sm font-bold">
-              {selectedChild.class_name} {selectedChild.class_section && `- Section ${selectedChild.class_section}`}
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[9px] font-black text-blue-600 uppercase tracking-wider border border-blue-100">
+              Active Student
             </span>
+            <span className="text-[10px] font-bold text-slate-400">Roll No: {studentInfo?.roll_no || "---"}</span>
+          </div>
+          <h2 className="text-xl font-black text-slate-900 tracking-tight">{selectedChild.student_name}</h2>
+          <div className="flex items-center gap-4 mt-2">
+            <div className="flex items-center gap-1.5 text-slate-500">
+              <span className="material-symbols-outlined text-[14px]">school</span>
+              <span className="text-[11px] font-bold">{studentInfo?.class} {studentInfo?.section ? `- ${studentInfo.section}` : ""}</span>
+            </div>
           </div>
         </div>
-        {/* Decorative elements */}
-        <div className="absolute right-[-20px] top-[-20px] h-40 w-40 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute right-10 bottom-[-30px] h-60 w-60 rounded-full bg-indigo-500/10 blur-3xl" />
+
+        <div className="grid grid-cols-3 gap-8 md:border-l md:border-slate-100 md:pl-8">
+          <div>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1">Attendance</p>
+            <p className="text-lg font-black text-slate-900">{stats.attendance_percentage}%</p>
+          </div>
+          <div>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1">Pending Fees</p>
+            <p className="text-lg font-black text-blue-600">Rs. {stats.pending_fees.toLocaleString()}</p>
+          </div>
+          <div>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em] mb-1">Current GPA</p>
+            <p className="text-lg font-black text-slate-900">{stats.current_grade}</p>
+          </div>
+        </div>
+        
+        {/* Subtle Background Icon */}
+        <span className="material-symbols-outlined absolute right-[-10px] bottom-[-20px] text-[120px] text-slate-50 opacity-50 select-none">badge</span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { title: "Daily Pulse", detail: "Active participation in 4 classes today", icon: "bolt", color: "text-amber-600 bg-amber-50" },
-          { title: "Performance", detail: "Consistent growth in core sciences", icon: "trending_up", color: "text-emerald-600 bg-emerald-50" },
-          { title: "Next Milestones", detail: "Science Fair & Term Finals ahead", icon: "event", color: "text-blue-600 bg-blue-50" }
-        ].map((summary) => (
-          <div key={summary.title} className="premium-card p-5 group hover:border-blue-300 transition-all">
-            <div className={`h-10 w-10 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 shadow-sm ${summary.color}`}>
-              <span className="material-symbols-outlined text-[20px]">{summary.icon}</span>
+          { label: "Attendance Status", value: `${stats.attendance_percentage}%`, sub: "Monthly average", icon: "event_available", color: "text-blue-600", bg: "bg-blue-50" },
+          { label: "Pending Tasks", value: stats.pending_assignments, sub: "Homework & Projects", icon: "assignment", color: "text-amber-600", bg: "bg-amber-50" },
+          { label: "Fee Status", value: `Rs. ${stats.pending_fees}`, sub: "Total outstanding", icon: "payments", color: "text-rose-600", bg: "bg-rose-50" },
+          { label: "Performance", value: stats.current_grade, sub: "Last exam grade", icon: "trending_up", color: "text-emerald-600", bg: "bg-emerald-50" },
+        ].map((m) => (
+          <div key={m.label} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:border-blue-200 transition-all">
+            <div className={`h-8 w-8 rounded-lg ${m.bg} ${m.color} flex items-center justify-center mb-3`}>
+              <span className="material-symbols-outlined text-[18px]">{m.icon}</span>
             </div>
-            <h3 className="text-[11px] font-bold normal-case  text-slate-400 mb-1">{summary.title}</h3>
-            <p className="text-[14px] font-bold text-slate-700 leading-tight">{summary.detail}</p>
+            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mb-0.5">{m.label}</h3>
+            <p className="text-lg font-black text-slate-900">{m.value}</p>
+            <p className="text-[9px] font-medium text-slate-500 mt-1">{m.sub}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-           <div className="premium-card p-6">
-              <div className="flex items-center justify-between mb-6">
-                 <div>
-                    <h3 className="text-lg font-bold tracking-tight text-slate-900">Current Schedule</h3>
-                    <p className="text-xs font-medium text-slate-500 mt-1">Daily academic block distribution</p>
-                 </div>
-                 <span className="material-symbols-outlined text-slate-300">calendar_month</span>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Timetable Section */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-50 flex items-center justify-between">
+              <div>
+                <h3 className="text-[13px] font-black text-slate-900 tracking-tight">Today's Schedule</h3>
+                <p className="text-[10px] font-medium text-slate-500">Current active academic block</p>
               </div>
+              <Link href="/parent/timetable" className="text-[10px] font-black text-blue-600 hover:underline uppercase tracking-widest">
+                View Full
+              </Link>
+            </div>
+            <div className="p-5">
               <TimetablePreview classId={selectedChild.class_id} />
-           </div>
+            </div>
+          </div>
         </div>
 
+        {/* Quick Actions */}
         <div className="space-y-6">
-           <div className="premium-card p-6 bg-slate-900 text-white border-0 shadow-xl shadow-slate-900/20">
-              <h3 className="text-sm font-bold normal-case tracking-[0.2em] text-indigo-400 mb-6">Quick Connectivity</h3>
-              <div className="space-y-4">
-                 {[
-                    { label: "Request Leave", icon: "door_front" },
-                    { label: "Fee Statement", icon: "receipt_long" },
-                    { label: "Report Cards", icon: "grade" },
-                    { label: "School Bus", icon: "directions_bus" }
-                 ].map(action => (
-                    <button key={action.label} className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-left">
-                       <div className="flex items-center gap-3">
-                          <span className="material-symbols-outlined text-[18px] text-indigo-300">{action.icon}</span>
-                          <span className="text-[12px] font-bold tracking-tight normal-case">{action.label}</span>
-                       </div>
-                       <span className="material-symbols-outlined text-sm text-white/30">chevron_right</span>
-                    </button>
-                 ))}
-              </div>
-           </div>
-           
-           <div className="premium-card p-5">
-              <h3 className="text-[10px] font-bold normal-case  text-slate-400 mb-4">Upcoming Deadlines</h3>
-              <div className="space-y-4">
-                 <div className="flex items-start gap-3">
-                    <div className="h-2 w-2 rounded-full bg-red-500 mt-1.5" />
-                    <div>
-                       <p className="text-[12px] font-bold text-slate-800">Physics Lab Submission</p>
-                       <p className="text-[10px] font-bold text-slate-400 normal-case tracking-tighter">Due Tomorrow · 09:00 AM</p>
-                    </div>
-                 </div>
-              </div>
-           </div>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.1em] mb-4">Quick Connectivity</h3>
+            <div className="grid grid-cols-1 gap-2">
+              {[
+                { label: "View Timetable", href: "/parent/timetable", icon: "calendar_today" },
+                { label: "View Homework", href: "/parent/homework", icon: "edit_note" },
+                { label: "View Results", href: "/parent/results", icon: "leaderboard" },
+                { label: "View Fees", href: "/parent/fees", icon: "payments" },
+                { label: "View Attendance", href: "/parent/attendance", icon: "fact_check" },
+              ].map(action => (
+                <Link 
+                  key={action.label} 
+                  href={action.href}
+                  className="flex items-center justify-between p-3 rounded-xl border border-slate-50 hover:border-blue-200 hover:bg-blue-50/30 transition-all group"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-[18px] text-blue-500 group-hover:scale-110 transition-transform">{action.icon}</span>
+                    <span className="text-[11px] font-bold text-slate-700">{action.label}</span>
+                  </div>
+                  <span className="material-symbols-outlined text-[14px] text-slate-300 group-hover:text-blue-500">chevron_right</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+          
+
         </div>
       </div>
     </SchoolShell>

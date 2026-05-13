@@ -1,114 +1,161 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { SchoolShell } from "../../../layouts/SchoolShell";
-import { Card, DataState, Skeleton, Badge } from "../../../components/ui";
-import { useSafeAsync } from "../../../hooks/useSafeAsync";
-import { getParentAttendance } from "../../../modules/attendance/services/attendance.service";
-import { ParentAttendanceReport } from "../../../modules/attendance/types/attendance.types";
+import { DataState, Skeleton } from "../../../components/ui";
 import { useSelectedChild } from "../../../contexts/SelectedChildContext";
+import { serviceRequest } from "../../../services/service-client";
+
+type AttendanceRecord = {
+  date: string;
+  status: "present" | "absent" | "late" | "excused";
+};
+
+type AttendanceSummary = {
+  student_id: string;
+  student_name: string;
+  class_name: string;
+  total_present: number;
+  total_absent: number;
+  total_excused: number;
+  percentage: number;
+  recent_records: AttendanceRecord[];
+};
 
 export default function ParentAttendancePage() {
   const { selectedChild, loading: childLoading } = useSelectedChild();
-  const { state, run } = useSafeAsync<ParentAttendanceReport>();
+  const [data, setData] = useState<AttendanceSummary | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void run(async () => {
-      const result = await getParentAttendance();
-      if (!result.ok) {
-        throw new Error(result.error.message || "Failed to load attendance summary");
+    if (!selectedChild) return;
+
+    async function fetchData() {
+      setLoading(true);
+      try {
+        const res = await serviceRequest<any>(
+          `/api/parent/student-attendance?student_id=${selectedChild.student_id}`
+        );
+        if (res.ok && res.data) {
+          const summary = res.data.attendance_summary;
+          setData({
+            student_id: selectedChild.student_id,
+            student_name: res.data.student,
+            class_name: res.data.class,
+            total_present: summary.present_days,
+            total_absent: summary.absent_days,
+            total_excused: summary.late_days, // Assuming late as excused or similar for summary
+            percentage: summary.attendance_percentage,
+            recent_records: res.data.recent_records.map((r: any) => ({
+                date: r.date,
+                status: r.status
+            }))
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch attendance:", error);
+      } finally {
+        setLoading(false);
       }
+    }
 
-      return result.data;
-    }).catch(() => {
-      // useSafeAsync already captures the error.
-    });
-  }, [run]);
+    fetchData();
+  }, [selectedChild]);
 
-  if (state.status === "loading" || state.status === "idle") {
+  if (childLoading || (loading && !data)) {
     return (
-      <SchoolShell eyebrow="Parent Dashboard" title="Child's Attendance">
+      <SchoolShell eyebrow="Guardian Portal" title="Attendance Tracking">
         <div className="space-y-4">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
         </div>
       </SchoolShell>
     );
   }
 
-  if (state.status === "error") {
+  if (!selectedChild || !data) {
     return (
-      <SchoolShell eyebrow="Parent Dashboard" title="Child's Attendance">
-        <DataState variant="error" title="Attendance unavailable" message={state.error} />
-      </SchoolShell>
-    );
-  }
-
-  const filteredStudents = (state.data?.students ?? []).filter(
-    (s) => s.student_id === selectedChild?.student_id
-  );
-
-  if (state.status === "empty" || !filteredStudents.length) {
-    return (
-      <SchoolShell eyebrow="Parent Dashboard" title="Child's Attendance">
+      <SchoolShell eyebrow="Guardian Portal" title="Attendance Tracking">
         <DataState
           variant="empty"
-          title="No attendance records"
-          message={`We could not find any attendance records for ${selectedChild?.student_name || "this student"} yet.`}
+          title="No records found"
+          message="We couldn't find any attendance logs for the selected student."
         />
       </SchoolShell>
     );
   }
 
   return (
-    <SchoolShell eyebrow="Parent Dashboard" title="Child's Attendance">
+    <SchoolShell eyebrow="Guardian Portal" title="Attendance Tracking">
       <div className="space-y-6">
-        {filteredStudents.map((student) => (
-          <Card key={student.student_id} className="space-y-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-slate-900">{student.student_name}</h2>
-                <p className="text-sm text-slate-500">{student.class_name}</p>
-              </div>
-              <Badge variant={student.percentage >= 75 ? "success" : student.percentage >= 50 ? "warning" : "error"}>
-                {student.percentage}% attendance
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <div className="rounded-2xl bg-emerald-50 px-4 py-3">
-                <p className="text-xs font-medium normal-case tracking-wide text-emerald-700">Present</p>
-                <p className="mt-1 text-2xl font-bold text-emerald-900">{student.total_present}</p>
-              </div>
-              <div className="rounded-2xl bg-rose-50 px-4 py-3">
-                <p className="text-xs font-medium normal-case tracking-wide text-rose-700">Absent</p>
-                <p className="mt-1 text-2xl font-bold text-rose-900">{student.total_absent}</p>
-              </div>
-              <div className="rounded-2xl bg-slate-100 px-4 py-3">
-                <p className="text-xs font-medium normal-case tracking-wide text-slate-600">Excused</p>
-                <p className="mt-1 text-2xl font-bold text-slate-900">{student.total_excused}</p>
-              </div>
-            </div>
-
+        {/* Compact Summary Header */}
+        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-              <p className="mb-3 text-sm font-semibold text-slate-800">Recent records</p>
-              <div className="space-y-2">
-                {student.recent_records.map((record) => (
-                  <div key={`${student.student_id}-${record.date}`} className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
-                    <span className="text-sm font-medium text-slate-700">{record.date}</span>
-                    <Badge
-                      variant={record.status === "present" ? "success" : record.status === "absent" ? "error" : record.status === "late" ? "warning" : "secondary"}
-                      className="normal-case"
-                    >
-                      {record.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Academic Pulse</p>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">Attendance Overview</h2>
             </div>
-          </Card>
-        ))}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100">
+               <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+               <span className="text-[11px] font-black text-blue-600">{data.percentage}% Net Participation</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[
+              { label: "Days Present", value: data.total_present, icon: "check_circle", color: "text-blue-600", bg: "bg-blue-50" },
+              { label: "Days Absent", value: data.total_absent, icon: "cancel", color: "text-rose-600", bg: "bg-rose-50" },
+              { label: "Excused Leaves", value: data.total_excused, icon: "event_busy", color: "text-slate-600", bg: "bg-slate-50" },
+            ].map(m => (
+              <div key={m.label} className="p-4 rounded-xl border border-slate-50 bg-slate-50/30">
+                <div className="flex items-center gap-3">
+                   <div className={`h-8 w-8 rounded-lg ${m.bg} ${m.color} flex items-center justify-center`}>
+                      <span className="material-symbols-outlined text-[18px]">{m.icon}</span>
+                   </div>
+                   <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">{m.label}</p>
+                      <p className="text-lg font-black text-slate-900">{m.value}</p>
+                   </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Detailed Logs */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+           <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
+              <h3 className="text-[13px] font-black text-slate-900 tracking-tight">Recent Activity Log</h3>
+              <span className="material-symbols-outlined text-slate-300">history</span>
+           </div>
+           <div className="divide-y divide-slate-50">
+              {data.recent_records.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-xs">No recent logs recorded.</div>
+              ) : (
+                data.recent_records.map((record) => (
+                  <div key={record.date} className="px-6 py-3 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                     <div className="flex items-center gap-4">
+                        <div className="h-8 w-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400">
+                           {new Date(record.date).getDate()}
+                        </div>
+                        <div>
+                           <p className="text-[11px] font-bold text-slate-800">{new Date(record.date).toLocaleDateString("en-US", { month: 'long', year: 'numeric' })}</p>
+                           <p className="text-[9px] font-medium text-slate-400 capitalize">{new Date(record.date).toLocaleDateString("en-US", { weekday: 'long' })}</p>
+                        </div>
+                     </div>
+                     
+                     <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                        record.status === 'present' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
+                        record.status === 'absent' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
+                        'bg-slate-50 text-slate-600 border border-slate-100'
+                     }`}>
+                        {record.status}
+                     </span>
+                  </div>
+                ))
+              )}
+           </div>
+        </div>
       </div>
     </SchoolShell>
   );

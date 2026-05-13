@@ -229,13 +229,15 @@ async function buildResultBreakdown(ctx: RequestContext, student: ParentStudentD
         const position = Math.max(1, sorted.findIndex((entry) => entry.student_id === String(student._id)) + 1);
 
         mapped.push({
+            _id: String(exam?._id ?? result.exam_id),
             exam_id: String(exam?._id ?? result.exam_id),
-            exam_name: exam?.title || exam?.name || "",
+            exam_title: exam?.title || exam?.name || "",
+            exam_subject: subjectDetails[0]?.subject || "Assessment",
             exam_date: toDateString(exam?.exam_date ?? exam?.starts_at ?? result.graded_at),
-            total_marks: totalPossible,
-            marks_obtained: Number(result.obtained_marks ?? 0),
+            max_marks: totalPossible,
+            obtained_marks: Number(result.obtained_marks ?? 0),
             percentage,
-            overall_grade: result.grade || getGradeFromPercentage(percentage),
+            grade: result.grade || getGradeFromPercentage(percentage),
             position,
             total_students: sorted.length,
             subject_details: subjectDetails
@@ -257,6 +259,7 @@ export async function listLinkedStudents(ctx: RequestContext): Promise<ServiceRe
                     id: String(student._id),
                     name: studentDisplayName(student),
                     roll_no: student.admission_no,
+                    class_id: String(student.class_id?._id ?? student.class_id),
                     class: classDisplayName(student),
                     section: student.section ?? (student.class_id as any)?.section ?? "",
                     status: student.status ?? "active",
@@ -305,11 +308,11 @@ export async function getChildProfile(ctx: RequestContext, studentId?: string): 
     return getStudentInfo(ctx, studentId);
 }
 
-export async function getDashboardStats(ctx: RequestContext): Promise<ServiceResult<unknown>> {
+export async function getDashboardStats(ctx: RequestContext, studentId?: string): Promise<ServiceResult<unknown>> {
     return serviceTry(async () => {
         await connectDb();
         assertPermission(ctx, "reports", "view");
-        const students = await resolveLinkedStudents(ctx);
+        const students = await resolveLinkedStudents(ctx, studentId);
 
         const childrenOverview = await Promise.all(
             students.map(async (student) => {

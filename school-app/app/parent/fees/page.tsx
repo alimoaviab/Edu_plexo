@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { Badge, Card, DataState, Skeleton } from "../../../components/ui";
+import { useEffect, useState } from "react";
 import { SchoolShell } from "../../../layouts/SchoolShell";
-import { useSafeAsync } from "../../../hooks/useSafeAsync";
+import { DataState, Skeleton } from "../../../components/ui";
 import { serviceRequest } from "../../../services/service-client";
 import { useSelectedChild } from "../../../contexts/SelectedChildContext";
 
@@ -38,115 +37,131 @@ type FeesResponse = {
 
 export default function ParentFeesPage() {
     const { selectedChild, loading: childLoading } = useSelectedChild();
-    const { state, run } = useSafeAsync<FeesResponse>();
+    const [data, setData] = useState<FeesResponse | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (!selectedChild) return;
         
-        void run(async () => {
-            const result = await serviceRequest<FeesResponse>(`/api/parent/fees?student_id=${selectedChild.student_id}`);
-            if (!result.ok) throw new Error(result.error.message || "Failed to load fees");
-            return result.data;
-        }).catch(() => {
-            // handled by useSafeAsync
-        });
-    }, [run, selectedChild]);
+        async function fetchData() {
+            setLoading(true);
+            try {
+                const res = await serviceRequest<FeesResponse>(`/api/parent/fees?student_id=${selectedChild.student_id}`);
+                if (res.ok && res.data) {
+                    setData(res.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch fees:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchData();
+    }, [selectedChild]);
 
-    if (childLoading || state.status === "idle" || state.status === "loading") {
+    if (childLoading || (loading && !data)) {
         return (
-            <SchoolShell eyebrow="Parent Portal" title="Student Fees">
+            <SchoolShell eyebrow="Guardian Portal" title="Fee Statement">
                 <div className="space-y-4">
-                    <Skeleton className="h-28 w-full" />
-                    <Skeleton className="h-44 w-full" />
+                    <Skeleton className="h-40 w-full rounded-2xl" />
+                    <Skeleton className="h-64 w-full rounded-2xl" />
                 </div>
             </SchoolShell>
         );
     }
 
-    if (!selectedChild) {
+    if (!selectedChild || !data) {
         return (
-            <SchoolShell eyebrow="Parent Portal" title="Student Fees">
-                <DataState variant="empty" title="No Student Selected" message="Please select a student to view their fee records." />
+            <SchoolShell eyebrow="Guardian Portal" title="Fee Statement">
+                <DataState variant="empty" title="No Records" message="No fee information found for the selected student." />
             </SchoolShell>
         );
     }
-
-    if (state.status === "error") {
-        return (
-            <SchoolShell eyebrow="Parent Portal" title="Student Fees">
-                <DataState variant="error" title="Fee information unavailable" message={state.error} />
-            </SchoolShell>
-        );
-    }
-
-    const report = state.data;
 
     return (
-        <SchoolShell eyebrow="Parent Portal" title={`Fees: ${selectedChild.student_name}`}>
+        <SchoolShell eyebrow="Guardian Portal" title="Fee Statement">
             <div className="space-y-6">
-                <Card>
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                {/* Financial Summary */}
+                <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                         <div>
-                            <h2 className="text-2xl font-bold text-slate-900">{report.student}</h2>
-                            <p className="text-sm text-slate-500">{report.class} · {report.academic_year}</p>
+                           <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Financial Overview</p>
+                           <h2 className="text-xl font-black text-slate-900 tracking-tight">Ledger Summary</h2>
                         </div>
-                        <Badge variant={report.fee_summary.pending > 0 ? "warning" : "success"}>
-                            {report.fee_summary.status}
-                        </Badge>
+                        <div className={`px-3 py-1.5 rounded-full border text-[11px] font-black uppercase tracking-widest ${
+                           data.fee_summary.pending > 0 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+                        }`}>
+                           Status: {data.fee_summary.status}
+                        </div>
                     </div>
-                    <div className="mt-6 grid gap-3 md:grid-cols-4">
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {[
-                            ["Total Fee", report.fee_summary.total_fee],
-                            ["Collected", report.fee_summary.collected],
-                            ["Pending", report.fee_summary.pending],
-                            ["Paid %", `${report.fee_summary.percentage_paid}%`]
-                        ].map(([label, value]) => (
-                            <div key={label as string} className="rounded-2xl border border-slate-200 p-4">
-                                <p className="text-xs font-semibold normal-case tracking-wide text-slate-400">{label}</p>
-                                <p className="mt-1 text-xl font-bold text-slate-900">{typeof value === "number" ? value.toLocaleString() : value}</p>
+                            { label: "Total Payble", value: data.fee_summary.total_fee, icon: "account_balance" },
+                            { label: "Total Paid", value: data.fee_summary.collected, icon: "payments" },
+                            { label: "Outstanding", value: data.fee_summary.pending, icon: "pending_actions", highlight: true },
+                            { label: "Recovery Rate", value: `${data.fee_summary.percentage_paid}%`, icon: "trending_up", isRaw: true }
+                        ].map(m => (
+                            <div key={m.label} className="p-4 rounded-xl border border-slate-50 bg-slate-50/30">
+                               <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">{m.label}</p>
+                               <p className={`text-lg font-black ${m.highlight ? 'text-blue-600' : 'text-slate-900'}`}>
+                                 {m.isRaw ? m.value : `Rs. ${m.value.toLocaleString()}`}
+                               </p>
                             </div>
                         ))}
                     </div>
-                </Card>
+                </div>
 
-                <div className="grid gap-6 xl:grid-cols-2">
-                    <Card>
-                        <h3 className="text-lg font-bold text-slate-900">Fee breakdown</h3>
-                        <div className="mt-4 space-y-3">
-                            {report.fee_details.map((fee) => (
-                                <div key={`${fee.fee_type}-${fee.due_date}`} className="rounded-2xl border border-slate-200 p-4">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p className="font-semibold text-slate-900">{fee.fee_type}</p>
-                                        <Badge variant={fee.status === "paid" ? "success" : fee.status === "partial" ? "warning" : "error"}>{fee.status}</Badge>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Fee Components */}
+                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
+                           <h3 className="text-[13px] font-black text-slate-900 tracking-tight">Fee Components</h3>
+                           <span className="material-symbols-outlined text-slate-300">receipt_long</span>
+                        </div>
+                        <div className="divide-y divide-slate-50">
+                            {data.fee_details.map((fee) => (
+                                <div key={`${fee.fee_type}-${fee.due_date}`} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                                    <div>
+                                        <p className="text-[11px] font-black text-slate-800">{fee.fee_type}</p>
+                                        <p className="text-[9px] font-medium text-slate-400 mt-0.5">Due: {fee.due_date}</p>
                                     </div>
-                                    <p className="mt-2 text-sm text-slate-500">
-                                        Amount {fee.amount.toLocaleString()} · Due {fee.due_date}
-                                    </p>
-                                    <p className="text-xs text-slate-400">{fee.receipt_no ? `Receipt ${fee.receipt_no}` : "No receipt yet"}</p>
+                                    <div className="text-right">
+                                        <p className="text-[11px] font-black text-slate-900">Rs. {fee.amount.toLocaleString()}</p>
+                                        <span className={`text-[8px] font-black uppercase tracking-widest ${
+                                           fee.status === 'paid' ? 'text-blue-600' : 'text-amber-500'
+                                        }`}>{fee.status}</span>
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                    </Card>
+                    </div>
 
-                    <Card>
-                        <h3 className="text-lg font-bold text-slate-900">Payment history</h3>
-                        <div className="mt-4 space-y-3">
-                            {report.payment_history.length ? report.payment_history.map((payment) => (
-                                <div key={payment.receipt_no} className="rounded-2xl border border-slate-200 p-4">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div>
-                                            <p className="font-semibold text-slate-900">{payment.receipt_no}</p>
-                                            <p className="text-xs text-slate-500">{payment.date} · {payment.method}</p>
+                    {/* Recent Payments */}
+                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
+                           <h3 className="text-[13px] font-black text-slate-900 tracking-tight">Payment History</h3>
+                           <span className="material-symbols-outlined text-slate-300">history</span>
+                        </div>
+                        <div className="divide-y divide-slate-50">
+                            {data.payment_history.length > 0 ? data.payment_history.map((payment) => (
+                                <div key={payment.receipt_no} className="px-6 py-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
+                                           <span className="material-symbols-outlined text-[18px]">verified</span>
                                         </div>
-                                        <p className="font-bold text-slate-900">Rs {payment.amount.toLocaleString()}</p>
+                                        <div>
+                                            <p className="text-[11px] font-black text-slate-800">{payment.receipt_no}</p>
+                                            <p className="text-[9px] font-medium text-slate-400">{payment.date} · {payment.method}</p>
+                                        </div>
                                     </div>
-                                    <p className="mt-2 text-sm text-slate-500">{payment.fee_type}</p>
+                                    <p className="text-[11px] font-black text-blue-600">Rs. {payment.amount.toLocaleString()}</p>
                                 </div>
                             )) : (
-                                <p className="text-sm text-slate-500">No payments recorded yet.</p>
+                                <div className="p-8 text-center text-slate-400 text-xs">No payments recorded yet.</div>
                             )}
                         </div>
-                    </Card>
+                    </div>
                 </div>
             </div>
         </SchoolShell>
