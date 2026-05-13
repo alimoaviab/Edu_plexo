@@ -143,7 +143,7 @@ describe("Multi-Tenant Isolation Tests", () => {
             expect(result.modifiedCount).toBe(0);
 
             // Verify student B was not modified
-            const studentB = await StudentModel.findById(studentB_id).lean();
+            const studentB = await StudentModel.findById(studentB_id).lean() as any;
             expect(studentB?.first_name).toBe("Student");
         });
     });

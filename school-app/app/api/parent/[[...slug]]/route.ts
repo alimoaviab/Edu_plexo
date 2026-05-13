@@ -49,8 +49,10 @@ export async function GET(req: Request, context: any) {
 
         default:
             return handleApiResponse({ 
-                ok: false, 
-                error: { code: "NOT_FOUND", message: `Route parent/${path} not found` } 
-            }, 404);
+                ok: false,
+                success: false,
+                message: `Route parent/${path} not found`,
+                error: { code: "NOT_FOUND", message: `Route parent/${path} not found` } as any
+            } as any);
     }
 }

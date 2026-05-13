@@ -1,5 +1,6 @@
 export {
   createSchool,
   listSchools,
-  setSchoolBlocked
+  setSchoolBlocked,
+  updateSchoolStatus
 } from "@edu/shared/services/school.service";

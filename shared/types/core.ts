@@ -57,7 +57,13 @@ export type AuditAction =
   | "block"
   | "unblock"
   | "notify"
-  | "sync_retry";
+  | "sync_retry"
+  | "status_changed_to_approved"
+  | "status_changed_to_rejected"
+  | "status_changed_to_suspended"
+  | "status_changed_to_pending"
+  | "status_changed_to_active"
+  | "status_changed_to_blocked";
 
 export interface RequestContext {
   school_id: string;

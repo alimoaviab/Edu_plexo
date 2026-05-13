@@ -24,6 +24,7 @@
     "ssl:renew": "ts-node scripts/renew-ssl.ts"
   },
   "devDependencies": {
+    "@jest/globals": "^30.4.1",
     "@types/crypto-js": "^4.2.2",
     "jiti": "^2.7.0",
     "ts-node": "^10.9.2",

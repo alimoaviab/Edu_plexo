@@ -86,7 +86,12 @@ async function executeServiceAction(path: string[], method: string, ctx: any, qu
             break;
     }
 
-    return { ok: false, error: { code: "NOT_FOUND", message: `Method ${method} for ${resource} not implemented` } };
+    return {
+        ok: false,
+        success: false,
+        message: `Method ${method} for ${resource} not implemented`,
+        error: { code: "NOT_FOUND", message: `Method ${method} for ${resource} not implemented` } as any
+    } as any;
 }
 
 export async function GET(req: Request, context: any) {
