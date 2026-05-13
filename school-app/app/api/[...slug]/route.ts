@@ -1,5 +1,7 @@
 import { getRequestContext, getQuery, handleApiResponse } from "@/lib/api-utils";
+import { NextResponse } from "next/server";
 import { connectDb } from "@edu/shared/db/connect";
+import { ServiceResult } from "@edu/shared/types/core";
 import * as academicYearService from "@edu/shared/services/academic-year.service";
 import * as classService from "@edu/shared/services/class.service";
 import * as studentService from "@edu/shared/services/student.service";
@@ -13,7 +15,25 @@ import * as eventService from "@edu/shared/services/event.service";
 import * as announcementService from "@edu/shared/services/announcement.service";
 import * as feeFlowService from "@edu/shared/services/fee-flow.service";
 
-async function executeServiceAction(path: string[], method: string, ctx: any, query: any, body: any) {
+function handleAuthUtilityRoutes(slug: string[], method: string) {
+    if (slug[0] !== "auth") return null;
+
+    // Ignore framework/session probe routes that can be called before login.
+    if (slug[1] === "session" && method === "GET") {
+        return NextResponse.json(null, { status: 200 });
+    }
+
+    if (slug[1] === "_log" && method === "POST") {
+        return NextResponse.json({ ok: true }, { status: 200 });
+    }
+
+    return NextResponse.json(
+        { ok: false, success: false, message: "Auth route not found", error: { code: "NOT_FOUND", message: "Auth route not found" } },
+        { status: 404 }
+    );
+}
+
+async function executeServiceAction(path: string[], method: string, ctx: any, query: any, body: any): Promise<ServiceResult<any>> {
     const resource = path[0];
     const id = path[1];
 
@@ -86,36 +106,53 @@ async function executeServiceAction(path: string[], method: string, ctx: any, qu
             break;
     }
 
-    return { ok: false, error: { code: "NOT_FOUND", message: `Method ${method} for ${resource} not implemented` } };
+    return {
+        ok: false,
+        success: false,
+        message: `Method ${method} for ${resource} not implemented`,
+        error: { code: "NOT_FOUND", message: `Method ${method} for ${resource} not implemented`, status: 404 }
+    };
 }
 
 export async function GET(req: Request, context: any) {
-    const ctx = getRequestContext(req);
-    const query = getQuery(req);
     const params = await context.params;
     const slug = params?.slug || [];
+    const authUtilityResponse = handleAuthUtilityRoutes(slug, "GET");
+    if (authUtilityResponse) return authUtilityResponse;
+
+    const ctx = getRequestContext(req);
+    const query = getQuery(req);
     return handleApiResponse(await executeServiceAction(slug, "GET", ctx, query, null));
 }
 
 export async function POST(req: Request, context: any) {
-    const ctx = getRequestContext(req);
     const params = await context.params;
     const slug = params?.slug || [];
+    const authUtilityResponse = handleAuthUtilityRoutes(slug, "POST");
+    if (authUtilityResponse) return authUtilityResponse;
+
+    const ctx = getRequestContext(req);
     const body = await req.json().catch(() => ({}));
     return handleApiResponse(await executeServiceAction(slug, "POST", ctx, {}, body));
 }
 
 export async function PATCH(req: Request, context: any) {
-    const ctx = getRequestContext(req);
     const params = await context.params;
     const slug = params?.slug || [];
+    const authUtilityResponse = handleAuthUtilityRoutes(slug, "PATCH");
+    if (authUtilityResponse) return authUtilityResponse;
+
+    const ctx = getRequestContext(req);
     const body = await req.json().catch(() => ({}));
     return handleApiResponse(await executeServiceAction(slug, "PATCH", ctx, {}, body));
 }
 
 export async function DELETE(req: Request, context: any) {
-    const ctx = getRequestContext(req);
     const params = await context.params;
     const slug = params?.slug || [];
+    const authUtilityResponse = handleAuthUtilityRoutes(slug, "DELETE");
+    if (authUtilityResponse) return authUtilityResponse;
+
+    const ctx = getRequestContext(req);
     return handleApiResponse(await executeServiceAction(slug, "DELETE", ctx, {}, null));
 }

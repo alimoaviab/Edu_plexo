@@ -18,8 +18,14 @@ const ROLE_ROUTES: Record<string, string> = {
   admin: "/admin/dashboard",
   super_admin: "/admin/dashboard",
   teacher: "/teacher/dashboard",
+  parent: "/parent/dashboard",
   student: "/student/dashboard",
 };
+
+function resolveRoleRoute(role?: string): string {
+  const normalizedRole = (role || "").toLowerCase();
+  return ROLE_ROUTES[normalizedRole] || "/admin/dashboard";
+}
 
 function decodeJwtPayload(token: string): { role?: string } | null {
   const payloadPart = token.split(".")[1];
@@ -55,7 +61,7 @@ export default function LoginPage() {
     const token = typeof window !== "undefined" ? window.localStorage.getItem("token") : null;
     if (token) {
       const payload = decodeJwtPayload(token);
-      router.replace(ROLE_ROUTES[payload?.role || "admin"] || "/admin/dashboard");
+      router.replace(resolveRoleRoute(payload?.role));
       return;
     }
     setSessionChecked(true);
@@ -106,7 +112,7 @@ export default function LoginPage() {
       
       setTimeout(() => {
         const targetRole = payload?.role || selectedRole;
-        router.push(ROLE_ROUTES[targetRole] || "/");
+        router.push(resolveRoleRoute(targetRole));
       }, 1500);
     } catch (err: any) {
       setError(err.message);
