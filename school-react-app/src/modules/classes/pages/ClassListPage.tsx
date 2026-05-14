@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryParams } from "@/hooks/useQueryParams";
+import { getSelectedAcademicYearId } from "@/services/academic-year-context";
 import { DataTable, DataTableColumn, RowAction, Badge, DataState, TableSkeleton, StatCardGrid } from "@/components/ui";
 import { useClasses } from "../hooks/useClasses";
 import { useAcademicYears } from "../../academicYear/hooks/useAcademicYears";
@@ -181,14 +182,36 @@ export function ClassListPage() {
         </div>
       </div>
 
+      {/* Academic Year Filter Warning */}
+      {classes.length === 0 && (
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center gap-4 animate-in fade-in slide-in-from-top-4">
+          <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+            <span className="material-symbols-outlined font-bold">info</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-blue-900">Filtering by Academic Session</p>
+            <p className="text-[10px] text-blue-600 font-medium">
+              You are currently viewing classes for the <span className="font-bold">{academicYearState.data?.data?.find(y => y._id === getSelectedAcademicYearId())?.year || "selected"}</span> session. 
+              If you don't see your class, it might be registered in a different session. Use the selector in the top-bar to switch.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="flex transition-all duration-500 ease-in-out gap-0">
         <div className="flex-1 min-w-0 transition-all duration-500 ease-in-out w-full">
           {filteredRows.length === 0 ? (
-            <DataState variant="empty" title="No classes found" message="Try refining your search parameters or register a new class." />
+            <DataState 
+              variant="empty" 
+              title={classes.length === 0 ? "No classes in this session" : "No results match search"} 
+              message={classes.length === 0 
+                ? "Try switching the academic session in the top-bar or register a new class for this session." 
+                : "Try refining your search parameters."} 
+            />
           ) : (
             <>
               {viewMode === "grid" ? (
-                <div className="grid gap-4 transition-all duration-500 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                <div className="grid gap-4 transition-all duration-500 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {filteredRows.map((row: ClassRow) => (
                     <ClassCard
                       key={row._id}

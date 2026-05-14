@@ -52,7 +52,8 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
     void loadClasses().catch(() => { });
   }, []);
 
-  const classOptions = (classState.data ?? []).map((c) => ({ label: c.name, value: c._id }));
+  const classes = Array.isArray(classState.data) ? classState.data : (classState.data as any)?.data || (classState.data as any)?.items || [];
+  const classOptions = classes.map((c: any) => ({ label: c.name, value: c._id }));
 
   const filteredData = useMemo(() => {
     let data = state.data || [];
@@ -73,12 +74,11 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
 
   const stats = useMemo(() => {
     const data = state.data || [];
-    const classes = classState.data ?? [];
-    const selectedClass = classes.find(c => c._id === activeFilters.class_id);
+    const selectedClass = classes.find((c: any) => c._id === activeFilters.class_id);
     
     const totalStudents = activeFilters.class_id 
       ? (selectedClass?.enrolled_students ?? 0) 
-      : classes.reduce((sum, c) => sum + (c.enrolled_students ?? 0), 0);
+      : classes.reduce((sum: number, c: any) => sum + (c.enrolled_students ?? 0), 0);
     
     return {
       total: totalStudents,
@@ -158,20 +158,22 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
 
   return (
     <div className="space-y-6 relative min-h-[80vh] pb-10">
-      {/* Stats Section */}
-      <StatCardGrid
-        items={[
-          { label: "Total Strength", value: stats.total, icon: "groups", accent: "blue" },
-          { label: "Present Today", value: stats.present, icon: "check_circle", accent: "emerald" },
-          { label: "Absent", value: stats.absent, icon: "cancel", accent: "rose" },
-          { label: "Late Arrivals", value: stats.late, icon: "schedule", accent: "amber" },
-        ]}
-      />
+      {/* Stats Section - Premium Compact Design */}
+      <div className="px-1">
+        <StatCardGrid
+          items={[
+            { label: "Total Strength", value: stats.total, icon: "groups", accent: "blue" },
+            { label: "Present Today", value: stats.present, icon: "check_circle", accent: "emerald" },
+            { label: "Absent", value: stats.absent, icon: "cancel", accent: "rose" },
+            { label: "Late Arrivals", value: stats.late, icon: "schedule", accent: "amber" },
+          ]}
+        />
+      </div>
 
-      {/* Toolbar Section - Unified & Sticky */}
-      <div className="premium-card p-2 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white/80 backdrop-blur-md sticky top-[72px] z-20 border-slate-200/60 shadow-sm rounded-xl">
-        <div className="flex flex-1 items-center gap-2 max-w-4xl">
-          <div className="relative flex-1">
+      {/* Toolbar Section - Enhanced Alignment & Structure */}
+      <div className="premium-card p-3 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-md sticky top-[72px] z-20 border-slate-200/60 shadow-sm rounded-2xl">
+        <div className="flex flex-1 flex-wrap items-center gap-3 max-w-5xl">
+          <div className="relative min-w-[200px] flex-1">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400">search</span>
             <input
               value={activeFilters.search}
@@ -180,47 +182,54 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
                 setActiveFilters(prev => ({ ...prev, search: value }));
                 updateQuery({ search: value });
               }}
-              placeholder="Search student, admission no..."
-              className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-10 pr-3 text-xs font-medium text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-600/5 placeholder:text-slate-400"
+              placeholder="Search by student name or roll..."
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-xs font-bold text-slate-700 outline-none transition-all focus:border-blue-400 focus:ring-4 focus:ring-blue-600/5 placeholder:text-slate-400"
             />
           </div>
-          <div className="h-6 w-px bg-slate-200" />
-          <select
-            value={activeFilters.class_id}
-            onChange={(e) => {
-              const value = e.target.value;
-              setActiveFilters(prev => ({ ...prev, class_id: value }));
-              updateQuery({ class_id: value });
-            }}
-            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
-          >
-            <option value="">Class: All</option>
-            {classOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-          </select>
-          <input 
-            type="date"
-            value={activeFilters.date}
-            onChange={(e) => {
-              const value = e.target.value;
-              setActiveFilters(prev => ({ ...prev, date: value }));
-              updateQuery({ date: value });
-            }}
-            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition-all hover:border-slate-300 focus:border-blue-400"
-          />
-          <select 
-            value={activeFilters.status}
-            onChange={(e) => {
-              const value = e.target.value;
-              setActiveFilters(prev => ({ ...prev, status: value }));
-              updateQuery({ status: value });
-            }}
-            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none transition-all hover:border-slate-300 focus:border-blue-400"
-          >
-            <option value="">Status: All</option>
-            <option value="present">Present</option>
-            <option value="absent">Absent</option>
-            <option value="late">Late</option>
-          </select>
+          <div className="h-6 w-px bg-slate-200 hidden md:block" />
+          
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={activeFilters.class_id}
+              onChange={(e) => {
+                const value = e.target.value;
+                setActiveFilters(prev => ({ ...prev, class_id: value }));
+                updateQuery({ class_id: value });
+              }}
+              className="h-10 min-w-[140px] rounded-xl border border-slate-200 bg-white px-4 text-[11px] font-black uppercase tracking-tight text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+            >
+              <option value="">Class: All</option>
+              {classOptions.map((opt: any) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+            
+            <div className="relative">
+               <input 
+                 type="date"
+                 value={activeFilters.date}
+                 onChange={(e) => {
+                   const value = e.target.value;
+                   setActiveFilters(prev => ({ ...prev, date: value }));
+                   updateQuery({ date: value });
+                 }}
+                 className="h-10 rounded-xl border border-slate-200 bg-white px-4 text-[11px] font-black uppercase tracking-tight text-slate-600 outline-none transition-all hover:border-slate-300 focus:border-blue-400"
+               />
+            </div>
+
+            <select 
+              value={activeFilters.status}
+              onChange={(e) => {
+                const value = e.target.value;
+                setActiveFilters(prev => ({ ...prev, status: value }));
+                updateQuery({ status: value });
+              }}
+              className="h-10 min-w-[130px] rounded-xl border border-slate-200 bg-white px-4 text-[11px] font-black uppercase tracking-tight text-slate-600 outline-none transition-all hover:border-slate-300 focus:border-blue-400"
+            >
+              <option value="">Status: All</option>
+              <option value="present">Present</option>
+              <option value="absent">Absent</option>
+              <option value="late">Late</option>
+            </select>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -253,32 +262,38 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
         </div>
       </div>
 
-      {/* Main Workspace Area */}
-      <div className="bg-white rounded-2xl">
-        <AttendanceBulkForm 
-          initialClassId={activeFilters.class_id}
-          initialDate={activeFilters.date}
-          viewMode={viewMode as "grid" | "list"}
-          onSaved={() => refresh()}
-        />
+      {/* Main Workspace Area - Contained & Professional */}
+      <div className="bg-slate-50/50 rounded-[2rem] p-4 border border-slate-100 shadow-inner">
+        <div className="bg-white rounded-[1.5rem] border border-slate-200/60 shadow-sm overflow-hidden">
+          <AttendanceBulkForm 
+            initialClassId={activeFilters.class_id}
+            initialDate={activeFilters.date}
+            viewMode={viewMode as "grid" | "list"}
+            onSaved={() => refresh()}
+          />
+        </div>
       </div>
 
-      {/* Pagination Footer - Premium ERP Style */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-100">
-        <p className="text-[10px] font-bold text-slate-400 normal-case ">
-          Showing <span className="text-blue-600">1</span> to <span className="text-slate-900">{filteredData.length}</span> of <span className="text-slate-900">{stats.total}</span> Attendance Records
-        </p>
-        <div className="flex items-center gap-2">
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
-            <span className="material-symbols-outlined text-base">chevron_left</span>
-            Previous
+      {/* Pagination Footer - Improved Alignment & Visibility */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6 px-2 pt-6 pb-12 border-t border-slate-100">
+        <div className="flex flex-col gap-1">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Dataset Insight</p>
+          <p className="text-[11px] font-bold text-slate-600">
+            Showing <span className="text-blue-600">1</span> to <span className="text-slate-900">{filteredData.length}</span> of <span className="text-slate-900">{stats.total}</span> Attendance Node Entries
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+          <button className="h-10 px-4 rounded-xl text-[11px] font-black uppercase tracking-tight text-slate-400 cursor-not-allowed flex items-center gap-2 transition-all">
+            <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+            Prev
           </button>
-          <div className="flex items-center gap-1">
-            <button className="h-9 w-9 rounded-xl bg-blue-600 text-[10px] font-bold text-white shadow-lg shadow-blue-600/20">1</button>
-          </div>
-          <button className="h-9 px-4 rounded-xl border border-slate-200 text-[10px] font-bold normal-case  text-slate-400 cursor-not-allowed flex items-center gap-2">
+          <div className="h-6 w-px bg-slate-100" />
+          <button className="h-10 w-10 rounded-xl bg-blue-600 text-[11px] font-black text-white shadow-lg shadow-blue-600/20 active:scale-95 transition-all">1</button>
+          <div className="h-6 w-px bg-slate-100" />
+          <button className="h-10 px-4 rounded-xl text-[11px] font-black uppercase tracking-tight text-slate-400 cursor-not-allowed flex items-center gap-2 transition-all">
             Next
-            <span className="material-symbols-outlined text-base">chevron_right</span>
+            <span className="material-symbols-outlined text-[20px]">chevron_right</span>
           </button>
         </div>
       </div>

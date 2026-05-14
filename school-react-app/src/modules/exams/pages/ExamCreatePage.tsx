@@ -17,9 +17,11 @@ export function ExamCreatePage() {
 
   const loadData = useCallback(() => {
     return runClasses(async () => {
-      const result = await serviceRequest<any[]>("/api/classes");
+      const result = await serviceRequest<any>("/api/classes");
       if (!result.ok) throw new Error(result.error.message || "Failed to load classes");
-      return result.data;
+      const data = result.data;
+      if (Array.isArray(data)) return data;
+      return data?.data || data?.items || [];
     });
   }, [runClasses]);
 

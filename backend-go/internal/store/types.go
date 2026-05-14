@@ -60,25 +60,56 @@ type Subject struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+type ClassSubject struct {
+	Name         string `json:"name"`
+	TotalMarks   int    `json:"total_marks"`
+	PassingMarks int    `json:"passing_marks"`
+	TeacherID    string `json:"teacher_id,omitempty"`
+}
+
+type GradeThreshold struct {
+	Grade       string `json:"grade"`
+	MinScore    int    `json:"min_score"`
+	MaxScore    int    `json:"max_score"`
+	Description string `json:"description"`
+}
+
 type Class struct {
-	ID                 string    `json:"_id"`
-	SchoolID           string    `json:"school_id"`
-	AcademicYearID     string    `json:"academic_year_id"`
-	Name               string    `json:"name"`
-	Code               string    `json:"code,omitempty"`
-	Grade              string    `json:"grade,omitempty"`
-	Section            string    `json:"section,omitempty"`
-	Capacity           int       `json:"capacity"`
-	DisplayOrder       int       `json:"display_order,omitempty"`
-	PassingPercentage  int       `json:"passing_percentage,omitempty"`
-	ClassTeacherID     string    `json:"class_teacher_id,omitempty"`
-	TeacherIDs         []string  `json:"teacher_ids,omitempty"`
-	SubjectIDs         []string  `json:"subject_ids,omitempty"`
-	RoomNumber         string    `json:"room_number,omitempty"`
-	Description        string    `json:"description,omitempty"`
-	Status             string    `json:"status"`
-	CreatedAt          time.Time `json:"created_at"`
-	UpdatedAt          time.Time `json:"updated_at"`
+	ID                 string         `json:"_id"`
+	SchoolID           string         `json:"school_id"`
+	AcademicYearID     string         `json:"academic_year_id"`
+	Name               string         `json:"name"`
+	Code               string         `json:"code,omitempty"`
+	Grade              string         `json:"grade,omitempty"`
+	Section            string         `json:"section,omitempty"`
+	Capacity           int            `json:"capacity"`
+	DisplayOrder       int            `json:"display_order,omitempty"`
+	PassingPercentage  int            `json:"passing_percentage,omitempty"`
+	ClassTeacherID     string         `json:"class_teacher_id,omitempty"`
+	TeacherIDs         []string       `json:"teacher_ids,omitempty"`
+	SubjectIDs         []string         `json:"subject_ids,omitempty"`
+	Subjects           []ClassSubject   `json:"subjects,omitempty"`
+	GradeThresholds    []GradeThreshold `json:"grade_thresholds,omitempty"`
+	RoomNumber         string           `json:"room_number,omitempty"`
+	Description        string           `json:"description,omitempty"`
+	Status             string         `json:"status"`
+	CreatedAt          time.Time      `json:"created_at"`
+	UpdatedAt          time.Time      `json:"updated_at"`
+
+	// Enriched fields for frontend
+	StudentCount         int            `json:"student_count"`
+	AttendancePercentage float64        `json:"attendance_percentage"`
+	FeeStatus            float64        `json:"fee_status"`
+	ClassTeacher         *ClassTeacherRef `json:"class_teacher,omitempty"`
+	TeacherNames         []string       `json:"teacher_names,omitempty"`
+	EnrolledStudents     int            `json:"enrolled_students"`
+}
+
+// ClassTeacherRef is the hydrated teacher reference sent to the frontend.
+type ClassTeacherRef struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Phone string `json:"phone,omitempty"`
 }
 
 type Teacher struct {

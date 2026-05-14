@@ -264,11 +264,21 @@ export function StudentFeeDashboard() {
                     </div>
                 ) : !data?.students || data.students.length === 0 ? (
                     <div className="py-16 flex flex-col items-center justify-center text-center bg-white rounded-3xl border border-dashed border-slate-200">
-                        <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center mb-3 text-slate-300">
-                            <span className="material-symbols-outlined text-3xl">folder_off</span>
+                        <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center mb-4 text-blue-400">
+                            <span className="material-symbols-outlined text-3xl">account_balance_wallet</span>
                         </div>
-                        <h4 className="font-black text-slate-900 text-base">No collections found</h4>
-                        <p className="text-xs text-slate-400 mt-1">Try adjusting your filters.</p>
+                        <h4 className="font-black text-slate-900 text-base">No fee records found for {filters.month.toUpperCase()} {filters.year}</h4>
+                        <p className="text-[11px] text-slate-400 mt-2 max-w-sm mx-auto leading-relaxed">
+                            If you haven't generated this month's invoices yet, head over to the 
+                            <strong className="text-slate-600"> Class Fees</strong> configuration page to trigger the generation.
+                        </p>
+                        <button 
+                            onClick={() => navigate('/admin/classes')}
+                            className="mt-6 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
+                        >
+                            <span className="material-symbols-outlined text-base">settings</span>
+                            Configure & Generate Fees
+                        </button>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

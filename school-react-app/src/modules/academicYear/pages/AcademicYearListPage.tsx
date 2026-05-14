@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { Badge, Button, Card, DataState, PageHeader, Skeleton, TableSkeleton } from "@/components/ui";
+import { Badge, Button, Card, DataState, LayoutCard, PageHeader, Skeleton, TableSkeleton } from "@/components/ui";
 import { useAcademicYears } from "../hooks/useAcademicYears";
 import { AcademicYearRow, AcademicYearUpdateInput } from "../types/academicYear.types";
 import { showToast } from "@/utils/toast";
@@ -227,96 +227,81 @@ export function AcademicYearListPage() {
               />
             ) : (
               viewMode === "grid" ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {filteredYears.map((row) => {
                       const days = durationInDays(row.start_date, row.end_date);
                       const isActive = row.is_active;
                       const isEditing = editingYear?._id === row._id;
+                      const status = row.status || "draft";
                       
                       return (
-                        <div
+                        <LayoutCard
                           key={row._id}
-                          className={`premium-card group relative flex flex-col p-4 transition-all duration-300 bg-white border-slate-200/60 hover:shadow-xl hover:shadow-slate-200/30 hover:-translate-y-0.5 ${
-                            isActive ? "ring-2 ring-blue-600/20 border-blue-600/40" : ""
-                          } ${isEditing ? "border-blue-400 bg-blue-50/5" : ""}`}
+                          isActive={isActive}
+                          isEditing={isEditing}
+                          title={row.year}
+                          subtitle={isActive ? "Primary Session" : "Archived Session"}
+                          icon={<span className="material-symbols-outlined text-2xl">calendar_month</span>}
+                          badge={isActive && <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-ping" />}
+                          actions={
+                            <Link 
+                              to={`/admin/academic-years/${row._id}/edit`}
+                              className="h-8 w-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white hover:shadow-lg transition-all"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">edit_square</span>
+                            </Link>
+                          }
                         >
-                          {/* Top Row: Name & Actions */}
-                          <div className="flex items-start justify-between gap-4 mb-3.5">
-                            <div className="space-y-0.5 flex-1 min-w-0">
-                              <h3 className="text-base font-bold text-slate-900 tracking-tight leading-none truncate">{row.year}</h3>
-                              <p className="text-[9px] font-bold text-slate-400 normal-case  mt-1">Academic Session</p>
-                            </div>
-                            
-                            <div className="flex items-center gap-0.5">
-                              <Link 
-                                to={`/admin/academic-years/${row._id}/edit`}
-                                className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all"
-                                title="Edit Session"
-                              >
-                                <span className="material-symbols-outlined text-[18px]">edit_note</span>
-                              </Link>
-                              {/* 
-                              <button 
-                                onClick={(e) => { e.preventDefault(); setDeletingYear(row); }}
-                                className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
-                                title="Delete"
-                              >
-                                <span className="material-symbols-outlined text-[18px]">delete</span>
-                              </button>
-                              */}
-                            </div>
+                          {/* Timeline Visualization */}
+                          <div className="relative my-4">
+                             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-[1px] bg-slate-100" />
+                             <div className="relative flex items-center justify-between gap-2">
+                                <div className="z-10 bg-white border border-slate-100 rounded-xl p-2 shadow-sm">
+                                   <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-0.5 text-center">Start</p>
+                                   <p className="text-[9px] font-black text-slate-800">{formatDate(row.start_date)}</p>
+                                </div>
+                                <div className={`z-10 h-6 px-2.5 rounded-full flex items-center justify-center text-[8px] font-black tracking-widest uppercase border ${
+                                  isActive ? "bg-blue-600 text-white border-blue-500 shadow-md" : "bg-slate-100 text-slate-400 border-slate-200"
+                                }`}>
+                                  {days}d
+                                </div>
+                                <div className="z-10 bg-white border border-slate-100 rounded-xl p-2 shadow-sm">
+                                   <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-0.5 text-center">End</p>
+                                   <p className="text-[9px] font-black text-slate-800">{formatDate(row.end_date)}</p>
+                                </div>
+                             </div>
                           </div>
 
-                          {/* Middle Row: Timeline */}
-                          <div className="mb-3.5 p-3 rounded-xl bg-slate-50/50 border border-slate-100/50 flex items-center justify-between">
-                            <div className="flex-1">
-                              <p className="text-[8px] font-bold text-slate-400 normal-case  mb-1.5">Session Dates</p>
-                              <div className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
-                                <span className="bg-white px-1.5 py-0.5 rounded-md border border-slate-100">{formatDate(row.start_date)}</span>
-                                <span className="text-slate-300">→</span>
-                                <span className="bg-white px-1.5 py-0.5 rounded-md border border-slate-100">{formatDate(row.end_date)}</span>
+                          <div className="space-y-3">
+                            <p className="text-[10px] font-medium text-slate-500 line-clamp-2 leading-relaxed h-8">
+                              {row.description || "No specific instructions or notes provided."}
+                            </p>
+
+                            <div className="flex items-center justify-between pt-3 border-t border-slate-100/60">
+                              <Badge 
+                                variant={status === "active" ? "success" : status === "completed" ? "gray" : "warning"}
+                                className="text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg"
+                              >
+                                {status}
+                              </Badge>
+                              
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[8px] font-black uppercase tracking-widest ${isActive ? "text-blue-600" : "text-slate-400"}`}>
+                                  {isActive ? "Active" : "Mark Active"}
+                                </span>
+                                <label className="relative inline-flex cursor-pointer items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={isActive}
+                                    onChange={() => handleSetCurrent(row)}
+                                    className="peer sr-only"
+                                  />
+                                  <div className="peer h-[18px] w-[32px] rounded-full bg-slate-200 after:absolute after:left-[2px] after:top-[2px] after:h-[14px] after:w-[14px] after:rounded-full after:bg-white after:shadow-sm after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-[14px] peer-focus:outline-none" />
+                                </label>
                               </div>
                             </div>
-                            <div className="text-right pl-3 border-l border-slate-200/50 ml-3">
-                               <p className="text-xs font-bold text-slate-900 leading-none">{days || 0}</p>
-                               <p className="text-[7px] font-bold text-slate-400 normal-case  mt-0.5">Days</p>
-                            </div>
                           </div>
-
-                          {/* Bottom Row: Notes & Status Toggle */}
-                          <div className="mt-auto pt-2 flex flex-col gap-3">
-                            <div className="px-0.5">
-                               <p className="text-[8px] font-bold text-slate-400 normal-case  mb-1">Notes</p>
-                               <p className="text-[10px] font-medium text-slate-500 line-clamp-1 leading-relaxed">
-                                 {row.description || "No additional notes provided."}
-                               </p>
-                            </div>
-
-                            <div className="flex items-center justify-between bg-slate-50/30 rounded-lg p-1.5 border border-slate-100/30">
-                              <div className="flex items-center gap-1.5">
-                                {isActive ? (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold normal-case  text-blue-600 bg-blue-50">
-                                    <span className="h-1 w-1 rounded-full bg-blue-500 animate-pulse" />
-                                    Active
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold normal-case  text-slate-400 bg-slate-100">
-                                    Inactive
-                                  </span>
-                                )}
-                              </div>
-                              <label className="relative inline-flex cursor-pointer items-center shrink-0">
-                                <input
-                                  type="checkbox"
-                                  checked={isActive}
-                                  onChange={() => handleSetCurrent(row)}
-                                  className="peer sr-only"
-                                />
-                                <div className="peer h-[18px] w-[34px] rounded-full bg-slate-200 after:absolute after:left-[2px] after:top-[2px] after:h-[14px] after:w-[14px] after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-[16px] peer-focus:outline-none" />
-                              </label>
-                            </div>
-                          </div>
-                        </div>
+                        </LayoutCard>
                       );
                     })}
                 </div>

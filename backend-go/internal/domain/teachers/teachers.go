@@ -18,9 +18,17 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct{ Store *store.MemStore }
+type Handler struct {
+	Store *store.MemStore
+	Save  func(table string, doc any)
+}
 
-func New(s *store.MemStore) *Handler { return &Handler{Store: s} }
+func New(s *store.MemStore, save func(string, any)) *Handler {
+	if save == nil {
+		save = func(string, any) {}
+	}
+	return &Handler{Store: s, Save: save}
+}
 
 // List implements GET /api/teachers.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
@@ -180,6 +188,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				CreatedAt: now,
 				UpdatedAt: now,
 			})
+			h.Save("users", h.Store.Users[len(h.Store.Users)-1])
 		}
 
 		count := 0
@@ -231,6 +240,20 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 		h.Store.Unlock()
 
+		h.Save("teachers", newTeacher)
+		// Save classes that were updated with teacher_ids
+		if len(body.ClassIDs) > 0 {
+			classIDSet := map[string]bool{}
+			for _, id := range body.ClassIDs {
+				classIDSet[id] = true
+			}
+			for _, c := range h.Store.Classes {
+				if c.SchoolID == ctx.SchoolID && classIDSet[c.ID] {
+					h.Save("classes", c)
+				}
+			}
+		}
+
 		audit.Write(h.Store, ctx, audit.Input{
 			Action: "create", EntityType: "teacher", EntityID: newTeacher.ID, After: newTeacher,
 		})
@@ -281,6 +304,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 					_ = json.Unmarshal(v, &t.Status)
 				}
 				t.UpdatedAt = time.Now()
+				h.Save("teachers", t)
 				audit.Write(h.Store, ctx, audit.Input{
 					Action: "update", EntityType: "teacher", EntityID: id,
 					Before: before, After: *t,
@@ -328,6 +352,26 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 				h.Store.Teachers = append(h.Store.Teachers[:i], h.Store.Teachers[i+1:]...)
+
+				h.Save("teachers:delete", before.ID)
+				if before.UserID != "" {
+					h.Save("users:delete", before.UserID)
+				}
+				// Save classes that were updated (teacher removed)
+				for _, c := range h.Store.Classes {
+					if c.SchoolID == ctx.SchoolID {
+						found := false
+						for _, tid := range before.ClassIDs {
+							if tid == c.ID {
+								found = true
+								break
+							}
+						}
+						if found {
+							h.Save("classes", c)
+						}
+					}
+				}
 				audit.Write(h.Store, ctx, audit.Input{
 					Action: "delete", EntityType: "teacher", EntityID: id, Before: before,
 				})

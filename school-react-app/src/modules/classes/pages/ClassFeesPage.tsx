@@ -77,6 +77,32 @@ export function ClassFeesPage() {
         }
     }
 
+    async function handleGenerate() {
+        if (!window.confirm("Generate invoices for all active students in this class for the current month?")) return;
+        
+        setSaving(true);
+        try {
+            const res = await serviceRequest("/api/fees/generate", {
+                method: "POST",
+                body: JSON.stringify({
+                    class_id: classId,
+                    month: new Date().toLocaleString('en-us', { month: 'long' }).toLowerCase(),
+                    year: new Date().getFullYear()
+                })
+            });
+            if (res.ok) {
+                alert(`Generated successfully!`);
+                navigate("/admin/fee"); // Jump to ledger to see results
+            } else {
+                alert(res.message || "Generation failed");
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSaving(false);
+        }
+    }
+
     async function handleSave() {
         if (!formData.name || !formData.amount) {
             alert("Please fill required fields");
@@ -185,7 +211,17 @@ export function ClassFeesPage() {
                         <p className="text-sm font-black text-amber-600">Rs {data.one_time_fees.toLocaleString()}</p>
                     </div>
                 </div>
-                <Badge variant="primary" className="px-3 py-1 text-[9px] font-black uppercase tracking-widest">{data.academic_year}</Badge>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleGenerate}
+                        disabled={saving || data.fees.length === 0}
+                        className="flex items-center gap-2 px-4 h-9 rounded-xl bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-30"
+                    >
+                        <span className="material-symbols-outlined text-[16px]">print_connect</span>
+                        Generate Invoices
+                    </button>
+                    <Badge variant="primary" className="px-3 py-1 text-[9px] font-black uppercase tracking-widest">{data.academic_year}</Badge>
+                </div>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-5">

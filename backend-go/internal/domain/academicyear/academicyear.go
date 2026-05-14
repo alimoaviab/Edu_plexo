@@ -19,9 +19,15 @@ import (
 
 type Handler struct {
 	Store *store.MemStore
+	Save  func(table string, doc any)
 }
 
-func New(s *store.MemStore) *Handler { return &Handler{Store: s} }
+func New(s *store.MemStore, save func(string, any)) *Handler {
+	if save == nil {
+		save = func(string, any) {}
+	}
+	return &Handler{Store: s, Save: save}
+}
 
 // AcademicYearResponse mirrors the `toAcademicYearResponse` shape the original
 // service returns. The frontend reads `_id` and `id` interchangeably.
@@ -234,6 +240,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		h.Store.AcademicYears = append(h.Store.AcademicYears, newYear)
 		h.Store.Unlock()
 
+		h.Save("academic_years", newYear)
+		if newYear.IsActive {
+			// Save other years too since their IsActive changed
+			for _, y := range h.Store.AcademicYears {
+				if y.SchoolID == ctx.SchoolID && y.ID != newYear.ID {
+					h.Save("academic_years", y)
+				}
+			}
+		}
+
 		audit.Write(h.Store, ctx, audit.Input{
 			Action: "create", EntityType: "school", EntityID: newYear.ID,
 			After:    newYear,
@@ -343,6 +359,16 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		target.Status = deriveStatus(target.StartDate, target.EndDate, target.IsActive)
 		target.UpdatedAt = time.Now()
 
+		h.Save("academic_years", target)
+		if nextActive {
+			// Save other years too since their IsActive changed
+			for _, y := range h.Store.AcademicYears {
+				if y.SchoolID == ctx.SchoolID && y.ID != target.ID {
+					h.Save("academic_years", y)
+				}
+			}
+		}
+
 		audit.Write(h.Store, ctx, audit.Input{
 			Action: "update", EntityType: "school", EntityID: id,
 			Before: before, After: *target,
@@ -394,6 +420,8 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		}
 
 		h.Store.AcademicYears = append(h.Store.AcademicYears[:idx], h.Store.AcademicYears[idx+1:]...)
+
+		h.Save("academic_years:delete", target.ID)
 
 		audit.Write(h.Store, ctx, audit.Input{
 			Action: "delete", EntityType: "school", EntityID: id,

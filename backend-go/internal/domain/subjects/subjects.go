@@ -16,9 +16,17 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct{ Store *store.MemStore }
+type Handler struct {
+	Store *store.MemStore
+	Save  func(table string, doc any)
+}
 
-func New(s *store.MemStore) *Handler { return &Handler{Store: s} }
+func New(s *store.MemStore, save func(string, any)) *Handler {
+	if save == nil {
+		save = func(string, any) {}
+	}
+	return &Handler{Store: s, Save: save}
+}
 
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
@@ -91,7 +99,8 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		h.Store.Lock()
 		h.Store.Subjects = append(h.Store.Subjects, s)
 		h.Store.Unlock()
-		audit.Write(h.Store, ctx, audit.Input{Action: "create", EntityType: "user", EntityID: s.ID, After: s})
+		h.Save("subjects", s)
+		audit.Write(h.Store, ctx, audit.Input{Action: "create", EntityType: "subject", EntityID: s.ID, After: s})
 		return s, nil
 	}))
 }
@@ -125,8 +134,9 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 				if v, ok := body["status"]; ok {
 					_ = json.Unmarshal(v, &s.Status)
 				}
+				h.Save("subjects", s)
 				audit.Write(h.Store, ctx, audit.Input{
-					Action: "update", EntityType: "user", EntityID: id, Before: before, After: *s,
+					Action: "update", EntityType: "subject", EntityID: id, Before: before, After: *s,
 				})
 				return s, nil
 			}
@@ -148,8 +158,9 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 			if s.ID == id && s.SchoolID == ctx.SchoolID {
 				before := *s
 				h.Store.Subjects = append(h.Store.Subjects[:i], h.Store.Subjects[i+1:]...)
+				h.Save("subjects:delete", before.ID)
 				audit.Write(h.Store, ctx, audit.Input{
-					Action: "delete", EntityType: "user", EntityID: id, Before: before,
+					Action: "delete", EntityType: "subject", EntityID: id, Before: before,
 				})
 				return map[string]any{"success": true, "id": id}, nil
 			}

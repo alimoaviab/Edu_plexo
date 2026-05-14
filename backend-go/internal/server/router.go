@@ -81,7 +81,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister) htt
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Authenticator(cfg))
 
-			ayH := academicyear.New(s)
+			ayH := academicyear.New(s, saveFn)
 			r.Get("/academic-years", ayH.List)
 			r.Post("/academic-years", ayH.Create)
 			r.Get("/academic-years/{id}", ayH.Get)
@@ -89,7 +89,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister) htt
 			r.Delete("/academic-years/{id}", ayH.Delete)
 			r.Post("/academic-years/switch", authH.SwitchAcademicYear)
 
-			stH := students.New(s)
+			stH := students.New(s, saveFn)
 			r.Get("/students", stH.List)
 			r.Post("/students", stH.Create)
 			r.Get("/students/{id}", stH.Get)
@@ -97,7 +97,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister) htt
 			r.Put("/students/{id}", stH.Update)
 			r.Delete("/students/{id}", stH.Delete)
 
-			tcH := teachers.New(s)
+			tcH := teachers.New(s, saveFn)
 			r.Get("/teachers", tcH.List)
 			r.Post("/teachers", tcH.Create)
 			r.Get("/teachers/{id}", tcH.Get)
@@ -105,7 +105,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister) htt
 			r.Put("/teachers/{id}", tcH.Update)
 			r.Delete("/teachers/{id}", tcH.Delete)
 
-			clH := classes.New(s)
+			clH := classes.New(s, saveFn)
 			r.Get("/classes", clH.List)
 			r.Post("/classes", clH.Create)
 			r.Get("/classes/{id}", clH.Get)
@@ -113,7 +113,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister) htt
 			r.Put("/classes/{id}", clH.Update)
 			r.Delete("/classes/{id}", clH.Delete)
 
-			suH := subjects.New(s)
+			suH := subjects.New(s, saveFn)
 			r.Get("/subjects", suH.List)
 			r.Post("/subjects", suH.Create)
 			r.Get("/subjects/{id}", suH.Get)
@@ -126,7 +126,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister) htt
 			dH := dashboard.New(s)
 			r.Get("/analytics/dashboard", dH.Get)
 
-			atH := attendance.New(s)
+			atH := attendance.New(s, saveFn)
 			r.Get("/attendance", atH.List)
 			r.Post("/attendance", atH.Create)
 			r.Get("/attendance/{id}", atH.Get)

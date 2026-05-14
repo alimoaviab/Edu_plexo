@@ -33,3 +33,4 @@ export {
 export type { StatItem } from "./StatsGrid";
 export { SubjectMultiSelect } from "./SubjectMultiSelect";
 export { SubjectSelect } from "./SubjectSelect";
+export { LayoutCard } from "./LayoutCard";

@@ -18,9 +18,17 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct{ Store *store.MemStore }
+type Handler struct {
+	Store *store.MemStore
+	Save  func(table string, doc any)
+}
 
-func New(s *store.MemStore) *Handler { return &Handler{Store: s} }
+func New(s *store.MemStore, save func(string, any)) *Handler {
+	if save == nil {
+		save = func(string, any) {}
+	}
+	return &Handler{Store: s, Save: save}
+}
 
 // hydrated mirrors the populated row shape returned by the original
 // `populate("student_id", "...").populate("class_id", "name")` chain.
@@ -245,6 +253,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt:      now,
 		}
 		h.Store.Attendance = append(h.Store.Attendance, newRow)
+		h.Save("attendance", newRow)
 
 		audit.Write(h.Store, ctx, audit.Input{
 			Action: "create", EntityType: "attendance", EntityID: newRow.ID, After: newRow,
@@ -338,9 +347,9 @@ func (h *Handler) MarkBulk(w http.ResponseWriter, r *http.Request) {
 				existing.Note = note
 				existing.MarkedBy = ctx.UserID
 				existing.Source = "manual"
-				existing.UpdatedAt = now
+				h.Save("attendance", existing)
 			} else {
-				h.Store.Attendance = append(h.Store.Attendance, &store.Attendance{
+				row := &store.Attendance{
 					ID:             store.NewID("att"),
 					SchoolID:       ctx.SchoolID,
 					AcademicYearID: yearID,
@@ -354,7 +363,9 @@ func (h *Handler) MarkBulk(w http.ResponseWriter, r *http.Request) {
 					Note:           note,
 					CreatedAt:      now,
 					UpdatedAt:      now,
-				})
+				}
+				h.Store.Attendance = append(h.Store.Attendance, row)
+				h.Save("attendance", row)
 			}
 			saved++
 		}
@@ -423,6 +434,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 				a.UpdatedAt = time.Now()
+				h.Save("attendance", a)
 				audit.Write(h.Store, ctx, audit.Input{
 					Action: "update", EntityType: "attendance", EntityID: id, Before: before, After: *a,
 				})
@@ -447,6 +459,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 			if a.ID == id && a.SchoolID == ctx.SchoolID {
 				before := *a
 				h.Store.Attendance = append(h.Store.Attendance[:i], h.Store.Attendance[i+1:]...)
+				h.Save("attendance:delete", before.ID)
 				audit.Write(h.Store, ctx, audit.Input{
 					Action: "delete", EntityType: "attendance", EntityID: id, Before: before,
 				})

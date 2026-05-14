@@ -7,7 +7,7 @@ export const DashboardShowcase = () => {
 
   const tabs = [
     { id: "analytics", label: "Analytics UI", icon: LineChart },
-    { id: "admin", label: "Admin Dashboard", icon: Layout },
+    { id: "", label: "", icon: Layout },
     { id: "students", label: "Student Records", icon: Users },
     { id: "security", label: "Access Control", icon: Shield },
   ];

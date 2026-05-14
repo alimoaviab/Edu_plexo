@@ -94,7 +94,31 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
         refreshAttendanceSnapshot();
     }, [refreshAttendanceSnapshot]);
 
-    const classStudents = studentState.data ?? [];
+    const handleMarkAllPresent = async () => {
+        if (!classStudents.length) return;
+        try {
+            const records: Record<string, AttendanceStatus> = {};
+            const remarks: Record<string, string> = {};
+            for (const s of classStudents) {
+                records[s._id] = "present";
+                remarks[s._id] = remarksByStudent[s._id] || "";
+            }
+            await markAttendance({
+                class_id: initialClassId || classStudents[0].class_id,
+                date: initialDate || new Date().toISOString().split('T')[0],
+                period: 1,
+                records,
+                remarks
+            });
+            showToast("All students marked as present", "success");
+            onSaved?.();
+            refreshAttendanceSnapshot();
+        } catch (err: any) {
+            showToast(err.message || "Failed to mark all present", "error");
+        }
+    };
+
+    const classStudents = Array.isArray(studentState.data) ? studentState.data : (studentState.data as any)?.data || (studentState.data as any)?.items || [];
 
     useEffect(() => {
         if (!studentState.data) return;
@@ -111,13 +135,14 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
             return hex.padEnd(24, '0').substring(0, 24).toLowerCase();
         };
 
-        for (const student of studentState.data) {
+        for (const student of classStudents) {
             nextStatusMap[student._id] = "present";
             nextRemarksMap[student._id] = "";
         }
 
-        for (const row of attendanceState.data ?? []) {
-            const targetStudent = studentState.data.find(s => 
+        const attendanceRows = Array.isArray(attendanceState.data) ? attendanceState.data : (attendanceState.data as any)?.data || (attendanceState.data as any)?.items || [];
+        for (const row of attendanceRows) {
+            const targetStudent = classStudents.find((s: any) => 
                 s._id === row.student_id || 
                 hexify(s._id) === row.student_id.toLowerCase()
             );
@@ -133,30 +158,57 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
     }, [attendanceState.data, studentState.data]);
 
     return (
-        <form className="p-6 space-y-6" onSubmit={(e) => e.preventDefault()}>
+        <form className="flex flex-col h-full" onSubmit={(e) => e.preventDefault()}>
+            {/* Header / Primary Action Bar */}
+            <div className="flex items-center justify-between px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+               <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 tracking-tight">Class Roster</h3>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      {classStudents.length} Students Assigned
+                    </p>
+                  </div>
+               </div>
+
+               {classStudents.length > 0 && (
+                  <Button 
+                    onClick={handleMarkAllPresent}
+                    className="h-10 px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/10 active:scale-95 transition-all flex items-center gap-2 rounded-xl"
+                  >
+                    <Check className="h-4 w-4" />
+                    Mark All Class Present
+                  </Button>
+               )}
+            </div>
+
+            <div className="p-6">
 
             {studentState.status === "loading" ? (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
               </div>
             ) : classStudents.length > 0 ? (
-              viewMode === "grid" ? (
+              <div className="space-y-6">
+                {viewMode === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {classStudents.map((student) => {
+                  {classStudents.map((student: any) => {
                     const status = statusByStudent[student._id] || "present";
                     return (
-                      <div key={student._id} className="premium-card bg-white p-5 border-slate-200/60 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-600/5 transition-all group">
-                        <div className="flex items-center gap-4 mb-6">
-                          <div className="h-12 w-12 rounded-2xl bg-slate-100 text-slate-900 flex items-center justify-center text-xs font-black uppercase tracking-widest group-hover:scale-110 transition-transform">
+                      <div key={student._id} className="bg-white p-5 rounded-2xl border border-slate-200/60 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-600/5 transition-all group relative">
+                        <div className="flex items-center gap-4 mb-5">
+                          <div className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-900 border border-slate-100 flex items-center justify-center text-[11px] font-black uppercase tracking-widest group-hover:scale-110 group-hover:bg-white group-hover:border-blue-100 transition-all shadow-sm">
                             {student.first_name.substring(0, 1)}{student.last_name.substring(0, 1)}
                           </div>
                           <div>
-                            <h4 className="text-sm font-black text-slate-900 leading-tight">{student.first_name} {student.last_name}</h4>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1">Roll: {student.admission_no || 'N/A'}</p>
+                            <h4 className="text-sm font-black text-slate-900 leading-tight group-hover:text-blue-600 transition-colors">{student.first_name} {student.last_name}</h4>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">ID: {student.admission_no || 'N/A'}</p>
                           </div>
                         </div>
                         
-                        <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-50">
+                        <div className="grid grid-cols-2 gap-2 pt-4 border-t border-slate-50">
                           {statusOptions.map((opt) => (
                             <button
                               key={opt.value}
@@ -176,13 +228,13 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
                                   refreshAttendanceSnapshot();
                                 } catch (err) { console.error("Auto-save failed", err); }
                               }}
-                              className={`flex flex-1 items-center justify-center gap-1.5 px-2 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-tight ${
+                              className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-tight ${
                                 status === opt.value 
-                                  ? `${opt.bg} ${opt.color} border-${opt.color.split('-')[1]}-200 shadow-sm` 
-                                  : "bg-white text-slate-400 border-slate-100 hover:border-slate-200"
+                                  ? `${opt.bg} ${opt.color} border-${opt.color.split('-')[1]}-200 shadow-md ring-1 ring-${opt.color.split('-')[1]}-500/20` 
+                                  : "bg-white text-slate-400 border-slate-100 hover:border-slate-300 hover:text-slate-600"
                               }`}
                             >
-                              <opt.icon className="h-3 w-3" />
+                              <opt.icon className={`h-3 w-3 ${status === opt.value ? 'animate-pulse' : ''}`} />
                               {opt.label}
                             </button>
                           ))}
@@ -196,28 +248,28 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[800px]">
                       <thead>
-                        <tr className="bg-slate-50 border-b border-slate-100">
-                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Student Info</th>
-                          <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Attendance Status</th>
+                        <tr className="bg-slate-50/50 border-b border-slate-100">
+                          <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Student Identity</th>
+                          <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Attendance Status Control</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {classStudents.map((student) => {
+                        {classStudents.map((student: any) => {
                           const status = statusByStudent[student._id] || "present";
                           return (
-                            <tr key={student._id} className="hover:bg-slate-50/50 transition-colors group">
-                              <td className="px-6 py-4">
+                            <tr key={student._id} className="hover:bg-blue-50/20 transition-colors group">
+                              <td className="px-6 py-5">
                                 <div className="flex items-center gap-4">
-                                  <div className="h-10 w-10 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center text-[10px] font-black uppercase tracking-widest group-hover:scale-110 transition-transform">
+                                  <div className="h-11 w-11 rounded-2xl bg-slate-50 text-slate-900 border border-slate-100 flex items-center justify-center text-[11px] font-black uppercase tracking-widest group-hover:scale-110 group-hover:bg-white group-hover:border-blue-100 transition-all shadow-sm">
                                     {student.first_name.substring(0, 1)}{student.last_name.substring(0, 1)}
                                   </div>
                                   <div>
-                                    <h4 className="text-sm font-black text-slate-900">{student.first_name} {student.last_name}</h4>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Roll: {student.admission_no || 'N/A'} • {student.section || '1'}</p>
+                                    <h4 className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors">{student.first_name} {student.last_name}</h4>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">ID: {student.admission_no || 'N/A'} • Section {student.section || '1'}</p>
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-6 py-4">
+                              <td className="px-6 py-5">
                                 <div className="flex items-center justify-end gap-2">
                                   {statusOptions.map((opt) => (
                                     <button
@@ -238,13 +290,13 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
                                           refreshAttendanceSnapshot();
                                         } catch (err) { console.error("Auto-save failed", err); }
                                       }}
-                                      className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all text-[10px] font-black uppercase tracking-tight ${
+                                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border transition-all text-[10px] font-black uppercase tracking-tight ${
                                         status === opt.value 
-                                          ? `${opt.bg} ${opt.color} border-${opt.color.split('-')[1]}-200 shadow-sm` 
-                                          : "bg-white text-slate-400 border-slate-100 hover:border-slate-200"
+                                          ? `${opt.bg} ${opt.color} border-${opt.color.split('-')[1]}-200 shadow-md ring-1 ring-${opt.color.split('-')[1]}-500/20` 
+                                          : "bg-white text-slate-400 border-slate-100 hover:border-slate-300 hover:text-slate-600"
                                       }`}
                                     >
-                                      <opt.icon className="h-3.5 w-3.5" />
+                                      <opt.icon className={`h-3.5 w-3.5 ${status === opt.value ? 'animate-pulse' : ''}`} />
                                       {opt.label}
                                     </button>
                                   ))}
@@ -257,8 +309,9 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
                     </table>
                   </div>
                 </div>
-              )
-            ) : (
+              )}
+            </div>
+          ) : (
               <div className="py-24 flex flex-col items-center justify-center bg-white rounded-2xl border-2 border-dashed border-slate-100">
                 <div className="h-16 w-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mb-4">
                   <UserX className="h-8 w-8" />
@@ -268,7 +321,7 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
               </div>
             )}
 
-            {/* STICKY SUBMIT FOOTER - Removed as per user request for direct marking */}
+            </div>
         </form>
     );
 }

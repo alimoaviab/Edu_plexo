@@ -242,7 +242,26 @@ func (h *Handler) ListClassFees(w http.ResponseWriter, r *http.Request) {
 		yearID := tenant.ResolveAcademicYearID(h.Store, ctx, "")
 		h.Store.RLock()
 		defer h.Store.RUnlock()
-		rows := make([]map[string]any, 0)
+
+		var className, academicYear string
+		for _, c := range h.Store.Classes {
+			if c.ID == classID {
+				className = c.Name
+				break
+			}
+		}
+		if yearID != "" {
+			for _, y := range h.Store.AcademicYears {
+				if y.ID == yearID {
+					academicYear = y.Year
+					break
+				}
+			}
+		}
+
+		fees := make([]map[string]any, 0)
+		var monthlyRecurring, oneTimeTotal float64
+
 		for _, cf := range h.Store.ClassFees {
 			if cf.SchoolID != ctx.SchoolID || cf.ClassID != classID {
 				continue
@@ -250,7 +269,16 @@ func (h *Handler) ListClassFees(w http.ResponseWriter, r *http.Request) {
 			if yearID != "" && cf.AcademicYearID != yearID {
 				continue
 			}
-			rows = append(rows, map[string]any{
+
+			if cf.Status == "active" {
+				if cf.Type == "recurring" && cf.RecurringCycle == "monthly" {
+					monthlyRecurring += cf.Amount
+				} else if cf.Type == "onetime" {
+					oneTimeTotal += cf.Amount
+				}
+			}
+
+			fees = append(fees, map[string]any{
 				"id":               cf.ID,
 				"_id":              cf.ID,
 				"class_id":         cf.ClassID,
@@ -269,12 +297,22 @@ func (h *Handler) ListClassFees(w http.ResponseWriter, r *http.Request) {
 				"updated_at":       cf.UpdatedAt,
 			})
 		}
-		return rows, nil
+
+		return map[string]any{
+			"class_id":          classID,
+			"class_name":        className,
+			"academic_year":     academicYear,
+			"total_annual":      (monthlyRecurring * 12) + oneTimeTotal,
+			"monthly_recurring": monthlyRecurring,
+			"one_time_fees":     oneTimeTotal,
+			"fees":              fees,
+		}, nil
 	}))
 }
 
 type classFeeInput struct {
 	FeeTypeID      string  `json:"fee_type_id"`
+	Name           string  `json:"name"` // Support creating/finding by name
 	Amount         float64 `json:"amount"`
 	Type           string  `json:"type"`
 	RecurringCycle string  `json:"recurring_cycle"`
@@ -296,9 +334,48 @@ func (h *Handler) AddClassFee(w http.ResponseWriter, r *http.Request) {
 		if err := auth.AssertPermission(ctx, "fees", auth.ActionCreate); err != nil {
 			return nil, err
 		}
-		if body.FeeTypeID == "" || body.Amount < 0 {
-			return nil, api.NewControlledError("VALIDATION_ERROR", "fee_type_id and non-negative amount are required.", 400, nil)
+
+		if body.Amount < 0 {
+			return nil, api.NewControlledError("VALIDATION_ERROR", "amount must be non-negative.", 400, nil)
 		}
+
+		feeTypeID := body.FeeTypeID
+		if feeTypeID == "" && body.Name != "" {
+			// Find or create FeeType by name
+			h.Store.Lock()
+			var found *store.FeeType
+			for _, ft := range h.Store.FeeTypes {
+				if ft.SchoolID == ctx.SchoolID && strings.EqualFold(ft.Name, body.Name) {
+					found = ft
+					break
+				}
+			}
+			if found != nil {
+				feeTypeID = found.ID
+			} else {
+				// Create new FeeType
+				now := time.Now()
+				nt := &store.FeeType{
+					ID:          store.NewID("ft"),
+					SchoolID:    ctx.SchoolID,
+					Name:        strings.TrimSpace(body.Name),
+					IsRecurring: body.Type == "recurring",
+					Category:    "academic",
+					Status:      "active",
+					CreatedAt:   now,
+					UpdatedAt:   now,
+				}
+				h.Store.FeeTypes = append(h.Store.FeeTypes, nt)
+				h.Save("fee_types", nt)
+				feeTypeID = nt.ID
+			}
+			h.Store.Unlock()
+		}
+
+		if feeTypeID == "" {
+			return nil, api.NewControlledError("VALIDATION_ERROR", "fee_type_id or name is required.", 400, nil)
+		}
+
 		yearID := tenant.ResolveAcademicYearID(h.Store, ctx, "")
 		if yearID == "" {
 			return nil, api.NewControlledError("VALIDATION_ERROR", "No active academic year.", 400, nil)
@@ -308,9 +385,9 @@ func (h *Handler) AddClassFee(w http.ResponseWriter, r *http.Request) {
 		// Duplicate guard (school × class × year × fee_type).
 		for _, cf := range h.Store.ClassFees {
 			if cf.SchoolID == ctx.SchoolID && cf.ClassID == classID &&
-				cf.AcademicYearID == yearID && cf.FeeTypeID == body.FeeTypeID {
+				cf.AcademicYearID == yearID && cf.FeeTypeID == feeTypeID {
 				h.Store.Unlock()
-				return nil, api.NewControlledError("DUPLICATE", "This fee type is already configured for the class.", 400, nil)
+				return nil, api.NewControlledError("DUPLICATE", "This fee component is already configured for the class.", 400, nil)
 			}
 		}
 		now := time.Now()
@@ -319,7 +396,7 @@ func (h *Handler) AddClassFee(w http.ResponseWriter, r *http.Request) {
 			SchoolID:       ctx.SchoolID,
 			ClassID:        classID,
 			AcademicYearID: yearID,
-			FeeTypeID:      body.FeeTypeID,
+			FeeTypeID:      feeTypeID,
 			Amount:         body.Amount,
 			Type:           orDefault(body.Type, "recurring"),
 			RecurringCycle: orDefault(body.RecurringCycle, "monthly"),
