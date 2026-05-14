@@ -173,14 +173,15 @@ func (p *Persister) loadAcademicYears(ctx context.Context, s *store.MemStore) er
 
 func (p *Persister) loadSubjects(ctx context.Context, s *store.MemStore) error {
 	rows, err := p.pool.Query(ctx, `
-		SELECT id, school_id, name, code, description, status, created_at FROM subjects`)
+		SELECT id, school_id, name, code, description, status, total_marks, passing_marks, COALESCE(teacher_id, ''), created_at 
+		FROM subjects`)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 	for rows.Next() {
 		v := &store.Subject{}
-		if err := rows.Scan(&v.ID, &v.SchoolID, &v.Name, &v.Code, &v.Description, &v.Status, &v.CreatedAt); err != nil {
+		if err := rows.Scan(&v.ID, &v.SchoolID, &v.Name, &v.Code, &v.Description, &v.Status, &v.TotalMarks, &v.PassingMarks, &v.TeacherID, &v.CreatedAt); err != nil {
 			return err
 		}
 		s.Subjects = append(s.Subjects, v)
@@ -249,7 +250,7 @@ func (p *Persister) loadClasses(ctx context.Context, s *store.MemStore) error {
 	rows, err := p.pool.Query(ctx, `
 		SELECT id, school_id, academic_year_id, name, code, grade, section,
 			capacity, display_order, passing_percentage, COALESCE(class_teacher_id, ''),
-			room_number, description, status, created_at, updated_at
+			room_number, description, subjects, status, created_at, updated_at
 		FROM classes`)
 	if err != nil {
 		return err
@@ -258,10 +259,14 @@ func (p *Persister) loadClasses(ctx context.Context, s *store.MemStore) error {
 	classes := map[string]*store.Class{}
 	for rows.Next() {
 		v := &store.Class{}
+		var subjectsRaw []byte
 		if err := rows.Scan(&v.ID, &v.SchoolID, &v.AcademicYearID, &v.Name, &v.Code, &v.Grade, &v.Section,
 			&v.Capacity, &v.DisplayOrder, &v.PassingPercentage, &v.ClassTeacherID,
-			&v.RoomNumber, &v.Description, &v.Status, &v.CreatedAt, &v.UpdatedAt); err != nil {
+			&v.RoomNumber, &v.Description, &subjectsRaw, &v.Status, &v.CreatedAt, &v.UpdatedAt); err != nil {
 			return err
+		}
+		if len(subjectsRaw) > 0 {
+			_ = json.Unmarshal(subjectsRaw, &v.Subjects)
 		}
 		classes[v.ID] = v
 		s.Classes = append(s.Classes, v)

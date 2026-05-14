@@ -22,6 +22,7 @@ interface DashboardData {
     };
     activeExams: number;
     pendingLeave: number;
+    unmarkedStudents: number;
     feeCollection: {
       total: number;
       paid: number;
@@ -93,9 +94,10 @@ export function AdminDashboardPage() {
     { title: "Students", value: data?.overview?.totalStudents ?? "0", icon: "school", color: "text-blue-600 bg-blue-50" },
     { title: "Teachers", value: data?.overview?.totalTeachers ?? "0", icon: "badge", color: "text-emerald-600 bg-emerald-50" },
     { title: "Attendance", value: `${data?.overview?.attendanceToday ?? 0}%`, icon: "fact_check", color: "text-amber-600 bg-amber-50" },
+    { title: "Unmarked", value: data?.overview?.unmarkedStudents ?? "0", icon: "pending", color: "text-orange-600 bg-orange-50" },
     { title: "Fees", value: `${data?.overview?.feeCollection?.percentage ?? 0}%`, icon: "payments", color: "text-purple-600 bg-purple-50" },
     { title: "Exams", value: data?.overview?.activeExams ?? "0", icon: "quiz", color: "text-rose-600 bg-rose-50" }
-  ];
+];
 
   if (error) {
     return (
@@ -123,9 +125,9 @@ export function AdminDashboardPage() {
     <SchoolShell eyebrow="School Overview" title="Admin Dashboard">
       
       {/* 1. KPI Cards Row - Refined Density */}
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         {loading ? (
-          Array(5).fill(0).map((_, i) => <div key={i} className="h-[80px] animate-pulse rounded-xl bg-slate-50 border border-slate-100" />)
+          Array(6).fill(0).map((_, i) => <div key={i} className="h-[80px] animate-pulse rounded-xl bg-slate-50 border border-slate-100" />)
         ) : (
           stats.map((stat) => (
             <div key={stat.title} className="premium-card relative flex items-center gap-2.5 p-2.5 transition-all hover:border-blue-200/60 hover:shadow-sm">
@@ -136,12 +138,6 @@ export function AdminDashboardPage() {
                   <p className="text-[9px] font-bold normal-case  text-slate-400">{stat.title}</p>
                   <h3 className="text-lg font-bold text-slate-900 tabular-nums leading-tight">{stat.value}</h3>
                </div>
-               <button 
-                 onClick={() => setDrawerConfig({ isOpen: true, type: stat.title, title: stat.title })}
-                 className="text-slate-300 hover:text-blue-600 transition-colors p-1"
-               >
-                 <span className="material-symbols-outlined text-[16px]">visibility</span>
-               </button>
             </div>
           ))
         )}
@@ -189,14 +185,6 @@ export function AdminDashboardPage() {
                     <div className="rounded-xl border border-rose-50 bg-rose-50/30 p-2.5 text-center">
                        <p className="text-[9px] font-bold text-rose-600 normal-case">Absent</p>
                        <h4 className="text-lg font-bold text-rose-700">{data?.overview?.attendanceDetailed?.absent ?? 0}</h4>
-                    </div>
-                    <div className="rounded-xl border border-amber-50 bg-amber-50/30 p-2.5 text-center">
-                       <p className="text-[9px] font-bold text-amber-600 normal-case">Late</p>
-                       <h4 className="text-lg font-bold text-amber-700">0</h4>
-                    </div>
-                    <div className="rounded-xl border border-slate-50 bg-slate-50/50 p-2.5 text-center">
-                       <p className="text-[9px] font-bold text-slate-500 normal-case">Pending</p>
-                       <h4 className="text-lg font-bold text-slate-600">0</h4>
                     </div>
                  </div>
                  { (data?.overview?.attendanceDetailed?.total ?? 0) === 0 && (
@@ -356,7 +344,7 @@ export function AdminDashboardPage() {
                     <option value="all">All {drawerConfig?.type}</option>
                     
                     {/* Live Classes Data */}
-                    {(drawerConfig?.type === "Students" || drawerConfig?.type === "Attendance") && 
+                    {(drawerConfig?.type === "Students" || drawerConfig?.type === "Attendance" || drawerConfig?.type === "Unmarked") && 
                       (classesState.data as any)?.data?.map((cls: any) => (
                         <option key={cls._id} value={cls._id}>{cls.name}</option>
                       ))
@@ -398,6 +386,7 @@ export function AdminDashboardPage() {
                   {drawerConfig?.type === "Students" ? (data?.overview?.totalStudents ?? 0) : 
                    drawerConfig?.type === "Teachers" ? (data?.overview?.totalTeachers ?? 0) : 
                    drawerConfig?.type === "Attendance" ? `${data?.overview?.attendanceToday ?? 0}%` : 
+                   drawerConfig?.type === "Unmarked" ? (data?.overview?.unmarkedStudents ?? 0) : 
                    drawerConfig?.type === "Fees" ? `${data?.overview?.feeCollection?.percentage ?? 0}%` : 
                    (data?.overview?.activeExams ?? 0)}
                 </h4>

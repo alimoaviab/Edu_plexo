@@ -30,8 +30,6 @@ export function AttendanceTable({ rows }: { rows: AttendanceRecordRow[] }) {
                 const variants: Record<string, any> = {
                     present: "success",
                     absent: "error",
-                    late: "warning",
-                    excused: "secondary"
                 };
                 return <Badge variant={variants[row.status] || "gray"} className="normal-case">{row.status}</Badge>;
             }

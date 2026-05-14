@@ -38,6 +38,7 @@ export interface StatCardCompactProps {
   icon: string;
   accent?: StatCardAccent;
   hint?: string;
+  suffix?: string;
   to?: string;
   onClick?: () => void;
   className?: string;
@@ -49,6 +50,7 @@ export function StatCardCompact({
   icon,
   accent = "blue",
   hint,
+  suffix,
   to,
   onClick,
   className = "",
@@ -68,6 +70,7 @@ export function StatCardCompact({
         </p>
         <p className="mt-0.5 text-lg font-bold text-slate-900 tracking-tight leading-none truncate">
           {value}
+          {suffix && <span className="ml-1 text-[11px] font-bold text-slate-400 uppercase">{suffix}</span>}
         </p>
         {hint && (
           <p className="mt-1 text-[10px] font-medium text-slate-400 truncate">
@@ -110,6 +113,7 @@ export interface StatCardGridItem {
   icon: string;
   accent?: StatCardAccent;
   hint?: string;
+  suffix?: string;
   to?: string;
   onClick?: () => void;
 }

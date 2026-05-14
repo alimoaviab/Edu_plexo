@@ -51,13 +51,21 @@ type AcademicYear struct {
 }
 
 type Subject struct {
-	ID          string    `json:"_id"`
-	SchoolID    string    `json:"school_id"`
-	Name        string    `json:"name"`
-	Code        string    `json:"code"`
-	Description string    `json:"description,omitempty"`
-	Status      string    `json:"status"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID           string    `json:"_id"`
+	SchoolID     string    `json:"school_id"`
+	Name         string    `json:"name"`
+	Code         string    `json:"code"`
+	Description  string    `json:"description,omitempty"`
+	Status       string    `json:"status"`
+	TotalMarks   int       `json:"total_marks,omitempty"`
+	PassingMarks int       `json:"passing_marks,omitempty"`
+	TeacherID    string    `json:"teacher_id,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+
+	// Enriched fields for frontend
+	TeacherName  string   `json:"teacher_name,omitempty"`
+	ClassMapping []string `json:"class_mapping,omitempty"`
+	AcademicYear string   `json:"academic_year,omitempty"`
 }
 
 type ClassSubject struct {

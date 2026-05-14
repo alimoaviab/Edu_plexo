@@ -13,12 +13,11 @@ type AttendanceResponse = {
         total_working_days: number;
         present_days: number;
         absent_days: number;
-        leave_days: number;
         attendance_percentage: number;
         status: string;
     };
     recent_records: Array<{ date: string; status: string }>;
-    monthly_breakdown: Record<string, { working_days: number; present: number; absent: number; leave: number; percentage: number }>;
+    monthly_breakdown: Record<string, { working_days: number; present: number; absent: number; percentage: number }>;
 };
 
 async function resolveStudentId(studentId?: string) {
@@ -83,7 +82,6 @@ export function StudentAttendancePage() {
                             ["Working Days", report.attendance_summary.total_working_days],
                             ["Present", report.attendance_summary.present_days],
                             ["Absent", report.attendance_summary.absent_days],
-                            ["Leave", report.attendance_summary.leave_days]
                         ].map(([label, value]) => (
                             <div key={label as string} className="rounded-2xl border border-slate-200 p-4">
                                 <p className="text-xs font-semibold normal-case tracking-wide text-slate-400">{label}</p>
@@ -100,7 +98,7 @@ export function StudentAttendancePage() {
                             {report.recent_records.map((record) => (
                                 <div key={record.date} className="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3">
                                     <span className="text-sm font-medium text-slate-700">{record.date}</span>
-                                    <Badge variant={record.status === "present" ? "success" : record.status === "late" ? "warning" : record.status === "excused" ? "secondary" : "error"}>
+                                    <Badge variant={record.status === "present" ? "success" : "error"}>
                                         {record.status}
                                     </Badge>
                                 </div>
@@ -118,7 +116,7 @@ export function StudentAttendancePage() {
                                         <Badge variant="primary">{summary.percentage}%</Badge>
                                     </div>
                                     <p className="mt-2 text-sm text-slate-500">
-                                        Working {summary.working_days}, Present {summary.present}, Absent {summary.absent}, Leave {summary.leave}
+                                        Working {summary.working_days}, Present {summary.present}, Absent {summary.absent}
                                     </p>
                                 </div>
                             ))}

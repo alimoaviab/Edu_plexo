@@ -132,7 +132,7 @@ export function ClassListPage() {
         items={[
           { label: "Total Classes", value: meta?.total || classes.length, icon: "door_front", accent: "blue" },
           { label: "Active Classes", value: (classes || []).filter((c: ClassRow) => c.status === "active").length, icon: "sensors", accent: "emerald" },
-          { label: "Total Subjects", value: (classes || []).reduce((acc: number, c: ClassRow) => acc + (c.subjects?.length || 0), 0), icon: "menu_book", accent: "purple" },
+          { label: "Attendance Rate", value: `${Math.round((classes || []).reduce((acc: number, c: ClassRow) => acc + (c.attendance_percentage || 0), 0) / (classes.length || 1))}%`, icon: "insights", accent: "purple" },
           { label: "Total Students", value: (classes || []).reduce((acc: number, c: ClassRow) => acc + (c.student_count || 0), 0), icon: "groups", accent: "amber" },
         ]}
       />

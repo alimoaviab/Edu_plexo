@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { SubjectRow, SubjectFormInput } from "../types";
+import { listTeachers } from "@/modules/teachers/services/teacher.service";
 
 interface Props {
     isOpen: boolean;
@@ -13,14 +14,29 @@ export function SubjectEditSidebar({ isOpen, subject, onClose, onSave, isSaving 
     const [form, setForm] = useState<Partial<SubjectFormInput>>({});
     const [errors, setErrors] = useState<Record<string, string>>({});
 
+    const [teachers, setTeachers] = useState<{ id: string; name: string }[]>([]);
+
     useEffect(() => {
         if (isOpen) {
+            // Fetch teachers for the dropdown
+            listTeachers().then(res => {
+                if (res.success) {
+                    setTeachers(res.data.map((t: any) => ({
+                        id: t._id,
+                        name: `${t.first_name} ${t.last_name}`
+                    })));
+                }
+            });
+
             if (subject) {
                 setForm({
                     name: subject.name,
                     code: subject.code || "",
                     description: subject.description || "",
                     status: subject.status || "active",
+                    total_marks: subject.total_marks || 100,
+                    passing_marks: subject.passing_marks || 33,
+                    teacher_id: subject.teacher_id || "",
                 });
             } else {
                 setForm({
@@ -28,6 +44,9 @@ export function SubjectEditSidebar({ isOpen, subject, onClose, onSave, isSaving 
                     code: "",
                     description: "",
                     status: "active",
+                    total_marks: 100,
+                    passing_marks: 33,
+                    teacher_id: "",
                 });
             }
             setErrors({});
@@ -41,11 +60,22 @@ export function SubjectEditSidebar({ isOpen, subject, onClose, onSave, isSaving 
         code: form.code ?? "",
         description: form.description ?? "",
         status: form.status ?? "active",
+        total_marks: form.total_marks ?? 100,
+        passing_marks: form.passing_marks ?? 33,
+        teacher_id: form.teacher_id ?? "",
     };
 
     function validate() {
         const newErrors: Record<string, string> = {};
         if (!currentForm.name.trim()) newErrors.name = "Name is required";
+        
+        const total = currentForm.total_marks ?? 0;
+        const passing = currentForm.passing_marks ?? 0;
+
+        if (total <= 0) newErrors.total_marks = "Must be > 0";
+        if (passing < 0 || passing > total) {
+            newErrors.passing_marks = "Invalid marks";
+        }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     }
@@ -54,12 +84,7 @@ export function SubjectEditSidebar({ isOpen, subject, onClose, onSave, isSaving 
         e.preventDefault();
         if (!validate()) return;
 
-        await onSave(subject?._id || null, {
-            name: currentForm.name,
-            code: currentForm.code,
-            description: currentForm.description,
-            status: currentForm.status,
-        });
+        await onSave(subject?._id || null, currentForm);
         handleClose();
     }
 
@@ -99,34 +124,50 @@ export function SubjectEditSidebar({ isOpen, subject, onClose, onSave, isSaving 
                             </h3>
                         </div>
                         <div className="space-y-4">
-                            <div>
-                                <label className="block text-[11px] font-bold text-slate-700 normal-case  mb-1.5">
-                                    Subject Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={currentForm.name}
-                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                    placeholder="e.g., Mathematics"
-                                    className={`h-10 w-full px-3 text-sm border rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 transition-all ${errors.name ? "border-red-500 bg-red-50/30" : "border-slate-200 bg-white focus:border-blue-400"
-                                        }`}
-                                />
-                                {errors.name && (
-                                    <p className="text-[10px] font-bold text-red-500 mt-1">{errors.name}</p>
-                                )}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2">
+                                    <label className="block text-[11px] font-bold text-slate-700 normal-case  mb-1.5">
+                                        Subject Name <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={currentForm.name}
+                                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                        placeholder="e.g., Mathematics"
+                                        className={`h-10 w-full px-3 text-sm border rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 transition-all ${errors.name ? "border-red-500 bg-red-50/30" : "border-slate-200 bg-white focus:border-blue-400"
+                                            }`}
+                                    />
+                                    {errors.name && (
+                                        <p className="text-[10px] font-bold text-red-500 mt-1">{errors.name}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-700 normal-case  mb-1.5">
+                                        Subject Code
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={currentForm.code}
+                                        onChange={(e) => setForm({ ...form, code: e.target.value })}
+                                        placeholder="e.g., MAT-01"
+                                        className="h-10 w-full px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-400 bg-white transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[11px] font-bold text-slate-700 normal-case  mb-1.5">
+                                        Status
+                                    </label>
+                                    <select
+                                        value={currentForm.status}
+                                        onChange={(e) => setForm({ ...form, status: e.target.value as any })}
+                                        className="h-10 w-full px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-400 bg-white transition-all font-bold"
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-[11px] font-bold text-slate-700 normal-case  mb-1.5">
-                                    Subject Code
-                                </label>
-                                <input
-                                    type="text"
-                                    value={currentForm.code}
-                                    onChange={(e) => setForm({ ...form, code: e.target.value })}
-                                    placeholder="e.g., MAT-01"
-                                    className="h-10 w-full px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-400 bg-white transition-all"
-                                />
-                            </div>
+
                             <div>
                                 <label className="block text-[11px] font-bold text-slate-700 normal-case  mb-1.5">
                                     Description
@@ -134,7 +175,7 @@ export function SubjectEditSidebar({ isOpen, subject, onClose, onSave, isSaving 
                                 <textarea
                                     value={currentForm.description}
                                     onChange={(e) => setForm({ ...form, description: e.target.value })}
-                                    rows={4}
+                                    rows={3}
                                     placeholder="Subject curriculum overview..."
                                     className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-400 bg-white transition-all"
                                 />
@@ -146,23 +187,58 @@ export function SubjectEditSidebar({ isOpen, subject, onClose, onSave, isSaving 
                         <div className="flex items-center gap-2 mb-4">
                             <span className="h-1 w-4 rounded-full bg-blue-600" />
                             <h3 className="text-[11px] font-bold text-slate-400 normal-case ">
-                                Operational Status
+                                Academic Standards
                             </h3>
                         </div>
-                        <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/50">
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <p className="text-[13px] font-bold text-slate-700">Available for enrollment</p>
-                                <p className="text-[10px] text-slate-400">Determines visibility in class mapping</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
+                                <label className="block text-[11px] font-bold text-slate-700 normal-case  mb-1.5">
+                                    Total Marks
+                                </label>
                                 <input
-                                    type="checkbox"
-                                    checked={currentForm.status === "active"}
-                                    onChange={(e) => setForm({ ...form, status: e.target.checked ? "active" : "inactive" })}
-                                    className="sr-only peer"
+                                    type="number"
+                                    value={currentForm.total_marks}
+                                    onChange={(e) => setForm({ ...form, total_marks: parseInt(e.target.value) || 0 })}
+                                    className="h-10 w-full px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-400 bg-white transition-all font-bold text-blue-600"
                                 />
-                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-600/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 transition-all"></div>
+                                {errors.total_marks && <p className="text-[9px] font-bold text-red-500 mt-1">{errors.total_marks}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-700 normal-case  mb-1.5">
+                                    Passing Marks
+                                </label>
+                                <input
+                                    type="number"
+                                    value={currentForm.passing_marks}
+                                    onChange={(e) => setForm({ ...form, passing_marks: parseInt(e.target.value) || 0 })}
+                                    className="h-10 w-full px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-400 bg-white transition-all font-bold text-amber-600"
+                                />
+                                {errors.passing_marks && <p className="text-[9px] font-bold text-red-500 mt-1">{errors.passing_marks}</p>}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section>
+                        <div className="flex items-center gap-2 mb-4">
+                            <span className="h-1 w-4 rounded-full bg-blue-600" />
+                            <h3 className="text-[11px] font-bold text-slate-400 normal-case ">
+                                Faculty Assignment
+                            </h3>
+                        </div>
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-700 normal-case  mb-1.5">
+                                Primary Subject Head
                             </label>
+                            <select
+                                value={currentForm.teacher_id}
+                                onChange={(e) => setForm({ ...form, teacher_id: e.target.value })}
+                                className="h-10 w-full px-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-600/5 focus:border-blue-400 bg-white transition-all font-bold"
+                            >
+                                <option value="">Select Faculty Head</option>
+                                {teachers.map(t => (
+                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                ))}
+                            </select>
                         </div>
                     </section>
                 </form>

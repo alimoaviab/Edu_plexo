@@ -6,7 +6,7 @@ import { serviceRequest } from "@/services/service-client";
 
 type AttendanceRecord = {
   date: string;
-  status: "present" | "absent" | "late" | "excused";
+  status: "present" | "absent";
 };
 
 type AttendanceSummary = {
@@ -15,7 +15,6 @@ type AttendanceSummary = {
   class_name: string;
   total_present: number;
   total_absent: number;
-  total_excused: number;
   percentage: number;
   recent_records: AttendanceRecord[];
 };
@@ -43,7 +42,6 @@ export function ParentAttendancePage() {
             class_name: res.data.class,
             total_present: summary.present_days,
             total_absent: summary.absent_days,
-            total_excused: summary.late_days, // Assuming late as excused or similar for summary
             percentage: summary.attendance_percentage,
             recent_records: res.data.recent_records.map((r: any) => ({
                 date: r.date,
@@ -104,7 +102,6 @@ export function ParentAttendancePage() {
             {[
               { label: "Days Present", value: data.total_present, icon: "check_circle", color: "text-blue-600", bg: "bg-blue-50" },
               { label: "Days Absent", value: data.total_absent, icon: "cancel", color: "text-rose-600", bg: "bg-rose-50" },
-              { label: "Excused Leaves", value: data.total_excused, icon: "event_busy", color: "text-slate-600", bg: "bg-slate-50" },
             ].map(m => (
               <div key={m.label} className="p-4 rounded-xl border border-slate-50 bg-slate-50/30">
                 <div className="flex items-center gap-3">

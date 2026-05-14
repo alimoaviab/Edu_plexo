@@ -135,33 +135,40 @@ func upsertAcademicYear(ctx context.Context, tx pgx.Tx, v *store.AcademicYear) e
 }
 
 func upsertSubject(ctx context.Context, tx pgx.Tx, v *store.Subject) error {
+	teacherID := nullableString(v.TeacherID)
 	_, err := tx.Exec(ctx, `
-		INSERT INTO subjects (id, school_id, name, code, description, status, created_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7)
+		INSERT INTO subjects (id, school_id, name, code, description, status, total_marks, passing_marks, teacher_id, created_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 		ON CONFLICT (id) DO UPDATE SET
 			name=EXCLUDED.name, code=EXCLUDED.code, description=EXCLUDED.description,
-			status=EXCLUDED.status
-	`, v.ID, v.SchoolID, v.Name, v.Code, v.Description, v.Status, v.CreatedAt)
+			status=EXCLUDED.status, total_marks=EXCLUDED.total_marks,
+			passing_marks=EXCLUDED.passing_marks, teacher_id=EXCLUDED.teacher_id
+	`, v.ID, v.SchoolID, v.Name, v.Code, v.Description, v.Status, v.TotalMarks, v.PassingMarks, teacherID, v.CreatedAt)
 	return err
 }
 
 func upsertClass(ctx context.Context, tx pgx.Tx, v *store.Class) error {
+	subjects, err := jsonOrArray(v.Subjects)
+	if err != nil {
+		return err
+	}
+
 	classTeacherID := nullableString(v.ClassTeacherID)
-	_, err := tx.Exec(ctx, `
+	_, err = tx.Exec(ctx, `
 		INSERT INTO classes (id, school_id, academic_year_id, name, code, grade, section,
 			capacity, display_order, passing_percentage, class_teacher_id,
-			room_number, description, status, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+			room_number, description, subjects, status, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
 		ON CONFLICT (id) DO UPDATE SET
 			name=EXCLUDED.name, code=EXCLUDED.code, grade=EXCLUDED.grade,
 			section=EXCLUDED.section, capacity=EXCLUDED.capacity,
 			display_order=EXCLUDED.display_order, passing_percentage=EXCLUDED.passing_percentage,
 			class_teacher_id=EXCLUDED.class_teacher_id, room_number=EXCLUDED.room_number,
-			description=EXCLUDED.description, status=EXCLUDED.status,
+			description=EXCLUDED.description, subjects=EXCLUDED.subjects, status=EXCLUDED.status,
 			updated_at=EXCLUDED.updated_at
 	`, v.ID, v.SchoolID, v.AcademicYearID, v.Name, v.Code, v.Grade, v.Section,
 		v.Capacity, v.DisplayOrder, v.PassingPercentage, classTeacherID,
-		v.RoomNumber, v.Description, v.Status, v.CreatedAt, v.UpdatedAt)
+		v.RoomNumber, v.Description, subjects, v.Status, v.CreatedAt, v.UpdatedAt)
 	if err != nil {
 		return err
 	}

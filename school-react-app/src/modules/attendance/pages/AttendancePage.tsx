@@ -54,7 +54,7 @@ export function AttendancePage() {
 
     const classOptions = (classState.data ?? []).map((item) => ({ id: item._id, label: item.name }));
     const [searchQuery, setSearchQuery] = useState("");
-    const [statusFilter, setStatusFilter] = useState<"all" | "present" | "absent" | "late" | "excused">("all");
+    const [statusFilter, setStatusFilter] = useState<"all" | "present" | "absent">("all");
 
     const filteredRows = useMemo(() => {
         const rows = state.data ?? [];
@@ -134,13 +134,11 @@ export function AttendancePage() {
                         onSearchChange={setSearchQuery}
                         searchPlaceholder="Search student, admission no, class, note"
                         filterValue={statusFilter}
-                        onFilterChange={(value) => setStatusFilter(value as "all" | "present" | "absent" | "late" | "excused")}
+                        onFilterChange={(value) => setStatusFilter(value as "all" | "present" | "absent")}
                         filterOptions={[
                             { value: "all", label: "All statuses" },
                             { value: "present", label: "Present" },
                             { value: "absent", label: "Absent" },
-                            { value: "late", label: "Late" },
-                            { value: "excused", label: "Excused" },
                         ]}
                     />
 

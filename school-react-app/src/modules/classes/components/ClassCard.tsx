@@ -23,17 +23,17 @@ export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps
         <>
           <button
             onClick={() => onEdit(classItem)}
-            className="h-8 w-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white transition-all"
-            title="Configure"
+            className="h-8 w-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm active:scale-95"
+            title="Edit Class"
           >
-            <span className="material-symbols-outlined text-[18px]">settings_suggest</span>
+            <span className="material-symbols-outlined text-[18px]">edit</span>
           </button>
           <button
             onClick={() => onDelete(classItem)}
             className="h-8 w-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-red-500 hover:text-white transition-all"
             title="Delete"
           >
-            <span className="material-symbols-outlined text-[18px]">delete_sweep</span>
+            <span className="material-symbols-outlined text-[18px]">delete</span>
           </button>
         </>
       }
@@ -47,8 +47,10 @@ export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps
            </p>
         </div>
         <div className="p-2 rounded-xl bg-slate-50/50 border border-slate-100/50 relative overflow-hidden">
-           <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-0.5 text-center">Subjects</p>
-           <p className="text-[10px] font-black text-slate-800 text-center">{classItem.subjects?.length || 0}</p>
+           <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-0.5 text-center">Section</p>
+           <p className="text-[10px] font-black text-slate-800 text-center truncate px-1" title={classItem.section || "General"}>
+             {classItem.section || "General"}
+           </p>
         </div>
         <div className="p-2 rounded-xl bg-slate-50/50 border border-slate-100/50 relative overflow-hidden">
            <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-0.5 text-center">Attendance</p>

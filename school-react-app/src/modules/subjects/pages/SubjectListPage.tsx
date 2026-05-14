@@ -137,8 +137,20 @@ export function SubjectListPage() {
         items={[
           { label: "Total Subjects", value: (data || []).length, icon: "menu_book", accent: "blue" },
           { label: "Active Curriculum", value: (data || []).filter(s => s.status === 'active').length, icon: "check_circle", accent: "emerald" },
-          { label: "Core Credits", value: "128", icon: "stars", accent: "amber" },
-          { label: "Faculty Mapping", value: "94%", icon: "hub", accent: "purple" },
+          { 
+            label: "Curriculum Depth", 
+            value: Math.round((data || []).reduce((acc, s) => acc + (s.total_marks || 0), 0) / (data?.length || 1)), 
+            icon: "stars", 
+            accent: "amber",
+            suffix: " Avg"
+          },
+          { 
+            label: "Faculty Mapping", 
+            value: Math.round(((data || []).filter(s => s.teacher_name).length / (data?.length || 1)) * 100), 
+            icon: "hub", 
+            accent: "purple",
+            suffix: "%"
+          },
         ]}
       />
 

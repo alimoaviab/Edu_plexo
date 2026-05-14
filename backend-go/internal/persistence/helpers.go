@@ -36,3 +36,18 @@ func jsonOrEmpty(v any) ([]byte, error) {
 	}
 	return body, nil
 }
+
+// jsonOrArray marshals `v` to JSON bytes. nil → "[]".
+func jsonOrArray(v any) ([]byte, error) {
+	if v == nil {
+		return []byte("[]"), nil
+	}
+	body, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	if len(body) == 0 || string(body) == "null" {
+		return []byte("[]"), nil
+	}
+	return body, nil
+}

@@ -330,16 +330,19 @@ export function ClassForm({
                         {form.subjects?.map((subject, index) => (
                             <div key={index} className="flex items-center gap-1.5 p-1.5 bg-slate-50/30 rounded-xl border border-slate-100 group transition-all hover:bg-white hover:border-blue-200">
                                 {/* Name */}
-                                <div className="flex-[2] min-w-[110px]">
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="material-symbols-outlined text-[14px] text-slate-300">book</span>
+                                <div className="flex-[2] min-w-[110px] space-y-1">
+                                    <div className={`flex items-center gap-1.5 p-1 rounded-lg transition-all ${errors[`subject_${index}_name`] ? 'bg-red-50 border border-red-200' : ''}`}>
+                                        <span className={`material-symbols-outlined text-[14px] ${errors[`subject_${index}_name`] ? 'text-red-400' : 'text-slate-300'}`}>book</span>
                                         <input
-                                            placeholder="Subject"
+                                            placeholder="Subject Name"
                                             value={subject.name}
                                             onChange={(e) => updateSubject(index, "name", e.target.value)}
                                             className="w-full bg-transparent border-none focus:ring-0 text-[10px] font-bold text-slate-900 placeholder:text-slate-300"
                                         />
                                     </div>
+                                    {errors[`subject_${index}_name`] && (
+                                        <p className="text-[8px] font-bold text-red-500 px-1 uppercase tracking-tighter">Name Required</p>
+                                    )}
                                 </div>
 
                                 {/* Teacher */}

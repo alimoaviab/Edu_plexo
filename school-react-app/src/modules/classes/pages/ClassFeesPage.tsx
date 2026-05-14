@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { DataState, Skeleton, Badge } from "@/components/ui";
+import { DataState, Skeleton, Badge, Button } from "@/components/ui";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import { serviceRequest } from "@/services/service-client";
 import { useClasses } from "@/modules/classes/hooks/useClasses";
@@ -41,6 +41,7 @@ export function ClassFeesPage() {
     const [data, setData] = useState<ClassFeeData | null>(null);
     const [feeTypes, setFeeTypes] = useState<FeeType[]>([]);
     const [loading, setLoading] = useState(true);
+    const [students, setStudents] = useState<any[]>([]);
     const [error, setError] = useState("");
     const [saving, setSaving] = useState(false);
 
@@ -65,11 +66,13 @@ export function ClassFeesPage() {
     async function loadData() {
         setLoading(true);
         try {
-            const [feeRes] = await Promise.all([
-                serviceRequest<ClassFeeData>(`/api/classes/${classId}/fees`)
+            const [feeRes, studentRes] = await Promise.all([
+                serviceRequest<ClassFeeData>(`/api/classes/${classId}/fees`),
+                serviceRequest<any[]>(`/api/students?class_id=${classId}`)
             ]);
 
             if (feeRes.ok) setData(feeRes.data);
+            if (studentRes.ok) setStudents(studentRes.data || []);
         } catch (err) {
             setError("Failed to load fee configuration");
         } finally {
@@ -77,8 +80,13 @@ export function ClassFeesPage() {
         }
     }
 
+    const [genDate, setGenDate] = useState({
+        month: new Date().toLocaleString('en-us', { month: 'long' }).toLowerCase(),
+        year: new Date().getFullYear()
+    });
+
     async function handleGenerate() {
-        if (!window.confirm("Generate invoices for all active students in this class for the current month?")) return;
+        if (!window.confirm(`Generate invoices for all active students in this class for ${genDate.month.toUpperCase()} ${genDate.year}?`)) return;
         
         setSaving(true);
         try {
@@ -86,8 +94,8 @@ export function ClassFeesPage() {
                 method: "POST",
                 body: JSON.stringify({
                     class_id: classId,
-                    month: new Date().toLocaleString('en-us', { month: 'long' }).toLowerCase(),
-                    year: new Date().getFullYear()
+                    month: genDate.month,
+                    year: genDate.year
                 })
             });
             if (res.ok) {
@@ -212,14 +220,6 @@ export function ClassFeesPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={handleGenerate}
-                        disabled={saving || data.fees.length === 0}
-                        className="flex items-center gap-2 px-4 h-9 rounded-xl bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-30"
-                    >
-                        <span className="material-symbols-outlined text-[16px]">print_connect</span>
-                        Generate Invoices
-                    </button>
                     <Badge variant="primary" className="px-3 py-1 text-[9px] font-black uppercase tracking-widest">{data.academic_year}</Badge>
                 </div>
             </div>
@@ -460,7 +460,63 @@ export function ClassFeesPage() {
                     </div>
                 </div>
             )}
-        </div>
+            </div>
+
+            {/* STUDENTS SECTION */}
+            <div className="rounded-3xl border border-slate-200/60 bg-white p-6 shadow-sm mt-4">
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 className="text-sm font-black text-slate-900">Enrolled Students ({students.length})</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Students who will receive these invoices</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <select 
+                            value={genDate.month}
+                            onChange={(e) => setGenDate({...genDate, month: e.target.value})}
+                            className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-bold text-slate-600 outline-none focus:border-blue-500"
+                        >
+                            {months.map(m => <option key={m} value={m}>{m.toUpperCase()}</option>)}
+                        </select>
+                        <select 
+                            value={genDate.year}
+                            onChange={(e) => setGenDate({...genDate, year: Number(e.target.value)})}
+                            className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-bold text-slate-600 outline-none focus:border-blue-500"
+                        >
+                            {years.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                        <Button 
+                            variant="primary" 
+                            onClick={handleGenerate} 
+                            disabled={saving || students.length === 0}
+                            className="h-9 px-6 bg-slate-900 text-white rounded-xl text-[10px] font-bold gap-2"
+                        >
+                            <span className="material-symbols-outlined text-sm">rocket_launch</span>
+                            Generate Invoices
+                        </Button>
+                    </div>
+                </div>
+
+                {students.length === 0 ? (
+                    <div className="py-12 text-center border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/30">
+                        <span className="material-symbols-outlined text-4xl text-slate-200 mb-2">person_off</span>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No students enrolled in this class</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {students.map((student: any) => (
+                            <div key={student.id} className="p-3 rounded-2xl border border-slate-100 bg-slate-50/50 flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400">
+                                    {student.first_name?.[0]}{student.last_name?.[0]}
+                                </div>
+                                <div className="min-w-0">
+                                    <p className="text-xs font-black text-slate-900 truncate">{student.first_name} {student.last_name}</p>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate">Reg: {student.admission_no}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

@@ -1,4 +1,4 @@
-export type AttendanceStatus = "present" | "absent" | "late" | "excused";
+export type AttendanceStatus = "present" | "absent";
 
 export interface AttendanceRecordRow {
   _id: string;

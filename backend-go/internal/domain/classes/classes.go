@@ -367,8 +367,8 @@ func (h *Handler) enrichClass(c *store.Class) {
 	}
 
 	for _, f := range h.Store.Fees {
-		if studentIDs[f.StudentID] {
-			totalDue += f.Amount
+		if studentIDs[f.StudentID] && f.Status != "void" {
+			totalDue += (f.Amount + f.AdjustmentAmount)
 			totalPaid += f.PaidAmount
 		}
 	}

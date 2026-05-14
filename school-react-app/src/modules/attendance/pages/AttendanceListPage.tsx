@@ -84,7 +84,7 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
       total: totalStudents,
       present: data.filter(r => r.status === 'present').length,
       absent: data.filter(r => r.status === 'absent').length,
-      late: data.filter(r => r.status === 'late').length,
+      unmarked: Math.max(0, totalStudents - data.length),
     };
   }, [state.data, classState.data, activeFilters.class_id]);
 
@@ -124,11 +124,9 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
       label: "Status",
       render: (row) => (
         <Badge
-          variant={
-            row.status === "present" ? "success" :
-              row.status === "absent" ? "error" :
-                row.status === "late" ? "warning" : "gray"
-          }
+            variant={
+              row.status === "present" ? "success" : "error"
+            }
           className="normal-case text-[10px] font-bold  px-2 py-0.5"
         >
           {row.status}
@@ -142,7 +140,7 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
       icon: "edit",
       label: "Edit",
       onClick: async (row) => {
-        const status = window.prompt("Status (present/absent/late/excused)", row.status)?.trim();
+        const status = window.prompt("Status (present/absent)", row.status)?.trim();
         if (!status) return;
         await updateAttendance(row._id, { status: status as any });
       },
@@ -165,7 +163,7 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
             { label: "Total Strength", value: stats.total, icon: "groups", accent: "blue" },
             { label: "Present Today", value: stats.present, icon: "check_circle", accent: "emerald" },
             { label: "Absent", value: stats.absent, icon: "cancel", accent: "rose" },
-            { label: "Late Arrivals", value: stats.late, icon: "schedule", accent: "amber" },
+            { label: "Unmarked", value: stats.unmarked, icon: "pending", accent: "amber" },
           ]}
         />
       </div>
@@ -227,7 +225,6 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
               <option value="">Status: All</option>
               <option value="present">Present</option>
               <option value="absent">Absent</option>
-              <option value="late">Late</option>
             </select>
           </div>
         </div>

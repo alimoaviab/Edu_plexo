@@ -104,9 +104,7 @@ export function AttendanceForm({
                     onChange={(e) => setForm({ ...form, status: e.target.value as AttendanceStatus })}
                     options={[
                         { label: "Present", value: "present" },
-                        { label: "Absent", value: "absent" },
-                        { label: "Late", value: "late" },
-                        { label: "Excused", value: "excused" }
+                        { label: "Absent", value: "absent" }
                     ]}
                 />
             </div>

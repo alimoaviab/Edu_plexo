@@ -70,7 +70,6 @@ export function ClassEditPage() {
     try {
       const result = await updateClass(id, input);
       if (result && (result as { ok?: boolean }).ok !== false) {
-        showToast("Class identity synchronized successfully", "success");
         navigate("/admin/classes");
 
         return true;

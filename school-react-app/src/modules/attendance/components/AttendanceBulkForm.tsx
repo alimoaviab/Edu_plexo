@@ -57,9 +57,7 @@ interface AttendanceBulkFormProps {
 
 const statusOptions: Array<{ label: string; value: AttendanceStatus; icon: any; color: string; bg: string }> = [
     { label: "Present", value: "present", icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "Absent", value: "absent", icon: UserX, color: "text-red-600", bg: "bg-red-50" },
-    { label: "Late", value: "late", icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "Excused", value: "excused", icon: Calendar, color: "text-blue-600", bg: "bg-blue-50" }
+    { label: "Absent", value: "absent", icon: UserX, color: "text-red-600", bg: "bg-red-50" }
 ];
 
 export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "list", onSaved }: AttendanceBulkFormProps) {
@@ -136,7 +134,7 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
         };
 
         for (const student of classStudents) {
-            nextStatusMap[student._id] = "present";
+            nextStatusMap[student._id] = "" as any; // No default status
             nextRemarksMap[student._id] = "";
         }
 
@@ -195,7 +193,7 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
                 {viewMode === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {classStudents.map((student: any) => {
-                    const status = statusByStudent[student._id] || "present";
+                    const status = statusByStudent[student._id] || "";
                     return (
                       <div key={student._id} className="bg-white p-5 rounded-2xl border border-slate-200/60 hover:border-blue-400 hover:shadow-xl hover:shadow-blue-600/5 transition-all group relative">
                         <div className="flex items-center gap-4 mb-5">
@@ -255,7 +253,7 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {classStudents.map((student: any) => {
-                          const status = statusByStudent[student._id] || "present";
+                          const status = statusByStudent[student._id] || "";
                           return (
                             <tr key={student._id} className="hover:bg-blue-50/20 transition-colors group">
                               <td className="px-6 py-5">

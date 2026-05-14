@@ -410,6 +410,7 @@ func (h *Handler) AddClassFee(w http.ResponseWriter, r *http.Request) {
 		h.Store.ClassFees = append(h.Store.ClassFees, cf)
 		h.Store.Unlock()
 		h.Save("class_fees", cf)
+		h.syncInvoicesForClass(ctx, classID)
 		audit.Write(h.Store, ctx, audit.Input{Action: "create", EntityType: "fee", EntityID: cf.ID, After: cf, Metadata: map[string]any{"scope": "class_fee"}})
 		return cf, nil
 	}))
@@ -455,7 +456,8 @@ func (h *Handler) UpdateClassFee(w http.ResponseWriter, r *http.Request) {
 				}
 				cf.UpdatedAt = time.Now()
 				h.Save("class_fees", cf)
-				audit.Write(h.Store, ctx, audit.Input{Action: "update", EntityType: "fee", EntityID: feeID, Before: before, After: *cf, Metadata: map[string]any{"scope": "class_fee"}})
+				h.syncInvoicesForClass(ctx, cf.ClassID)
+				audit.Write(h.Store, ctx, audit.Input{Action: "update", EntityType: "fee", EntityID: cf.ID, Before: before, After: *cf, Metadata: map[string]any{"scope": "class_fee"}})
 				return cf, nil
 			}
 		}
@@ -477,6 +479,7 @@ func (h *Handler) DeleteClassFee(w http.ResponseWriter, r *http.Request) {
 				before := *cf
 				h.Store.ClassFees = append(h.Store.ClassFees[:i], h.Store.ClassFees[i+1:]...)
 				h.Save("class_fees:delete", before.ID)
+				h.syncInvoicesForClass(ctx, cf.ClassID)
 				audit.Write(h.Store, ctx, audit.Input{Action: "delete", EntityType: "fee", EntityID: feeID, Before: before, Metadata: map[string]any{"scope": "class_fee"}})
 				return map[string]any{"success": true, "id": feeID}, nil
 			}
@@ -504,6 +507,7 @@ func (h *Handler) ToggleClassFee(w http.ResponseWriter, r *http.Request) {
 				}
 				cf.UpdatedAt = time.Now()
 				h.Save("class_fees", cf)
+				h.syncInvoicesForClass(ctx, cf.ClassID)
 				audit.Write(h.Store, ctx, audit.Input{Action: "update", EntityType: "fee", EntityID: feeID, Before: before, After: *cf, Metadata: map[string]any{"scope": "class_fee_toggle"}})
 				return cf, nil
 			}
@@ -540,6 +544,7 @@ func (h *Handler) DuplicateClassFee(w http.ResponseWriter, r *http.Request) {
 		dup.UpdatedAt = now
 		h.Store.ClassFees = append(h.Store.ClassFees, &dup)
 		h.Save("class_fees", &dup)
+		h.syncInvoicesForClass(ctx, classID)
 		return &dup, nil
 	}))
 }
@@ -660,7 +665,7 @@ func (h *Handler) Generate(w http.ResponseWriter, r *http.Request) {
 				InvoiceNo:        makeInvoiceNo(stu.ID, body.Month, body.Year),
 				Title:            fmt.Sprintf("%s %d", titleCase(body.Month), body.Year),
 				Amount:           total,
-				Currency:         "USD",
+				Currency:         "Rs",
 				Month:            strings.ToLower(body.Month),
 				Year:             body.Year,
 				DueAt:            dueAt,
@@ -1020,6 +1025,7 @@ func (h *Handler) RecordPayment(w http.ResponseWriter, r *http.Request) {
 			Action: "create", EntityType: "fee", EntityID: pay.ID,
 			Metadata: map[string]any{"scope": "payment", "fee_id": fee.ID, "amount": applied},
 		})
+		h.syncInvoicesForClassLocked(ctx, fee.ClassID)
 		return pay, nil
 	}))
 }
@@ -1269,8 +1275,10 @@ func (h *Handler) LedgerDashboard(w http.ResponseWriter, r *http.Request) {
 					isCurrent = false
 				}
 
-				if isCurrent && current == nil {
-					current = f
+				if isCurrent {
+					if current == nil {
+						current = f
+					}
 					totalPayable += eff
 					paidTotal += f.PaidAmount
 					remaining += outstanding
