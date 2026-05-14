@@ -76,6 +76,126 @@ func New() *MemStore {
 	return store
 }
 
+// EnsureBootstrapUsers checks that the platform has at least one super_admin
+// and one school admin. If either is missing (e.g. after loading from a fresh
+// or partially-seeded database), they are created. This guarantees the
+// platform can always be logged into.
+func EnsureBootstrapUsers(s *MemStore) {
+	now := time.Now()
+
+	// Default credentials
+	schoolEmail := strings.ToLower(strings.TrimSpace(os.Getenv("EDUPLEXO_ADMIN_EMAIL")))
+	if schoolEmail == "" {
+		schoolEmail = "school@gmail.com"
+	}
+	schoolPassword := os.Getenv("EDUPLEXO_ADMIN_PASSWORD")
+	if schoolPassword == "" {
+		schoolPassword = "Test@123"
+	}
+
+	// Super admin credentials (read from DEFAULT_ADMIN_EMAIL/DEFAULT_ADMIN_PASS or fallback)
+	superEmail := strings.ToLower(strings.TrimSpace(os.Getenv("DEFAULT_ADMIN_EMAIL")))
+	if superEmail == "" {
+		superEmail = "super@gmail.com"
+	}
+	superPassword := os.Getenv("DEFAULT_ADMIN_PASS")
+	if superPassword == "" {
+		superPassword = "Test@123"
+	}
+
+	s.Lock()
+	defer s.Unlock()
+
+	schoolID := "school_default"
+
+	// Check existing users and update passwords if they exist, or create them
+	var superUser *User
+	var schoolUser *User
+	for _, u := range s.Users {
+		if u.Email == superEmail && u.Role == "super_admin" {
+			superUser = u
+		}
+		if u.Email == schoolEmail && u.Role == "admin" {
+			schoolUser = u
+		}
+	}
+
+	// Ensure default school exists
+	hasDefaultSchool := false
+	for _, sch := range s.Schools {
+		if sch.SchoolID == schoolID {
+			hasDefaultSchool = true
+			break
+		}
+	}
+	if !hasDefaultSchool {
+		s.Schools = append(s.Schools, &School{
+			ID:        NewID("sch"),
+			SchoolID:  schoolID,
+			Name:      "Eduplexo Academy",
+			Code:      "MAIN",
+			Status:    "active",
+			CreatedAt: now,
+			UpdatedAt: now,
+		})
+
+		// Also create a default academic year for this school
+		startYear := now.Year()
+		if now.Month() < time.April {
+			startYear = startYear - 1
+		}
+		s.AcademicYears = append(s.AcademicYears, &AcademicYear{
+			ID:        NewID("ay"),
+			SchoolID:  schoolID,
+			Year:      formatAcademicYear(startYear),
+			StartDate: time.Date(startYear, 4, 1, 0, 0, 0, 0, time.UTC),
+			EndDate:   time.Date(startYear+1, 3, 31, 0, 0, 0, 0, time.UTC),
+			IsActive:  true,
+			Status:    "active",
+			CreatedAt: now,
+			UpdatedAt: now,
+		})
+	}
+
+	if superUser != nil {
+		superUser.PasswordHash = superPassword
+		superUser.Password = superPassword
+	} else {
+		s.Users = append(s.Users, &User{
+			ID:           NewID("user"),
+			SchoolID:     "system",
+			Email:        superEmail,
+			PasswordHash: superPassword,
+			Password:     superPassword,
+			Role:         "super_admin",
+			Permissions:  []string{"*"},
+			Status:       "active",
+			Profile:      UserProfile{FirstName: "Platform", LastName: "SuperAdmin"},
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		})
+	}
+
+	if schoolUser != nil {
+		schoolUser.PasswordHash = schoolPassword
+		schoolUser.Password = schoolPassword
+	} else {
+		s.Users = append(s.Users, &User{
+			ID:           NewID("user"),
+			SchoolID:     schoolID,
+			Email:        schoolEmail,
+			PasswordHash: schoolPassword,
+			Password:     schoolPassword,
+			Role:         "admin",
+			Permissions:  []string{"*"},
+			Status:       "active",
+			Profile:      UserProfile{FirstName: "School", LastName: "Admin"},
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		})
+	}
+}
+
 // bootstrapAdmin guarantees there is at least one school + admin user so the
 // application can be logged into on first boot. The credentials come from
 // EDUPLEXO_ADMIN_EMAIL / EDUPLEXO_ADMIN_PASSWORD when set, otherwise default
@@ -83,20 +203,21 @@ func New() *MemStore {
 func bootstrapAdmin(s *MemStore) {
 	now := time.Now()
 
-	email := strings.ToLower(strings.TrimSpace(os.Getenv("EDUPLEXO_ADMIN_EMAIL")))
-	if email == "" {
-		email = "admin@school.test"
+	// 1. School Admin
+	schoolEmail := strings.ToLower(strings.TrimSpace(os.Getenv("EDUPLEXO_ADMIN_EMAIL")))
+	if schoolEmail == "" {
+		schoolEmail = "school@gmail.com"
 	}
-	password := os.Getenv("EDUPLEXO_ADMIN_PASSWORD")
-	if password == "" {
-		password = "admin123"
+	schoolPassword := os.Getenv("EDUPLEXO_ADMIN_PASSWORD")
+	if schoolPassword == "" {
+		schoolPassword = "Test@123"
 	}
 
 	schoolID := "school_default"
 	s.Schools = append(s.Schools, &School{
 		ID:        NewID("sch"),
 		SchoolID:  schoolID,
-		Name:      "My School",
+		Name:      "Eduplexo Academy",
 		Code:      "MAIN",
 		Status:    "active",
 		CreatedAt: now,
@@ -123,12 +244,37 @@ func bootstrapAdmin(s *MemStore) {
 	s.Users = append(s.Users, &User{
 		ID:           NewID("user"),
 		SchoolID:     schoolID,
-		Email:        email,
-		PasswordHash: password, // plain-text bootstrap; replace via password change
+		Email:        schoolEmail,
+		PasswordHash: schoolPassword,
+		Password:     schoolPassword,
 		Role:         "admin",
 		Permissions:  []string{"*"},
 		Status:       "active",
-		Profile:      UserProfile{FirstName: "Admin", LastName: "User"},
+		Profile:      UserProfile{FirstName: "School", LastName: "Admin"},
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	})
+
+	// 2. Super Admin (read from DEFAULT_ADMIN_EMAIL/DEFAULT_ADMIN_PASS env vars or fallback)
+	superEmail := strings.ToLower(strings.TrimSpace(os.Getenv("DEFAULT_ADMIN_EMAIL")))
+	if superEmail == "" {
+		superEmail = "super@gmail.com"
+	}
+	superPassword := os.Getenv("DEFAULT_ADMIN_PASS")
+	if superPassword == "" {
+		superPassword = "Test@123"
+	}
+
+	s.Users = append(s.Users, &User{
+		ID:           NewID("user"),
+		SchoolID:     "system", // Super admins are system-wide
+		Email:        superEmail,
+		PasswordHash: superPassword,
+		Password:     superPassword,
+		Role:         "super_admin",
+		Permissions:  []string{"*"},
+		Status:       "active",
+		Profile:      UserProfile{FirstName: "Platform", LastName: "SuperAdmin"},
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	})
@@ -161,8 +307,8 @@ func seedDev(s *MemStore) {
 	)
 
 	s.Users = append(s.Users, &User{
-		ID: "user_admin_seed", SchoolID: schoolID, Email: "admin@school.test",
-		PasswordHash: "admin123", Role: "admin", Permissions: []string{"*"},
+		ID: "user_admin_seed", SchoolID: schoolID, Email: "school@gmail.com",
+		PasswordHash: "Test@123", Role: "admin", Permissions: []string{"*"},
 		Status:    "active",
 		Profile:   UserProfile{FirstName: "Demo", LastName: "Admin"},
 		CreatedAt: now, UpdatedAt: now,

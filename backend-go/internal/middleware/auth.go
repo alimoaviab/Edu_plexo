@@ -7,6 +7,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/api"
 	"github.com/eduplexo/backend-go/internal/auth"
 	"github.com/eduplexo/backend-go/internal/config"
+	"github.com/eduplexo/backend-go/internal/store"
 )
 
 // Authenticator builds the auth middleware bound to the active config.
@@ -15,7 +16,7 @@ import (
 //   2. Fall back to the Authorization: Bearer header.
 //   3. Verify the JWT against the JWT_SECRET.
 //   4. Apply the optional x-academic-year-id header override.
-func Authenticator(cfg config.Config) func(http.Handler) http.Handler {
+func Authenticator(cfg config.Config, s *store.MemStore) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token := readToken(r)
@@ -31,6 +32,39 @@ func Authenticator(cfg config.Config) func(http.Handler) http.Handler {
 			}
 
 			ctx := auth.ContextFromClaims(claims)
+
+			// Fast status check for suspended users or schools
+			s.RLock()
+			isSuspended := false
+			foundUser := false
+			for _, u := range s.Users {
+				if u.ID == ctx.UserID || u.Email == ctx.ActorEmail {
+					foundUser = true
+					if u.Status == "suspended" {
+						isSuspended = true
+					}
+					break
+				}
+			}
+
+			// If user is active, check if their school is suspended
+			if foundUser && !isSuspended && ctx.SchoolID != "system" {
+				for _, sch := range s.Schools {
+					if sch.SchoolID == ctx.SchoolID {
+						if sch.Status == "suspended" || sch.Status == "expired" {
+							isSuspended = true
+						}
+						break
+					}
+				}
+			}
+			s.RUnlock()
+
+			if isSuspended {
+				api.WriteResult(w, api.Fail("FORBIDDEN", "Your account or school is currently suspended. Please contact support.", 403, nil))
+				return
+			}
+
 			ctx.IP = clientIP(r)
 			ctx.UserAgent = r.Header.Get("user-agent")
 

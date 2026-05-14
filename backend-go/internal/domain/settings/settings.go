@@ -71,6 +71,35 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 		if body.Profile != nil {
 			s.Profile = body.Profile
+
+			// Sync to master School record for Super Admin visibility
+			for _, school := range h.Store.Schools {
+				if school.SchoolID == ctx.SchoolID {
+					if name, ok := body.Profile["schoolName"].(string); ok && name != "" {
+						school.Name = name
+					}
+					if email, ok := body.Profile["email"].(string); ok {
+						school.Email = email
+					}
+					if phone, ok := body.Profile["phone"].(string); ok {
+						school.Phone = phone
+					}
+					if addr, ok := body.Profile["address"].(string); ok {
+						school.Address = addr
+					}
+					if city, ok := body.Profile["city"].(string); ok {
+						school.City = city
+					}
+					if princ, ok := body.Profile["principalName"].(string); ok {
+						school.PrincipalName = princ
+					}
+					if web, ok := body.Profile["website"].(string); ok {
+						school.Website = web
+					}
+					school.UpdatedAt = now
+					break
+				}
+			}
 		}
 		if body.Branding != nil {
 			s.Branding = body.Branding

@@ -42,7 +42,7 @@ func Load() Config {
 		Port:           getenv("PORT", "8080"),
 		JWTSecret:      os.Getenv("JWT_SECRET"),
 		AppName:        getenv("APP_NAME", "school"),
-		AllowedOrigins: splitCSV(getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")),
+		AllowedOrigins: splitCSV(getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:5173")),
 		CookieSecure:   os.Getenv("COOKIE_SECURE") == "true",
 		DatabaseURL:    os.Getenv("DATABASE_URL"),
 	}

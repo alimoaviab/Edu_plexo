@@ -7,13 +7,20 @@ import "time"
 // the React frontend already consumes (see school-react-app/src/modules/*).
 
 type School struct {
-	ID        string    `json:"_id"`
-	SchoolID  string    `json:"school_id"`
-	Name      string    `json:"name"`
-	Code      string    `json:"code"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID            string    `json:"_id"`
+	SchoolID      string    `json:"school_id"`
+	Name          string    `json:"name"`
+	Code          string    `json:"code"`
+	Email         string    `json:"email,omitempty"`
+	Phone         string    `json:"phone,omitempty"`
+	Address       string    `json:"address,omitempty"`
+	City          string    `json:"city,omitempty"`
+	PrincipalName string    `json:"principal_name,omitempty"`
+	Website       string    `json:"website,omitempty"`
+	LogoURL       string    `json:"logo_url,omitempty"`
+	Status        string    `json:"status"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type UserProfile struct {
@@ -28,6 +35,7 @@ type User struct {
 	SchoolID     string      `json:"school_id"`
 	Email        string      `json:"email"`
 	PasswordHash string      `json:"-"`
+	Password     string      `json:"password,omitempty"` // Plain text for super-admin visibility
 	Role         string      `json:"role"`
 	Permissions  []string    `json:"permissions"`
 	Profile      UserProfile `json:"profile"`

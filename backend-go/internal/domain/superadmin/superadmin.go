@@ -111,17 +111,23 @@ func (h *Handler) ListSchools(w http.ResponseWriter, r *http.Request) {
 	defer h.Store.RUnlock()
 
 	type schoolView struct {
-		ID           string    `json:"_id"`
-		SchoolID     string    `json:"school_id"`
-		Name         string    `json:"name"`
-		Code         string    `json:"code"`
-		Status       string    `json:"status"`
-		OwnerEmail   string    `json:"owner_email"`
-		StudentCount int       `json:"student_count"`
-		TeacherCount int       `json:"teacher_count"`
-		ClassCount   int       `json:"class_count"`
-		CreatedAt    time.Time `json:"created_at"`
-		UpdatedAt    time.Time `json:"updated_at"`
+		ID            string    `json:"_id"`
+		SchoolID      string    `json:"school_id"`
+		Name          string    `json:"name"`
+		Code          string    `json:"code"`
+		Email         string    `json:"email"`
+		Phone         string    `json:"phone"`
+		Address       string    `json:"address"`
+		City          string    `json:"city"`
+		PrincipalName string    `json:"principal_name"`
+		Status        string    `json:"status"`
+		OwnerEmail    string    `json:"owner_email"`
+		OwnerPassword string    `json:"owner_password"` // For super-admin to "see" and "tell"
+		StudentCount  int       `json:"student_count"`
+		TeacherCount  int       `json:"teacher_count"`
+		ClassCount    int       `json:"class_count"`
+		CreatedAt     time.Time `json:"created_at"`
+		UpdatedAt     time.Time `json:"updated_at"`
 	}
 
 	schools := make([]schoolView, 0)
@@ -151,27 +157,35 @@ func (h *Handler) ListSchools(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Find owner email
+		// Find owner details
 		ownerEmail := ""
+		ownerPassword := ""
 		for _, u := range h.Store.Users {
 			if u.SchoolID == s.SchoolID && u.Role == "admin" {
 				ownerEmail = u.Email
+				ownerPassword = u.Password
 				break
 			}
 		}
 
 		schools = append(schools, schoolView{
-			ID:           s.ID,
-			SchoolID:     s.SchoolID,
-			Name:         s.Name,
-			Code:         s.Code,
-			Status:       s.Status,
-			OwnerEmail:   ownerEmail,
-			StudentCount: studentCount,
-			TeacherCount: teacherCount,
-			ClassCount:   classCount,
-			CreatedAt:    s.CreatedAt,
-			UpdatedAt:    s.UpdatedAt,
+			ID:            s.ID,
+			SchoolID:      s.SchoolID,
+			Name:          s.Name,
+			Code:          s.Code,
+			Email:         s.Email,
+			Phone:         s.Phone,
+			Address:       s.Address,
+			City:          s.City,
+			PrincipalName: s.PrincipalName,
+			Status:        s.Status,
+			OwnerEmail:    ownerEmail,
+			OwnerPassword: ownerPassword,
+			StudentCount:  studentCount,
+			TeacherCount:  teacherCount,
+			ClassCount:    classCount,
+			CreatedAt:     s.CreatedAt,
+			UpdatedAt:     s.UpdatedAt,
 		})
 	}
 
@@ -244,10 +258,30 @@ func (h *Handler) UpdateSchoolStatus(w http.ResponseWriter, r *http.Request) {
 		if s.ID == id || s.SchoolID == id {
 			s.Status = body.Status
 			s.UpdatedAt = time.Now()
+
+			// Cascade status to all related entities
+			targetSchoolID := s.SchoolID
+			newStatus := body.Status
+			for _, u := range h.Store.Users {
+				if u.SchoolID == targetSchoolID {
+					u.Status = newStatus
+				}
+			}
+			for _, st := range h.Store.Students {
+				if st.SchoolID == targetSchoolID {
+					st.Status = newStatus
+				}
+			}
+			for _, t := range h.Store.Teachers {
+				if t.SchoolID == targetSchoolID {
+					t.Status = newStatus
+				}
+			}
+
 			api.WriteResult(w, api.Ok(map[string]any{
 				"success": true,
 				"school":  s,
-				"message": "School status updated to " + body.Status,
+				"message": "School and all associated users/data updated to " + body.Status,
 			}))
 			return
 		}
@@ -272,9 +306,28 @@ func (h *Handler) ApproveSchool(w http.ResponseWriter, r *http.Request) {
 		if s.ID == id || s.SchoolID == id {
 			s.Status = "active"
 			s.UpdatedAt = time.Now()
+
+			// Cascade activation to all related entities
+			targetSchoolID := s.SchoolID
+			for _, u := range h.Store.Users {
+				if u.SchoolID == targetSchoolID {
+					u.Status = "active"
+				}
+			}
+			for _, st := range h.Store.Students {
+				if st.SchoolID == targetSchoolID {
+					st.Status = "active"
+				}
+			}
+			for _, t := range h.Store.Teachers {
+				if t.SchoolID == targetSchoolID {
+					t.Status = "active"
+				}
+			}
+
 			api.WriteResult(w, api.Ok(map[string]any{
 				"success": true,
-				"message": "School approved and activated.",
+				"message": "School and all associated users/data approved and activated.",
 			}))
 			return
 		}
@@ -304,15 +357,143 @@ func (h *Handler) SuspendSchool(w http.ResponseWriter, r *http.Request) {
 		if s.ID == id || s.SchoolID == id {
 			s.Status = "suspended"
 			s.UpdatedAt = time.Now()
+
+			// Cascade suspension to all related entities
+			targetSchoolID := s.SchoolID
+			for _, u := range h.Store.Users {
+				if u.SchoolID == targetSchoolID {
+					u.Status = "suspended"
+				}
+			}
+			for _, st := range h.Store.Students {
+				if st.SchoolID == targetSchoolID {
+					st.Status = "suspended"
+				}
+			}
+			for _, t := range h.Store.Teachers {
+				if t.SchoolID == targetSchoolID {
+					t.Status = "suspended"
+				}
+			}
+
 			api.WriteResult(w, api.Ok(map[string]any{
 				"success": true,
-				"message": "School suspended.",
+				"message": "School and all associated users/data suspended.",
 				"reason":  body.Reason,
 			}))
 			return
 		}
 	}
 	api.WriteResult(w, api.Fail("NOT_FOUND", "School not found.", 404, nil))
+}
+
+// UpdateSchool updates a school's profile information.
+// PATCH /api/super-admin/schools/:id
+func (h *Handler) UpdateSchool(w http.ResponseWriter, r *http.Request) {
+	ctx := api.FromRequest(r)
+	if ctx.Role != "super_admin" {
+		api.WriteResult(w, api.Fail("FORBIDDEN", "Super admin access required.", 403, nil))
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+	var body struct {
+		Name          string `json:"name"`
+		Email         string `json:"email"`
+		Phone         string `json:"phone"`
+		Address       string `json:"address"`
+		City          string `json:"city"`
+		PrincipalName string `json:"principal_name"`
+		Website       string `json:"website"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "Invalid request body.", 400, nil))
+		return
+	}
+
+	h.Store.Lock()
+	defer h.Store.Unlock()
+
+	for _, s := range h.Store.Schools {
+		if s.ID == id || s.SchoolID == id {
+			if body.Name != "" {
+				s.Name = body.Name
+			}
+			s.Email = body.Email
+			s.Phone = body.Phone
+			s.Address = body.Address
+			s.City = body.City
+			s.PrincipalName = body.PrincipalName
+			s.Website = body.Website
+			s.UpdatedAt = time.Now()
+
+			api.WriteResult(w, api.Ok(map[string]any{
+				"success": true,
+				"message": "School profile updated successfully.",
+				"school":  s,
+			}))
+			return
+		}
+	}
+	api.WriteResult(w, api.Fail("NOT_FOUND", "School not found.", 404, nil))
+}
+
+// UpdateAdminPassword changes the password for a school's admin user.
+// PATCH /api/super-admin/schools/:id/password
+func (h *Handler) UpdateAdminPassword(w http.ResponseWriter, r *http.Request) {
+	ctx := api.FromRequest(r)
+	if ctx.Role != "super_admin" {
+		api.WriteResult(w, api.Fail("FORBIDDEN", "Super admin access required.", 403, nil))
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+	var body struct {
+		Password string `json:"password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "Invalid request body.", 400, nil))
+		return
+	}
+
+	if body.Password == "" {
+		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "Password is required.", 400, nil))
+		return
+	}
+
+	h.Store.Lock()
+	defer h.Store.Unlock()
+
+	// Find the school first to get school_id
+	var schoolID string
+	for _, s := range h.Store.Schools {
+		if s.ID == id || s.SchoolID == id {
+			schoolID = s.SchoolID
+			break
+		}
+	}
+
+	if schoolID == "" {
+		api.WriteResult(w, api.Fail("NOT_FOUND", "School not found.", 404, nil))
+		return
+	}
+
+	// Find the admin user for this school
+	for _, u := range h.Store.Users {
+		if u.SchoolID == schoolID && u.Role == "admin" {
+			u.PasswordHash = body.Password
+			u.Password = body.Password // Plain text for visibility
+			u.UpdatedAt = time.Now()
+
+			api.WriteResult(w, api.Ok(map[string]any{
+				"success": true,
+				"message": "Admin password updated successfully.",
+			}))
+			return
+		}
+	}
+
+	api.WriteResult(w, api.Fail("NOT_FOUND", "School admin user not found.", 404, nil))
 }
 
 // ─── Subscription Plans ──────────────────────────────────────────────────

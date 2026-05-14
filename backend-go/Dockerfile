@@ -4,7 +4,7 @@
 # Stage 2: copy into a minimal distroless image so the final container is
 # tiny and CVE-light (no shell, no package manager).
 
-FROM golang:1.25-alpine AS builder
+FROM golang:alpine AS builder
 
 WORKDIR /src
 

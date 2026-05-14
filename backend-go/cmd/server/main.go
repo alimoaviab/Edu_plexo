@@ -25,11 +25,22 @@ import (
 	"github.com/eduplexo/backend-go/internal/persistence"
 	"github.com/eduplexo/backend-go/internal/server"
 	"github.com/eduplexo/backend-go/internal/store"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env.local from the parent directory (project root) and the local
+	// backend directory. Both are best-effort — missing files are not errors.
+	_ = godotenv.Load("../.env.local")
+	_ = godotenv.Load(".env.local")
+	_ = godotenv.Load(".env")
+
 	cfg := config.Load()
 	s := store.New()
+
+	// Always ensure bootstrap users exist (even when running pure in-memory
+	// without a database)
+	store.EnsureBootstrapUsers(s)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -44,6 +55,9 @@ func main() {
 		if err := pg.Load(ctx, s); err != nil {
 			log.Fatalf("[server] persistence load failed: %v", err)
 		}
+		// Ensure bootstrap admin users exist even after loading from PG.
+		// This guarantees we can always log in as the platform owner.
+		store.EnsureBootstrapUsers(s)
 		// Push the in-memory seed to PG when DB was empty.
 		if err := pg.FullSnapshot(ctx, s); err != nil {
 			log.Printf("[server] initial snapshot failed: %v", err)
@@ -65,6 +79,22 @@ func main() {
 	go func() {
 		log.Printf("[server] listening on http://0.0.0.0%s (app=%s, allowed_origins=%v, db=%v)",
 			srv.Addr, cfg.AppName, cfg.AllowedOrigins, pg.Available())
+
+		// Print bootstrap credentials for easy login
+		s.RLock()
+		log.Println("[server] ═══════════════════════════════════════════════════════════")
+		log.Println("[server] BOOTSTRAP CREDENTIALS (use to login)")
+		for _, u := range s.Users {
+			if u.Role == "super_admin" {
+				log.Printf("[server]   Super Admin: %s / %s (port 3001)", u.Email, u.PasswordHash)
+			}
+			if u.Role == "admin" {
+				log.Printf("[server]   School Admin: %s / %s (port 3000)", u.Email, u.PasswordHash)
+			}
+		}
+		log.Println("[server] ═══════════════════════════════════════════════════════════")
+		s.RUnlock()
+
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("[server] listen error: %v", err)
 		}

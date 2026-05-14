@@ -79,7 +79,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister) htt
 		r.Post("/auth/google/disconnect", stubs.NotImplemented("Google Calendar OAuth is not enabled in this environment."))
 
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.Authenticator(cfg))
+			r.Use(middleware.Authenticator(cfg, s))
 
 			ayH := academicyear.New(s, saveFn)
 			r.Get("/academic-years", ayH.List)
@@ -255,7 +255,9 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister) htt
 			r.Get("/super-admin/dashboard", saH.DashboardStats)
 			r.Get("/super-admin/schools", saH.ListSchools)
 			r.Get("/super-admin/schools/{id}", saH.GetSchool)
+			r.Patch("/super-admin/schools/{id}", saH.UpdateSchool)
 			r.Patch("/super-admin/schools/{id}/status", saH.UpdateSchoolStatus)
+			r.Patch("/super-admin/schools/{id}/password", saH.UpdateAdminPassword)
 			r.Post("/super-admin/schools/{id}/approve", saH.ApproveSchool)
 			r.Post("/super-admin/schools/{id}/suspend", saH.SuspendSchool)
 			r.Get("/super-admin/plans", saH.ListPlans)

@@ -24,10 +24,18 @@ export async function apiRequest<T = any>(url: string, options: RequestInit = {}
     }
 
     if (res.status === 401) {
-      localStorage.removeItem('sa_token')
-      localStorage.removeItem('sa_user')
-      window.location.replace('/login')
-      return { ok: false, message: 'Session expired' }
+      // Don't redirect if we're already on the login page
+      const onLogin = window.location.pathname === '/login'
+      if (!onLogin) {
+        localStorage.removeItem('sa_token')
+        localStorage.removeItem('sa_user')
+        window.location.replace('/login')
+      }
+      return {
+        ok: false,
+        message: payload?.message || 'Invalid credentials',
+        error: payload?.error,
+      }
     }
 
     if (res.ok) {

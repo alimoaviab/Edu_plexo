@@ -64,7 +64,7 @@ services:
     environment:
       PORT: "8080"
       APP_NAME: school
-      ALLOWED_ORIGINS: "http://localhost:3000,http://frontend:80"
+      ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:3001,http://frontend:80,http://super-admin:80"
       COOKIE_SECURE: "false"
       JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me}
       DATABASE_URL: postgres://school_user:school_password@postgres:5432/school_db?sslmode=disable
@@ -84,6 +84,17 @@ services:
       - backend-go
     ports:
       - "3000:80"
+
+  super-admin:
+    build:
+      context: ./super-admin-app
+      dockerfile: Dockerfile
+    container_name: school_super_admin
+    restart: unless-stopped
+    depends_on:
+      - backend-go
+    ports:
+      - "3001:80"
 
 volumes:
   postgres_data:
