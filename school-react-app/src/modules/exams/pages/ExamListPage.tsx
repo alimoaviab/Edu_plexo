@@ -114,32 +114,57 @@ export function ExamListPage({ filters }: { filters?: { class_id?: string; subje
               <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-lg text-slate-400">search</span>
               <input
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Filter exams..."
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setSearchQuery(v);
+                  updateQuery({ search: v });
+                }}
+                placeholder="Filter exams by title or subject..."
                 className="h-9 w-full rounded-lg border border-slate-50 bg-slate-50/50 pl-9 pr-3 text-[11px] font-bold text-slate-700 outline-none focus:bg-white focus:border-blue-400"
               />
            </div>
-           
+
            <select
              value={statusFilter}
-             onChange={(e) => setStatusFilter(e.target.value as any)}
-             className="h-9 rounded-lg border border-slate-50 bg-slate-50/50 px-3 text-[10px] font-black uppercase text-slate-600 outline-none"
+             onChange={(e) => {
+               const v = e.target.value as any;
+               setStatusFilter(v);
+               updateQuery({ status: v });
+             }}
+             className="h-9 rounded-lg border border-slate-50 bg-slate-50/50 px-3 text-[10px] font-black uppercase text-slate-600 outline-none cursor-pointer hover:bg-slate-50 transition-colors"
            >
              <option value="all">All Status</option>
              <option value="scheduled">Scheduled</option>
              <option value="completed">Completed</option>
+             <option value="cancelled">Cancelled</option>
            </select>
+
+           {(searchQuery || statusFilter !== "all") && (
+             <button
+               type="button"
+               onClick={() => {
+                 setSearchQuery("");
+                 setStatusFilter("all");
+                 updateQuery({ search: "", status: "all" });
+               }}
+               className="h-9 inline-flex items-center gap-1.5 px-3 rounded-lg border border-slate-200 bg-white text-[10px] font-bold text-slate-500 hover:text-slate-900 hover:border-slate-300 transition-colors"
+               title="Clear filters"
+             >
+               <span className="material-symbols-outlined text-[16px]">filter_alt_off</span>
+               Reset
+             </button>
+           )}
         </div>
 
         <div className="flex items-center gap-2">
            <div className="h-9 flex items-center bg-slate-100 p-1 rounded-lg">
-             <button onClick={() => setViewMode("grid")} className={`h-7 px-3 rounded-md text-[10px] font-black uppercase tracking-tight transition-all ${viewMode === "grid" ? "bg-white text-blue-600 shadow-sm" : "text-slate-400"}`}>Grid</button>
-             <button onClick={() => setViewMode("list")} className={`h-7 px-3 rounded-md text-[10px] font-black uppercase tracking-tight transition-all ${viewMode === "list" ? "bg-white text-blue-600 shadow-sm" : "text-slate-400"}`}>List</button>
+             <button onClick={() => { setViewMode("grid"); updateQuery({ view: "grid" }); }} className={`h-7 px-3 rounded-md text-[10px] font-black uppercase tracking-tight transition-all ${viewMode === "grid" ? "bg-white text-blue-600 shadow-sm" : "text-slate-400"}`}>Grid</button>
+             <button onClick={() => { setViewMode("list"); updateQuery({ view: "list" }); }} className={`h-7 px-3 rounded-md text-[10px] font-black uppercase tracking-tight transition-all ${viewMode === "list" ? "bg-white text-blue-600 shadow-sm" : "text-slate-400"}`}>List</button>
            </div>
 
            {!isParent && (
              <Link
-               to={examsCreatePath}
+               to={withQuery(examsCreatePath)}
                className="h-9 inline-flex items-center gap-2 px-4 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all"
              >
                <span className="material-symbols-outlined text-[16px]">add</span>

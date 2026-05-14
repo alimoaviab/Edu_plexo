@@ -206,4 +206,14 @@
   .animate-glow {
     animation: glow 2.5s ease-in-out infinite;
   }
+
+  /* Task 15 — Global responsive utilities */
+  .responsive-table-wrap {
+    @apply overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0;
+  }
+
+  /* Prevent horizontal overflow on mobile */
+  .overflow-safe {
+    @apply overflow-x-hidden;
+  }
 }

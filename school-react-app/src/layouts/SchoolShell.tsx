@@ -251,7 +251,15 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
   const pathname = location.pathname;
 
   const { user, loading: authLoading, logout } = useAuth();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // Default collapsed on mobile, expanded on desktop
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("sidebar-collapsed");
+      if (saved !== null) return saved === "true";
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
   const [academyYears, setAcademyYears] = useState<AcademicYearRow[]>([]);
   const [selectedAcademyYearId, setSelectedAcademicYearIdState] = useState<string>("");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
@@ -260,9 +268,6 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
   const navGroups = useMemo(() => navGroupsForRole(user?.role), [user]);
 
   useEffect(() => {
-    const saved = localStorage.getItem("sidebar-collapsed");
-    if (saved) setIsCollapsed(saved === "true");
-
     const savedGroups = localStorage.getItem("sidebar-expanded-groups");
     if (savedGroups) {
       try {
@@ -393,8 +398,18 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
         </button>
       )}
       {/* Sidebar */}
+      {/* Mobile overlay backdrop */}
+      {!isCollapsed && (
+        <div
+          className="fixed inset-0 z-30 bg-slate-900/30 backdrop-blur-sm md:hidden"
+          onClick={() => setIsCollapsed(true)}
+          aria-hidden="true"
+        />
+      )}
       <aside
-        className={`${sidebarWidth} sticky top-0 z-20 flex h-screen flex-shrink-0 flex-col border-r border-slate-200/80 bg-white shadow-[0_1px_5px_rgba(15,23,42,0.03)] transition-all duration-300 ease-in-out`}
+        className={`${sidebarWidth} fixed md:sticky top-0 z-40 md:z-20 flex h-screen flex-shrink-0 flex-col border-r border-slate-200/80 bg-white shadow-[0_1px_5px_rgba(15,23,42,0.03)] transition-all duration-300 ease-in-out ${
+          isCollapsed ? "-translate-x-full md:translate-x-0 md:w-16" : "translate-x-0"
+        }`}
       >
         <div className={`flex h-11 items-center gap-2 px-3 ${isCollapsed ? "justify-center" : "justify-between"}`}>
           <div className="flex items-center gap-2">
@@ -501,8 +516,8 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
         <header className="sticky top-0 z-50 flex h-10 items-center justify-between border-b border-slate-200/40 bg-white/70 px-4 backdrop-blur-md overflow-visible">
           <div className="flex items-center gap-3 flex-1 overflow-visible">
             <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="rounded p-1 transition-colors hover:bg-blue-50 lg:hidden"
+              onClick={() => setIsCollapsed(false)}
+              className="rounded p-1 transition-colors hover:bg-blue-50 md:hidden"
             >
               <span className="material-symbols-outlined text-slate-600 text-[18px]">menu</span>
             </button>

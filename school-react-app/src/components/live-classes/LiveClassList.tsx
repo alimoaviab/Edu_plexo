@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { LiveClassCard } from "./LiveClassCard";
 import { Search, Filter, CalendarX2 } from "lucide-react";
+import { bindRefresh, publish } from "@/services/data-bus";
 
 interface LiveClassListProps {
   role: "TEACHER" | "STUDENT" | "ADMIN";
@@ -29,30 +30,34 @@ export const LiveClassList: React.FC<LiveClassListProps> = ({ role }) => {
     return teacher.name || teacher.email || "Teacher";
   };
 
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
     try {
-      console.log('📥 Fetching live classes...');
       const res = await fetch("/api/live/classes");
       const json = await res.json();
-      
-      console.log('📥 API Response:', json);
-      
+
       if (json.success) {
-        console.log('✅ Classes fetched:', json.data);
         setClasses(json.data);
-      } else {
-        console.warn('⚠️ API returned success: false');
       }
     } catch (error) {
-      console.error("❌ Failed to fetch live classes", error);
+      console.error("Failed to fetch live classes", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchClasses();
-  }, []);
+    // Refresh whenever a live class, class, or teacher mutation publishes
+    // anywhere in the app — keeps the timeline in sync without manual reload.
+    const offLive = bindRefresh("live-classes", fetchClasses);
+    const offClasses = bindRefresh("classes", fetchClasses);
+    const offTeachers = bindRefresh("teachers", fetchClasses);
+    return () => {
+      offLive();
+      offClasses();
+      offTeachers();
+    };
+  }, [fetchClasses]);
 
   const handleJoin = async (id: string, link: string) => {
     if (role === "STUDENT") {
@@ -77,7 +82,8 @@ export const LiveClassList: React.FC<LiveClassListProps> = ({ role }) => {
         body: JSON.stringify({ status })
       });
       if (res.ok) {
-        fetchClasses(); // Refresh
+        fetchClasses();
+        publish("live-classes");
       }
     } catch (error) {
       console.error("Failed to update status", error);

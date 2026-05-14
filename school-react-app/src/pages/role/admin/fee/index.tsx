@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import { Badge, Skeleton, DataState, StatCardGrid } from "@/components/ui";
 import { serviceRequest } from "@/services/service-client";
 import { showToast } from "@/utils/toast";
+import { useClasses } from "@/modules/classes/hooks/useClasses";
 
 interface Student {
     id: string;
@@ -73,6 +74,15 @@ export function StudentFeeDashboard() {
         method: 'Cash',
         reference: ''
     });
+
+    // Real classes for the filter dropdown — picks up new classes via the
+    // data bus, no manual refresh needed.
+    const { state: classState } = useClasses({ page: 1, limit: 200 });
+    const classOptions = useMemo(() => {
+        const data: any = classState.data;
+        const rows = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+        return rows.map((c: any) => ({ id: c._id || c.id, label: c.name }));
+    }, [classState.data]);
 
     const loadDashboard = async () => {
         setLoading(true);
@@ -226,11 +236,24 @@ export function StudentFeeDashboard() {
                         <select 
                             value={filters.class_id} 
                             onChange={(e) => setFilters({...filters, class_id: e.target.value, page: 1})} 
-                            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none focus:border-blue-400 max-w-[140px] cursor-pointer hover:bg-slate-50 transition-colors"
+                            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-black uppercase tracking-widest text-slate-600 outline-none focus:border-blue-400 max-w-[160px] cursor-pointer hover:bg-slate-50 transition-colors"
                         >
                             <option value="">ALL CLASSES</option>
-                            {/* Classes would normally be populated from API */}
+                            {classOptions.map((c: { id: string; label: string }) => (
+                              <option key={c.id} value={c.id}>{c.label.toUpperCase()}</option>
+                            ))}
                         </select>
+                        {(filters.search || filters.status !== "all" || filters.class_id) && (
+                          <button
+                            type="button"
+                            onClick={() => setFilters((prev) => ({ ...prev, search: "", status: "all", class_id: "", page: 1 }))}
+                            className="h-10 inline-flex items-center gap-1.5 px-3 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-900 hover:border-slate-300 transition-colors"
+                            title="Clear all filters"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">filter_alt_off</span>
+                            Reset
+                          </button>
+                        )}
                     </div>
                 </div>
 
