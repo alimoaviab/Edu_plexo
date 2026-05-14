@@ -67,13 +67,12 @@ export function TimetablePage() {
   };
 
   const handleEdit = (record: TimetableRecord) => {
-    setEditingRecord(record);
-    setIsDrawerOpen(true);
+    navigate(`/admin/timetable/edit/${record._id}`);
   };
 
   const handleNewEntry = () => {
-    setEditingRecord(undefined);
-    setIsDrawerOpen(true);
+    const url = classId ? `/admin/timetable/create?class_id=${classId}` : "/admin/timetable/create";
+    navigate(url);
   };
 
   const handleClassChange = (newId: string) => {

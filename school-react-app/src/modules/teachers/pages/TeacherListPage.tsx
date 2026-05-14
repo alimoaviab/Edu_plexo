@@ -45,8 +45,8 @@ export function TeacherListPage() {
     return rows.filter((row) => {
       const queryMatch =
         q.length === 0 ||
-        row.employee_no.toLowerCase().includes(q) ||
-        `${row.first_name} ${row.last_name}`.toLowerCase().includes(q) ||
+        (row.employee_no || "").toLowerCase().includes(q) ||
+        `${row.first_name || ""} ${row.last_name || ""}`.toLowerCase().includes(q) ||
         (row.email || "").toLowerCase().includes(q) ||
         (row.qualification || "").toLowerCase().includes(q);
       const statusMatch = statusFilter === "all" ? true : row.status === statusFilter;
@@ -76,7 +76,7 @@ export function TeacherListPage() {
       render: (row) => (
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[10px] font-bold normal-case">
-            {row.first_name.substring(0, 1)}{row.last_name.substring(0, 1)}
+            {(row.first_name || "?").substring(0, 1)}{(row.last_name || "").substring(0, 1)}
           </div>
           <div>
             <p className="font-bold text-slate-900 leading-none mb-1">{row.first_name} {row.last_name}</p>
@@ -94,18 +94,21 @@ export function TeacherListPage() {
     {
       key: "subjects",
       label: "Specializations",
-      render: (row) => (
-        <div className="flex flex-wrap gap-1">
-          {row.subjects.slice(0, 2).map((s) => (
-            <Badge key={s} variant="secondary" className="text-[9px] font-bold normal-case tracking-tighter px-1.5 py-0">
-              {s}
-            </Badge>
-          ))}
-          {row.subjects.length > 2 && (
-            <Badge variant="secondary" className="text-[9px] font-bold px-1.5 py-0 text-slate-400">+{row.subjects.length - 2}</Badge>
-          )}
-        </div>
-      ),
+      render: (row) => {
+        const subjects = row.subjects || [];
+        return (
+          <div className="flex flex-wrap gap-1">
+            {subjects.slice(0, 2).map((s) => (
+              <Badge key={s} variant="secondary" className="text-[9px] font-bold normal-case tracking-tighter px-1.5 py-0">
+                {s}
+              </Badge>
+            ))}
+            {subjects.length > 2 && (
+              <Badge variant="secondary" className="text-[9px] font-bold px-1.5 py-0 text-slate-400">+{subjects.length - 2}</Badge>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "status",
@@ -159,22 +162,24 @@ export function TeacherListPage() {
   }
 
   return (
-    <div className="space-y-8 relative min-h-[80vh] pb-10">
-      {/* Stats Section - Premium & Compact */}
+    <div className="space-y-6 relative min-h-[80vh] pb-10">
+      {/* Stats Section */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Faculty", value: stats.total, icon: "badge", color: "text-blue-600", bg: "bg-blue-600/5" },
-          { label: "Active Now", value: stats.active, icon: "check_circle", color: "text-emerald-600", bg: "bg-emerald-600/5" },
-          { label: "On Leave", value: stats.onLeave, icon: "event_busy", color: "text-amber-600", bg: "bg-amber-600/5" },
-          { label: "Utilization", value: stats.capacity, icon: "monitoring", color: "text-purple-600", bg: "bg-purple-600/5" },
+          { label: "Total Teachers", value: stats.total, icon: "badge", color: "text-blue-600", bg: "bg-blue-100" },
+          { label: "Active", value: stats.active, icon: "check_circle", color: "text-emerald-600", bg: "bg-emerald-100" },
+          { label: "On Leave", value: stats.onLeave, icon: "event_busy", color: "text-amber-600", bg: "bg-amber-100" },
+          { label: "Subjects Covered", value: new Set((state.data || []).flatMap(t => t.subjects || [])).size, icon: "menu_book", color: "text-purple-600", bg: "bg-purple-100" },
         ].map((stat, i) => (
-          <div key={i} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 normal-case  mb-1">{stat.label}</p>
-              <h3 className="text-xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
-            </div>
-            <div className={`h-8 w-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
-               <span className="material-symbols-outlined text-lg font-bold">{stat.icon}</span>
+          <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow group">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                <p className="mt-2 text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
+              </div>
+              <div className={`h-11 w-11 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
+                <span className="material-symbols-outlined text-xl">{stat.icon}</span>
+              </div>
             </div>
           </div>
         ))}
@@ -270,7 +275,7 @@ export function TeacherListPage() {
                   <div className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xs font-bold normal-case shadow-lg group-hover:scale-110 transition-transform">
-                        {row.first_name.substring(0, 1)}{row.last_name.substring(0, 1)}
+                        {(row.first_name || "?").substring(0, 1)}{(row.last_name || "").substring(0, 1)}
                       </div>
                       <div className="flex items-center gap-1 bg-slate-50/50 rounded-lg p-1 border border-slate-100">
                         <button 
@@ -309,7 +314,7 @@ export function TeacherListPage() {
                       </div>
                       <div className="bg-slate-50/50 rounded-lg p-2 border border-slate-100/50">
                         <p className="text-[7px] font-bold text-slate-400 normal-case  mb-0.5">Specialization</p>
-                        <p className="text-[9px] font-bold text-slate-700 truncate">{row.subjects[0] || "—"}</p>
+                        <p className="text-[9px] font-bold text-slate-700 truncate">{(row.subjects || [])[0] || "—"}</p>
                       </div>
                     </div>
 

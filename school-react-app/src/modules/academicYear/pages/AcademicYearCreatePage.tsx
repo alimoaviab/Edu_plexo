@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { AcademicYearForm } from "../components/AcademicYearForm";
 import { useAcademicYears } from "../hooks/useAcademicYears";
 import { AcademicYearFormInput } from "../types/academicYear.types";
-import { showToast } from "@/utils/toast";
 
 export function AcademicYearCreatePage() {
   const navigate = useNavigate();
@@ -12,9 +11,8 @@ export function AcademicYearCreatePage() {
   async function handleCreate(input: AcademicYearFormInput) {
     const result = await addAcademicYear(input);
     if (result && (result as { ok?: boolean }).ok !== false) {
-      showToast("Academic year created successfully", "success");
+      // Toast is already shown by the hook — no duplicate here
       navigate("/admin/academic-years");
-
     }
     return result;
   }

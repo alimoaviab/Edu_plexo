@@ -52,9 +52,8 @@ export function ClassCreatePage() {
     try {
       const result = await addClass(input);
       if (result && (result as { ok?: boolean }).ok !== false) {
-        showToast("Class created successfully", "success");
+        // Toast is already shown by the hook — no duplicate here
         navigate("/admin/classes");
-
         return true;
       }
       return false;

@@ -82,19 +82,24 @@ export function ExamListPage({ filters }: { filters?: { class_id?: string; subje
 
   return (
     <div className="space-y-6">
-      {/* Metrics for Parents */}
-      <div className="flex flex-wrap gap-4">
+      {/* Stats Section */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Exams", value: state.data?.length || 0, icon: "analytics" },
-          { label: "Upcoming", value: state.data?.filter(e => e.status === "scheduled").length || 0, icon: "event" },
-          { label: "Completed", value: state.data?.filter(e => e.status === "completed").length || 0, icon: "task_alt" },
+          { label: "Total Exams", value: state.data?.length || 0, icon: "quiz", color: "text-blue-600", bg: "bg-blue-100" },
+          { label: "Upcoming", value: state.data?.filter(e => e.status === "scheduled").length || 0, icon: "event", color: "text-purple-600", bg: "bg-purple-100" },
+          { label: "Completed", value: state.data?.filter(e => e.status === "completed").length || 0, icon: "task_alt", color: "text-emerald-600", bg: "bg-emerald-100" },
+          { label: "Results Pending", value: state.data?.filter(e => e.status === "scheduled" && (e.results_count || 0) === 0).length || 0, icon: "pending", color: "text-amber-600", bg: "bg-amber-100" },
         ].map((stat, i) => (
-          <div key={i} className="flex-1 min-w-[140px] bg-white p-3 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">{stat.label}</p>
-              <h3 className="text-lg font-black text-slate-900 tracking-tight leading-none">{stat.value}</h3>
+          <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow group">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                <p className="mt-2 text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
+              </div>
+              <div className={`h-11 w-11 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
+                <span className="material-symbols-outlined text-xl">{stat.icon}</span>
+              </div>
             </div>
-            <span className="material-symbols-outlined text-blue-600 text-[18px] opacity-20">{stat.icon}</span>
           </div>
         ))}
       </div>

@@ -57,9 +57,12 @@ func toResponse(y *store.AcademicYear) AcademicYearResponse {
 
 // List implements GET /api/academic-years. Returns all academic years for
 // the caller's tenant, sorted by start_date desc.
+// Always returns paginated shape { items, total, page, limit, pages } so the
+// frontend hook `useAcademicYears` can consume it directly.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
-	api.WriteResult(w, api.ServiceTry(func() ([]AcademicYearResponse, error) {
+	q := r.URL.Query()
+	api.WriteResult(w, api.ServiceTry(func() (any, error) {
 		if err := auth.AssertPermission(ctx, "settings", auth.ActionView); err != nil {
 			return nil, err
 		}
@@ -81,7 +84,34 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		for _, y := range rows {
 			items = append(items, toResponse(y))
 		}
-		return items, nil
+
+		page := api.ParsePagination(q)
+		if !page.Enabled {
+			// Even without explicit pagination, return the paginated shape
+			// so the frontend always gets { items, total, pages }.
+			total := len(items)
+			pages := 1
+			if total == 0 {
+				pages = 1
+			}
+			return map[string]any{
+				"items": items,
+				"total": total,
+				"page":  1,
+				"limit": total,
+				"pages": pages,
+			}, nil
+		}
+		total := len(items)
+		start := page.Skip
+		end := start + page.Limit
+		if start > total {
+			start = total
+		}
+		if end > total {
+			end = total
+		}
+		return api.BuildPaginated(items[start:end], total, page), nil
 	}))
 }
 
@@ -105,12 +135,41 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 }
 
 type createInput struct {
-	Year        string    `json:"year"`
-	Name        string    `json:"name"`
-	StartDate   time.Time `json:"start_date"`
-	EndDate     time.Time `json:"end_date"`
-	IsActive    bool      `json:"is_active"`
-	Description string    `json:"description,omitempty"`
+	Year        string `json:"year"`
+	Name        string `json:"name"`
+	StartDate   string `json:"start_date"`
+	EndDate     string `json:"end_date"`
+	IsActive    bool   `json:"is_active"`
+	Description string `json:"description,omitempty"`
+}
+
+// parseFlexibleDate accepts RFC3339, RFC3339Nano, or plain ISO dates
+// like "2026-01-01" that <input type="date"> emits. Returns zero time
+// if the input is empty.
+func parseFlexibleDate(raw string) (time.Time, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}, nil
+	}
+	for _, layout := range []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02T15:04:05",
+		"2006-01-02",
+		"01/02/2006",
+		"02/01/2006",
+	} {
+		if t, err := time.Parse(layout, raw); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, errInvalidDate(raw)
+}
+
+func errInvalidDate(raw string) error {
+	return api.NewControlledError("VALIDATION_ERROR",
+		"Invalid date \""+raw+"\". Expected formats: 2026-01-01 or RFC3339 timestamp.",
+		400, nil)
 }
 
 // Create implements POST /api/academic-years.
@@ -134,10 +193,19 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		if year == "" {
 			return AcademicYearResponse{}, api.NewControlledError("VALIDATION_ERROR", "Year is required.", 400, nil)
 		}
-		if body.StartDate.IsZero() || body.EndDate.IsZero() {
+
+		startDate, err := parseFlexibleDate(body.StartDate)
+		if err != nil {
+			return AcademicYearResponse{}, err
+		}
+		endDate, err := parseFlexibleDate(body.EndDate)
+		if err != nil {
+			return AcademicYearResponse{}, err
+		}
+		if startDate.IsZero() || endDate.IsZero() {
 			return AcademicYearResponse{}, api.NewControlledError("VALIDATION_ERROR", "start_date and end_date are required.", 400, nil)
 		}
-		if !body.EndDate.After(body.StartDate) {
+		if !endDate.After(startDate) {
 			return AcademicYearResponse{}, api.NewControlledError("VALIDATION_ERROR", "end_date must be after start_date.", 400, nil)
 		}
 
@@ -146,10 +214,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			ID:          store.NewID("ay"),
 			SchoolID:    ctx.SchoolID,
 			Year:        year,
-			StartDate:   body.StartDate,
-			EndDate:     body.EndDate,
+			StartDate:   startDate,
+			EndDate:     endDate,
 			IsActive:    body.IsActive,
-			Status:      deriveStatus(body.StartDate, body.EndDate, body.IsActive),
+			Status:      deriveStatus(startDate, endDate, body.IsActive),
 			Description: body.Description,
 			CreatedAt:   now,
 			UpdatedAt:   now,
@@ -177,12 +245,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 type updateInput struct {
-	Year        *string    `json:"year,omitempty"`
-	Name        *string    `json:"name,omitempty"`
-	StartDate   *time.Time `json:"start_date,omitempty"`
-	EndDate     *time.Time `json:"end_date,omitempty"`
-	IsActive    *bool      `json:"is_active,omitempty"`
-	Description *string    `json:"description,omitempty"`
+	Year        *string `json:"year,omitempty"`
+	Name        *string `json:"name,omitempty"`
+	StartDate   *string `json:"start_date,omitempty"`
+	EndDate     *string `json:"end_date,omitempty"`
+	IsActive    *bool   `json:"is_active,omitempty"`
+	Description *string `json:"description,omitempty"`
 }
 
 // Update implements PATCH /api/academic-years/:id.
@@ -251,10 +319,22 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			target.Year = strings.TrimSpace(*body.Name)
 		}
 		if body.StartDate != nil {
-			target.StartDate = *body.StartDate
+			parsed, err := parseFlexibleDate(*body.StartDate)
+			if err != nil {
+				return AcademicYearResponse{}, err
+			}
+			if !parsed.IsZero() {
+				target.StartDate = parsed
+			}
 		}
 		if body.EndDate != nil {
-			target.EndDate = *body.EndDate
+			parsed, err := parseFlexibleDate(*body.EndDate)
+			if err != nil {
+				return AcademicYearResponse{}, err
+			}
+			if !parsed.IsZero() {
+				target.EndDate = parsed
+			}
 		}
 		if body.Description != nil {
 			target.Description = *body.Description
@@ -336,5 +416,6 @@ func deriveStatus(start, end time.Time, isActive bool) string {
 	if start.After(now) {
 		return "draft"
 	}
-	return "cancelled"
+	// In-progress but not flagged as active.
+	return "draft"
 }

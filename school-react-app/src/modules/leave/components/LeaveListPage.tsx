@@ -144,22 +144,24 @@ export default function LeaveListPage() {
   }
 
   return (
-    <div className="space-y-8 relative min-h-[80vh] pb-10">
-      {/* Stats Section - Premium & Compact */}
+    <div className="space-y-6 relative min-h-[80vh] pb-10">
+      {/* Stats Section */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Active Requests", value: stats.total, icon: "assignment", color: "text-blue-600", bg: "bg-blue-600/5" },
-          { label: "Pending Review", value: stats.pending, icon: "hourglass_empty", color: "text-amber-600", bg: "bg-amber-600/5" },
-          { label: "Approved Records", value: stats.approved, icon: "verified", color: "text-emerald-600", bg: "bg-emerald-600/5" },
-          { label: "Sick Cycle", value: stats.sickLeaves, icon: "medical_services", color: "text-red-600", bg: "bg-red-600/5" },
+          { label: "Total Requests", value: stats.total, icon: "event_available", color: "text-blue-600", bg: "bg-blue-100" },
+          { label: "Pending Review", value: stats.pending, icon: "hourglass_empty", color: "text-amber-600", bg: "bg-amber-100" },
+          { label: "Approved", value: stats.approved, icon: "verified", color: "text-emerald-600", bg: "bg-emerald-100" },
+          { label: "Sick Leave", value: stats.sickLeaves, icon: "medical_services", color: "text-red-600", bg: "bg-red-100" },
         ].map((stat, i) => (
-          <div key={i} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 normal-case  mb-1">{stat.label}</p>
-              <h3 className="text-xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
-            </div>
-            <div className={`h-8 w-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
-               <span className="material-symbols-outlined text-lg font-bold">{stat.icon}</span>
+          <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow group">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                <p className="mt-2 text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
+              </div>
+              <div className={`h-11 w-11 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
+                <span className="material-symbols-outlined text-xl">{stat.icon}</span>
+              </div>
             </div>
           </div>
         ))}

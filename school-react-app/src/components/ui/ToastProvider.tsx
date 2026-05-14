@@ -34,8 +34,19 @@ export function ToastProvider() {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
       setToasts((prev) => {
+        // Aggressive dedup: check if a toast with similar message and same tone
+        // was shown in the last 2 seconds (prevents double toasts from hooks + pages)
+        const now = Date.now();
         const isDuplicate = prev.some(
-          (t) => t.message === detail.message && t.tone === detail.tone
+          (t) => t.tone === detail.tone && (
+            t.message === detail.message ||
+            t.message.toLowerCase().replace(/[^a-z]/g, '').includes(
+              detail.message.toLowerCase().replace(/[^a-z]/g, '').substring(0, 15)
+            ) ||
+            detail.message.toLowerCase().replace(/[^a-z]/g, '').includes(
+              t.message.toLowerCase().replace(/[^a-z]/g, '').substring(0, 15)
+            )
+          )
         );
         if (isDuplicate) return prev;
 

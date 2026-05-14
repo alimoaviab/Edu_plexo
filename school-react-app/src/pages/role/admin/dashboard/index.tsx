@@ -216,7 +216,7 @@ export function AdminDashboardPage() {
                     {[
                       { label: "Pending Fees", count: data?.overview?.feeCollection?.pending_count ?? 0, href: "/admin/fee" },
                         { label: "Leave Requests", count: data?.overview?.pendingLeave ?? 0, href: "/admin/leave" },
-                        { label: "Unmarked Attendance", count: (data?.overview?.totalClasses || 0) - (data?.classAttendance?.length || 0), href: "/admin/attendance" }
+                        { label: "Unmarked Attendance", count: Math.max(0, (data?.overview?.totalClasses || 0) - (data?.classAttendance?.length || 0)), href: "/admin/attendance" }
                     ].map((task) => (
                       <Link key={task.label} to={task.href} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors group">
                          <span className="text-[11px] font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{task.label}</span>

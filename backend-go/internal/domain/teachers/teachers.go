@@ -60,6 +60,20 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			return rows[i].FirstName < rows[j].FirstName
 		})
 
+		// Ensure list/array fields are never null on the wire so the
+		// frontend can safely call .map / .slice / .length on them.
+		for _, t := range rows {
+			if t.Subjects == nil {
+				t.Subjects = []string{}
+			}
+			if t.SubjectIDs == nil {
+				t.SubjectIDs = []string{}
+			}
+			if t.ClassIDs == nil {
+				t.ClassIDs = []string{}
+			}
+		}
+
 		page := api.ParsePagination(q)
 		if !page.Enabled {
 			return rows, nil
@@ -187,9 +201,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			LastName:       body.LastName,
 			Phone:          body.Phone,
 			Qualification:  body.Qualification,
-			SubjectIDs:     body.SubjectIDs,
-			Subjects:       body.Subjects,
-			ClassIDs:       body.ClassIDs,
+			SubjectIDs:     orEmpty(body.SubjectIDs),
+			Subjects:       orEmpty(body.Subjects),
+			ClassIDs:       orEmpty(body.ClassIDs),
 			Status:         "active",
 			JoinedAt:       now,
 			CreatedAt:      now,
@@ -353,4 +367,14 @@ func padLeft(n, width int) string {
 		s = "0" + s
 	}
 	return s
+}
+
+// orEmpty guarantees a non-nil slice so JSON encodes "[]" rather than
+// "null". Frontend list pages call .slice / .map directly on these fields
+// and would crash if they were undefined.
+func orEmpty(in []string) []string {
+	if in == nil {
+		return []string{}
+	}
+	return in
 }

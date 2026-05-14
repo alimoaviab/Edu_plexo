@@ -10,6 +10,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/attendance"
 	authdomain "github.com/eduplexo/backend-go/internal/domain/auth"
 	"github.com/eduplexo/backend-go/internal/domain/behavior"
+	"github.com/eduplexo/backend-go/internal/domain/chatbot"
 	"github.com/eduplexo/backend-go/internal/domain/classes"
 	"github.com/eduplexo/backend-go/internal/domain/dashboard"
 	"github.com/eduplexo/backend-go/internal/domain/events"
@@ -243,6 +244,10 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister) htt
 			// Domain
 			r.Get("/domain/status", stubs.DomainStatus)
 			r.Post("/domain/setup", stubs.NotImplemented(""))
+
+			// Chatbot
+			cbH := chatbot.New(s)
+			r.Post("/chatbot/message", cbH.Message)
 
 			// Parents
 			r.Get("/parents/check-email", func(w http.ResponseWriter, _ *http.Request) {

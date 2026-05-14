@@ -110,14 +110,14 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 }
 
 type scheduleInput struct {
-	ClassID       string    `json:"class_id"`
-	Subject       string    `json:"subject"`
-	Title         string    `json:"title"`
-	StartsAt      time.Time `json:"starts_at"`
-	EndsAt        time.Time `json:"ends_at"`
-	HostTeacherID string    `json:"host_teacher_id"`
-	JoinURL       string    `json:"join_url"`
-	Provider      string    `json:"provider"`
+	ClassID       string `json:"class_id"`
+	Subject       string `json:"subject"`
+	Title         string `json:"title"`
+	StartsAt      string `json:"starts_at"`
+	EndsAt        string `json:"ends_at"`
+	HostTeacherID string `json:"host_teacher_id"`
+	JoinURL       string `json:"join_url"`
+	Provider      string `json:"provider"`
 }
 
 // Schedule implements POST /api/live/classes/schedule.
@@ -132,12 +132,21 @@ func (h *Handler) Schedule(w http.ResponseWriter, r *http.Request) {
 		if err := auth.AssertPermission(ctx, "classes", auth.ActionCreate); err != nil {
 			return nil, err
 		}
-		if body.ClassID == "" || body.Title == "" || body.StartsAt.IsZero() || body.EndsAt.IsZero() {
+		startsAt, okS := api.ParseDate(body.StartsAt)
+		endsAt, okE := api.ParseDate(body.EndsAt)
+		if body.ClassID == "" || body.Title == "" || !okS || !okE {
 			return nil, api.NewControlledError("VALIDATION_ERROR", "class_id, title, starts_at, ends_at are required.", 400, nil)
 		}
-		if body.EndsAt.Before(body.StartsAt) {
+		if endsAt.Before(startsAt) {
 			return nil, api.NewControlledError("VALIDATION_ERROR", "ends_at must be after starts_at.", 400, nil)
 		}
+
+		// Auto-generate a join URL if not provided
+		joinURL := body.JoinURL
+		if joinURL == "" {
+			joinURL = "https://meet.google.com/edu-" + store.NewID("")[0:8]
+		}
+
 		now := time.Now()
 		row := &store.LiveClass{
 			ID:             store.NewID("liv"),
@@ -146,11 +155,11 @@ func (h *Handler) Schedule(w http.ResponseWriter, r *http.Request) {
 			ClassID:        body.ClassID,
 			Subject:        body.Subject,
 			Title:          body.Title,
-			StartsAt:       body.StartsAt,
-			EndsAt:         body.EndsAt,
+			StartsAt:       startsAt,
+			EndsAt:         endsAt,
 			HostTeacherID:  body.HostTeacherID,
-			JoinURL:        body.JoinURL,
-			Provider:       body.Provider,
+			JoinURL:        joinURL,
+			Provider:       orDefault(body.Provider, "google_meet"),
 			Status:         "scheduled",
 			CreatedAt:      now,
 			UpdatedAt:      now,
@@ -254,4 +263,11 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		}
 		return nil, api.NewControlledError("NOT_FOUND", "Live class not found.", 404, nil)
 	}))
+}
+
+func orDefault(v, d string) string {
+	if v == "" {
+		return d
+	}
+	return v
 }

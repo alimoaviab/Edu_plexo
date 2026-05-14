@@ -27,70 +27,31 @@ export function AIAssistant({ onClose }: { onClose: () => void }) {
     try {
       const token = typeof window !== "undefined" ? (localStorage.getItem("token") || sessionStorage.getItem("token")) : "";
 
-      const response = await fetch("/api/ai", {
+      const response = await fetch("/api/chatbot/message", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
+        credentials: "include",
         body: JSON.stringify({
           message: userMessage,
-          thread_id: threadId
+          history: messages.slice(-10).map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content })),
         }),
       });
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || "Failed to fetch response");
+        throw new Error(errData.message || "Failed to fetch response");
       }
 
-      // Handle streaming
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder("utf-8");
+      const data = await response.json();
+      const reply = data?.data?.reply || data?.reply || "I couldn't process that request.";
+      
+      setMessages(prev => [...prev, { role: "ai", content: reply }]);
 
-      if (reader) {
-        let isFirstChunk = true;
-
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-
-          const chunkString = decoder.decode(value, { stream: true });
-          const lines = chunkString.split('\n').filter(l => l.trim() !== '');
-
-          for (const line of lines) {
-            try {
-              const data = JSON.parse(line);
-              if (data.type === 'meta') {
-                 setThreadId(data.thread_id);
-              } else if (data.type === 'chunk') {
-                 setIsLoading(false);
-                 setMessages(prev => {
-                   if (isFirstChunk) {
-                     isFirstChunk = false;
-                     return [...prev, { role: "ai", content: data.content }];
-                   } else {
-                     const newMessages = [...prev];
-                     const lastMsg = newMessages[newMessages.length - 1];
-                     if (lastMsg.role === "ai") {
-                        lastMsg.content += data.content;
-                     } else {
-                        newMessages.push({ role: "ai", content: data.content });
-                     }
-                     return newMessages;
-                   }
-                 });
-              } else if (data.type === 'tool') {
-                 setMessages(prev => [...prev, { role: "tool", content: data.content }]);
-              } else if (data.type === 'error') {
-                 setMessages(prev => [...prev, { role: "ai", content: `**Error:** ${data.content}` }]);
-                 setIsLoading(false);
-              }
-            } catch (e) {
-              // ignore unparseable line
-            }
-          }
-        }
+      if (data?.data?.tool_used) {
+        // Optionally show tool info
       }
 
     } catch (error: any) {

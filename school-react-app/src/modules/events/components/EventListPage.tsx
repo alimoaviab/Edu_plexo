@@ -135,18 +135,20 @@ export default function EventListPage() {
       {/* Stats Section */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Institutional Events", value: stats.total, icon: "celebration" },
-          { label: "Upcoming Cycle", value: stats.upcoming, icon: "upcoming" },
-          { label: "Academic Focus", value: stats.academic, icon: "school" },
-          { label: "Attendance Rate", value: stats.participation, icon: "verified_user" },
+          { label: "Total Events", value: stats.total, icon: "event", color: "text-blue-600", bg: "bg-blue-100" },
+          { label: "Upcoming", value: stats.upcoming, icon: "upcoming", color: "text-purple-600", bg: "bg-purple-100" },
+          { label: "Academic", value: stats.academic, icon: "school", color: "text-emerald-600", bg: "bg-emerald-100" },
+          { label: "This Month", value: stats.participation, icon: "calendar_month", color: "text-amber-600", bg: "bg-amber-100" },
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all">
-            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-              <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none">{stat.value}</h3>
-            </div>
-            <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center transition-transform group-hover:scale-110">
-               <span className="material-symbols-outlined text-lg font-black">{stat.icon}</span>
+          <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow group">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                <p className="mt-2 text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
+              </div>
+              <div className={`h-11 w-11 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
+                <span className="material-symbols-outlined text-xl">{stat.icon}</span>
+              </div>
             </div>
           </div>
         ))}

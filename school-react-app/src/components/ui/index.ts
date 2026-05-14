@@ -20,5 +20,8 @@ export { NoAccess } from "./NoAccess";
 export { PageHeader } from "./PageHeader";
 export { Pagination } from "./Pagination";
 export { Select } from "./Select";
+export { StatCard } from "./StatCard";
+export { StatsGrid } from "./StatsGrid";
+export type { StatItem } from "./StatsGrid";
 export { SubjectMultiSelect } from "./SubjectMultiSelect";
 export { SubjectSelect } from "./SubjectSelect";

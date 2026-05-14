@@ -30,6 +30,7 @@ import (
 	"math/rand"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1080,8 +1081,19 @@ func (h *Handler) ClassesSummary(w http.ResponseWriter, r *http.Request) {
 	}))
 }
 
-// LedgerDashboard implements GET /api/fees/ledger — same shape the React
-// fee-ledger page expects: `{ summary, rows }`.
+// LedgerDashboard implements GET /api/fees/ledger.
+//
+// Returns the shape the React fee page expects:
+//   {
+//     stats:       { monthly_total, monthly_collection, pending_amount,
+//                    paid_count, partial_count, unpaid_count, collection_rate },
+//     students:    [ { student, current_fee, carry_forward, total_payable,
+//                      paid_total, remaining, status }, ... ],
+//     pagination:  { total, page, limit, pages }
+//   }
+//
+// Filters: status (all|paid|partial|unpaid), class_id, month, year, search,
+// page, limit.
 func (h *Handler) LedgerDashboard(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
 	q := r.URL.Query()
@@ -1091,13 +1103,42 @@ func (h *Handler) LedgerDashboard(w http.ResponseWriter, r *http.Request) {
 		}
 		yearID := tenant.ResolveAcademicYearID(h.Store, ctx, q.Get("academic_year_id"))
 		classID := q.Get("class_id")
-		statusQ := q.Get("status")
-		monthQ := strings.ToLower(q.Get("month"))
+		statusQ := strings.ToLower(strings.TrimSpace(q.Get("status")))
+		if statusQ == "all" {
+			statusQ = ""
+		}
+		monthQ := strings.ToLower(strings.TrimSpace(q.Get("month")))
+		yearQ := strings.TrimSpace(q.Get("year"))
+		search := strings.ToLower(strings.TrimSpace(q.Get("search")))
+
+		page := 1
+		if p, err := strconv.Atoi(q.Get("page")); err == nil && p > 0 {
+			page = p
+		}
+		limit := 20
+		if l, err := strconv.Atoi(q.Get("limit")); err == nil && l > 0 && l <= 200 {
+			limit = l
+		}
 
 		h.Store.RLock()
 		defer h.Store.RUnlock()
-		rows := make([]map[string]any, 0)
-		var total, paid, due float64
+
+		// Index helpers.
+		studentByID := map[string]*store.Student{}
+		for _, s := range h.Store.Students {
+			if s.SchoolID == ctx.SchoolID {
+				studentByID[s.ID] = s
+			}
+		}
+		classByID := map[string]*store.Class{}
+		for _, c := range h.Store.Classes {
+			if c.SchoolID == ctx.SchoolID {
+				classByID[c.ID] = c
+			}
+		}
+
+		// Bucket fees per student so we can compute carry-forward.
+		feesByStudent := map[string][]*store.Fee{}
 		for _, f := range h.Store.Fees {
 			if f.SchoolID != ctx.SchoolID {
 				continue
@@ -1105,30 +1146,173 @@ func (h *Handler) LedgerDashboard(w http.ResponseWriter, r *http.Request) {
 			if yearID != "" && f.AcademicYearID != "" && f.AcademicYearID != yearID {
 				continue
 			}
-			if classID != "" && f.ClassID != classID {
-				continue
-			}
-			if monthQ != "" && f.Month != monthQ {
-				continue
-			}
-			eff := f.Amount + f.AdjustmentAmount
-			st := feeStatus(eff, f.PaidAmount)
-			if statusQ != "" && st != statusQ {
-				continue
-			}
-			total += eff
-			paid += f.PaidAmount
-			due += maxF(0, eff-f.PaidAmount)
-			rows = append(rows, h.feeRow(f))
+			feesByStudent[f.StudentID] = append(feesByStudent[f.StudentID], f)
 		}
-		sort.SliceStable(rows, func(i, j int) bool {
-			ai, _ := rows[i]["due_at"].(time.Time)
-			bi, _ := rows[j]["due_at"].(time.Time)
-			return ai.After(bi)
+
+		type ledgerEntry struct {
+			Student       map[string]any `json:"student"`
+			CurrentFee    map[string]any `json:"current_fee"`
+			CarryForward  float64        `json:"carry_forward"`
+			TotalPayable  float64        `json:"total_payable"`
+			PaidTotal     float64        `json:"paid_total"`
+			Remaining     float64        `json:"remaining"`
+			Status        string         `json:"status"`
+		}
+
+		entries := make([]ledgerEntry, 0, len(studentByID))
+
+		var monthlyTotal, monthlyCollection, pendingAmount float64
+		paidCount, partialCount, unpaidCount := 0, 0, 0
+
+		for studentID, fees := range feesByStudent {
+			student, ok := studentByID[studentID]
+			if !ok {
+				continue
+			}
+
+			// Apply class filter against the student's class.
+			if classID != "" && student.ClassID != classID {
+				continue
+			}
+
+			// Carry forward = unpaid balance from any earlier month than the
+			// requested one (or from any past fee when no month filter set).
+			var current *store.Fee
+			var carry, paidTotal, totalPayable, remaining float64
+
+			for _, f := range fees {
+				eff := f.Amount + f.AdjustmentAmount
+				outstanding := eff - f.PaidAmount
+				if outstanding < 0 {
+					outstanding = 0
+				}
+
+				isCurrent := monthQ == "" || strings.EqualFold(f.Month, monthQ)
+				if yearQ != "" && strconv.Itoa(f.Year) != yearQ {
+					isCurrent = false
+				}
+
+				if isCurrent && current == nil {
+					current = f
+					totalPayable += eff
+					paidTotal += f.PaidAmount
+					remaining += outstanding
+				} else {
+					carry += outstanding
+				}
+			}
+
+			totalPayable += carry
+			remaining += carry
+			status := feeStatus(totalPayable, paidTotal)
+
+			// Status filter.
+			if statusQ != "" && status != statusQ {
+				continue
+			}
+
+			className := ""
+			if c, ok := classByID[student.ClassID]; ok {
+				className = c.Name
+			}
+
+			displayName := strings.TrimSpace(student.FirstName + " " + student.LastName)
+			if displayName == "" {
+				displayName = student.AdmissionNo
+			}
+
+			// Search filter.
+			if search != "" {
+				hay := strings.ToLower(displayName + " " + student.AdmissionNo)
+				if !strings.Contains(hay, search) {
+					continue
+				}
+			}
+
+			entry := ledgerEntry{
+				Student: map[string]any{
+					"id":           student.ID,
+					"name":         displayName,
+					"admission_no": student.AdmissionNo,
+					"class_name":   className,
+					"avatar":       "",
+				},
+				CarryForward: carry,
+				TotalPayable: totalPayable,
+				PaidTotal:    paidTotal,
+				Remaining:    remaining,
+				Status:       status,
+			}
+			if current != nil {
+				eff := current.Amount + current.AdjustmentAmount
+				entry.CurrentFee = map[string]any{
+					"id":         current.ID,
+					"amount":     eff,
+					"paid":       current.PaidAmount,
+					"status":     feeStatus(eff, current.PaidAmount),
+					"components": current.FeeComponents,
+				}
+			}
+			entries = append(entries, entry)
+
+			// Stats accumulation (use current-month figures so the cards mirror
+			// what's visible for the active period).
+			monthlyTotal += totalPayable
+			monthlyCollection += paidTotal
+			pendingAmount += remaining
+			switch status {
+			case "paid":
+				paidCount++
+			case "partial":
+				partialCount++
+			default:
+				unpaidCount++
+			}
+		}
+
+		// Stable sort by student name so the page order is deterministic.
+		sort.SliceStable(entries, func(i, j int) bool {
+			ni, _ := entries[i].Student["name"].(string)
+			nj, _ := entries[j].Student["name"].(string)
+			return ni < nj
 		})
+
+		total := len(entries)
+		pages := 1
+		if limit > 0 && total > 0 {
+			pages = (total + limit - 1) / limit
+		}
+		start := (page - 1) * limit
+		if start > total {
+			start = total
+		}
+		end := start + limit
+		if end > total {
+			end = total
+		}
+
+		collectionRate := 0.0
+		if monthlyTotal > 0 {
+			collectionRate = (monthlyCollection / monthlyTotal) * 100
+		}
+
 		return map[string]any{
-			"summary": map[string]any{"total": total, "paid": paid, "due": due, "rows_count": len(rows)},
-			"rows":    rows,
+			"stats": map[string]any{
+				"monthly_total":      monthlyTotal,
+				"monthly_collection": monthlyCollection,
+				"pending_amount":     pendingAmount,
+				"paid_count":         paidCount,
+				"partial_count":      partialCount,
+				"unpaid_count":       unpaidCount,
+				"collection_rate":    collectionRate,
+			},
+			"students": entries[start:end],
+			"pagination": map[string]any{
+				"total": total,
+				"page":  page,
+				"limit": limit,
+				"pages": pages,
+			},
 		}, nil
 	}))
 }

@@ -92,9 +92,9 @@ type Teacher struct {
 	LastName       string    `json:"last_name,omitempty"`
 	Phone          string    `json:"phone"`
 	Qualification  string    `json:"qualification,omitempty"`
-	SubjectIDs     []string  `json:"subject_ids,omitempty"`
-	Subjects       []string  `json:"subjects,omitempty"`
-	ClassIDs       []string  `json:"class_ids,omitempty"`
+	SubjectIDs     []string  `json:"subject_ids"`
+	Subjects       []string  `json:"subjects"`
+	ClassIDs       []string  `json:"class_ids"`
 	Status         string    `json:"status"`
 	JoinedAt       time.Time `json:"joined_at,omitempty"`
 	CreatedAt      time.Time `json:"created_at"`

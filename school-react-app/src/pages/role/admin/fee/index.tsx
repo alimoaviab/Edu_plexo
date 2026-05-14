@@ -172,23 +172,23 @@ export function StudentFeeDashboard() {
         <SchoolShell eyebrow="Finance Management" title="Student Fee Collection">
             <div className="space-y-6 relative min-h-[80vh] pb-20 max-w-[1600px] mx-auto px-4">
                 
-                {/* ERP ANALYTICS HEADER */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+                {/* Stats Section */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
-                        { label: "Collected", value: data?.stats.monthly_collection, icon: "payments", color: "text-emerald-600", bg: "bg-emerald-50" },
-                        { label: "Pending", value: data?.stats.pending_amount, icon: "assignment_late", color: "text-rose-600", bg: "bg-rose-50" },
-                        { label: "Paid Count", value: data?.stats.paid_count, icon: "task_alt", color: "text-blue-600", bg: "bg-blue-50", isCount: true },
-                        { label: "Partial Count", value: data?.stats.partial_count, icon: "pending_actions", color: "text-amber-600", bg: "bg-amber-50", isCount: true }
+                        { label: "Collected", value: `Rs ${Number(data?.stats?.monthly_collection || 0).toLocaleString()}`, icon: "payments", color: "text-emerald-600", bg: "bg-emerald-100" },
+                        { label: "Pending", value: `Rs ${Number(data?.stats?.pending_amount || 0).toLocaleString()}`, icon: "schedule", color: "text-rose-600", bg: "bg-rose-100" },
+                        { label: "Paid Students", value: data?.stats?.paid_count || 0, icon: "task_alt", color: "text-blue-600", bg: "bg-blue-100" },
+                        { label: "Partial Paid", value: data?.stats?.partial_count || 0, icon: "pending_actions", color: "text-amber-600", bg: "bg-amber-100" }
                     ].map((stat, i) => (
-                        <div key={i} className={`p-4 rounded-3xl bg-white border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all`}>
-                            <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] mb-1">{stat.label}</p>
-                                <p className={`text-lg font-black tracking-tight ${stat.color}`}>
-                                    {stat.isCount ? stat.value : `Rs ${Number(stat.value || 0).toLocaleString()}`}
-                                </p>
-                            </div>
-                            <div className={`h-10 w-10 rounded-2xl ${stat.bg} flex items-center justify-center ${stat.color} transition-transform group-hover:scale-110`}>
-                                <span className="material-symbols-outlined text-[20px]">{stat.icon}</span>
+                        <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow group">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                                    <p className={`mt-2 text-2xl font-bold tracking-tight ${stat.color}`}>{stat.value}</p>
+                                </div>
+                                <div className={`h-11 w-11 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
+                                    <span className="material-symbols-outlined text-xl">{stat.icon}</span>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -251,7 +251,7 @@ export function StudentFeeDashboard() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {Array.from({ length: 9 }).map((_, i) => <Skeleton key={i} className="h-48 rounded-2xl" />)}
                     </div>
-                ) : data?.students.length === 0 ? (
+                ) : !data?.students || data.students.length === 0 ? (
                     <div className="py-16 flex flex-col items-center justify-center text-center bg-white rounded-3xl border border-dashed border-slate-200">
                         <div className="h-12 w-12 rounded-full bg-slate-50 flex items-center justify-center mb-3 text-slate-300">
                             <span className="material-symbols-outlined text-3xl">folder_off</span>
@@ -261,7 +261,7 @@ export function StudentFeeDashboard() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {data?.students.map((entry) => (
+                        {data.students.map((entry) => (
                             <div 
                                 key={entry.student.id} 
                                 className="premium-card bg-white p-3 border-slate-200/60 shadow-sm flex flex-col group hover:border-blue-300 transition-all relative" 

@@ -60,7 +60,7 @@ export function AcademicYearListPage() {
     try {
       const result = await deleteAcademicYear(deletingYear._id);
       if (result.ok) {
-        showToast(`${deletingYear.year} deleted successfully`, "success");
+        // Toast already shown by hook
         setDeletingYear(null);
       } else if ((result.error as any)?.code === "CONSTRAINT_ERROR") {
         setConstraintError({
@@ -83,10 +83,7 @@ export function AcademicYearListPage() {
             setSelectedAcademicYearId(year._id);
             window.location.reload();
         }
-        showToast(
-          nextActiveState ? `${year.year} set as active` : `${year.year} deactivated`, 
-          "success"
-        );
+        // Toast already shown by hook
       } else if ((result as any).error?.code === "CONSTRAINT_ERROR") {
         setConstraintError({
             title: "Deactivation Restricted",
@@ -123,33 +120,35 @@ export function AcademicYearListPage() {
   return (
     <>
       <div className="space-y-6 relative pb-6">
-        {/* Stats Section - Compact ERP Style */}
-        <div className={`grid gap-3 transition-all duration-500 ease-in-out ${isDrawerOpen ? "grid-cols-1 md:grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}>
+        {/* Stats Section */}
+        <div className={`grid gap-4 ${isDrawerOpen ? "grid-cols-1 md:grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}>
           {[
-            { label: "Total Sessions", value: years.length, icon: "calendar_today", color: "text-slate-500", bg: "bg-slate-500/5" },
-            { label: "Active Session", value: activeYear?.year || "None", icon: "auto_awesome", color: "text-blue-600", bg: "bg-blue-600/5" },
-            { label: "Completed", value: years.filter(y => y.status === "completed").length, icon: "verified", color: "text-emerald-600", bg: "bg-emerald-600/5" },
+            { label: "Total Sessions", value: years.length, icon: "calendar_today", color: "text-blue-600", bg: "bg-blue-100" },
+            { label: "Active Session", value: activeYear?.year || "None", icon: "auto_awesome", color: "text-emerald-600", bg: "bg-emerald-100" },
+            { label: "Completed", value: years.filter(y => y.status === "completed").length, icon: "verified", color: "text-purple-600", bg: "bg-purple-100" },
           ].map((stat) => (
-            <div key={stat.label} className="group premium-card p-3 flex items-center justify-between bg-white border-slate-200/60 hover:border-blue-200 transition-all shadow-sm">
-              <div>
-                <span className="text-[9px] font-bold normal-case  text-slate-400 block mb-0.5">{stat.label}</span>
-                <span className={`text-lg font-bold tracking-tight block ${stat.color}`}>{stat.value}</span>
-              </div>
-              <div className={`h-8 w-8 rounded-lg ${stat.bg} flex items-center justify-center group-hover:scale-105 transition-transform border border-current/5`}>
-                <span className={`material-symbols-outlined text-[18px] ${stat.color}`}>{stat.icon}</span>
+            <div key={stat.label} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow group">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                  <p className="mt-2 text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
+                </div>
+                <div className={`h-11 w-11 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
+                  <span className="material-symbols-outlined text-xl">{stat.icon}</span>
+                </div>
               </div>
             </div>
           ))}
           <Link 
             to="/admin/academic-years/create" 
-            className={`premium-card p-3 flex items-center justify-between bg-white border-slate-200 group hover:bg-blue-600 hover:border-blue-600 transition-all shadow-sm ${isDrawerOpen ? "hidden md:flex" : ""}`}
+            className={`bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-blue-300 transition-all group flex items-start justify-between ${isDrawerOpen ? "hidden md:flex" : ""}`}
           >
             <div>
-              <span className="text-[8px] font-bold normal-case text-slate-400 tracking-[0.2em] block mb-0.5 group-hover:text-blue-100 transition-colors">Actions</span>
-              <span className="text-[13px] font-bold text-slate-900 block group-hover:text-white transition-colors tracking-tight">Add New Session</span>
+              <p className="text-sm font-medium text-slate-500">Quick Action</p>
+              <p className="mt-2 text-lg font-bold text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors">Add New Session</p>
             </div>
-            <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center group-hover:bg-white/10 group-hover:rotate-90 transition-all border border-slate-100 group-hover:border-transparent">
-              <span className="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-white">add</span>
+            <div className="h-11 w-11 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-blue-100 group-hover:text-blue-600 group-hover:rotate-90 transition-all">
+              <span className="material-symbols-outlined text-xl">add</span>
             </div>
           </Link>
         </div>
@@ -399,7 +398,7 @@ export function AcademicYearListPage() {
             try {
                 const result = await updateAcademicYear(id, data);
                 if (result.ok) {
-                    showToast("Session updated successfully", "success");
+                    // Toast already shown by hook
                     setEditingYear(null);
                 } else if ((result as any).error?.code === "CONSTRAINT_ERROR") {
                     setConstraintError({

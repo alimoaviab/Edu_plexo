@@ -174,22 +174,33 @@ export function ResultPage() {
     }));
 
     return (
-        <div className="space-y-8 relative min-h-[80vh] pb-10">
-            {/* Stats Section - Premium ERP Style */}
+        <div className="space-y-6 relative min-h-[80vh] pb-10">
+            {/* Stats Section */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                    { label: "Graded Units", value: (state.data || []).length, icon: "analytics", color: "text-blue-600", bg: "bg-blue-600/5" },
-                    { label: "Avg. Performance", value: "78%", icon: "trending_up", color: "text-emerald-600", bg: "bg-emerald-600/5" },
-                    { label: "Distinction Rate", value: "24%", icon: "stars", color: "text-amber-600", bg: "bg-amber-600/5" },
-                    { label: "Pending Entry", value: "12", icon: "pending_actions", color: "text-purple-600", bg: "bg-purple-600/5" },
-                ].map((stat, i) => (
-                    <div key={i} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-400 normal-case  mb-1">{stat.label}</p>
-                            <h3 className="text-xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
-                        </div>
-                        <div className={`h-8 w-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm`}>
-                            <span className="material-symbols-outlined text-lg font-bold">{stat.icon}</span>
+                {(() => {
+                    const rows = state.data || [];
+                    const totalResults = rows.length;
+                    const avgPerformance = totalResults > 0 
+                        ? Math.round(rows.reduce((sum, r) => sum + (r.obtained_marks / r.max_marks) * 100, 0) / totalResults)
+                        : 0;
+                    const passCount = rows.filter(r => (r.obtained_marks / r.max_marks) >= 0.4).length;
+                    const distinctionCount = rows.filter(r => (r.obtained_marks / r.max_marks) >= 0.8).length;
+                    return [
+                        { label: "Total Results", value: totalResults, icon: "leaderboard", color: "text-blue-600", bg: "bg-blue-100" },
+                        { label: "Avg. Score", value: `${avgPerformance}%`, icon: "trending_up", color: "text-emerald-600", bg: "bg-emerald-100" },
+                        { label: "Distinctions", value: distinctionCount, icon: "stars", color: "text-amber-600", bg: "bg-amber-100" },
+                        { label: "Pass Rate", value: totalResults > 0 ? `${Math.round((passCount / totalResults) * 100)}%` : "0%", icon: "verified", color: "text-purple-600", bg: "bg-purple-100" },
+                    ];
+                })().map((stat, i) => (
+                    <div key={i} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow group">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                                <p className="mt-2 text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
+                            </div>
+                            <div className={`h-11 w-11 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
+                                <span className="material-symbols-outlined text-xl">{stat.icon}</span>
+                            </div>
                         </div>
                     </div>
                 ))}

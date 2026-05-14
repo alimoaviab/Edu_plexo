@@ -59,7 +59,7 @@ export function ClassListPage() {
     try {
       const result = await deleteClass(deletingClass._id);
       if (result.ok) {
-        showToast(`${deletingClass.name} deleted successfully`, "success");
+        // Toast already shown by hook
         setDeletingClass(null);
       }
     } finally {
@@ -127,20 +127,22 @@ export function ClassListPage() {
   return (
     <div className="space-y-6 relative min-h-[80vh] pb-10">
       {/* Stats Section */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4 transition-all duration-500 ease-in-out">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {[
-          { label: "Total Classes", value: meta?.total || 0, icon: "door_front", color: "text-slate-500", bg: "bg-slate-500/5" },
-          { label: "Active Nodes", value: (classes || []).filter((c: ClassRow) => c.status === "active").length, icon: "sensors", color: "text-blue-600", bg: "bg-blue-600/5" },
-          { label: "Total Subjects", value: (classes || []).reduce((acc: number, c: ClassRow) => acc + (c.subjects?.length || 0), 0), icon: "account_tree", color: "text-emerald-600", bg: "bg-emerald-600/5" },
-          { label: "Student Pool", value: (classes || []).reduce((acc: number, c: ClassRow) => acc + (c.student_count || 0), 0), icon: "groups", color: "text-purple-600", bg: "bg-purple-600/5" },
+          { label: "Total Classes", value: meta?.total || classes.length, icon: "door_front", color: "text-blue-600", bg: "bg-blue-100" },
+          { label: "Active Classes", value: (classes || []).filter((c: ClassRow) => c.status === "active").length, icon: "sensors", color: "text-emerald-600", bg: "bg-emerald-100" },
+          { label: "Total Subjects", value: (classes || []).reduce((acc: number, c: ClassRow) => acc + (c.subjects?.length || 0), 0), icon: "menu_book", color: "text-purple-600", bg: "bg-purple-100" },
+          { label: "Total Students", value: (classes || []).reduce((acc: number, c: ClassRow) => acc + (c.student_count || 0), 0), icon: "groups", color: "text-amber-600", bg: "bg-amber-100" },
         ].map((stat) => (
-          <div key={stat.label} className="premium-card bg-white p-3.5 border-slate-200/60 shadow-sm flex items-center justify-between group hover:border-blue-200 transition-all cursor-default">
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 normal-case mb-1">{stat.label}</p>
-              <h3 className="text-xl font-bold text-slate-900 tracking-tighter leading-none">{stat.value}</h3>
-            </div>
-            <div className={`h-8 w-8 rounded-lg ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
-              <span className="material-symbols-outlined text-lg font-bold">{stat.icon}</span>
+          <div key={stat.label} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow group">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                <p className="mt-2 text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</p>
+              </div>
+              <div className={`h-11 w-11 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
+                <span className="material-symbols-outlined text-xl">{stat.icon}</span>
+              </div>
             </div>
           </div>
         ))}

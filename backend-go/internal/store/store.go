@@ -10,6 +10,9 @@ package store
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -54,118 +57,120 @@ type MemStore struct {
 	ClassFees      []*ClassFee
 }
 
-// New returns a MemStore with seed data so the React frontend can be
-// exercised end-to-end without a separate seeding step. Seed values are kept
-// minimal but realistic.
+// New returns an empty MemStore. The system bootstraps a fresh school via
+// the signup flow; everything else is created by the user. To re-enable
+// development seed data, set the EDUPLEXO_SEED_DEV=1 environment variable.
+//
+// The original phase-2 seed used hard-coded "Demo Academy" data which made
+// every fresh boot look like it already had real records. That made it
+// impossible for the user to verify their own data. Now the store starts
+// clean and only `bootstrapAdmin` (called once when no users exist) creates
+// the very first administrative login.
 func New() *MemStore {
-	now := time.Now()
 	store := &MemStore{}
+	if os.Getenv("EDUPLEXO_SEED_DEV") == "1" {
+		seedDev(store)
+	} else {
+		bootstrapAdmin(store)
+	}
+	return store
+}
 
-	schoolID := "school_seed_1"
-	store.Schools = append(store.Schools, &School{
+// bootstrapAdmin guarantees there is at least one school + admin user so the
+// application can be logged into on first boot. The credentials come from
+// EDUPLEXO_ADMIN_EMAIL / EDUPLEXO_ADMIN_PASSWORD when set, otherwise default
+// to admin@school.test / admin123 (matching the original seed convention).
+func bootstrapAdmin(s *MemStore) {
+	now := time.Now()
+
+	email := strings.ToLower(strings.TrimSpace(os.Getenv("EDUPLEXO_ADMIN_EMAIL")))
+	if email == "" {
+		email = "admin@school.test"
+	}
+	password := os.Getenv("EDUPLEXO_ADMIN_PASSWORD")
+	if password == "" {
+		password = "admin123"
+	}
+
+	schoolID := "school_default"
+	s.Schools = append(s.Schools, &School{
 		ID:        NewID("sch"),
 		SchoolID:  schoolID,
-		Name:      "Demo Academy",
-		Code:      "DEMOSCH",
+		Name:      "My School",
+		Code:      "MAIN",
 		Status:    "active",
 		CreatedAt: now,
 		UpdatedAt: now,
 	})
 
-	yearID := "ay_2025_26"
-	store.AcademicYears = append(store.AcademicYears, &AcademicYear{
-		ID:          yearID,
-		SchoolID:    schoolID,
-		Year:        "2025-26",
-		StartDate:   time.Date(2025, 4, 1, 0, 0, 0, 0, time.UTC),
-		EndDate:     time.Date(2026, 3, 31, 0, 0, 0, 0, time.UTC),
-		IsActive:    true,
-		Status:      "active",
-		Description: "Default academic year",
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	})
-	store.AcademicYears = append(store.AcademicYears, &AcademicYear{
-		ID:        "ay_2024_25",
+	yearID := NewID("ay")
+	startYear := now.Year()
+	if now.Month() < time.April {
+		startYear = startYear - 1
+	}
+	s.AcademicYears = append(s.AcademicYears, &AcademicYear{
+		ID:        yearID,
 		SchoolID:  schoolID,
-		Year:      "2024-25",
-		StartDate: time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC),
-		EndDate:   time.Date(2025, 3, 31, 0, 0, 0, 0, time.UTC),
-		IsActive:  false,
-		Status:    "completed",
+		Year:      formatAcademicYear(startYear),
+		StartDate: time.Date(startYear, 4, 1, 0, 0, 0, 0, time.UTC),
+		EndDate:   time.Date(startYear+1, 3, 31, 0, 0, 0, 0, time.UTC),
+		IsActive:  true,
+		Status:    "active",
 		CreatedAt: now,
 		UpdatedAt: now,
 	})
 
-	// Default admin user (password "admin123") so the dev login works.
-	store.Users = append(store.Users, &User{
-		ID:           "user_admin_seed",
+	s.Users = append(s.Users, &User{
+		ID:           NewID("user"),
 		SchoolID:     schoolID,
-		Email:        "admin@school.test",
-		PasswordHash: "admin123", // plain-text dev seed; bcrypt for production
+		Email:        email,
+		PasswordHash: password, // plain-text bootstrap; replace via password change
 		Role:         "admin",
 		Permissions:  []string{"*"},
 		Status:       "active",
-		Profile: UserProfile{
-			FirstName: "Demo",
-			LastName:  "Admin",
-		},
-		CreatedAt: now,
-		UpdatedAt: now,
+		Profile:      UserProfile{FirstName: "Admin", LastName: "User"},
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	})
+}
+
+// seedDev keeps the original demo data so existing tests / fixtures keep
+// working when EDUPLEXO_SEED_DEV=1 is set. Production never reaches this.
+func seedDev(s *MemStore) {
+	now := time.Now()
+	schoolID := "school_seed_1"
+	s.Schools = append(s.Schools, &School{
+		ID: NewID("sch"), SchoolID: schoolID, Name: "Demo Academy",
+		Code: "DEMOSCH", Status: "active", CreatedAt: now, UpdatedAt: now,
 	})
 
-	store.Subjects = append(store.Subjects,
-		&Subject{ID: "sub_math", SchoolID: schoolID, Name: "Mathematics", Code: "MATH", Status: "active", CreatedAt: now},
-		&Subject{ID: "sub_eng", SchoolID: schoolID, Name: "English", Code: "ENG", Status: "active", CreatedAt: now},
-		&Subject{ID: "sub_sci", SchoolID: schoolID, Name: "Science", Code: "SCI", Status: "active", CreatedAt: now},
-	)
-
-	store.Classes = append(store.Classes,
-		&Class{
-			ID: "cls_1", SchoolID: schoolID, AcademicYearID: yearID,
-			Name: "Grade 5", Section: "A", Grade: "5", Capacity: 35,
-			Status: "active", CreatedAt: now, UpdatedAt: now,
+	yearID := "ay_2025_26"
+	s.AcademicYears = append(s.AcademicYears,
+		&AcademicYear{
+			ID: yearID, SchoolID: schoolID, Year: "2025-26",
+			StartDate: time.Date(2025, 4, 1, 0, 0, 0, 0, time.UTC),
+			EndDate:   time.Date(2026, 3, 31, 0, 0, 0, 0, time.UTC),
+			IsActive:  true, Status: "active", CreatedAt: now, UpdatedAt: now,
 		},
-		&Class{
-			ID: "cls_2", SchoolID: schoolID, AcademicYearID: yearID,
-			Name: "Grade 6", Section: "B", Grade: "6", Capacity: 35,
-			Status: "active", CreatedAt: now, UpdatedAt: now,
+		&AcademicYear{
+			ID: "ay_2024_25", SchoolID: schoolID, Year: "2024-25",
+			StartDate: time.Date(2024, 4, 1, 0, 0, 0, 0, time.UTC),
+			EndDate:   time.Date(2025, 3, 31, 0, 0, 0, 0, time.UTC),
+			IsActive:  false, Status: "completed", CreatedAt: now, UpdatedAt: now,
 		},
 	)
 
-	store.Teachers = append(store.Teachers,
-		&Teacher{
-			ID: "tch_1", SchoolID: schoolID, AcademicYearID: yearID,
-			FirstName: "Ada", LastName: "Lovelace", Email: "ada@school.test",
-			EmployeeNo: "TCH-0001", Phone: "+92-300-0000001", SubjectIDs: []string{"sub_math"},
-			Status: "active", JoinedAt: now, CreatedAt: now, UpdatedAt: now,
-		},
-		&Teacher{
-			ID: "tch_2", SchoolID: schoolID, AcademicYearID: yearID,
-			FirstName: "Alan", LastName: "Turing", Email: "alan@school.test",
-			EmployeeNo: "TCH-0002", Phone: "+92-300-0000002", SubjectIDs: []string{"sub_sci"},
-			Status: "active", JoinedAt: now, CreatedAt: now, UpdatedAt: now,
-		},
-	)
+	s.Users = append(s.Users, &User{
+		ID: "user_admin_seed", SchoolID: schoolID, Email: "admin@school.test",
+		PasswordHash: "admin123", Role: "admin", Permissions: []string{"*"},
+		Status:    "active",
+		Profile:   UserProfile{FirstName: "Demo", LastName: "Admin"},
+		CreatedAt: now, UpdatedAt: now,
+	})
+}
 
-	store.Students = append(store.Students,
-		&Student{
-			ID: "stu_1", SchoolID: schoolID, AcademicYearID: yearID,
-			AdmissionNo: "STU-00001", FirstName: "Aria", LastName: "Khan",
-			ClassID: "cls_1", Section: "A",
-			Guardian: Guardian{Name: "Sara Khan", Phone: "+92-300-1234567"},
-			Status:   "active", EnrolledAt: now, CreatedAt: now, UpdatedAt: now,
-		},
-		&Student{
-			ID: "stu_2", SchoolID: schoolID, AcademicYearID: yearID,
-			AdmissionNo: "STU-00002", FirstName: "Bilal", LastName: "Ahmed",
-			ClassID: "cls_1", Section: "A",
-			Guardian: Guardian{Name: "Omar Ahmed", Phone: "+92-301-2345678"},
-			Status:   "active", EnrolledAt: now, CreatedAt: now, UpdatedAt: now,
-		},
-	)
-
-	return store
+func formatAcademicYear(start int) string {
+	return strconv.Itoa(start) + "-" + strconv.Itoa((start+1)%100)
 }
 
 // Lock acquires a write lock; callers must Unlock when done.
