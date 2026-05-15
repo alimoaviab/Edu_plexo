@@ -230,8 +230,9 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Put("/leave/{id}", lvH.Update)
 			r.Delete("/leave/{id}", lvH.Delete)
 
-			ttH := timetable.New(s)
+			ttH := timetable.New(s, saveFn, rdb)
 			r.Get("/timetable", ttH.List)
+			r.Get("/timetable/summary", ttH.Summary)
 			r.Post("/timetable", ttH.Create)
 			r.Get("/timetable/{id}", ttH.Get)
 			r.Patch("/timetable/{id}", ttH.Update)

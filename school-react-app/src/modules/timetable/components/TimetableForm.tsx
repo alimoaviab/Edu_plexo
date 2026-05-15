@@ -1,375 +1,627 @@
-import { FormEvent, useState, useEffect, useMemo } from "react";
-import { Button, Input, Select, FormSection } from "@/components/ui";
-import { TimetableFormInput, DAY_OPTIONS, TimetableRecord, DayOfWeek } from "../types/timetable.types";
-import { showToast } from "@/utils/toast";
-import { PeriodCard } from "./PeriodCard";
-import { findTimetableConflicts } from "../utils/conflicts";
-import { useTimetable } from "../hooks/useTimetable";
-import { serviceRequest } from "@/services/service-client";
+/**
+ * Compact 2-step timetable form.
+ *
+ * Wire-format contract (verified end-to-end with the Go backend):
+ *   {
+ *     class_id, subject_id, teacher_id,
+ *     day_of_week: <ISO 1..7>,    ← number
+ *     period_number: <int>,
+ *     start_time: "HH:mm",
+ *     end_time:   "HH:mm",
+ *     room?:      "..."
+ *   }
+ *
+ * Why we send `day_of_week` as a number:
+ *   The Go handler decodes into an int. The previous form sent the
+ *   English day name as a string and json.Decoder failed with
+ *   "Invalid JSON body". The handler now also accepts strings, but the
+ *   canonical client format is the ISO number to keep the contract tight.
+ *
+ * Steps:
+ *   1. Subject + Day + Time (the "what & when")
+ *   2. Teacher + Room        (the "who & where")
+ *
+ * Class is set by the parent page (URL ?class_id) and shown read-only
+ * here, so admins are never confused about which class they're editing.
+ */
 
-interface TimetableFormProps {
-  onSubmit: (input: TimetableFormInput) => Promise<unknown>;
-  classOptions?: Array<{ id: string; label: string }>;
-  teacherOptions?: Array<{ id: string; label: string }>;
-  subjectOptions?: Array<{ id: string; label: string }>;
-  isLoading?: boolean;
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Button, Input, Select } from "@/components/ui";
+import {
+  TimetableFormInput,
+  TimetableRecord,
+  DAY_OPTIONS,
+  ServerConflict,
+  isoToDayName,
+} from "../types/timetable.types";
+import { findTimetableConflicts } from "../utils/conflicts";
+import { serviceRequest } from "@/services/service-client";
+import { useTimetable } from "../hooks/useTimetable";
+
+interface ClassOption {
+  id: string;
+  label: string;
+}
+
+interface Props {
+  onSubmit: (input: TimetableFormInput) => Promise<{
+    ok: boolean;
+    error?: {
+      message?: string;
+      details?: unknown;
+    };
+  }>;
+  onCancel: () => void;
+  classOptions?: ClassOption[];
+  teacherOptions?: ClassOption[];
+  subjectOptions?: ClassOption[];
   initialClassId?: string;
   initialValues?: TimetableRecord;
-  onCancel: () => void;
+  isLoading?: boolean;
 }
+
+const initialState: TimetableFormInput = {
+  class_id: "",
+  subject_id: "",
+  teacher_id: "",
+  day_of_week: 1,
+  period_number: 1,
+  start_time: "08:00",
+  end_time: "08:45",
+  room: "",
+};
 
 export function TimetableForm({
   onSubmit,
+  onCancel,
   classOptions = [],
   teacherOptions = [],
   subjectOptions = [],
-  isLoading = false,
   initialClassId = "",
   initialValues,
-  onCancel
-}: TimetableFormProps) {
+  isLoading = false,
+}: Props) {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState<TimetableFormInput>({
+  const [form, setForm] = useState<TimetableFormInput>(() => ({
+    ...initialState,
     class_id: initialValues?.class_id || initialClassId || "",
-    teacher_id: initialValues?.teacher_id || "",
     subject_id: initialValues?.subject_id || "",
-    day_of_week: initialValues ? (DAY_OPTIONS[Number(initialValues.day_of_week) - 1]?.value as DayOfWeek || "Monday") : "Monday",
+    teacher_id: initialValues?.teacher_id || "",
+    day_of_week: Number(initialValues?.day_of_week) || 1,
     period_number: initialValues?.period_number || 1,
     start_time: initialValues?.start_time || "08:00",
-    end_time: initialValues?.end_time || "09:00",
-    room: initialValues?.room || ""
-  });
-
-  const { state: timetableState } = useTimetable(form.class_id ? { class_id: form.class_id } : undefined);
-  const [saving, setSaving] = useState(false);
+    end_time: initialValues?.end_time || "08:45",
+    room: initialValues?.room || "",
+  }));
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [classSubjectOptions, setClassSubjectOptions] = useState<Array<{ id: string; label: string }>>([]);
-  const [loadingClassSubjects, setLoadingClassSubjects] = useState(false);
+  const [serverConflicts, setServerConflicts] = useState<ServerConflict[]>([]);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  // Anchor we scroll to when validation fails so the user never wonders
+  // "why did Continue do nothing?".
+  const topRef = useRef<HTMLDivElement>(null);
 
+  // Subjects for the selected class — narrowing the picker scales when
+  // the school has many subjects.
+  const [classSubjectOptions, setClassSubjectOptions] = useState<ClassOption[]>([]);
   useEffect(() => {
     let cancelled = false;
-    async function loadClassSubjects(classId: string) {
-      if (!classId) return;
-      setLoadingClassSubjects(true);
-      try {
-        const result = await serviceRequest<{ subjects?: any[] }>(`/api/classes/${classId}/subjects`);
-        if (result.ok && !cancelled) {
-          const subjects = (result.data?.subjects ?? []).map((s: any) => ({
-            id: String(s._id ?? s.id ?? s.name ?? ""),
-            label: s.name || String(s._id ?? s.id ?? "")
-          }));
-          setClassSubjectOptions(subjects);
-        }
-      } catch {
-        if (!cancelled) setClassSubjectOptions([]);
-      } finally {
-        if (!cancelled) setLoadingClassSubjects(false);
-      }
+    if (!form.class_id) {
+      setClassSubjectOptions([]);
+      return;
     }
-    loadClassSubjects(form.class_id);
-    return () => { cancelled = true; };
+    (async () => {
+      const result = await serviceRequest<{ subjects?: any[] }>(
+        `/api/classes/${encodeURIComponent(form.class_id)}/subjects`
+      );
+      if (cancelled) return;
+      if (result.ok && result.data?.subjects) {
+        setClassSubjectOptions(
+          result.data.subjects.map((s: any) => ({
+            id: String(s._id ?? s.id ?? s.name ?? ""),
+            label: s.name || String(s._id ?? s.id ?? ""),
+          }))
+        );
+      } else {
+        setClassSubjectOptions([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [form.class_id]);
 
-  const subjectsToDisplay = useMemo(() => {
+  const subjectsToShow = useMemo(() => {
     if (classSubjectOptions.length === 0) return subjectOptions;
-    const combined = [...classSubjectOptions];
-    const seenIds = new Set(classSubjectOptions.map(s => s.id));
-    subjectOptions.forEach(s => { if (!seenIds.has(s.id)) combined.push(s); });
-    return combined;
+    const byId = new Set(classSubjectOptions.map((s) => s.id));
+    return [...classSubjectOptions, ...subjectOptions.filter((s) => !byId.has(s.id))];
   }, [classSubjectOptions, subjectOptions]);
 
-  const conflicts = useMemo(() => {
-    if (!timetableState.data) return [];
-    return findTimetableConflicts(timetableState.data, form, initialValues?._id);
-  }, [timetableState.data, form, initialValues]);
+  const { state: timetableState } = useTimetable(
+    form.class_id ? { class_id: form.class_id } : undefined
+  );
+  const clientConflicts = useMemo(
+    () =>
+      timetableState.data
+        ? findTimetableConflicts(timetableState.data, form, initialValues?._id)
+        : [],
+    [timetableState.data, form, initialValues]
+  );
 
-  const previewRecord = useMemo(() => {
-    const subject = subjectsToDisplay.find(s => s.id === form.subject_id);
-    const teacher = teacherOptions.find(t => t.id === form.teacher_id);
-    const className = classOptions.find(c => c.id === form.class_id);
+  const activeClass = classOptions.find((c) => c.id === form.class_id);
 
-    return {
-      _id: "preview",
-      class_id: form.class_id,
-      class_name: className?.label || "Selected Class",
-      subject_id: form.subject_id,
-      subject_name: subject?.label || "Subject",
-      teacher_id: form.teacher_id,
-      teacher_name: teacher?.label || "Teacher",
-      day_of_week: DAY_OPTIONS.findIndex(d => d.value === form.day_of_week) + 1,
-      period_number: form.period_number,
-      start_time: form.start_time,
-      end_time: form.end_time,
-      room: form.room,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    } as TimetableRecord;
-  }, [form, subjectsToDisplay, teacherOptions, classOptions]);
-
-  const validateStep = (s: number) => {
-    const newErrors: Record<string, string> = {};
-    if (s === 1) {
-      if (!form.class_id) newErrors.class_id = "Class is required";
-      if (!form.subject_id) newErrors.subject_id = "Subject is required";
-    } else if (s === 2) {
-      if (!form.day_of_week) newErrors.day_of_week = "Day is required";
-      if (!form.start_time) newErrors.start_time = "Start time is required";
-      if (!form.end_time) newErrors.end_time = "End time is required";
-      if (form.start_time && form.end_time) {
-        const start = parseInt(form.start_time.replace(':', ''));
-        const end = parseInt(form.end_time.replace(':', ''));
-        if (end <= start) newErrors.end_time = "End time must be after start time";
+  function setField<K extends keyof TimetableFormInput>(key: K, value: TimetableFormInput[K]) {
+    setForm((f) => {
+      const next = { ...f, [key]: value };
+      // When the class changes the previously-selected subject may no
+      // longer belong to it. Reset so users don't accidentally save a
+      // class/subject mismatch.
+      if (key === "class_id" && f.subject_id) {
+        next.subject_id = "";
       }
-    } else if (s === 3) {
-      if (!form.teacher_id) newErrors.teacher_id = "Teacher is required";
+      return next;
+    });
+    // Clear field-level error as soon as the user touches the field.
+    setErrors((prev) => {
+      if (!prev[key as string]) return prev;
+      const { [key as string]: _omit, ...rest } = prev;
+      return rest;
+    });
+    setServerConflicts([]);
+    setServerError(null);
+  }
+
+  function validateStep(s: number): boolean {
+    const next: Record<string, string> = {};
+    if (s === 1) {
+      if (!form.class_id) next.class_id = "Class is required";
+      if (!form.subject_id) next.subject_id = "Subject is required";
+      if (!form.start_time) next.start_time = "Start time is required";
+      if (!form.end_time) next.end_time = "End time is required";
+      if (form.start_time && form.end_time && form.end_time <= form.start_time) {
+        next.end_time = "End time must be after start time";
+      }
+      if (form.period_number < 1) next.period_number = "Period must be at least 1";
     }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    if (s === 2) {
+      if (!form.teacher_id) next.teacher_id = "Teacher is required";
+    }
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  }
 
-  const handleNext = () => {
-    if (validateStep(step)) setStep(step + 1);
-  };
+  function handleNext() {
+    const ok = validateStep(step);
+    if (!ok) {
+      // Surface failure: scroll the banner into view. Without this,
+      // tiny inline errors below the fold made Continue feel dead.
+      requestAnimationFrame(() => {
+        topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      // Aid debugging: anyone reporting "Continue does nothing" can
+      // open DevTools and immediately see why.
+      // eslint-disable-next-line no-console
+      console.warn("[TimetableForm] Continue blocked by validation:", errors, form);
+      return;
+    }
+    setStep(step + 1);
+  }
 
-  const handleSubmit = async (e: FormEvent) => {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!validateStep(step)) return;
+    if (!validateStep(1) || !validateStep(2)) {
+      // If step 1 has issues, walk back so the user can see them.
+      const stepOneInvalid =
+        !form.class_id ||
+        !form.subject_id ||
+        !form.start_time ||
+        !form.end_time ||
+        form.end_time <= form.start_time ||
+        form.period_number < 1;
+      setStep(stepOneInvalid ? 1 : 2);
+      requestAnimationFrame(() => {
+        topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      return;
+    }
     setSaving(true);
+    setServerConflicts([]);
+    setServerError(null);
     try {
-      await onSubmit(form);
-      onCancel(); 
-    } catch (err: any) {
-      showToast(err.message || "Failed to save", "error");
+      const result = await onSubmit(form);
+      if (!result.ok) {
+        const conflicts = extractConflicts(result.error?.details);
+        if (conflicts.length > 0) {
+          setServerConflicts(conflicts);
+          setStep(2);
+          return;
+        }
+        setServerError(result.error?.message || "Failed to save the period.");
+      }
     } finally {
       setSaving(false);
     }
-  };
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col h-full">
-      {/* Steps Indicator */}
-      <div className="flex items-center gap-2 mb-8">
-        {[1, 2, 3].map((s) => (
-          <div key={s} className="flex-1 flex items-center gap-2">
-            <div className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${step >= s ? 'bg-blue-600 shadow-[0_0_8px_rgba(37,99,235,0.4)]' : 'bg-slate-100'}`} />
-          </div>
-        ))}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div ref={topRef} />
+
+      {/* Step indicator */}
+      <div className="flex items-center gap-3">
+        <StepDot index={1} active={step >= 1} label="Schedule" />
+        <div className="flex-1 h-px bg-slate-200" />
+        <StepDot index={2} active={step >= 2} label="Assignment" />
       </div>
 
-      <div className="flex-1 space-y-8">
-        {step === 1 && (
-          <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
-            <div className="space-y-1">
-              <h3 className="text-lg font-black text-slate-900 tracking-tight leading-none">Class & Subject</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Select the class and course material</p>
-            </div>
-            <div className="space-y-6 pt-4">
-              <Select
-                label="Class Section"
-                value={form.class_id}
-                onChange={(e) => setForm({ ...form, class_id: e.target.value, subject_id: "" })}
-                options={[{ label: "Choose class segment...", value: "" }, ...classOptions.map(o => ({ label: o.label, value: o.id }))]}
-                error={errors.class_id}
-                required
-                className="h-14 text-sm font-bold rounded-2xl border-slate-200 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/5 transition-all shadow-sm"
-              />
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-black text-slate-700 uppercase tracking-widest">Select Subject</label>
-                  {loadingClassSubjects && (
-                    <div className="flex items-center gap-2">
-                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-                      <span className="text-[9px] font-bold text-blue-600 uppercase tracking-widest">Fetching...</span>
-                    </div>
-                  )}
-                </div>
-                
-                {!form.class_id ? (
-                  <div className="p-8 rounded-2xl border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-center space-y-2">
-                    <span className="material-symbols-outlined text-slate-200 text-3xl">school</span>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                      Select a class first to<br />view available subjects
-                    </p>
-                  </div>
-                ) : subjectsToDisplay.length === 0 && !loadingClassSubjects ? (
-                  <div className="p-8 rounded-2xl border-2 border-dashed border-red-50 flex flex-col items-center justify-center text-center space-y-2">
-                    <span className="material-symbols-outlined text-red-200 text-3xl">warning</span>
-                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest leading-relaxed">
-                      No subjects found for<br />the selected class
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    {subjectsToDisplay.map((o) => (
-                      <button
-                        key={o.id}
-                        type="button"
-                        onClick={() => setForm({ ...form, subject_id: o.id })}
-                        className={`group relative flex flex-col items-start p-4 rounded-2xl border-2 transition-all duration-300 text-left ${
-                          form.subject_id === o.id
-                            ? "bg-blue-600 border-blue-600 shadow-xl shadow-blue-600/20"
-                            : "bg-white border-slate-50 hover:border-slate-200 hover:shadow-md"
-                        }`}
-                      >
-                        <div className={`mb-3 h-8 w-8 rounded-xl flex items-center justify-center transition-colors ${
-                          form.subject_id === o.id ? "bg-white/20 text-white" : "bg-slate-50 text-slate-400 group-hover:text-blue-600 group-hover:bg-blue-50"
-                        }`}>
-                          <span className="material-symbols-outlined text-[18px]">menu_book</span>
-                        </div>
-                        <span className={`text-[11px] font-black uppercase tracking-tight leading-tight ${
-                          form.subject_id === o.id ? "text-white" : "text-slate-900"
-                        }`}>
-                          {o.label}
-                        </span>
-                        <span className={`mt-1 text-[9px] font-bold ${
-                          form.subject_id === o.id ? "text-white/60" : "text-slate-400"
-                        }`}>
-                          Course Material
-                        </span>
-                        
-                        {form.subject_id === o.id && (
-                          <div className="absolute top-3 right-3 h-5 w-5 bg-white rounded-full flex items-center justify-center shadow-sm">
-                            <span className="material-symbols-outlined text-[14px] text-blue-600 font-black">check</span>
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {errors.subject_id && <p className="text-[10px] text-red-500 font-bold mt-2 ml-1">{errors.subject_id}</p>}
-              </div>
+      {/* Top-level validation summary. Without this, the only feedback
+          on a failed Continue was a 10px error line under the field — a
+          Continue click on a long form looked like nothing happened. */}
+      {Object.keys(errors).length > 0 && (
+        <div className="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2.5">
+          <div className="flex items-start gap-2">
+            <span className="material-symbols-outlined text-base text-rose-600 mt-0.5">
+              error
+            </span>
+            <div className="flex-1">
+              <p className="text-[11px] font-bold text-rose-700 tracking-tight">
+                Fix the highlighted fields to continue
+              </p>
+              <ul className="mt-1 text-[11px] font-medium text-rose-700/90 space-y-0.5">
+                {Object.entries(errors).map(([field, msg]) => (
+                  <li key={field}>• {msg}</li>
+                ))}
+              </ul>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {step === 2 && (
-          <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
-            <div className="space-y-1">
-              <h3 className="text-lg font-black text-slate-900 tracking-tight leading-none">Schedule Details</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Define the day and time slot</p>
-            </div>
-            <div className="space-y-6 pt-4">
-              <Select
-                label="Weekly Day"
-                value={form.day_of_week}
-                onChange={(e) => setForm({ ...form, day_of_week: e.target.value as any })}
-                options={DAY_OPTIONS.map(d => ({ label: d.label, value: d.value }))}
-                className="h-14 text-sm font-bold rounded-2xl border-slate-200"
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Start Time"
-                  type="time"
-                  value={form.start_time}
-                  onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-                  error={errors.start_time}
-                  required
-                  className="h-14 text-sm font-bold rounded-2xl border-slate-200"
-                />
-                <Input
-                  label="End Time"
-                  type="time"
-                  value={form.end_time}
-                  onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-                  error={errors.end_time}
-                  required
-                  className="h-14 text-sm font-bold rounded-2xl border-slate-200"
-                />
-              </div>
-              <Input
-                label="Period / Session Index"
-                type="number"
-                min="1"
-                value={form.period_number}
-                onChange={(e) => setForm({ ...form, period_number: parseInt(e.target.value) || 1 })}
-                className="h-14 text-sm font-bold rounded-2xl border-slate-200"
-              />
-            </div>
+      {/* Class chip — locked to the page's class context */}
+      {activeClass && (
+        <div className="flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">
+          <span className="material-symbols-outlined text-base text-blue-600">school</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-bold text-slate-400 normal-case">Editing class</p>
+            <p className="text-[12px] font-bold text-slate-900 tracking-tight truncate">
+              {activeClass.label}
+            </p>
           </div>
-        )}
+        </div>
+      )}
 
-        {step === 3 && (
-          <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
-            <div className="space-y-1">
-              <h3 className="text-lg font-black text-slate-900 tracking-tight leading-none">Resource Assignment</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Assign teacher and physical location</p>
-            </div>
-            <div className="space-y-6 pt-4">
-              <Select
-                label="Lead Teacher"
-                value={form.teacher_id}
-                onChange={(e) => setForm({ ...form, teacher_id: e.target.value })}
-                options={[{ label: "Select assigned teacher", value: "" }, ...teacherOptions.map(o => ({ label: o.label, value: o.id }))]}
-                error={errors.teacher_id}
-                required
-                className="h-14 text-sm font-bold rounded-2xl border-slate-200"
-              />
-              <Input
-                label="Classroom / Hall"
-                placeholder="e.g., Room 102, Science Lab"
-                value={form.room || ""}
-                onChange={(e) => setForm({ ...form, room: e.target.value })}
-                className="h-14 text-sm font-bold rounded-2xl border-slate-200"
-              />
-              
-              <div className="pt-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Live Preview</p>
-                <PeriodCard slot={previewRecord} conflicts={conflicts} isCompact={false} />
-              </div>
+      {step === 1 && (
+        <div className="space-y-4">
+          {!activeClass && (
+            <Select
+              label="Class"
+              value={form.class_id}
+              onChange={(e) => setField("class_id", e.target.value)}
+              options={[
+                { label: "Select a class", value: "" },
+                ...classOptions.map((o) => ({ label: o.label, value: o.id })),
+              ]}
+              error={errors.class_id}
+              required
+            />
+          )}
 
-              {conflicts.length > 0 && (
-                <div className="p-4 bg-red-50 rounded-2xl border border-red-100 flex items-start gap-3">
-                  <div className="h-6 w-6 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[14px] text-red-600 font-black">warning</span>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-red-700 uppercase tracking-tight">Scheduling Conflict</p>
-                    <p className="text-[10px] font-bold text-red-600/80 leading-relaxed mt-0.5">
-                      The {conflicts[0].type} is already booked for this time slot. Saving will create an overlap.
-                    </p>
-                  </div>
-                </div>
-              )}
-              
-              {conflicts.length === 0 && (
-                <div className="mt-4 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-blue-500 text-[14px] font-black">check_circle</span>
-                  <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Schedule Clear</p>
-                </div>
-              )}
-            </div>
+          <Select
+            label="Subject"
+            value={form.subject_id}
+            onChange={(e) => setField("subject_id", e.target.value)}
+            options={[
+              { label: form.class_id ? "Select a subject" : "Select a class first", value: "" },
+              ...subjectsToShow.map((o) => ({ label: o.label, value: o.id })),
+            ]}
+            error={errors.subject_id}
+            disabled={!form.class_id}
+            required
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Day of week"
+              value={String(form.day_of_week)}
+              onChange={(e) => setField("day_of_week", Number(e.target.value))}
+              options={DAY_OPTIONS.map((d) => ({ label: d.label, value: d.iso }))}
+            />
+            <Input
+              label="Period"
+              type="number"
+              min={1}
+              max={20}
+              value={form.period_number}
+              onChange={(e) =>
+                setField("period_number", Math.max(1, parseInt(e.target.value || "1", 10)))
+              }
+              error={errors.period_number}
+              required
+            />
           </div>
-        )}
-      </div>
 
-      <div className="mt-12 flex items-center gap-3 pt-6 border-t border-slate-50">
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Start time"
+              type="time"
+              value={form.start_time}
+              onChange={(e) => setField("start_time", e.target.value)}
+              error={errors.start_time}
+              required
+            />
+            <Input
+              label="End time"
+              type="time"
+              value={form.end_time}
+              onChange={(e) => setField("end_time", e.target.value)}
+              error={errors.end_time}
+              required
+            />
+          </div>
+
+          {clientConflicts.length > 0 && (
+            <ConflictBanner conflicts={clientConflicts.map((c) => `${c.type}: ${c.record.subject_name} on ${isoToDayName(c.record.day_of_week)}`)} tone="warning" />
+          )}
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="space-y-4">
+          <SearchableSelect
+            label="Teacher"
+            value={form.teacher_id}
+            onChange={(id) => setField("teacher_id", id)}
+            options={teacherOptions}
+            placeholder="Search teacher by name…"
+            error={errors.teacher_id}
+            required
+          />
+
+          <Input
+            label="Room (optional)"
+            placeholder="e.g. R-102, Science Lab"
+            value={form.room || ""}
+            onChange={(e) => setField("room", e.target.value)}
+          />
+
+          {/* Live summary */}
+          <div className="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2.5 space-y-1">
+            <p className="text-[10px] font-bold text-slate-400 normal-case">Summary</p>
+            <p className="text-[12px] font-bold text-slate-900 tracking-tight">
+              {form.subject_id
+                ? subjectsToShow.find((s) => s.id === form.subject_id)?.label
+                : "—"}
+              <span className="font-medium text-slate-500"> · </span>
+              {isoToDayName(form.day_of_week)}{" "}
+              {form.start_time && form.end_time
+                ? `· ${form.start_time}–${form.end_time}`
+                : ""}
+            </p>
+            <p className="text-[11px] font-medium text-slate-500">
+              {form.teacher_id
+                ? teacherOptions.find((t) => t.id === form.teacher_id)?.label
+                : "Pick a teacher"}
+              {form.room ? ` · ${form.room}` : ""}
+            </p>
+          </div>
+
+          {serverError && (
+            <div className="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2.5 text-[12px] font-bold text-rose-700">
+              {serverError}
+            </div>
+          )}
+
+          {serverConflicts.length > 0 && (
+            <ConflictBanner
+              tone="error"
+              conflicts={serverConflicts.map((c) => c.message)}
+              title="Server detected schedule conflicts"
+            />
+          )}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 pt-4 border-t border-slate-100">
         <Button
-          variant="secondary"
           type="button"
+          variant="ghost"
           onClick={step > 1 ? () => setStep(step - 1) : onCancel}
-          className="h-12 flex-1 rounded-xl text-[10px] font-black uppercase tracking-widest"
+          className="flex-1"
         >
-          {step === 1 ? "Cancel" : "Previous"}
+          {step === 1 ? "Cancel" : "Back"}
         </Button>
-        {step < 3 ? (
-          <Button
-            type="button"
-            onClick={handleNext}
-            className="h-12 flex-1 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
-          >
+        {step < 2 ? (
+          <Button type="button" variant="primary" onClick={handleNext} className="flex-1">
             Continue
           </Button>
         ) : (
           <Button
             type="submit"
+            variant="primary"
             disabled={saving || isLoading}
-            className="h-12 flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-600/20 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+            className="flex-1"
           >
-            {saving ? "Syncing..." : (initialValues ? "Update Entry" : "Save Entry")}
+            {saving ? "Saving…" : initialValues ? "Update period" : "Save period"}
           </Button>
         )}
       </div>
     </form>
+  );
+}
+
+/**
+ * The service-client wraps the whole API response under `error.details`.
+ * Conflicts can therefore appear at either:
+ *   - error.details.error.details.conflicts  (full envelope passthrough)
+ *   - error.details.conflicts                (handler-detail passthrough)
+ */
+function extractConflicts(details: unknown): ServerConflict[] {
+  if (!details || typeof details !== "object") return [];
+  const direct = (details as { conflicts?: ServerConflict[] }).conflicts;
+  if (Array.isArray(direct)) return direct;
+  const nested = (details as { error?: { details?: { conflicts?: ServerConflict[] } } })
+    .error?.details?.conflicts;
+  if (Array.isArray(nested)) return nested;
+  return [];
+}
+
+function StepDot({ index, active, label }: { index: number; active: boolean; label: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border ${
+          active
+            ? "bg-blue-600 text-white border-blue-600"
+            : "bg-white text-slate-400 border-slate-200"
+        }`}
+      >
+        {index}
+      </div>
+      <span
+        className={`text-[11px] font-bold normal-case ${
+          active ? "text-slate-900" : "text-slate-400"
+        }`}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function ConflictBanner({
+  conflicts,
+  tone = "warning",
+  title,
+}: {
+  conflicts: string[];
+  tone?: "warning" | "error";
+  title?: string;
+}) {
+  const cls =
+    tone === "error"
+      ? "bg-rose-50 border-rose-200 text-rose-700"
+      : "bg-amber-50 border-amber-200 text-amber-700";
+  return (
+    <div className={`rounded-lg border px-3 py-2.5 ${cls}`}>
+      <div className="flex items-start gap-2">
+        <span className="material-symbols-outlined text-base mt-0.5">warning</span>
+        <div className="flex-1">
+          <p className="text-[11px] font-bold tracking-tight">
+            {title ?? `${conflicts.length} ${conflicts.length === 1 ? "conflict" : "conflicts"} detected`}
+          </p>
+          <ul className="mt-1 text-[11px] font-medium space-y-0.5">
+            {conflicts.slice(0, 4).map((c, i) => (
+              <li key={i}>• {c}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Lightweight searchable single-select. Avoids hauling in a third-party
+ * library while still scaling to hundreds of teachers.
+ */
+function SearchableSelect({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+  error,
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (id: string) => void;
+  options: ClassOption[];
+  placeholder?: string;
+  error?: string;
+  required?: boolean;
+}) {
+  const [search, setSearch] = useState("");
+  const selected = options.find((o) => o.id === value);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return options.slice(0, 100);
+    return options.filter((o) => o.label.toLowerCase().includes(q)).slice(0, 100);
+  }, [options, search]);
+
+  return (
+    <div className="space-y-1">
+      <label className="text-[11px] font-bold text-slate-500 normal-case px-1 block">
+        {label}
+        {required && <span className="text-rose-500 ml-0.5">*</span>}
+      </label>
+      <div
+        className={`rounded-xl border bg-white ${
+          error
+            ? "border-rose-400 ring-2 ring-rose-500/10"
+            : "border-slate-200 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-600/10"
+        }`}
+      >
+        <div className="flex items-center gap-2 px-3 py-2">
+          <span className="material-symbols-outlined text-base text-slate-400">search</span>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={selected ? selected.label : placeholder ?? "Search…"}
+            className="flex-1 bg-transparent border-none outline-none p-0 text-[13px] font-medium placeholder:text-slate-400"
+          />
+          {selected && (
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setSearch("");
+              }}
+              className="text-slate-400 hover:text-rose-600"
+              aria-label="Clear selection"
+            >
+              <span className="material-symbols-outlined text-base">close</span>
+            </button>
+          )}
+        </div>
+        <ul className="max-h-[180px] overflow-y-auto border-t border-slate-100">
+          {filtered.length === 0 ? (
+            <li className="px-3 py-3 text-[11px] font-bold text-slate-400 normal-case text-center">
+              No matches
+            </li>
+          ) : (
+            filtered.map((o) => (
+              <li key={o.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange(o.id);
+                    setSearch("");
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${
+                    value === o.id
+                      ? "bg-blue-50 text-blue-700"
+                      : "hover:bg-slate-50 text-slate-700"
+                  }`}
+                >
+                  <span className="text-[12px] font-bold truncate">{o.label}</span>
+                  {value === o.id && (
+                    <span className="material-symbols-outlined text-base text-blue-600">check</span>
+                  )}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      </div>
+      {error && (
+        <span className="text-[10px] font-bold text-rose-600 px-1 block" role="alert">
+          {error}
+        </span>
+      )}
+    </div>
   );
 }
