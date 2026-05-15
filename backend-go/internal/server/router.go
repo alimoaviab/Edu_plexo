@@ -357,10 +357,13 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Get("/super-admin/users", saH.ListUsers)
 			r.Get("/super-admin/activity", saH.RecentActivity)
 
-			// Parents
-			r.Get("/parents/check-email", func(w http.ResponseWriter, _ *http.Request) {
-				api.WriteResult(w, api.Ok(map[string]any{"exists": false}))
-			})
+			// Parents — admin/teacher use these to link students to
+			// existing parent accounts during student creation. The
+			// real linkage write happens inside the students.Create
+			// handler when `link_parent_user_id` (or a matching email)
+			// is detected.
+			r.Get("/parents/check-email", stH.CheckParentEmail)
+			r.Post("/parents/check-email", stH.CheckParentEmail)
 			r.Post("/parents/link-student", stubs.NotImplemented(""))
 
 			// Parent portal

@@ -205,6 +205,11 @@ type createInput struct {
 	Guardian    store.Guardian  `json:"guardian"`
 	Email       string          `json:"email,omitempty"`
 	Password    string          `json:"password,omitempty"`
+	// When the admin clicks "Link Student to this Parent" on the form,
+	// the frontend sends the existing parent's user_id here. We then
+	// skip the duplicate-email error and write a StudentParents link
+	// against the existing user instead of creating a new one.
+	LinkParentUserID string     `json:"link_parent_user_id,omitempty"`
 	Status      string          `json:"status,omitempty"`
 	RollNo      string          `json:"roll_no,omitempty"`
 	DateOfBirth *time.Time      `json:"date_of_birth,omitempty"`
@@ -251,12 +256,54 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 		if body.Email != "" {
 			body.Email = strings.ToLower(strings.TrimSpace(body.Email))
+		}
+
+		// Resolve which parent user this student should be linked to.
+		// Three cases:
+		//   1. link_parent_user_id is set → admin explicitly chose to
+		//      link to an existing parent. Verify it belongs to this
+		//      school and has role=parent.
+		//   2. email matches an existing parent user in this school →
+		//      treat as auto-link (don't error like before, just link).
+		//   3. email matches a user with a DIFFERENT role (admin /
+		//      teacher / student) → reject so we don't conflate
+		//      identities across roles.
+		// In all cases the link is recorded via store.StudentParents
+		// after the student row is inserted, so /api/parent/children
+		// returns the linked student.
+		var linkedParentUser *store.User
+		if body.LinkParentUserID != "" {
 			h.Store.RLock()
 			for _, u := range h.Store.Users {
-				if strings.EqualFold(u.Email, body.Email) {
-					h.Store.RUnlock()
-					return nil, api.NewControlledError("DUPLICATE", "This email is already registered in the system.", 400, nil)
+				if u.ID == body.LinkParentUserID && u.SchoolID == ctx.SchoolID {
+					linkedParentUser = u
+					break
 				}
+			}
+			h.Store.RUnlock()
+			if linkedParentUser == nil {
+				return nil, api.NewControlledError("NOT_FOUND", "Parent account to link not found in this school.", 404, nil)
+			}
+			if linkedParentUser.Role != "parent" {
+				return nil, api.NewControlledError("VALIDATION_ERROR", "The selected account is not a parent and cannot be linked.", 400, nil)
+			}
+		} else if body.Email != "" {
+			h.Store.RLock()
+			for _, u := range h.Store.Users {
+				if !strings.EqualFold(u.Email, body.Email) {
+					continue
+				}
+				// Cross-tenant email collisions are not our concern —
+				// users live per-school.
+				if u.SchoolID != ctx.SchoolID {
+					continue
+				}
+				if u.Role != "parent" {
+					h.Store.RUnlock()
+					return nil, api.NewControlledError("DUPLICATE", "This email is already registered as "+u.Role+" and cannot be reused for a parent account.", 400, nil)
+				}
+				linkedParentUser = u
+				break
 			}
 			h.Store.RUnlock()
 		}
@@ -300,9 +347,60 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 		h.Store.Lock()
 		h.Store.Students = append(h.Store.Students, newStudent)
+
+		// Parent provisioning + linkage. Done while we already hold the
+		// write lock so the linked-children list is consistent with the
+		// student row we just inserted.
+		var parentUserID string
+		if linkedParentUser != nil {
+			// Case (1)/(2) — link to existing parent user.
+			parentUserID = linkedParentUser.ID
+		} else if body.Email != "" && body.Password != "" {
+			// Case (3) — first child: create a fresh parent user account.
+			hash, err := auth.HashPassword(body.Password)
+			if err != nil {
+				h.Store.Unlock()
+				return nil, api.NewControlledError("INTERNAL", "Failed to hash parent password.", 500, nil)
+			}
+			parentUserID = store.NewID("usr")
+			parentUser := &store.User{
+				ID:           parentUserID,
+				SchoolID:     ctx.SchoolID,
+				Email:        body.Email,
+				PasswordHash: hash,
+				Role:         "parent",
+				Status:       "active",
+				Profile: store.UserProfile{
+					FirstName: firstNameOf(body.Guardian.Name),
+					LastName:  lastNameOf(body.Guardian.Name),
+					Phone:     body.Guardian.Phone,
+				},
+				CreatedAt: now,
+				UpdatedAt: now,
+			}
+			h.Store.Users = append(h.Store.Users, parentUser)
+			h.Persist("users", parentUser)
+		}
+
+		var parentLink *store.StudentParent
+		if parentUserID != "" {
+			parentLink = &store.StudentParent{
+				ID:           store.NewID("spr"),
+				SchoolID:     ctx.SchoolID,
+				StudentID:    newStudent.ID,
+				ParentUserID: parentUserID,
+				Relationship: defaultStr(body.Guardian.Name, "guardian"),
+				IsPrimary:    true,
+				CreatedAt:    now,
+			}
+			h.Store.StudentParents = append(h.Store.StudentParents, parentLink)
+		}
 		h.Store.Unlock()
 
 		h.Persist("students", newStudent)
+		if parentLink != nil {
+			h.Persist("student_parents", parentLink)
+		}
 
 		if h.Cache != nil && h.Cache.Available() {
 			_, _ = h.Cache.DelPattern(r.Context(), fmt.Sprintf("students:%s:%s:*", ctx.SchoolID, yearID))
@@ -471,4 +569,186 @@ func defaultStr(v, fallback string) string {
 		return fallback
 	}
 	return v
+}
+
+// firstNameOf splits a free-form guardian name into a best-effort first
+// name. Provisioning a parent user from the student form must populate
+// User.Profile so the parent portal greeting renders correctly; we
+// don't get a separate first/last field, so we split by the first
+// whitespace token.
+func firstNameOf(full string) string {
+	full = strings.TrimSpace(full)
+	if full == "" {
+		return ""
+	}
+	if idx := strings.IndexAny(full, " \t"); idx > 0 {
+		return full[:idx]
+	}
+	return full
+}
+
+// lastNameOf returns everything after the first whitespace token, or an
+// empty string when the name is single-word.
+func lastNameOf(full string) string {
+	full = strings.TrimSpace(full)
+	idx := strings.IndexAny(full, " \t")
+	if idx <= 0 || idx >= len(full)-1 {
+		return ""
+	}
+	return strings.TrimSpace(full[idx+1:])
+}
+
+// ─── Parent email lookup ─────────────────────────────────────────────
+//
+// The student create form posts to /api/parents/check-email when the
+// admin types/blurs the parent email. The response decides whether the
+// form shows the "link to existing parent" inline card. We expose the
+// handler from this package because parent linkage is a student-side
+// concern (the link lives on the student row) and we already have the
+// MemStore wired in.
+
+type checkEmailInput struct {
+	Email string `json:"email"`
+}
+
+// CheckParentEmail implements POST /api/parents/check-email. The reply
+// shape matches what StudentForm.tsx expects:
+//
+//	{ exists: bool, parent: { _id, name, email, phone, children_count,
+//	                          existing_role, role_mismatch } }
+//
+// `role_mismatch=true` is set when the email is registered to a non-
+// parent role (admin/teacher/student); the form refuses to link in
+// that case so identities don't get collapsed across roles.
+func (h *Handler) CheckParentEmail(w http.ResponseWriter, r *http.Request) {
+	ctx := api.FromRequest(r)
+
+	// Accept body on POST; query string on GET. Both work the same so
+	// we don't lock the route into a particular verb.
+	var email string
+	if r.Method == http.MethodPost {
+		var body checkEmailInput
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		email = body.Email
+	} else {
+		email = r.URL.Query().Get("email")
+	}
+	email = strings.ToLower(strings.TrimSpace(email))
+
+	api.WriteResult(w, api.ServiceTry(func() (any, error) {
+		// Admins and teachers can resolve. We don't gate strictly via
+		// AssertPermission on a feature key because there isn't a
+		// dedicated "parents" permission; the route already sits behind
+		// the school middleware which enforces tenant isolation.
+		if ctx.UserID == "" {
+			return nil, api.NewControlledError("UNAUTHENTICATED", "Authentication required.", 401, nil)
+		}
+		if email == "" || !strings.Contains(email, "@") {
+			return map[string]any{"exists": false}, nil
+		}
+
+		h.Store.RLock()
+		defer h.Store.RUnlock()
+
+		// 1) Try users in the same school first.
+		var matchedUser *store.User
+		for _, u := range h.Store.Users {
+			if u.SchoolID != ctx.SchoolID {
+				continue
+			}
+			if strings.EqualFold(u.Email, email) {
+				matchedUser = u
+				break
+			}
+		}
+
+		// 2) If we didn't find a user, check student rows whose
+		//    guardian.email matches — useful when a previous create
+		//    captured the email but never provisioned a user (e.g.
+		//    legacy data created before this handler existed).
+		if matchedUser == nil {
+			var sibling *store.Student
+			for _, s := range h.Store.Students {
+				if s.SchoolID != ctx.SchoolID {
+					continue
+				}
+				if strings.EqualFold(s.Guardian.Email, email) {
+					sibling = s
+					break
+				}
+			}
+			if sibling == nil {
+				return map[string]any{"exists": false}, nil
+			}
+			// Synthesize a parent payload from the existing student's
+			// guardian. Linking will create a fresh parent user when
+			// the admin clicks the button — handled in Create.
+			return map[string]any{
+				"exists": true,
+				"parent": map[string]any{
+					"_id":            "",
+					"name":           sibling.Guardian.Name,
+					"email":          sibling.Guardian.Email,
+					"phone":          sibling.Guardian.Phone,
+					"children_count": h.countChildrenByEmail(ctx.SchoolID, email),
+					"existing_role":  "parent",
+					"role_mismatch":  false,
+				},
+			}, nil
+		}
+
+		role := matchedUser.Role
+		mismatch := role != "parent"
+
+		fullName := strings.TrimSpace(matchedUser.Profile.FirstName + " " + matchedUser.Profile.LastName)
+		if fullName == "" {
+			fullName = email
+		}
+
+		// Count children only for an actual parent user. For a role
+		// mismatch the count is meaningless and we hide it.
+		children := 0
+		if !mismatch {
+			children = h.countChildrenByParentUser(ctx.SchoolID, matchedUser.ID)
+		}
+
+		return map[string]any{
+			"exists": true,
+			"parent": map[string]any{
+				"_id":            matchedUser.ID,
+				"name":           fullName,
+				"email":          matchedUser.Email,
+				"phone":          matchedUser.Profile.Phone,
+				"children_count": children,
+				"existing_role":  role,
+				"role_mismatch":  mismatch,
+			},
+		}, nil
+	}))
+}
+
+// countChildrenByParentUser counts active student↔parent links for a
+// given parent user inside the same school. Caller must already hold
+// the read lock.
+func (h *Handler) countChildrenByParentUser(schoolID, parentUserID string) int {
+	count := 0
+	for _, link := range h.Store.StudentParents {
+		if link.SchoolID == schoolID && link.ParentUserID == parentUserID {
+			count++
+		}
+	}
+	return count
+}
+
+// countChildrenByEmail handles the legacy data path where a parent
+// account hasn't been provisioned yet but multiple student rows share
+// the same guardian email. Caller must already hold the read lock.
+func (h *Handler) countChildrenByEmail(schoolID, email string) int {
+	count := 0
+	for _, s := range h.Store.Students {
+		if s.SchoolID == schoolID && strings.EqualFold(s.Guardian.Email, email) {
+			count++
+		}
+	}
+	return count
 }

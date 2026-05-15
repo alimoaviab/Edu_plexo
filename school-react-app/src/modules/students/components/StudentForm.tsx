@@ -104,7 +104,9 @@ export function StudentForm(props: StudentFormProps | LegacyStudentFormProps) {
     // overwrites the current one when filled.
     if (mode === "create") {
       if (!form.email?.trim()) newErrors.email = "Parent email is required";
-      if (!form.password || form.password.length < 8) {
+      // Password is not required when we're linking the new student to
+      // an existing parent account — the parent already has credentials.
+      if (!linkMode && (!form.password || form.password.length < 8)) {
         newErrors.password = "Password must be at least 8 characters";
       }
     } else {
@@ -159,15 +161,28 @@ export function StudentForm(props: StudentFormProps | LegacyStudentFormProps) {
       // errors for any school with an existing blank-admission row).
       const trimmedAdm = (form.admission_no || "").trim();
       const trimmedPwd = (form.password || "").trim();
-      const payload: StudentFormInput = {
+      // When the admin chose to link to an existing parent we send the
+      // parent's user id so the backend skips both the duplicate-email
+      // check and the parent provisioning step. Password is also
+      // omitted because the existing parent already has one.
+      const linkParentUserID =
+        linkMode && existingParent && (existingParent as any)._id
+          ? String((existingParent as any)._id)
+          : "";
+      const payload: StudentFormInput & {
+        link_parent_user_id?: string;
+      } = {
         ...form,
         admission_no: trimmedAdm.length > 0 ? trimmedAdm : undefined,
         // In edit mode, omit password if blank so the backend doesn't
-        // overwrite the existing parent's password hash.
+        // overwrite the existing parent's password hash. In create
+        // mode with linkMode on, also omit so we don't reset the
+        // linked parent's password.
         password:
-          mode === "edit" && trimmedPwd.length === 0
+          (mode === "edit" && trimmedPwd.length === 0) || linkParentUserID
             ? (undefined as unknown as string)
             : form.password,
+        link_parent_user_id: linkParentUserID || undefined,
       };
       const result = (await onSubmit(payload)) as { ok?: boolean } | undefined;
       if (mode === "create" && result?.ok !== false) {
@@ -337,17 +352,26 @@ export function StudentForm(props: StudentFormProps | LegacyStudentFormProps) {
           />
 
           <Input
-            label={mode === "edit" ? "New Password (leave blank to keep current)" : "Temporary Password"}
+            label={
+              mode === "edit"
+                ? "New Password (leave blank to keep current)"
+                : linkMode
+                  ? "Password (managed by linked parent)"
+                  : "Temporary Password"
+            }
             placeholder={
               mode === "edit"
                 ? "Leave blank to keep current password"
-                : "Minimum 8 characters"
+                : linkMode
+                  ? "Linked — password not needed"
+                  : "Minimum 8 characters"
             }
             type="password"
-            value={form.password || ""}
+            value={linkMode ? "" : form.password || ""}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             error={errors.password}
-            required={mode === "create"}
+            required={mode === "create" && !linkMode}
+            disabled={linkMode}
             className="h-11 rounded-xl bg-white border-indigo-100 focus:border-indigo-400"
           />
 
