@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
 import { DataTable, DataTableColumn, RowAction, Badge, DataState, Skeleton, TableSkeleton, StatCardGrid } from "@/components/ui";
 import { useTeachers } from "../hooks/useTeachers";
 import { useClasses } from "../../classes/hooks/useClasses";
@@ -12,7 +11,6 @@ import { useQueryParams } from "@/hooks/useQueryParams";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 export function TeacherListPage() {
-  const pathname = useLocation().pathname;
   const { state, updateTeacher, deleteTeacher } = useTeachers();
   const { state: classesState } = useClasses();
   const { data: subjectsData } = useSubjects();
@@ -129,17 +127,9 @@ export function TeacherListPage() {
 
   const rowActions: RowAction<TeacherRow>[] = useMemo(() => [
     {
-      icon: "visibility",
-      label: "View Hub",
-      variant: "primary",
-      onClick: (row) => {
-        alert(`Teacher Hub: ${row.first_name} ${row.last_name}`);
-      },
-    },
-    {
       icon: "edit",
       label: "Edit Record",
-      variant: "ghost",
+      variant: "primary",
       onClick: (row) => setEditingTeacher(row),
     },
     {
@@ -269,68 +259,107 @@ export function TeacherListPage() {
           />
         ) : (
           viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {filteredRows.map((row) => (
-                <div key={row._id} className="premium-card group relative flex flex-col p-0 overflow-hidden transition-all duration-500 bg-white border-slate-200/60 hover:shadow-2xl hover:shadow-slate-200/80 hover:-translate-y-1">
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="h-10 w-10 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xs font-bold normal-case shadow-lg group-hover:scale-110 transition-transform">
-                        {(row.first_name || "?").substring(0, 1)}{(row.last_name || "").substring(0, 1)}
+                <div
+                  key={row._id}
+                  className="group relative bg-white rounded-xl border border-slate-200 ring-1 ring-slate-900/5 shadow-[0_2px_8px_rgb(0,0,0,0.02)] hover:shadow-[0_4px_14px_rgb(0,0,0,0.05)] transition-shadow overflow-hidden"
+                >
+                  {/* Status accent bar */}
+                  <div
+                    className={`absolute left-0 top-0 bottom-0 w-0.5 ${
+                      row.status === "active"
+                        ? "bg-emerald-500"
+                        : row.status === "on_leave"
+                          ? "bg-amber-500"
+                          : "bg-slate-300"
+                    }`}
+                  />
+
+                  <div className="px-4 py-3.5">
+                    {/* Top row: avatar + name + status + actions */}
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="h-10 w-10 shrink-0 rounded-lg bg-slate-900 text-white flex items-center justify-center text-[11px] font-bold">
+                          {(row.first_name || "?").substring(0, 1)}
+                          {(row.last_name || "").substring(0, 1)}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-[13px] font-bold text-slate-900 tracking-tight truncate">
+                            {row.first_name} {row.last_name}
+                          </h3>
+                          <p className="text-[11px] font-bold text-blue-600 truncate">
+                            {row.employee_no}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1 bg-slate-50/50 rounded-lg p-1 border border-slate-100">
-                        <button 
+
+                      {/* Hover actions */}
+                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <button
+                          type="button"
                           onClick={() => setEditingTeacher(row)}
-                          className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all"
+                          className="h-6 w-6 inline-flex items-center justify-center rounded-md bg-white border border-slate-200 text-slate-500 hover:text-blue-600 shadow-sm"
+                          title="Edit teacher"
                         >
-                          <span className="material-symbols-outlined text-base">edit</span>
+                          <span className="material-symbols-outlined text-[13px]">edit</span>
                         </button>
-                        <button 
+                        <button
+                          type="button"
                           onClick={() => setDeletingTeacher(row)}
-                          className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-white hover:text-red-500 hover:shadow-sm transition-all"
+                          className="h-6 w-6 inline-flex items-center justify-center rounded-md bg-white border border-slate-200 text-slate-500 hover:text-rose-600 shadow-sm"
+                          title="Delete teacher"
                         >
-                          <span className="material-symbols-outlined text-base">delete</span>
+                          <span className="material-symbols-outlined text-[13px]">delete</span>
                         </button>
                       </div>
                     </div>
 
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <h3 className="text-base font-bold text-slate-900 tracking-tight group-hover:text-blue-600 transition-colors truncate">{row.first_name} {row.last_name}</h3>
-                        <Badge variant={row.status === "active" ? "success" : row.status === "on_leave" ? "warning" : "gray"} className="text-[7px] font-bold normal-case  px-1 py-0">
-                          {row.status}
-                        </Badge>
-                      </div>
-                      <p className="text-[9px] font-bold text-blue-600 normal-case ">{row.employee_no}</p>
+                    {/* Status pill */}
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <span
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9px] font-bold uppercase tracking-wider ${
+                          row.status === "active"
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                            : row.status === "on_leave"
+                              ? "bg-amber-50 text-amber-700 border-amber-200"
+                              : "bg-slate-50 text-slate-600 border-slate-200"
+                        }`}
+                      >
+                        {(row.status || "unknown").replace("_", " ")}
+                      </span>
+                      {row.qualification && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded-md truncate max-w-[140px]">
+                          <span className="material-symbols-outlined text-[11px]">school</span>
+                          {row.qualification}
+                        </span>
+                      )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 mb-4">
-                      <div className="bg-slate-50/50 rounded-lg p-2 border border-slate-100/50">
-                        <p className="text-[7px] font-bold text-slate-400 normal-case  mb-0.5">Qualification</p>
-                        <p className="text-[9px] font-bold text-slate-700 truncate">{row.qualification || "B.Ed"}</p>
+                    {/* Subjects */}
+                    {(row.subjects || []).length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {(row.subjects || []).slice(0, 3).map((s) => (
+                          <span
+                            key={s}
+                            className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md truncate max-w-[100px]"
+                          >
+                            {s}
+                          </span>
+                        ))}
+                        {(row.subjects || []).length > 3 && (
+                          <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded-md">
+                            +{(row.subjects || []).length - 3}
+                          </span>
+                        )}
                       </div>
-                      <div className="bg-slate-50/50 rounded-lg p-2 border border-slate-100/50">
-                        <p className="text-[7px] font-bold text-slate-400 normal-case  mb-0.5">Specialization</p>
-                        <p className="text-[9px] font-bold text-slate-700 truncate">{(row.subjects || [])[0] || "—"}</p>
-                      </div>
-                    </div>
+                    )}
 
-                    <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                       <div className="flex items-center gap-2 text-slate-400">
-                          <span className="material-symbols-outlined text-sm">mail</span>
-                          <span className="text-[10px] font-bold normal-case  truncate max-w-[120px]">{row.email}</span>
-                       </div>
+                    {/* Bottom: email */}
+                    <div className="flex items-center gap-1.5 pt-2.5 border-t border-slate-100 text-[11px] font-medium text-slate-500 truncate">
+                      <span className="material-symbols-outlined text-[13px] shrink-0">mail</span>
+                      <span className="truncate">{row.email || "—"}</span>
                     </div>
-                  </div>
-                  
-                  <div className="mt-auto px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between group-hover:bg-white transition-all">
-                     <button className="text-[9px] font-bold text-slate-400 normal-case  hover:text-blue-600 flex items-center gap-1 transition-colors">
-                        <span className="material-symbols-outlined text-xs">calendar_month</span>
-                        Schedule
-                     </button>
-                     <Link to={`/admin/teachers/${row._id}`} className="group/btn h-7 px-3 rounded-lg bg-blue-600 text-[9px] font-bold text-white normal-case  hover:bg-blue-700 transition-all flex items-center gap-2 shadow-sm active:scale-95">
-                        Hub
-                        <span className="material-symbols-outlined text-xs transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
-                     </Link>
                   </div>
                 </div>
               ))}
