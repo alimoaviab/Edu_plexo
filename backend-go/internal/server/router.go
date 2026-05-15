@@ -246,7 +246,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Put("/announcements/{id}", anH.Update)
 			r.Delete("/announcements/{id}", anH.Delete)
 
-			lcH := liveclass.New(s)
+			lcH := liveclass.New(s, saveFn)
 			r.Get("/live/classes", lcH.List)
 			r.Post("/live/classes/schedule", lcH.Schedule)
 			r.Get("/live/classes/{id}", lcH.Get)

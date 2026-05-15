@@ -539,7 +539,7 @@ func upsertLiveClass(ctx context.Context, tx pgx.Tx, v *store.LiveClass) error {
 			updated_at=EXCLUDED.updated_at
 	`, v.ID, v.SchoolID, nullableString(v.AcademicYearID), v.ClassID, v.Subject, v.Title,
 		v.StartsAt, v.EndsAt, nullableString(v.HostTeacherID), v.JoinURL,
-		defaultStr(v.Provider, "manual"), v.Status, v.CreatedAt, v.UpdatedAt)
+		defaultStr(v.Provider, "jitsi"), v.Status, v.CreatedAt, v.UpdatedAt)
 	return err
 }
 

@@ -204,6 +204,9 @@ type SchoolSettings struct {
 }
 
 // LiveClass mirrors old-app/shared/models/live/live-class.model.ts.
+//
+// Live classes use public Jitsi Meet rooms. The backend generates a unique
+// room URL per session. No external API keys or accounts required.
 type LiveClass struct {
 	ID             string    `json:"_id"`
 	SchoolID       string    `json:"school_id"`
@@ -211,12 +214,13 @@ type LiveClass struct {
 	ClassID        string    `json:"class_id"`
 	Subject        string    `json:"subject,omitempty"`
 	Title          string    `json:"title"`
+	Description    string    `json:"description,omitempty"`
 	StartsAt       time.Time `json:"starts_at"`
 	EndsAt         time.Time `json:"ends_at"`
 	HostTeacherID  string    `json:"host_teacher_id,omitempty"`
 	JoinURL        string    `json:"join_url,omitempty"`
-	Provider       string    `json:"provider,omitempty"` // google_meet | jitsi | zoom
-	Status         string    `json:"status"`             // scheduled | live | ended
+	Provider       string    `json:"provider,omitempty"` // jitsi
+	Status         string    `json:"status"`             // scheduled | live | ended | cancelled
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 }
