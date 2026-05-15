@@ -3,12 +3,13 @@ import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useEvents } from "../hooks/useEvents";
 import { EventRecordRow } from "../types/events.types";
 import { DataTable, DataTableColumn, RowAction, Badge, DataState, TableSkeleton, StatCardGrid } from "@/components/ui";
+import type { EventListFilters } from "../services/events.service";
 
-export default function EventListPage() {
+export default function EventListPage({ filters }: { filters?: EventListFilters } = {}) {
   const pathname = useLocation().pathname;
   const isParent = pathname.includes("/parent");
   const navigate = useNavigate();
-  const { state, deleteEvent } = useEvents();
+  const { state, deleteEvent } = useEvents(filters);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "scheduled" | "cancelled" | "completed">("all");
