@@ -72,6 +72,7 @@ export function TeacherListPage() {
 
   // The backend already filtered + paginated — render rows as-is.
   const rows = state.data ?? [];
+  const filteredRows = rows; // Fallback to avoid breaking existing usages
 
   const stats = useMemo(() => {
     return {
@@ -295,10 +296,14 @@ export function TeacherListPage() {
           />
         ) : (
           viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {filteredRows.map((row) => (
-                <div
-                  key={row._id}
+            <EntityGrid>
+              {rows.map((row) => {
+                const initials = `${(row.first_name || "?").substring(0, 1)}${(row.last_name || "").substring(0, 1)}`;
+                const accent = row.status === "active" ? "blue" : row.status === "on_leave" ? "amber" : "slate";
+                
+                return (
+                  <EntityCard
+                    key={row._id}
                   icon={
                     <span className="text-[11px] font-bold">{initials}</span>
                   }
@@ -357,9 +362,9 @@ export function TeacherListPage() {
                     <span className="truncate">{row.email || "—"}</span>
                   </div>
                 </EntityCard>
-              );
-            })}
-          </EntityGrid>
+                );
+              })}
+            </EntityGrid>
         ) : (
           <div className="premium-card overflow-hidden border-slate-200/60 shadow-sm bg-white rounded-2xl">
             <DataTable
@@ -393,22 +398,6 @@ export function TeacherListPage() {
         </div>
       </div>
 
-      <TeacherEditSidebar
-        teacher={editingTeacher}
-        isOpen={editingTeacher !== null}
-        classOptions={classOptions}
-        subjectOptions={subjectOptions}
-        onClose={() => setEditingTeacher(null)}
-        onSave={async (id, data) => {
-          setIsSaving(true);
-          try {
-            await updateTeacher(id, data as Partial<TeacherFormInput>);
-          } finally {
-            setIsSaving(false);
-          }
-        }}
-        isSaving={isSaving}
-      />
       <ConfirmModal
         isOpen={!!deletingTeacher}
         onCancel={() => setDeletingTeacher(null)}
