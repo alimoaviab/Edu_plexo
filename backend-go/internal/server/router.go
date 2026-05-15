@@ -198,7 +198,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Get("/tests/{id}/results", rsH.ListForExam)
 			r.Post("/tests/{id}/results", rsH.Save)
 
-			hwH := homework.New(s)
+			hwH := homework.New(s, saveFn)
 			r.Get("/homework", hwH.List)
 			r.Post("/homework", hwH.Create)
 			r.Get("/homework/{id}", hwH.Get)

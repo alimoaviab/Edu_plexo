@@ -42,14 +42,19 @@ func NewPG(pool *pgxpool.Pool, c *cache.Client, s *store.MemStore) *PGHandler {
 // ═══════════════════════════════════════════════════════════════════════════
 
 // markBulkInput is the request body for batch attendance marking.
+// Accepts `records` as either:
+//   - An array of objects: [{"student_id":"...","status":"present"}]
+//   - A map of student_id → status: {"stu_001":"present","stu_002":"absent"}
+// The frontend sends the map format; the array format is kept for
+// backwards compatibility with any external callers.
 type markBulkInput struct {
-	ClassID        string            `json:"class_id"`
-	Date           string            `json:"date"`
-	Period         int               `json:"period,omitempty"`
-	AcademicYearID string            `json:"academic_year_id,omitempty"`
-	Records        []markRecord      `json:"records"`
-	// Legacy format support: map of student_id → status
+	ClassID        string          `json:"class_id"`
+	Date           string          `json:"date"`
+	Period         int             `json:"period,omitempty"`
+	AcademicYearID string          `json:"academic_year_id,omitempty"`
+	Records        json.RawMessage `json:"records"`
 	RecordsMap     map[string]string `json:"records_map,omitempty"`
+	Remarks        map[string]string `json:"remarks,omitempty"`
 }
 
 type markRecord struct {
@@ -101,11 +106,39 @@ func (h *PGHandler) MarkBulkPG(w http.ResponseWriter, r *http.Request) {
 			yearID = tenant.ResolveAcademicYearID(h.Store, reqCtx, "")
 		}
 
-		// Normalize records: support both array and map formats
-		records := body.Records
+		// Normalize records: support both array and map formats.
+		// The frontend sends records as a map: {"student_id": "status"}
+		// External callers may send an array: [{"student_id":"...","status":"..."}]
+		records := make([]markRecord, 0)
+
+		if len(body.Records) > 0 {
+			// Try array first.
+			var arr []markRecord
+			if err := json.Unmarshal(body.Records, &arr); err == nil && len(arr) > 0 {
+				records = arr
+			} else {
+				// Try map format: {"student_id": "status"}
+				var m map[string]string
+				if err := json.Unmarshal(body.Records, &m); err == nil && len(m) > 0 {
+					for studentID, status := range m {
+						note := ""
+						if body.Remarks != nil {
+							note = body.Remarks[studentID]
+						}
+						records = append(records, markRecord{StudentID: studentID, Status: status, Note: note})
+					}
+				}
+			}
+		}
+
+		// Fallback: legacy records_map field.
 		if len(records) == 0 && len(body.RecordsMap) > 0 {
 			for studentID, status := range body.RecordsMap {
-				records = append(records, markRecord{StudentID: studentID, Status: status})
+				note := ""
+				if body.Remarks != nil {
+					note = body.Remarks[studentID]
+				}
+				records = append(records, markRecord{StudentID: studentID, Status: status, Note: note})
 			}
 		}
 

@@ -16,9 +16,17 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct{ Store *store.MemStore }
+type Handler struct {
+	Store   *store.MemStore
+	Persist func(table string, doc any)
+}
 
-func New(s *store.MemStore) *Handler { return &Handler{Store: s} }
+func New(s *store.MemStore, save func(string, any)) *Handler {
+	if save == nil {
+		save = func(string, any) {}
+	}
+	return &Handler{Store: s, Persist: save}
+}
 
 func (h *Handler) hydrate(rows []*store.Homework) []map[string]any {
 	classByID := map[string]*store.Class{}
@@ -306,6 +314,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				}
 				h.Store.Subjects = append(h.Store.Subjects, newSub)
 				subject = newSub
+				// Persist the new subject to PG BEFORE the homework row
+				// references it — otherwise the FK constraint on
+				// homework.subject_id → subjects.id fails.
+				h.Persist("subjects", newSub)
 			}
 		}
 
@@ -354,6 +366,8 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			newRow.Subject = subject.Name
 		}
 		h.Store.Homework = append(h.Store.Homework, newRow)
+
+		h.Persist("homework", newRow)
 
 		audit.Write(h.Store, ctx, audit.Input{
 			Action: "create", EntityType: "homework", EntityID: newRow.ID, After: newRow,
