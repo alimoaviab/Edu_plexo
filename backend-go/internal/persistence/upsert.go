@@ -373,7 +373,6 @@ func upsertResult(ctx context.Context, tx pgx.Tx, v *store.Result) error {
 }
 
 func upsertHomework(ctx context.Context, tx pgx.Tx, v *store.Homework) error {
-	attachments, _ := jsonOrArray(v.Attachments)
 	_, err := tx.Exec(ctx, `
 		INSERT INTO homework (id, school_id, academic_year_id, class_id, section, teacher_id,
 			subject_id, subject, title, instructions, due_at, status, attachments,
@@ -388,7 +387,7 @@ func upsertHomework(ctx context.Context, tx pgx.Tx, v *store.Homework) error {
 			created_by=EXCLUDED.created_by, created_by_role=EXCLUDED.created_by_role,
 			updated_at=EXCLUDED.updated_at
 	`, v.ID, v.SchoolID, nullableString(v.AcademicYearID), v.ClassID, nullableString(v.Section), v.TeacherID,
-		nullableString(v.SubjectID), v.Subject, v.Title, v.Instructions, v.DueAt, v.Status, attachments,
+		nullableString(v.SubjectID), v.Subject, v.Title, v.Instructions, v.DueAt, v.Status, v.Attachments,
 		v.Visibility, v.CreatedBy, v.CreatedByRole, v.CreatedAt, v.UpdatedAt)
 	if err != nil {
 		return err
