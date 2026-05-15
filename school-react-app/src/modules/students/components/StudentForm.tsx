@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Button, Input, Select } from "@/components/ui";
+import { serviceRequest } from "@/services/service-client";
 import { StudentFormInput, StudentRow } from "../types/student.types";
 
 const initialForm: StudentFormInput = {
@@ -126,24 +127,28 @@ export function StudentForm(props: StudentFormProps | LegacyStudentFormProps) {
 
   async function checkParentEmail(email: string) {
     if (!email || !email.includes('@')) return;
-    
+
     setCheckingEmail(true);
     try {
-      const response = await fetch('/api/parents/check-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email })
+      // Route through serviceRequest so the bearer token + cookie are
+      // attached. Plain `fetch` here lost the auth header and the
+      // backend then rejected the call as UNAUTHENTICATED, which is
+      // why the inline "link to existing parent" card never appeared.
+      const result = await serviceRequest<{
+        exists: boolean;
+        parent?: ExistingParent & { children_count?: number; existing_role?: string; role_mismatch?: boolean };
+      }>("/api/parents/check-email", {
+        method: "POST",
+        body: JSON.stringify({ email }),
       });
-      
-      const result = await response.json();
-      if (result.ok && result.data?.exists) {
+      if (result.ok && result.data?.exists && result.data.parent) {
         setExistingParent(result.data.parent);
       } else {
         setExistingParent(null);
       }
     } catch (error) {
-      console.error('Failed to check parent email:', error);
+      // eslint-disable-next-line no-console
+      console.error("Failed to check parent email:", error);
       setExistingParent(null);
     } finally {
       setCheckingEmail(false);

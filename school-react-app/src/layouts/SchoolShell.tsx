@@ -27,7 +27,6 @@ import {
 } from "@/services/academic-year-context";
 import { useAuth, type Role } from "@/hooks/useAuth";
 import { ChildSwitcher } from "@/components/parent/ChildSwitcher";
-import { SelectedChildProvider } from "@/contexts/SelectedChildContext";
 
 type NavItem = {
   label: string;
@@ -610,10 +609,10 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
     </div>
   );
 
-  // Wrap with SelectedChildProvider for parent role
-  if (user.role === "parent") {
-    return <SelectedChildProvider>{content}</SelectedChildProvider>;
-  }
+  // SelectedChildProvider lives at the router layer (ParentLayout) so
+  // every parent page is already inside the provider before SchoolShell
+  // renders. Wrapping again here would create a stale inner context
+  // that masks the outer one.
 
   // Suppress unused-import warning for Breadcrumb until module pages opt in.
   void Breadcrumb;

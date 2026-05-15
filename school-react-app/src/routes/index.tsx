@@ -12,6 +12,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { App } from "@/App";
 import { PageLoader } from "@/components/PageLoader";
 import { ProtectedRoute } from "./ProtectedRoute";
+import { ParentLayout } from "./ParentLayout";
 import {
   adminRoutes,
   teacherRoutes,
@@ -88,8 +89,17 @@ export const router = createBrowserRouter([
       {
         element: <ProtectedRoute allowedRoles={["parent"]} />,
         children: [
-          { path: "/parent", element: <Navigate to="/parent/dashboard" replace /> },
-          ...parentRoutes,
+          {
+            // Hoists SelectedChildProvider above every parent page so
+            // useSelectedChild() works at the top of each component
+            // (it used to live inside SchoolShell, which mounted too
+            // late).
+            element: <ParentLayout />,
+            children: [
+              { path: "/parent", element: <Navigate to="/parent/dashboard" replace /> },
+              ...parentRoutes,
+            ],
+          },
         ],
       },
 
