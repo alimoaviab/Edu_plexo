@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useQueryParams } from "@/hooks/useQueryParams";
-import { DataTable, DataTableColumn, RowAction, Badge, DataState, ListToolbar, Skeleton, TableSkeleton, StatCardGrid } from "@/components/ui";
+import { DataTable, DataTableColumn, RowAction, Badge, DataState, ListToolbar, Skeleton, TableSkeleton, StatCardGrid, EntityCard, EntityGrid } from "@/components/ui";
 import { useStudents } from "../hooks/useStudents";
 import { useClasses } from "../../classes/hooks/useClasses";
 import { useSubjects } from "../../subjects/hooks/useSubjects";
@@ -271,93 +271,90 @@ export function StudentListPage() {
           />
         ) : (
           viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-              {filteredRows.map((row: StudentRow) => (
-                <div key={row._id} className="premium-card group relative flex flex-col p-4 transition-all duration-300 bg-white border-slate-200/60 hover:shadow-xl hover:shadow-slate-200/30 hover:-translate-y-0.5">
-                  {/* Top Row: Name & Actions */}
-                  <div className="flex items-start justify-between gap-4 mb-3.5">
-                    <div className="space-y-0.5 flex-1 min-w-0">
-                      <h3 className="text-base font-bold text-slate-900 tracking-tight leading-none truncate">{row.first_name} {row.last_name}</h3>
-                      <p className="text-[9px] font-bold text-slate-400 normal-case  mt-1">ID: {row.admission_no}</p>
-                    </div>
-                    
-                    <div className="flex items-center gap-0.5">
-                      <button 
-                        onClick={() => goToEdit(row._id)}
-                        className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-all"
-                        title="Edit student"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">edit_note</span>
-                      </button>
-                      <button 
-                        onClick={async () => {
+            <EntityGrid>
+              {filteredRows.map((row: StudentRow) => {
+                const accent = row.status === "active" ? "blue" : "slate";
+                return (
+                  <EntityCard
+                    key={row._id}
+                    icon="person"
+                    accent={accent}
+                    title={`${row.first_name} ${row.last_name}`}
+                    subtitle={`ID: ${row.admission_no}`}
+                    status={{
+                      label: row.status === "active" ? "Active" : "Inactive",
+                      accent: row.status === "active" ? "blue" : "slate",
+                    }}
+                    hoverActions={[
+                      {
+                        label: "View details",
+                        icon: "visibility",
+                        onClick: () => {
+                          alert(`Student: ${row.first_name} ${row.last_name}\nID: ${row.admission_no}\nGuardian: ${row.guardian.name} (${row.guardian.phone})`);
+                        },
+                        accent: "blue",
+                      },
+                      {
+                        label: "Edit student",
+                        icon: "edit",
+                        onClick: () => goToEdit(row._id),
+                        accent: "blue",
+                      },
+                      {
+                        label: "Delete student",
+                        icon: "delete",
+                        onClick: async () => {
                           if (window.confirm(`Are you sure you want to delete ${row.first_name}?`)) {
                             await deleteStudent(row._id);
                           }
-                        }}
-                        className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"
-                        title="Delete"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">delete</span>
-                      </button>
-                    </div>
-                  </div>
+                        },
+                        accent: "rose",
+                      },
+                    ]}
+                    metrics={[
+                      { label: "Class", value: row.class_id },
+                      { label: "Section", value: row.section || "General" },
+                    ]}
+                  >
+                    <div className="space-y-2 mt-2">
+                      <div className="px-0.5">
+                        <p className="text-[8px] font-bold text-slate-400 normal-case mb-1">Contact</p>
+                        <p className="text-[10px] font-medium text-slate-500 line-clamp-1 leading-relaxed">
+                          {row.guardian?.name || "No guardian"} • {row.guardian?.phone || "No phone"}
+                        </p>
+                      </div>
 
-                  {/* Middle Row: Academic Placement (Pill Style) */}
-                  <div className="mb-3.5 p-3 rounded-xl bg-slate-50/50 border border-slate-100/50 flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-[8px] font-bold text-slate-400 normal-case  mb-1.5">Class info</p>
-                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-700">
-                        <span className="bg-white px-1.5 py-0.5 rounded-md border border-slate-100">{row.class_id}</span>
-                        <span className="text-slate-300">→</span>
-                        <span className="bg-white px-1.5 py-0.5 rounded-md border border-slate-100">Section {row.section}</span>
+                      <div className="flex items-center justify-between bg-slate-50/30 rounded-lg p-1.5 border border-slate-100/30">
+                        <div className="flex items-center gap-1.5">
+                          {row.status === 'active' ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold normal-case text-blue-600 bg-blue-50">
+                              <span className="h-1 w-1 rounded-full bg-blue-500 animate-pulse" />
+                              Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold normal-case text-slate-400 bg-slate-100">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
+                        <label className="relative inline-flex cursor-pointer items-center shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={row.status === 'active'}
+                            onChange={async () => {
+                              const nextStatus = row.status === 'active' ? 'inactive' : 'active';
+                              await updateStudent(row._id, { status: nextStatus });
+                            }}
+                            className="peer sr-only"
+                          />
+                          <div className="peer h-[18px] w-[34px] rounded-full bg-slate-200 after:absolute after:left-[2px] after:top-[2px] after:h-[14px] after:w-[14px] after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-[16px] peer-focus:outline-none" />
+                        </label>
                       </div>
                     </div>
-                    <div className="text-right pl-3 border-l border-slate-200/50 ml-3">
-                       <p className="text-xs font-bold text-slate-900 leading-none">{row.status === 'active' ? 'EN' : 'WD'}</p>
-                       <p className="text-[7px] font-bold text-slate-400 normal-case  mt-0.5">Status</p>
-                    </div>
-                  </div>
-
-                  {/* Bottom Row: Contact & Status Toggle */}
-                  <div className="mt-auto pt-2 flex flex-col gap-3">
-                    <div className="px-0.5">
-                       <p className="text-[8px] font-bold text-slate-400 normal-case  mb-1">Contact</p>
-                       <p className="text-[10px] font-medium text-slate-500 line-clamp-1 leading-relaxed">
-                         {row.guardian?.name || "No guardian"} • {row.guardian?.phone || "No phone"}
-                       </p>
-                    </div>
-
-                    <div className="flex items-center justify-between bg-slate-50/30 rounded-lg p-1.5 border border-slate-100/30">
-                      <div className="flex items-center gap-1.5">
-                        {row.status === 'active' ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-bold normal-case  text-blue-600 bg-blue-50">
-                            <span className="h-1 w-1 rounded-full bg-blue-500 animate-pulse" />
-                            Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-bold normal-case  text-slate-400 bg-slate-100">
-                            Inactive
-                          </span>
-                        )}
-                      </div>
-                      <label className="relative inline-flex cursor-pointer items-center shrink-0">
-                        <input
-                          type="checkbox"
-                          checked={row.status === 'active'}
-                          onChange={async () => {
-                            const nextStatus = row.status === 'active' ? 'inactive' : 'active';
-                            await updateStudent(row._id, { status: nextStatus });
-                          }}
-                          className="peer sr-only"
-                        />
-                        <div className="peer h-[18px] w-[34px] rounded-full bg-slate-200 after:absolute after:left-[2px] after:top-[2px] after:h-[14px] after:w-[14px] after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-[16px] peer-focus:outline-none" />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  </EntityCard>
+                );
+              })}
+            </EntityGrid>
           ) : (
             <div className="premium-card overflow-hidden border-slate-200/60 shadow-sm bg-white rounded-2xl">
               <DataTable

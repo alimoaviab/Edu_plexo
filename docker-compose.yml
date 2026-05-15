@@ -17,7 +17,11 @@
 #   * Postgres on  127.0.0.1:5432  (user/pass: school_user/school_password)
 #   * Redis on     127.0.0.1:6379
 #
-# Bring everything down with `docker compose down -v` to also drop volumes.
+# Stop services:  docker compose down  (preserves all data)
+# Full rebuild:   docker compose up --build -d  (preserves all data)
+#
+# ⚠️  DANGER: docker compose down -v  PERMANENTLY DELETES all database data!
+#     Always run ./scripts/backup_db.sh before using -v flag.
 
 services:
   postgres:
@@ -46,6 +50,7 @@ services:
       -c max_wal_size=2GB
       -c min_wal_size=1GB
       -c log_min_duration_statement=200
+      -c "app.current_school_id="
     deploy:
       resources:
         limits:

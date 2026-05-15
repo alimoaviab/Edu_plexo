@@ -1,41 +1,22 @@
-/**
- * Event creation as a dedicated full page.
- *
- * Visual contract follows the Academic Year reference standard:
- *   max-w-7xl mx-auto py-4 px-4 sm:px-6
- *   lg:flex-row gap-8 items-start
- *   left form 68% / right guidance panel 32%
- *   rounded-[24px] cards with shadow-[0_8px_30px_rgb(0,0,0,0.04)]
- *   ring-1 ring-slate-900/5
- *   blue-600 accent icons in 9x9 rounded-lg containers
- *   text-[10px] font-bold normal-case for eyebrow labels
- *
- * Replaces the legacy modal flow on the events list page.
- */
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Button, Input, Select, EntityCreateLayout, GuidanceSection, GuidanceCallout, GuidanceChecklist } from "@/components/ui";
-import { useEvents } from "../hooks/useEvents";
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
+import { 
+  Button, 
+  Input, 
+  Select, 
+  EntityCreateLayout, 
+  GuidanceSection, 
+  GuidanceCallout, 
+  GuidanceChecklist,
+  Skeleton,
+  DataState
+} from "@/components/ui";
+import { useEvents, useEvent } from "../hooks/useEvents";
 import { EventFormInput } from "../types/events.types";
 import { useClasses } from "@/modules/classes/hooks/useClasses";
 import type { ClassRow } from "@/modules/classes/types/class.types";
 import { showToast } from "@/utils/toast";
-
-const initialForm: EventFormInput = {
-  title: "",
-  description: "",
-  event_type: "academic",
-  start_date: "",
-  end_date: "",
-  start_time: "",
-  end_time: "",
-  location: "",
-  visibility: "all",
-  target_class_ids: [],
-  organizer: "",
-  status: "scheduled",
-};
 
 const eventTypeOptions = [
   { value: "academic", label: "Academic" },
@@ -56,13 +37,15 @@ const statusOptions = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
-export function EventCreatePage() {
+export function EventEditPage() {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const pathname = useLocation().pathname;
   const isTeacher = pathname.includes("/teacher");
   const backPath = isTeacher ? "/teacher/events" : "/admin/events";
 
-  const { addEvent } = useEvents();
+  const { updateEvent } = useEvents();
+  const { state: eventState } = useEvent(id);
   const { state: classState } = useClasses({ page: 1, limit: 200 });
 
   const classRows: ClassRow[] = useMemo(() => {
@@ -72,11 +55,31 @@ export function EventCreatePage() {
     return Array.isArray(data.data) ? data.data : [];
   }, [classState.data]);
 
-  const [form, setForm] = useState<EventFormInput>(initialForm);
+  const [form, setForm] = useState<EventFormInput | null>(null);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    if (eventState.data) {
+      setForm({
+        title: eventState.data.title,
+        description: eventState.data.description || "",
+        event_type: eventState.data.event_type as any,
+        start_date: eventState.data.start_date,
+        end_date: eventState.data.end_date || "",
+        start_time: eventState.data.start_time || "",
+        end_time: eventState.data.end_time || "",
+        location: eventState.data.location || "",
+        visibility: eventState.data.visibility as any,
+        target_class_ids: eventState.data.target_class_ids || [],
+        organizer: eventState.data.organizer || "",
+        status: eventState.data.status as any,
+      });
+    }
+  }, [eventState.data]);
+
   function validate(): boolean {
+    if (!form) return false;
     const next: Record<string, string> = {};
     if (!form.title.trim()) next.title = "Event title is required";
     if (!form.start_date) next.start_date = "Start date is required";
@@ -93,56 +96,68 @@ export function EventCreatePage() {
     return Object.keys(next).length === 0;
   }
 
-  const isValid =
+  const isValid = form &&
     form.title.trim().length > 0 &&
     !!form.start_date &&
     (form.visibility === "all" || (form.target_class_ids?.length ?? 0) > 0);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!validate()) return;
+    if (!form || !id || !validate()) return;
     setSaving(true);
     try {
-      const result = await addEvent(form);
+      const result = await updateEvent(id, form);
       if (result?.success) {
         navigate(backPath);
-      } else {
-        showToast(
-          (result as any)?.message || (result as any)?.error?.message || "Failed to create event",
-          "error"
-        );
       }
     } finally {
       setSaving(false);
     }
   }
 
-  function toggleClassTarget(id: string) {
+  function toggleClassTarget(classId: string) {
+    if (!form) return;
     setForm((prev) => {
+      if (!prev) return null;
       const set = new Set(prev.target_class_ids ?? []);
-      if (set.has(id)) set.delete(id);
-      else set.add(id);
+      if (set.has(classId)) set.delete(classId);
+      else set.add(classId);
       return { ...prev, target_class_ids: Array.from(set) };
     });
   }
 
-  // Reset target classes if visibility flips back to "all".
   useEffect(() => {
-    if (form.visibility === "all" && (form.target_class_ids?.length ?? 0) > 0) {
-      setForm((prev) => ({ ...prev, target_class_ids: [] }));
+    if (form?.visibility === "all" && (form.target_class_ids?.length ?? 0) > 0) {
+      setForm((prev) => prev ? ({ ...prev, target_class_ids: [] }) : null);
     }
-  }, [form.visibility]);
+  }, [form?.visibility]);
 
-  const targetCount = form.target_class_ids?.length ?? 0;
+  const targetCount = form?.target_class_ids?.length ?? 0;
+
+  if (eventState.status === "loading" || !form) {
+    return (
+      <div className="max-w-7xl mx-auto py-8 px-4">
+        <Skeleton className="h-12 w-48 mb-8" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+           <Skeleton className="lg:col-span-2 h-[600px] rounded-[24px]" />
+           <Skeleton className="h-[400px] rounded-[20px]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (eventState.status === "error") {
+    return <DataState variant="error" title="Event not found" message={eventState.error} />;
+  }
 
   return (
     <EntityCreateLayout
       backTo={backPath}
       backLabel="Return to Events"
       eyebrow="Calendar Composer"
-      icon="event_note"
-      title="Schedule a Calendar Event"
-      subtitle="Place a milestone on the institutional calendar — academic, sports, holiday, or cultural."
+      icon="edit_square"
+      title="Edit Calendar Event"
+      subtitle="Update the details of this institutional milestone."
       asideTitle="Event Composer"
       aside={
         <>
@@ -198,8 +213,7 @@ export function EventCreatePage() {
         </>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-7" id="event-form-quick">
-        {/* Section 1: Identity */}
+      <form onSubmit={handleSubmit} className="space-y-7" id="event-form-edit">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
           <div className="lg:col-span-8">
             <Input
@@ -219,7 +233,7 @@ export function EventCreatePage() {
               label="Event Type"
               value={form.event_type}
               onChange={(e) =>
-                setForm({ ...form, event_type: e.target.value as EventFormInput["event_type"] })
+                setForm({ ...form, event_type: e.target.value as any })
               }
               options={eventTypeOptions}
               className="h-11 rounded-xl text-[13px] font-medium"
@@ -227,7 +241,6 @@ export function EventCreatePage() {
           </div>
         </div>
 
-        {/* Section 2: Timeline */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
             label="Start Date"
@@ -251,7 +264,6 @@ export function EventCreatePage() {
           />
         </div>
 
-        {/* Section 3: Time window */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
             label="Start Time"
@@ -272,7 +284,6 @@ export function EventCreatePage() {
           />
         </div>
 
-        {/* Section 4: Location & organizer */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Input
             label="Location"
@@ -292,13 +303,12 @@ export function EventCreatePage() {
           />
         </div>
 
-        {/* Section 5: Audience */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Select
             label="Visibility"
             value={form.visibility}
             onChange={(e) =>
-              setForm({ ...form, visibility: e.target.value as EventFormInput["visibility"] })
+              setForm({ ...form, visibility: e.target.value as any })
             }
             options={visibilityOptions}
             className="h-11 rounded-xl text-[13px] font-medium"
@@ -308,7 +318,7 @@ export function EventCreatePage() {
             label="Status"
             value={form.status}
             onChange={(e) =>
-              setForm({ ...form, status: e.target.value as EventFormInput["status"] })
+              setForm({ ...form, status: e.target.value as any })
             }
             options={statusOptions}
             className="h-11 rounded-xl text-[13px] font-medium"
@@ -357,7 +367,6 @@ export function EventCreatePage() {
           </div>
         )}
 
-        {/* Section 6: Description */}
         <div className="space-y-1.5">
           <label className="text-[11px] font-bold text-slate-500 normal-case px-1">
             Description (Optional)
@@ -375,7 +384,6 @@ export function EventCreatePage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="-mx-6 -mb-6 mt-12 flex items-center justify-between border-t border-slate-100 bg-slate-50/40 px-8 py-5">
           <Link
             to={backPath}
@@ -391,7 +399,7 @@ export function EventCreatePage() {
             {saving && (
               <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             )}
-            Publish Event
+            Update Event
           </Button>
         </div>
       </form>

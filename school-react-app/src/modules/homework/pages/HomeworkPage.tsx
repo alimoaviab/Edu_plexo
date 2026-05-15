@@ -151,6 +151,39 @@ export function HomeworkPage({ role, studentId }: HomeworkPageProps) {
 
   return (
     <div className="space-y-6 pb-12">
+      {/* ─── Summary Stats ────────────────────────────────────────────── */}
+      {!loading && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatCardCompact
+            label="Total Assignments"
+            value={stats.total}
+            icon="assignment"
+            accent="blue"
+          />
+          <StatCardCompact
+            label="Active / Pending"
+            value={stats.assigned}
+            icon="pending_actions"
+            accent="purple"
+            hint={stats.overdue > 0 ? `${stats.overdue} overdue` : "All on track"}
+          />
+          <StatCardCompact
+            label="Drafts"
+            value={stats.draft}
+            icon="edit_note"
+            accent="amber"
+            hint="Not yet published"
+          />
+          <StatCardCompact
+            label="Completed"
+            value={stats.closed}
+            icon="task_alt"
+            accent="emerald"
+            hint="Closed assignments"
+          />
+        </div>
+      )}
+
       {/* ─── Toolbar ──────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white rounded-xl border border-slate-200 ring-1 ring-slate-900/5 px-4 py-3 shadow-[0_4px_18px_rgb(0,0,0,0.03)]">
         <div className="flex items-center gap-3 min-w-0">
@@ -211,39 +244,6 @@ export function HomeworkPage({ role, studentId }: HomeworkPageProps) {
           )}
         </div>
       </div>
-
-      {/* ─── Summary Stats ────────────────────────────────────────────── */}
-      {!loading && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCardCompact
-            label="Total Assignments"
-            value={stats.total}
-            icon="assignment"
-            accent="blue"
-          />
-          <StatCardCompact
-            label="Active / Pending"
-            value={stats.assigned}
-            icon="pending_actions"
-            accent="purple"
-            hint={stats.overdue > 0 ? `${stats.overdue} overdue` : "All on track"}
-          />
-          <StatCardCompact
-            label="Drafts"
-            value={stats.draft}
-            icon="edit_note"
-            accent="amber"
-            hint="Not yet published"
-          />
-          <StatCardCompact
-            label="Completed"
-            value={stats.closed}
-            icon="task_alt"
-            accent="emerald"
-            hint="Closed assignments"
-          />
-        </div>
-      )}
 
       {/* ─── Loading ──────────────────────────────────────────────────── */}
       {loading && (

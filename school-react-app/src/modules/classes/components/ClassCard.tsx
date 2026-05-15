@@ -54,6 +54,14 @@ export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps
       }
       hoverActions={[
         {
+          label: "View details",
+          icon: "visibility",
+          onClick: () => {
+            alert(`Class: ${classItem.name}\nSection: ${classItem.section || "General"}\nIncharge: ${classItem.class_teacher?.name || "None"}\nStudents: ${classItem.student_count || 0}`);
+          },
+          accent: "blue",
+        },
+        {
           label: "Edit class",
           icon: "edit",
           onClick: () => onEdit(classItem),

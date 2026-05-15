@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -221,7 +222,29 @@ func (p *Persister) drainQueue() []write {
 	return out
 }
 
+// tableOrder defines the FK-safe insertion order. Parent tables first,
+// child tables after. This prevents FK violations during flush.
+var tableOrder = []string{
+	"schools", "users", "academic_years", "subjects",
+	"teachers", "classes",
+	"students", "parents", "student_parents",
+	"attendance", "exams", "results", "homework", "announcements",
+	"behaviors", "events", "leaves", "timetables", "live_classes",
+	"notifications", "fee_types", "class_fees", "fees",
+	"fee_adjustments", "fee_payments", "school_settings", "audit_logs",
+}
+
+func tableOrderIndex(table string) int {
+	for i, t := range tableOrder {
+		if t == table {
+			return i
+		}
+	}
+	return len(tableOrder) // Unknown tables go last
+}
+
 // flush commits the queued writes inside a single transaction.
+// Writes are sorted by FK dependency order to prevent constraint violations.
 func (p *Persister) flush(ctx context.Context) error {
 	if p == nil || p.pool == nil {
 		return nil
@@ -230,34 +253,92 @@ func (p *Persister) flush(ctx context.Context) error {
 	if len(writes) == 0 {
 		return nil
 	}
+
+	// Sort writes by FK dependency order (parents before children)
+	sort.SliceStable(writes, func(i, j int) bool {
+		oi := tableOrderIndex(writes[i].table)
+		oj := tableOrderIndex(writes[j].table)
+		if oi != oj {
+			return oi < oj
+		}
+		// Deletes after inserts within same table
+		return !writes[i].delete && writes[j].delete
+	})
+
+	// Process each write in its own savepoint so one failure doesn't kill the batch
 	tx, err := p.pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
+	var succeeded, failed int
 	for _, w := range writes {
-		// Try to set tenant context if we can determine SchoolID from the doc.
+		// Set tenant context (best-effort)
 		if sid := extractSchoolID(w.doc); sid != "" {
-			if _, err := tx.Exec(ctx, "SET LOCAL app.current_school_id = $1", sid); err != nil {
-				return fmt.Errorf("set tenant context: %w", err)
-			}
+			_, _ = tx.Exec(ctx, "SELECT set_config('app.current_school_id', $1, true)", sid)
 		}
 
+		// Use savepoint so individual failures don't abort the transaction
+		_, _ = tx.Exec(ctx, "SAVEPOINT sp")
+
+		var writeErr error
 		if w.delete {
-			if err := deleteRow(ctx, tx, w.table, w.id); err != nil {
-				return fmt.Errorf("delete %s/%s: %w", w.table, w.id, err)
-			}
-			continue
+			writeErr = deleteRow(ctx, tx, w.table, w.id)
+		} else {
+			writeErr = upsertRow(ctx, tx, w.table, w.doc)
 		}
-		if err := upsertRow(ctx, tx, w.table, w.doc); err != nil {
-			// Log the failing document for debugging
-			docJSON, _ := json.Marshal(w.doc)
-			log.Printf("[persistence] upsert %s failed: %v | data: %s", w.table, err, string(docJSON))
-			return fmt.Errorf("upsert %s: %w", w.table, err)
+
+		if writeErr != nil {
+			// Rollback to savepoint (keeps transaction alive for other writes)
+			_, _ = tx.Exec(ctx, "ROLLBACK TO SAVEPOINT sp")
+			failed++
+
+			// Only re-queue if it's a FK error (ordering issue, will succeed in snapshot).
+			// Don't re-queue unique constraint violations or other permanent errors.
+			if isFKError(writeErr) {
+				p.mu.Lock()
+				p.queue = append(p.queue, w)
+				p.mu.Unlock()
+			}
+
+			// Only log non-FK errors (FK errors are expected and handled by snapshot order)
+			if !isFKError(writeErr) {
+				docJSON, _ := json.Marshal(w.doc)
+				log.Printf("[persistence] upsert %s failed: %v | data: %.200s", w.table, writeErr, string(docJSON))
+			}
+		} else {
+			_, _ = tx.Exec(ctx, "RELEASE SAVEPOINT sp")
+			succeeded++
 		}
 	}
-	return tx.Commit(ctx)
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("flush commit: %w", err)
+	}
+
+	if failed > 0 {
+		log.Printf("[persistence] flush: %d succeeded, %d failed (will retry in snapshot)", succeeded, failed)
+	}
+	return nil
+}
+
+// isFKError checks if an error is a foreign key constraint violation.
+func isFKError(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := err.Error()
+	return strings.Contains(s, "23503") || strings.Contains(s, "foreign key constraint")
+}
+
+// isUniqueError checks if an error is a unique constraint violation.
+func isUniqueError(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := err.Error()
+	return strings.Contains(s, "23505") || strings.Contains(s, "duplicate key")
 }
 
 // StartBackground launches the flush + heartbeat goroutine. Cancel the
@@ -411,17 +492,33 @@ func (p *Persister) FullSnapshot(ctx context.Context, s *store.MemStore) error {
 		return err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+
+	var succeeded, failed int
 	for _, w := range plan {
+		// Use savepoint so one failure doesn't abort the entire snapshot
+		_, _ = tx.Exec(ctx, "SAVEPOINT snap_sp")
+
 		if err := upsertRow(ctx, tx, w.table, w.doc); err != nil {
-			// Log the failing document for debugging
-			docJSON, _ := json.Marshal(w.doc)
-			log.Printf("[persistence] snapshot upsert %s failed: %v | data: %s", w.table, err, string(docJSON))
-			return fmt.Errorf("upsert %s: %w", w.table, err)
+			_, _ = tx.Exec(ctx, "ROLLBACK TO SAVEPOINT snap_sp")
+			failed++
+			// Only log non-trivial errors (skip duplicate key which is expected)
+			if !isUniqueError(err) && !isFKError(err) {
+				docJSON, _ := json.Marshal(w.doc)
+				log.Printf("[persistence] snapshot upsert %s failed: %v | data: %.200s", w.table, err, string(docJSON))
+			}
+		} else {
+			_, _ = tx.Exec(ctx, "RELEASE SAVEPOINT snap_sp")
+			succeeded++
 		}
 	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return err
 	}
-	log.Printf("[persistence] full snapshot successful (%d entities)", len(plan))
+	if failed > 0 {
+		log.Printf("[persistence] full snapshot: %d succeeded, %d skipped", succeeded, failed)
+	} else {
+		log.Printf("[persistence] full snapshot successful (%d entities)", succeeded)
+	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/eduplexo/backend-go/internal/store"
 	"github.com/jackc/pgx/v5"
@@ -278,7 +279,23 @@ func upsertStudent(ctx context.Context, tx pgx.Tx, v *store.Student) error {
 		v.Guardian.Name, v.Guardian.Phone, v.Guardian.Email,
 		v.Status, v.EnrolledAt, v.CreatedAt, v.UpdatedAt)
 	if err != nil {
-		return err
+		// If unique constraint on admission_no conflicts, try update by admission_no
+		if strings.Contains(err.Error(), "23505") && strings.Contains(err.Error(), "admission") {
+			_, err = tx.Exec(ctx, `
+				UPDATE students SET
+					academic_year_id=$3, user_id=$4, class_id=$5,
+					first_name=$7, last_name=$8, section=$9, roll_no=$10,
+					date_of_birth=$11, gender=$12, guardian_name=$13, guardian_phone=$14,
+					guardian_email=$15, status=$16, enrolled_at=$17, updated_at=$19
+				WHERE school_id=$2 AND admission_no=$6
+			`, v.ID, v.SchoolID, v.AcademicYearID, userID, v.ClassID,
+				v.AdmissionNo, v.FirstName, v.LastName, v.Section, v.RollNo, v.DateOfBirth, v.Gender,
+				v.Guardian.Name, v.Guardian.Phone, v.Guardian.Email,
+				v.Status, v.EnrolledAt, v.CreatedAt, v.UpdatedAt)
+		}
+		if err != nil {
+			return err
+		}
 	}
 	if _, err := tx.Exec(ctx, `DELETE FROM student_subjects WHERE student_id=$1`, v.ID); err != nil {
 		return err

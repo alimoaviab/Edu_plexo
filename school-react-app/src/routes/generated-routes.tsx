@@ -78,6 +78,7 @@ export const adminRoutes: RouteObject[] = [
   // Events
   { path: "/admin/events", element: lazyPage(() => import("@/pages/role/admin/events"), "EventsPage") },
   { path: "/admin/events/create", element: lazyPage(() => import("@/pages/role/admin/events/create"), "AdminEventCreatePage") },
+  { path: "/admin/events/:id/edit", element: lazyPage(() => import("@/pages/role/admin/events/Param_id/edit"), "AdminEventEditPage") },
 
   // Exams
   { path: "/admin/exams", element: lazyPage(() => import("@/pages/role/admin/exams"), "AdminExamsPage") },
@@ -116,6 +117,7 @@ export const adminRoutes: RouteObject[] = [
 
   // Subscription
   { path: "/admin/subscription", element: lazyPage(() => import("@/pages/role/admin/subscription"), "AdminSubscriptionPage") },
+  { path: "/admin/subscription/payment", element: lazyPage(() => import("@/modules/subscription/pages/PaymentPage"), "PaymentPage") },
 
   // Students
   { path: "/admin/students", element: lazyPage(() => import("@/pages/role/admin/students"), "AdminStudentsPage") },
@@ -152,6 +154,7 @@ export const teacherRoutes: RouteObject[] = [
   { path: "/teacher/classes/:id/students", element: lazyPage(() => import("@/pages/role/teacher/classes/Param_id/students"), "TeacherClassStudentsPage") },
   { path: "/teacher/events", element: lazyPage(() => import("@/pages/role/teacher/events"), "TeacherEventsPage") },
   { path: "/teacher/events/create", element: lazyPage(() => import("@/pages/role/teacher/events/create"), "TeacherEventCreatePage") },
+  { path: "/teacher/events/:id/edit", element: lazyPage(() => import("@/pages/role/teacher/events/Param_id/edit"), "TeacherEventEditPage") },
   { path: "/teacher/exams", element: lazyPage(() => import("@/pages/role/teacher/exams"), "TeacherExamsPage") },
   { path: "/teacher/exams/create", element: lazyPage(() => import("@/pages/role/teacher/exams/create"), "TeacherExamCreatePage") },
   { path: "/teacher/exams/marks", element: lazyPage(() => import("@/pages/role/teacher/exams/marks"), "TeacherExamMarksPage") },

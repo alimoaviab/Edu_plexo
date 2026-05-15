@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import { useEvents } from "../hooks/useEvents";
 import { EventRecordRow } from "../types/events.types";
 import { DataTable, DataTableColumn, RowAction, Badge, DataState, TableSkeleton, StatCardGrid } from "@/components/ui";
@@ -7,6 +7,7 @@ import { DataTable, DataTableColumn, RowAction, Badge, DataState, TableSkeleton,
 export default function EventListPage() {
   const pathname = useLocation().pathname;
   const isParent = pathname.includes("/parent");
+  const navigate = useNavigate();
   const { state, deleteEvent } = useEvents();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -99,7 +100,7 @@ export default function EventListPage() {
           label: "Modify",
           variant: "ghost",
           onClick: (row) => {
-            window.location.assign(editPath(row._id));
+            navigate(editPath(row._id));
           },
         },
         {

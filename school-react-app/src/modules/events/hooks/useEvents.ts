@@ -75,3 +75,24 @@ export function useEvents() {
 
   return { state, addEvent, updateEvent, deleteEvent };
 }
+
+export function useEvent(id: string | undefined) {
+  const { state, run } = useSafeAsync<EventRecordRow>();
+
+  const loadEvent = useCallback(() => {
+    if (!id) return;
+    return run(async () => {
+      const result = await service.getEvent(id);
+      if (!result.success) {
+        throw new Error(result.message || "Failed to load event");
+      }
+      return result.data;
+    });
+  }, [id, run]);
+
+  useEffect(() => {
+    void loadEvent();
+  }, [loadEvent]);
+
+  return { state, refresh: loadEvent };
+}

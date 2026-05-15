@@ -316,6 +316,14 @@ export function TeacherListPage() {
                   }}
                   hoverActions={[
                     {
+                      label: "View details",
+                      icon: "visibility",
+                      onClick: () => {
+                        alert(`Teacher: ${row.first_name} ${row.last_name}\nID: ${row.employee_no}\nQualification: ${row.qualification}\nPhone: ${row.phone}`);
+                      },
+                      accent: "blue",
+                    },
+                    {
                       label: "Edit teacher",
                       icon: "edit",
                       onClick: () => goToEdit(row._id),

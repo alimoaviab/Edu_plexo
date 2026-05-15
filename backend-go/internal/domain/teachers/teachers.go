@@ -80,7 +80,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 				Status:  status,
 				Search:  search,
 			})
-			if err == nil {
+			// If we got results, or we are on a page > 1, or there was a real error, use PG.
+			// But if page 1 is empty, we fall through to MemStore to catch unpersisted new items.
+			if err == nil && (len(items) > 0 || pagination.Page > 1) {
 				h.Store.RLock()
 				memByID := make(map[string]*store.Teacher, len(h.Store.Teachers))
 				for _, t := range h.Store.Teachers {
@@ -469,7 +471,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			hash, _ := auth.HashPassword(body.Password)
 			userID = store.NewID("usr")
 			h.Store.Users = append(h.Store.Users, &store.User{
-				ID: userID, SchoolID: ctx.SchoolID, Email: body.Email, PasswordHash: hash, Role: "teacher", Status: "active",
+				ID: userID, SchoolID: ctx.SchoolID, Email: body.Email, PasswordHash: hash, Role: "teacher", 
+				Permissions: []string{"teacher:basic"},
+				Status: "active",
 				Profile: store.UserProfile{FirstName: body.FirstName, LastName: body.LastName, Phone: body.Phone},
 				CreatedAt: now, UpdatedAt: now,
 			})

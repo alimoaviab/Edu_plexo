@@ -201,7 +201,7 @@ export function EntityCard({
 
           {/* Hover actions (edit/delete pills) */}
           {hoverActions && hoverActions.length > 0 && (
-            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <div className="flex gap-1.5 shrink-0">
               {hoverActions.map((a, i) => (
                 <button
                   key={i}

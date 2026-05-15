@@ -93,7 +93,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 				ClassID: classID,
 				Search:  search,
 			})
-			if err == nil {
+			// If we got results, or we are on a page > 1, or there was a real error, use PG.
+			// But if page 1 is empty, we fall through to MemStore to catch unpersisted new items.
+			if err == nil && (len(items) > 0 || pagination.Page > 1) {
 				ptrs := make([]*store.Student, len(items))
 				for i := range items {
 					s := items[i]

@@ -8,6 +8,10 @@ export function listEvents(eventType?: string) {
 	return serviceRequest<EventRecordRow[]>(`/api/events${q}`);
 }
 
+export function getEvent(id: string) {
+	return serviceRequest<EventRecordRow>(`/api/events/${id}`);
+}
+
 export function createEvent(input: EventFormInput) {
 	return serviceRequest<EventRecordRow>("/api/events", {
 		method: "POST",

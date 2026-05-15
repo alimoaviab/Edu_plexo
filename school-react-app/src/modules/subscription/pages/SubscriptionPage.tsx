@@ -9,6 +9,7 @@
  */
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import * as service from "../services/subscription.service";
 
@@ -27,8 +28,8 @@ export function SubscriptionPage() {
     isStartingTrial,
   } = useSubscription();
 
+  const navigate = useNavigate();
   const [showContactModal, setShowContactModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
 
 
   if (isLoading) {
@@ -154,7 +155,7 @@ export function SubscriptionPage() {
               isCurrentPlan={sub?.plan_name === plan.name}
               canTrial={current?.can_trial ?? false}
               onStartTrial={() => startTrial()}
-              onUpgrade={() => setSelectedPlan(plan)}
+              onUpgrade={() => navigate("/admin/subscription/payment", { state: { plan } })}
               onContactSales={() => setShowContactModal(true)}
               isUpgrading={isUpgrading}
               isStartingTrial={isStartingTrial}
@@ -227,238 +228,7 @@ export function SubscriptionPage() {
         </div>
       )}
       </div>
-      {selectedPlan && (
-        <PaymentDetailsModal
-          plan={selectedPlan}
-          onClose={() => setSelectedPlan(null)}
-          onSuccess={() => {
-            setSelectedPlan(null);
-            // Invalidate queries or show success
-          }}
-        />
-      )}
     </SchoolShell>
-  );
-}
-
-// ─── Payment Details Modal ───────────────────────────────────────────────
-
-interface PaymentDetailsModalProps {
-  plan: Plan;
-  onClose: () => void;
-  onSuccess: () => void;
-}
-
-function PaymentDetailsModal({ plan, onClose, onSuccess }: PaymentDetailsModalProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [smsText, setSmsText] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!file && !smsText) {
-      alert("Please upload a screenshot or paste the SMS text.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      // In a real app, we would upload the file first.
-      // Since we don't have a direct upload endpoint visible here, 
-      // we'll send the data to the payment upload endpoint.
-      
-      const res = await service.submitPaymentProof({
-        plan_id: plan.id,
-        transaction_id: smsText.slice(0, 50) || "FILE_" + (file?.name || Date.now()),
-        amount: plan.price,
-        notes: smsText,
-        screenshot_url: file ? "https://placeholder.com/" + file.name : "",
-      });
-
-      if (res.ok) {
-        alert("Payment proof submitted successfully! Super Admin will verify it shortly.");
-        onSuccess();
-      } else {
-        alert(res.error?.message || "Failed to submit payment proof.");
-      }
-    } catch (err) {
-      alert("An error occurred while submitting payment proof.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-        {/* Modal Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6 text-white relative">
-          <button 
-            onClick={onClose}
-            className="absolute top-6 right-6 text-white/80 hover:text-white transition-colors"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
-          <h2 className="text-2xl font-bold">Upgrade to {plan.display_name}</h2>
-          <p className="text-blue-100 mt-1">Complete your payment to activate the plan</p>
-        </div>
-
-        <div className="p-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Payment Methods */}
-            <div className="space-y-6">
-              <h3 className="text-lg font-bold text-gray-900 border-b pb-2">Payment Methods</h3>
-              
-              {/* Alfalah Bank */}
-              <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 relative overflow-hidden group hover:border-blue-200 transition-all">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center p-2">
-                    <img 
-                      src="https://upload.wikimedia.org/wikipedia/en/thumb/f/f6/Bank_Alfalah_logo.svg/1200px-Bank_Alfalah_logo.svg.png" 
-                      alt="Alfalah Bank" 
-                      className="max-w-full max-h-full object-contain"
-                    />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900">Alfalah Bank</h4>
-                    <p className="text-xs text-gray-500">Bank Transfer</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Account Name:</span>
-                    <span className="font-semibold text-gray-900">Ali Moavia</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Account Number:</span>
-                    <span className="font-mono font-bold text-blue-600 tracking-wider">59705002080213</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Easypaisa */}
-              <div className="bg-emerald-50/50 rounded-2xl p-5 border border-emerald-100 relative overflow-hidden group hover:border-emerald-200 transition-all">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center p-2 text-emerald-600">
-                    <span className="material-symbols-outlined text-3xl font-bold">account_balance_wallet</span>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900">Easypaisa</h4>
-                    <p className="text-xs text-gray-500">Mobile Wallet</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Account Name:</span>
-                    <span className="font-semibold text-gray-900">Ali moavia</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Mobile Number:</span>
-                    <span className="font-mono font-bold text-emerald-700 tracking-wider">03064944326</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 bg-amber-50 rounded-xl border border-amber-100 flex gap-3">
-                <span className="material-symbols-outlined text-amber-600 text-xl">info</span>
-                <p className="text-xs text-amber-800 leading-relaxed">
-                  Please transfer <span className="font-bold">PKR {plan.price.toLocaleString()}</span> to any of the accounts above and upload the proof below.
-                </p>
-              </div>
-            </div>
-
-            {/* Submission Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <h3 className="text-lg font-bold text-gray-900 border-b pb-2">Submit Proof</h3>
-              
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Send Screen Shot</label>
-                <div 
-                  className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all ${
-                    file ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-blue-300 hover:bg-slate-50"
-                  }`}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
-                  }}
-                >
-                  <input 
-                    type="file" 
-                    id="ss-upload" 
-                    className="hidden" 
-                    accept="image/*"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) setFile(e.target.files[0]);
-                    }}
-                  />
-                  <label htmlFor="ss-upload" className="cursor-pointer">
-                    {file ? (
-                      <div className="flex flex-col items-center">
-                        <span className="material-symbols-outlined text-4xl text-blue-600 mb-2">check_circle</span>
-                        <p className="text-sm font-medium text-blue-900 truncate max-w-[200px]">{file.name}</p>
-                        <button 
-                          type="button" 
-                          onClick={(e) => { e.preventDefault(); setFile(null); }}
-                          className="mt-2 text-xs text-red-500 hover:underline font-bold"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center">
-                        <span className="material-symbols-outlined text-4xl text-gray-300 mb-2">cloud_upload</span>
-                        <p className="text-sm text-gray-500 font-medium">Click to upload or drag & drop</p>
-                        <p className="text-[10px] text-gray-400 mt-1">PNG, JPG or PDF up to 5MB</p>
-                      </div>
-                    )}
-                  </label>
-                </div>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center text-xs font-bold uppercase">
-                  <span className="bg-white px-2 text-gray-400 tracking-widest">OR</span>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="sms-text" className="block text-sm font-bold text-gray-700 mb-2">Paste SMS Text</label>
-                <textarea
-                  id="sms-text"
-                  rows={4}
-                  className="w-full rounded-2xl border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm placeholder:text-gray-400"
-                  placeholder="Paste the SMS you received from the bank here..."
-                  value={smsText}
-                  onChange={(e) => setSmsText(e.target.value)}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting || (!file && !smsText)}
-                className="w-full py-4 bg-gray-900 text-white rounded-2xl font-bold hover:bg-black transition-all shadow-lg shadow-gray-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-[0.98]"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-xl">send</span>
-                    Submit for Verification
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 

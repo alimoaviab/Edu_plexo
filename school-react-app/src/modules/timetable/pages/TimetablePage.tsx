@@ -126,6 +126,11 @@ export function TimetablePage() {
 
   return (
     <div className="space-y-6 pb-12">
+      <TimetableSummaryStats
+        summary={summary}
+        isLoading={summaryState.status === "loading" || summaryState.status === "idle"}
+      />
+
       <TimetableToolbar
         classId={classId}
         onClassChange={handleClassChange}
@@ -134,11 +139,6 @@ export function TimetablePage() {
         conflictsCount={conflictsCount}
         isCompact={isCompact}
         onCompactToggle={() => setIsCompact((v) => !v)}
-      />
-
-      <TimetableSummaryStats
-        summary={summary}
-        isLoading={summaryState.status === "loading" || summaryState.status === "idle"}
       />
 
       {summary && (summary.currentPeriod || summary.nextPeriod) && (
