@@ -204,7 +204,7 @@ export function ResultPage() {
             />
 
             {/* Toolbar Section - Unified & Sticky */}
-            <div className="premium-card p-2 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white/80 backdrop-blur-md sticky top-[72px] z-20 border-slate-200/60 shadow-sm rounded-xl">
+            <div className="premium-card p-2 flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white/80 backdrop-blur-md sticky top-[72px] z-20 border-slate-200/60 shadow-sm rounded-xl no-print">
                 <div className="flex flex-1 items-center gap-2 max-w-2xl">
                     <div className="relative flex-1">
                         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400">search</span>
@@ -265,7 +265,15 @@ export function ResultPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center rounded-lg bg-slate-100 p-1 shadow-inner">
+                    <button
+                        onClick={() => window.print()}
+                        className="h-9 px-4 rounded-xl border border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 hover:border-blue-200 transition-all flex items-center gap-2 no-print"
+                    >
+                        <span className="material-symbols-outlined text-base">print</span>
+                        Print Report
+                    </button>
+                    <div className="h-6 w-px bg-slate-200 no-print" />
+                    <div className="flex items-center rounded-lg bg-slate-100 p-1 shadow-inner no-print">
                         <button
                             onClick={() => setViewMode("grid")}
                             className={`flex h-7 items-center gap-2 rounded-md px-3 text-[11px] font-bold transition-all ${
@@ -285,14 +293,14 @@ export function ResultPage() {
                             List
                         </button>
                     </div>
-                    <div className="h-6 w-px bg-slate-200" />
-                    <span className="text-[10px] font-bold text-slate-900 normal-case  px-2 whitespace-nowrap">
+                    <div className="h-6 w-px bg-slate-200 no-print" />
+                    <span className="text-[10px] font-bold text-slate-900 normal-case  px-2 whitespace-nowrap no-print">
                         {filteredRows.length} <span className="text-slate-400">Records</span>
                     </span>
-                    <div className="h-6 w-px bg-slate-200" />
+                    <div className="h-6 w-px bg-slate-200 no-print" />
                     <button
                         onClick={() => setIsAdding(!isAdding)}
-                        className={`inline-flex h-9 items-center gap-2 px-5 text-[11px] font-bold normal-case  transition-all rounded-xl shadow-lg active:scale-95 ${
+                        className={`inline-flex h-9 items-center gap-2 px-5 text-[11px] font-bold normal-case  transition-all rounded-xl shadow-lg active:scale-95 no-print ${
                             isAdding ? "bg-slate-900 text-white" : "bg-blue-600 text-white shadow-blue-600/20 hover:bg-blue-700"
                         }`}
                     >

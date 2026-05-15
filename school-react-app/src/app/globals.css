@@ -217,3 +217,67 @@
     @apply overflow-x-hidden;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   PRINT OPTIMIZATIONS
+   ────────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Hide sidebar, top navigation, toolbars, AI assistant and other UI clutter */
+  aside, 
+  header, 
+  .no-print, 
+  [role="button"], 
+  button,
+  .animate-glow,
+  .sticky,
+  .fixed,
+  .material-symbols-outlined {
+    display: none !important;
+  }
+
+  /* Reset layout for full page print */
+  main {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    overflow: visible !important;
+    height: auto !important;
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  .w-full {
+    width: 100% !important;
+  }
+
+  body, html {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Preserve colors for bars and badges but optimize for paper */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Optimize card displays for paper */
+  .premium-card {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    break-inside: avoid;
+    margin-bottom: 1rem;
+    padding: 1rem !important;
+  }
+
+  /* Force grid columns to stack nicely or keep layout */
+  .grid {
+    display: grid !important;
+    gap: 1rem !important;
+  }
+  
+  /* On print, we might want 2 columns instead of 3/4 */
+  @page {
+    margin: 1cm;
+  }
+}

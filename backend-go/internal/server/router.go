@@ -140,6 +140,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Get("/classes", clH.List)
 			r.Post("/classes", clH.Create)
 			r.Get("/classes/{id}", clH.Get)
+			r.Get("/classes/{id}/subjects", clH.GetSubjects)
 			r.Patch("/classes/{id}", clH.Update)
 			r.Put("/classes/{id}", clH.Update)
 			r.Delete("/classes/{id}", clH.Delete)

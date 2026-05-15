@@ -126,6 +126,31 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}))
 }
 
+// GetSubjects implements GET /api/classes/:id/subjects.
+func (h *Handler) GetSubjects(w http.ResponseWriter, r *http.Request) {
+	ctx := api.FromRequest(r)
+	id := chi.URLParam(r, "id")
+	api.WriteResult(w, api.ServiceTry(func() (any, error) {
+		if err := auth.AssertPermission(ctx, "classes", auth.ActionView); err != nil {
+			return nil, err
+		}
+		h.Store.RLock()
+		defer h.Store.RUnlock()
+		for _, c := range h.Store.Classes {
+			if c.ID == id && c.SchoolID == ctx.SchoolID {
+				// We return the same shape as expected by the frontend: { subjects: [...] }
+				// If c.Subjects is nil, we return an empty slice to avoid null in JSON.
+				subs := c.Subjects
+				if subs == nil {
+					subs = []store.ClassSubject{}
+				}
+				return map[string]any{"subjects": subs}, nil
+			}
+		}
+		return nil, api.NewControlledError("NOT_FOUND", "Class not found.", 404, nil)
+	}))
+}
+
 type createInput struct {
 	Name              string   `json:"name"`
 	Code              string   `json:"code"`

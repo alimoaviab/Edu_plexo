@@ -171,21 +171,74 @@ export function TimetableForm({
                 options={[{ label: "Choose class segment...", value: "" }, ...classOptions.map(o => ({ label: o.label, value: o.id }))]}
                 error={errors.class_id}
                 required
-                className="h-12 text-xs font-bold rounded-xl"
+                className="h-14 text-sm font-bold rounded-2xl border-slate-200 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/5 transition-all shadow-sm"
               />
-              <Select
-                label="Subject Name"
-                value={form.subject_id}
-                onChange={(e) => setForm({ ...form, subject_id: e.target.value })}
-                options={[
-                  { label: loadingClassSubjects ? "Querying subjects..." : "Select specific subject", value: "" },
-                  ...subjectsToDisplay.map(o => ({ label: o.label, value: o.id }))
-                ]}
-                disabled={!form.class_id || loadingClassSubjects}
-                error={errors.subject_id}
-                required
-                className="h-12 text-xs font-bold rounded-xl"
-              />
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-black text-slate-700 uppercase tracking-widest">Select Subject</label>
+                  {loadingClassSubjects && (
+                    <div className="flex items-center gap-2">
+                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                      <span className="text-[9px] font-bold text-blue-600 uppercase tracking-widest">Fetching...</span>
+                    </div>
+                  )}
+                </div>
+                
+                {!form.class_id ? (
+                  <div className="p-8 rounded-2xl border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-center space-y-2">
+                    <span className="material-symbols-outlined text-slate-200 text-3xl">school</span>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                      Select a class first to<br />view available subjects
+                    </p>
+                  </div>
+                ) : subjectsToDisplay.length === 0 && !loadingClassSubjects ? (
+                  <div className="p-8 rounded-2xl border-2 border-dashed border-red-50 flex flex-col items-center justify-center text-center space-y-2">
+                    <span className="material-symbols-outlined text-red-200 text-3xl">warning</span>
+                    <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest leading-relaxed">
+                      No subjects found for<br />the selected class
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {subjectsToDisplay.map((o) => (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => setForm({ ...form, subject_id: o.id })}
+                        className={`group relative flex flex-col items-start p-4 rounded-2xl border-2 transition-all duration-300 text-left ${
+                          form.subject_id === o.id
+                            ? "bg-blue-600 border-blue-600 shadow-xl shadow-blue-600/20"
+                            : "bg-white border-slate-50 hover:border-slate-200 hover:shadow-md"
+                        }`}
+                      >
+                        <div className={`mb-3 h-8 w-8 rounded-xl flex items-center justify-center transition-colors ${
+                          form.subject_id === o.id ? "bg-white/20 text-white" : "bg-slate-50 text-slate-400 group-hover:text-blue-600 group-hover:bg-blue-50"
+                        }`}>
+                          <span className="material-symbols-outlined text-[18px]">menu_book</span>
+                        </div>
+                        <span className={`text-[11px] font-black uppercase tracking-tight leading-tight ${
+                          form.subject_id === o.id ? "text-white" : "text-slate-900"
+                        }`}>
+                          {o.label}
+                        </span>
+                        <span className={`mt-1 text-[9px] font-bold ${
+                          form.subject_id === o.id ? "text-white/60" : "text-slate-400"
+                        }`}>
+                          Course Material
+                        </span>
+                        
+                        {form.subject_id === o.id && (
+                          <div className="absolute top-3 right-3 h-5 w-5 bg-white rounded-full flex items-center justify-center shadow-sm">
+                            <span className="material-symbols-outlined text-[14px] text-blue-600 font-black">check</span>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {errors.subject_id && <p className="text-[10px] text-red-500 font-bold mt-2 ml-1">{errors.subject_id}</p>}
+              </div>
             </div>
           </div>
         )}
@@ -202,7 +255,7 @@ export function TimetableForm({
                 value={form.day_of_week}
                 onChange={(e) => setForm({ ...form, day_of_week: e.target.value as any })}
                 options={DAY_OPTIONS.map(d => ({ label: d.label, value: d.value }))}
-                className="h-12 text-xs font-bold rounded-xl"
+                className="h-14 text-sm font-bold rounded-2xl border-slate-200"
               />
               <div className="grid grid-cols-2 gap-4">
                 <Input
@@ -212,7 +265,7 @@ export function TimetableForm({
                   onChange={(e) => setForm({ ...form, start_time: e.target.value })}
                   error={errors.start_time}
                   required
-                  className="h-12 text-xs font-bold rounded-xl"
+                  className="h-14 text-sm font-bold rounded-2xl border-slate-200"
                 />
                 <Input
                   label="End Time"
@@ -221,7 +274,7 @@ export function TimetableForm({
                   onChange={(e) => setForm({ ...form, end_time: e.target.value })}
                   error={errors.end_time}
                   required
-                  className="h-12 text-xs font-bold rounded-xl"
+                  className="h-14 text-sm font-bold rounded-2xl border-slate-200"
                 />
               </div>
               <Input
@@ -230,7 +283,7 @@ export function TimetableForm({
                 min="1"
                 value={form.period_number}
                 onChange={(e) => setForm({ ...form, period_number: parseInt(e.target.value) || 1 })}
-                className="h-12 text-xs font-bold rounded-xl"
+                className="h-14 text-sm font-bold rounded-2xl border-slate-200"
               />
             </div>
           </div>
@@ -250,14 +303,14 @@ export function TimetableForm({
                 options={[{ label: "Select assigned teacher", value: "" }, ...teacherOptions.map(o => ({ label: o.label, value: o.id }))]}
                 error={errors.teacher_id}
                 required
-                className="h-12 text-xs font-bold rounded-xl"
+                className="h-14 text-sm font-bold rounded-2xl border-slate-200"
               />
               <Input
                 label="Classroom / Hall"
                 placeholder="e.g., Room 102, Science Lab"
                 value={form.room || ""}
                 onChange={(e) => setForm({ ...form, room: e.target.value })}
-                className="h-12 text-xs font-bold rounded-xl"
+                className="h-14 text-sm font-bold rounded-2xl border-slate-200"
               />
               
               <div className="pt-4">
