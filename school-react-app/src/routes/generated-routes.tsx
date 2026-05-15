@@ -111,6 +111,9 @@ export const adminRoutes: RouteObject[] = [
   // Settings
   { path: "/admin/settings", element: lazyPage(() => import("@/pages/role/admin/settings"), "AdminSettingsPage") },
 
+  // Subscription
+  { path: "/admin/subscription", element: lazyPage(() => import("@/pages/role/admin/subscription"), "AdminSubscriptionPage") },
+
   // Students
   { path: "/admin/students", element: lazyPage(() => import("@/pages/role/admin/students"), "AdminStudentsPage") },
   { path: "/admin/students/create", element: lazyPage(() => import("@/pages/role/admin/students/create"), "AdminStudentCreatePage") },

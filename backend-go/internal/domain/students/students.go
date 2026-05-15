@@ -35,11 +35,12 @@ import (
 
 // Handler serves the /api/students/* routes.
 type Handler struct {
-	Store   *store.MemStore
-	Persist func(table string, doc any)
-	Pool    *pgxpool.Pool
-	Cache   *cache.Client
-	repo    *repo.StudentRepo
+	Store        *store.MemStore
+	Persist      func(table string, doc any)
+	Pool         *pgxpool.Pool
+	Cache        *cache.Client
+	repo         *repo.StudentRepo
+	LimitChecker func(ctx context.Context, schoolID string) error // Subscription limit check
 }
 
 func New(s *store.MemStore, save func(string, any)) *Handler {
@@ -220,6 +221,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		if err := auth.AssertPermission(ctx, "students", auth.ActionCreate); err != nil {
 			return nil, err
 		}
+
+		// ─── Subscription student limit check ────────────────────────────
+		if h.LimitChecker != nil {
+			if err := h.LimitChecker(r.Context(), ctx.SchoolID); err != nil {
+				return nil, err
+			}
+		}
+
 		if strings.TrimSpace(body.FirstName) == "" || strings.TrimSpace(body.LastName) == "" {
 			return nil, api.NewControlledError("VALIDATION_ERROR", "first_name and last_name are required.", 400, nil)
 		}

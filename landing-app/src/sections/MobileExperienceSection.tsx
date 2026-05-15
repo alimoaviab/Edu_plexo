@@ -15,63 +15,51 @@ export const MobileExperienceSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.7 }}
-              className="relative perspective-[1000px]"
+              className="relative w-[320px] h-[640px]"
             >
-              {/* Optimized Background glows */}
+              {/* Background glow */}
               <div className="absolute inset-0 bg-gradient-to-t from-blue-200 to-transparent opacity-50 rounded-full blur-[60px] transform -translate-y-10" />
 
               {/* Phone Frame */}
-              <div className="w-[320px] h-[640px] bg-slate-900 rounded-[3rem] p-3 shadow-2xl relative border-[6px] border-slate-800 rotate-y-[-10deg] rotate-x-[5deg] transform-style-3d hover:rotate-y-[0deg] hover:rotate-x-[0deg] transition-transform duration-700 ease-out">
-                {/* Notch */}
+              <div className="w-[320px] h-[640px] bg-slate-900 rounded-[3rem] p-3 shadow-2xl relative border-[6px] border-slate-800">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-slate-900 rounded-b-2xl z-20" />
-
-                {/* Screen */}
                 <div className="w-full h-full bg-slate-50 rounded-[2.25rem] overflow-hidden relative flex flex-col">
-                   {/* Mobile Header */}
-                   <div className="bg-blue-600 p-6 pb-8 text-white rounded-b-[2rem] shadow-sm">
-                      <div className="flex justify-between items-center mb-6 mt-4">
-                         <div className="w-8 h-8 bg-white/20 rounded-full backdrop-blur-sm" />
-                         <div className="w-8 h-8 bg-white/20 rounded-full backdrop-blur-sm" />
+                  <div className="bg-blue-600 p-6 pb-8 text-white rounded-b-[2rem] shadow-sm">
+                    <div className="flex justify-between items-center mb-6 mt-4">
+                      <div className="w-8 h-8 bg-white/20 rounded-full backdrop-blur-sm" />
+                      <div className="w-8 h-8 bg-white/20 rounded-full backdrop-blur-sm" />
+                    </div>
+                    <div className="text-sm text-blue-100 mb-1 font-medium">Good Morning,</div>
+                    <div className="text-2xl font-bold tracking-tight">Sarah Parent</div>
+                  </div>
+                  <div className="flex-1 p-4 -mt-4 overflow-hidden">
+                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4 flex justify-between items-center">
+                      <div>
+                        <div className="text-xs text-slate-500 mb-1 font-semibold">Attendance</div>
+                        <div className="text-2xl font-extrabold text-slate-900">98%</div>
                       </div>
-                      <div className="text-sm text-blue-100 mb-1 font-medium">Good Morning,</div>
-                      <div className="text-2xl font-bold tracking-tight">Sarah Parent</div>
-                   </div>
-
-                   {/* Mobile Content */}
-                   <div className="flex-1 p-4 -mt-4 overflow-hidden">
-                      {/* Stats Card */}
-                      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 mb-4 flex justify-between items-center relative overflow-hidden">
-                         <div className="relative z-10">
-                            <div className="text-xs text-slate-500 mb-1 font-semibold normal-case ">Attendance</div>
-                            <div className="text-2xl font-extrabold text-slate-900">98%</div>
-                         </div>
-                         <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center text-green-600 font-extrabold text-xl relative z-10">A+</div>
-                         <div className="absolute top-0 right-0 w-24 h-24 bg-green-50 rounded-full blur-xl -mr-10 -mt-10" />
-                      </div>
-
-                      {/* Notifications */}
-                      <div className="space-y-3">
-                         <div className="text-sm font-bold text-slate-900 mb-2 px-1">Recent Updates</div>
-                         {[1, 2, 3].map(i => (
-                            <div key={i} className="bg-white rounded-xl p-3 shadow-sm border border-slate-100 flex gap-3 items-center hover:bg-slate-50 transition-colors">
-                               <div className="w-10 h-10 rounded-full bg-blue-50 flex-shrink-0 flex items-center justify-center">
-                                  <Bell className="w-4 h-4 text-blue-500" />
-                               </div>
-                               <div className="flex-1">
-                                  <div className="h-3 w-3/4 bg-slate-200 rounded mb-2" />
-                                  <div className="h-2 w-1/2 bg-slate-100 rounded" />
-                               </div>
-                            </div>
-                         ))}
-                      </div>
-                   </div>
-
-                   {/* Bottom Nav */}
-                   <div className="h-16 bg-white border-t border-slate-100 flex justify-around items-center px-6">
-                      {[1, 2, 3, 4].map(i => (
-                         <div key={i} className={`w-6 h-6 rounded-md ${i === 1 ? 'bg-blue-500 shadow-md shadow-blue-500/20' : 'bg-slate-200'}`} />
+                      <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center text-green-600 font-extrabold text-xl">A+</div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="text-sm font-bold text-slate-900 mb-2 px-1">Recent Updates</div>
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="bg-white rounded-xl p-3 shadow-sm border border-slate-100 flex gap-3 items-center">
+                          <div className="w-10 h-10 rounded-full bg-blue-50 flex-shrink-0 flex items-center justify-center">
+                            <Bell className="w-4 h-4 text-blue-500" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="h-3 w-3/4 bg-slate-200 rounded mb-2" />
+                            <div className="h-2 w-1/2 bg-slate-100 rounded" />
+                          </div>
+                        </div>
                       ))}
-                   </div>
+                    </div>
+                  </div>
+                  <div className="h-16 bg-white border-t border-slate-100 flex justify-around items-center px-6">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className={`w-6 h-6 rounded-md ${i === 1 ? 'bg-blue-500' : 'bg-slate-200'}`} />
+                    ))}
+                  </div>
                 </div>
               </div>
             </motion.div>

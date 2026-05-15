@@ -29,6 +29,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/settings"
 	"github.com/eduplexo/backend-go/internal/domain/students"
 	"github.com/eduplexo/backend-go/internal/domain/subjects"
+	"github.com/eduplexo/backend-go/internal/domain/subscription"
 	"github.com/eduplexo/backend-go/internal/domain/superadmin"
 	"github.com/eduplexo/backend-go/internal/domain/teachers"
 	"github.com/eduplexo/backend-go/internal/domain/timetable"
@@ -125,6 +126,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Post("/academic-years/switch", authH.SwitchAcademicYear)
 
 			stH := students.NewPG(s, saveFn, pg.Pool(), rdb)
+			// Subscription limit checker is set after subH is created below
 			r.Get("/students", stH.List)
 			r.Post("/students", stH.Create)
 			r.Get("/students/{id}", stH.Get)
@@ -298,6 +300,40 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			// Domain
 			r.Get("/domain/status", stubs.DomainStatus)
 			r.Post("/domain/setup", stubs.NotImplemented(""))
+
+			// ─── Subscription & Billing ───────────────────────────────────
+			subH := subscription.New(pg.Pool(), s)
+			stH.LimitChecker = subH.CheckStudentLimit // Wire student limit enforcement
+			r.Get("/subscription/current", subH.GetCurrent)
+			r.Get("/subscription/plans", subH.GetPlans)
+			r.Post("/subscription/upgrade", subH.Upgrade)
+			r.Post("/subscription/start-trial", subH.StartTrial)
+			r.Get("/subscription/history", subH.GetHistory)
+
+			// Payment (School Admin)
+			r.Get("/payment/methods", subH.ListPaymentMethods)
+			r.Post("/payment/upload", subH.UploadPayment)
+
+			// Super Admin — Plan Management
+			r.Get("/admin/subscription/plans", subH.AdminListPlans)
+			r.Post("/admin/subscription/plans", subH.AdminCreatePlan)
+			r.Put("/admin/subscription/plans/{id}", subH.AdminUpdatePlan)
+			r.Delete("/admin/subscription/plans/{id}", subH.AdminDeletePlan)
+			r.Post("/admin/subscription/assign", subH.AdminAssignPlan)
+			r.Post("/admin/subscription/extend", subH.AdminExtendSubscription)
+			r.Get("/admin/subscription/analytics", subH.AdminAnalytics)
+
+			// Super Admin — Payment Methods
+			r.Get("/admin/payment-methods", subH.ListPaymentMethods)
+			r.Post("/admin/payment-methods", subH.AdminCreatePaymentMethod)
+			r.Put("/admin/payment-methods/{id}", subH.AdminUpdatePaymentMethod)
+			r.Delete("/admin/payment-methods/{id}", subH.AdminDeletePaymentMethod)
+
+			// Super Admin — Payment Verification
+			r.Get("/admin/payments/pending", subH.AdminListPendingPayments)
+			r.Get("/admin/payments/all", subH.AdminListPendingPayments)
+			r.Post("/admin/payments/{id}/verify", subH.AdminVerifyPayment)
+			r.Post("/admin/payments/{id}/reject", subH.AdminRejectPayment)
 
 			// Chatbot
 			cbH := chatbot.New(s)
