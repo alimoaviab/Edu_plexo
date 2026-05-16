@@ -13,6 +13,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/eduplexo/backend-go/internal/auth"
 	"sync"
 	"time"
 )
@@ -55,6 +57,14 @@ type MemStore struct {
 	FeePayments    []*FeePayment
 	FeeAdjustments []*FeeAdjustment
 	ClassFees      []*ClassFee
+
+	// Finance collections.
+	SchoolPackages []*SchoolPackage
+	Expenses       []*Expense
+	RevenueRecords []*RevenueRecord
+	Invoices       []*Invoice
+	Transactions   []*Transaction
+	Subscriptions  []*Subscription
 }
 
 // New returns an empty MemStore. The system bootstraps a fresh school via
@@ -108,11 +118,13 @@ func EnsureBootstrapUsers(s *MemStore) {
 
 	schoolID := "school_default"
 
-	// Check existing users and update passwords if they exist, or create them
+	// Check existing users and update roles/passwords
 	var superUser *User
 	var schoolUser *User
 	for _, u := range s.Users {
-		if u.Email == superEmail && u.Role == "super_admin" {
+		if u.Email == superEmail {
+			u.Role = "super_admin"
+			u.Permissions = []string{"*"}
 			superUser = u
 		}
 		if u.Email == schoolEmail && u.Role == "admin" {
@@ -197,14 +209,16 @@ func EnsureBootstrapUsers(s *MemStore) {
 	}
 
 	if schoolUser != nil {
-		schoolUser.PasswordHash = schoolPassword
+		hash, _ := auth.HashPassword(schoolPassword)
+		schoolUser.PasswordHash = hash
 		schoolUser.Password = schoolPassword
 	} else {
+		hash, _ := auth.HashPassword(schoolPassword)
 		s.Users = append(s.Users, &User{
 			ID:           NewID("user"),
 			SchoolID:     schoolID,
 			Email:        schoolEmail,
-			PasswordHash: schoolPassword,
+			PasswordHash: hash,
 			Password:     schoolPassword,
 			Role:         "admin",
 			Permissions:  []string{"*"},
@@ -296,11 +310,12 @@ func bootstrapAdmin(s *MemStore) {
 		UpdatedAt: now,
 	})
 
+	hash, _ := auth.HashPassword(superPassword)
 	s.Users = append(s.Users, &User{
 		ID:           NewID("user"),
-		SchoolID:     "system", // Super admins are system-wide
+		SchoolID:     "system",
 		Email:        superEmail,
-		PasswordHash: superPassword,
+		PasswordHash: hash,
 		Password:     superPassword,
 		Role:         "super_admin",
 		Permissions:  []string{"*"},

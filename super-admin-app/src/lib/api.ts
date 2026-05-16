@@ -1,8 +1,8 @@
 // Super Admin API client
 
 // Base URL for the backend API. Set VITE_API_URL in production (Vercel) to
-// point at the deployed Go backend. Leave empty in dev to use Vite proxy.
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+// point at the deployed Go backend.
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8080').replace(/\/$/, '')
 
 function resolveUrl(url: string): string {
   if (/^https?:\/\//.test(url)) return url
