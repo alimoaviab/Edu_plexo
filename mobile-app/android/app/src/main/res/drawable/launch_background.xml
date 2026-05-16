@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splashBackground" />
+    <!-- The flutter_native_splash tool will inject the logo bitmap here
+         when you run `dart run flutter_native_splash:create`. -->
+</layer-list>

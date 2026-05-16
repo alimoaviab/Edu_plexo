@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Center "E" mark for EduPlexo. Lives in the inner 72dp safe-zone. -->
+    <group android:translateX="36" android:translateY="32">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M4,4 L32,4 L32,12 L14,12 L14,20 L28,20 L28,28 L14,28 L14,36 L32,36 L32,44 L4,44 Z"/>
+    </group>
+</vector>
