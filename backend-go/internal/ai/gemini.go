@@ -1,12 +1,10 @@
 // Package ai provides the Google Gemini API client for the AI School Assistant.
 //
-// Responsibilities:
-//   - Intent detection from natural language (English, Urdu, Roman Urdu, mixed)
-//   - Response generation with school context
-//   - Graceful timeout (2500ms) with fallback to keyword matching
+// Architecture: Gemini acts as the REASONING ENGINE, not just an intent classifier.
+// It receives the user message + school data context + conversation history,
+// then generates a natural, conversational response with insights and follow-ups.
 //
-// The client NEVER sends raw student data or PII to Gemini — only structured
-// summaries prepared by the query handlers.
+// Flow: User Message → Build Context (fetch relevant data) → Gemini Reasoning → Response
 package ai
 
 import (
@@ -20,7 +18,7 @@ import (
 	"time"
 )
 
-// GeminiClient wraps the Google Gemini API for intent detection and NLU.
+// GeminiClient wraps the Google Gemini API.
 type GeminiClient struct {
 	apiKey     string
 	model      string
@@ -30,17 +28,17 @@ type GeminiClient struct {
 
 // ChatMessage represents a single message in conversation history.
 type ChatMessage struct {
-	Role    string `json:"role"`    // "user" or "assistant"
+	Role    string `json:"role"`    // "user" or "model"
 	Content string `json:"content"`
 }
 
 // IntentResult is the structured output from intent detection.
 type IntentResult struct {
-	Intent     string            `json:"intent"`     // e.g. "student_search", "fee_summary"
-	Category   string            `json:"category"`   // e.g. "student", "fee", "guide"
-	Entities   map[string]string `json:"entities"`   // extracted: {"name": "Ali", "class": "5"}
-	Confidence float64           `json:"confidence"` // 0.0 - 1.0
-	Language   string            `json:"language"`   // "en", "ur", "roman_ur", "mixed"
+	Intent     string            `json:"intent"`
+	Category   string            `json:"category"`
+	Entities   map[string]string `json:"entities"`
+	Confidence float64           `json:"confidence"`
+	Language   string            `json:"language"`
 }
 
 // NewGeminiClient creates a Gemini API client. Returns nil if apiKey is empty.
@@ -53,14 +51,14 @@ func NewGeminiClient(apiKey, model string, timeoutMs int) *GeminiClient {
 	}
 	timeout := time.Duration(timeoutMs) * time.Millisecond
 	if timeout == 0 {
-		timeout = 2500 * time.Millisecond
+		timeout = 8000 * time.Millisecond
 	}
 	return &GeminiClient{
 		apiKey:  apiKey,
 		model:   model,
 		timeout: timeout,
 		httpClient: &http.Client{
-			Timeout: timeout + 500*time.Millisecond, // slightly more than our deadline
+			Timeout: timeout + 2000*time.Millisecond,
 		},
 	}
 }
@@ -70,33 +68,61 @@ func (g *GeminiClient) Available() bool {
 	return g != nil && g.apiKey != ""
 }
 
-// DetectIntent classifies a user message into an intent with entity extraction.
-func (g *GeminiClient) DetectIntent(ctx context.Context, message string, history []ChatMessage) (*IntentResult, error) {
+// GenerateResponse sends the full conversation to Gemini and gets a natural response.
+// This is the CORE method — Gemini acts as the reasoning engine.
+func (g *GeminiClient) GenerateResponse(ctx context.Context, systemPrompt string, history []ChatMessage, userMessage string) (string, error) {
 	if !g.Available() {
-		return nil, fmt.Errorf("gemini not configured")
+		return "", fmt.Errorf("gemini not configured")
 	}
 
-	systemPrompt := intentDetectionPrompt()
+	// Build contents array with history + current message
+	contents := make([]map[string]any, 0, len(history)+2)
 
-	// Build conversation parts
-	parts := []map[string]string{
-		{"text": systemPrompt + "\n\nUser message: " + message},
+	// System instruction as first user message (Gemini doesn't have system role in v1beta)
+	contents = append(contents, map[string]any{
+		"role":  "user",
+		"parts": []map[string]string{{"text": systemPrompt}},
+	})
+	contents = append(contents, map[string]any{
+		"role":  "model",
+		"parts": []map[string]string{{"text": "Understood. I am EduBot, the AI school assistant. I will respond naturally, provide insights, and ask follow-up questions. Ready to help."}},
+	})
+
+	// Add conversation history (last 10 messages)
+	historyLimit := 10
+	startIdx := 0
+	if len(history) > historyLimit {
+		startIdx = len(history) - historyLimit
 	}
+	for _, msg := range history[startIdx:] {
+		role := "user"
+		if msg.Role == "assistant" || msg.Role == "model" {
+			role = "model"
+		}
+		contents = append(contents, map[string]any{
+			"role":  role,
+			"parts": []map[string]string{{"text": msg.Content}},
+		})
+	}
+
+	// Current user message
+	contents = append(contents, map[string]any{
+		"role":  "user",
+		"parts": []map[string]string{{"text": userMessage}},
+	})
 
 	reqBody := map[string]any{
-		"contents": []map[string]any{
-			{"parts": parts},
-		},
+		"contents": contents,
 		"generationConfig": map[string]any{
-			"temperature":     0.1,
-			"maxOutputTokens": 300,
-			"responseMimeType": "application/json",
+			"temperature":     0.7,
+			"maxOutputTokens": 1024,
+			"topP":            0.9,
 		},
 	}
 
 	body, err := json.Marshal(reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("marshal request: %w", err)
+		return "", fmt.Errorf("marshal: %w", err)
 	}
 
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", g.model, g.apiKey)
@@ -106,27 +132,27 @@ func (g *GeminiClient) DetectIntent(ctx context.Context, message string, history
 
 	req, err := http.NewRequestWithContext(reqCtx, "POST", url, bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
+		return "", fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("gemini request: %w", err)
+		return "", fmt.Errorf("gemini request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("read response: %w", err)
+		return "", fmt.Errorf("read response: %w", err)
 	}
 
 	if resp.StatusCode != 200 {
-		log.Printf("[gemini] API error %d: %s", resp.StatusCode, string(respBody[:min(len(respBody), 200)]))
-		return nil, fmt.Errorf("gemini API error: status %d", resp.StatusCode)
+		log.Printf("[gemini] API error %d: %s", resp.StatusCode, string(respBody[:min(len(respBody), 300)]))
+		return "", fmt.Errorf("gemini API error: status %d", resp.StatusCode)
 	}
 
-	// Parse Gemini response
+	// Parse response
 	var geminiResp struct {
 		Candidates []struct {
 			Content struct {
@@ -137,65 +163,39 @@ func (g *GeminiClient) DetectIntent(ctx context.Context, message string, history
 		} `json:"candidates"`
 	}
 	if err := json.Unmarshal(respBody, &geminiResp); err != nil {
-		return nil, fmt.Errorf("parse gemini response: %w", err)
+		return "", fmt.Errorf("parse response: %w", err)
 	}
 
 	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
-		return nil, fmt.Errorf("empty gemini response")
+		return "", fmt.Errorf("empty response")
 	}
 
-	text := geminiResp.Candidates[0].Content.Parts[0].Text
-
-	// Parse the JSON intent result
-	var result IntentResult
-	if err := json.Unmarshal([]byte(text), &result); err != nil {
-		// Try to extract JSON from markdown code block
-		if start := indexOf(text, "{"); start >= 0 {
-			if end := lastIndexOf(text, "}"); end > start {
-				if err2 := json.Unmarshal([]byte(text[start:end+1]), &result); err2 != nil {
-					return nil, fmt.Errorf("parse intent JSON: %w (raw: %s)", err, text[:min(len(text), 100)])
-				}
-			}
-		}
-		if result.Intent == "" {
-			return nil, fmt.Errorf("parse intent: %w", err)
-		}
-	}
-
-	if result.Entities == nil {
-		result.Entities = map[string]string{}
-	}
-
-	return &result, nil
+	return geminiResp.Candidates[0].Content.Parts[0].Text, nil
 }
 
-// GenerateAnalysis asks Gemini to provide a natural language analysis of data.
-func (g *GeminiClient) GenerateAnalysis(ctx context.Context, dataSummary, userQuestion, language string) (string, error) {
+// DetectIntent classifies a user message (used for routing when full reasoning isn't needed).
+func (g *GeminiClient) DetectIntent(ctx context.Context, message string, history []ChatMessage) (*IntentResult, error) {
 	if !g.Available() {
-		return "", nil
+		return nil, fmt.Errorf("gemini not configured")
 	}
 
-	prompt := fmt.Sprintf(`You are a helpful school management assistant. The user asked: "%s"
-
-Here is the data from the school database:
-%s
-
-Provide a brief, helpful analysis in 1-2 sentences. If the language is Urdu/Roman Urdu, respond in the same language. Be concise and actionable.`, userQuestion, dataSummary)
+	prompt := intentDetectionPrompt() + "\n\nUser message: " + message
 
 	reqBody := map[string]any{
 		"contents": []map[string]any{
 			{"parts": []map[string]string{{"text": prompt}}},
 		},
 		"generationConfig": map[string]any{
-			"temperature":     0.3,
-			"maxOutputTokens": 150,
+			"temperature":      0.1,
+			"maxOutputTokens":  300,
+			"responseMimeType": "application/json",
 		},
 	}
 
 	body, _ := json.Marshal(reqBody)
 	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", g.model, g.apiKey)
 
-	reqCtx, cancel := context.WithTimeout(ctx, g.timeout)
+	reqCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
 	req, _ := http.NewRequestWithContext(reqCtx, "POST", url, bytes.NewReader(body))
@@ -203,12 +203,14 @@ Provide a brief, helpful analysis in 1-2 sentences. If the language is Urdu/Roma
 
 	resp, err := g.httpClient.Do(req)
 	if err != nil {
-		return "", nil // Non-fatal
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return "", nil
+		respBody, _ := io.ReadAll(resp.Body)
+		log.Printf("[gemini] intent error %d: %s", resp.StatusCode, string(respBody[:min(len(respBody), 200)]))
+		return nil, fmt.Errorf("status %d", resp.StatusCode)
 	}
 
 	respBody, _ := io.ReadAll(resp.Body)
@@ -223,44 +225,39 @@ Provide a brief, helpful analysis in 1-2 sentences. If the language is Urdu/Roma
 	}
 	json.Unmarshal(respBody, &geminiResp)
 
-	if len(geminiResp.Candidates) > 0 && len(geminiResp.Candidates[0].Content.Parts) > 0 {
-		return geminiResp.Candidates[0].Content.Parts[0].Text, nil
+	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
+		return nil, fmt.Errorf("empty")
 	}
-	return "", nil
-}
 
-// ─── Intent Detection System Prompt ──────────────────────────────────────
+	text := geminiResp.Candidates[0].Content.Parts[0].Text
+	var result IntentResult
+	if err := json.Unmarshal([]byte(text), &result); err != nil {
+		// Try extracting JSON from text
+		if start := indexOf(text, "{"); start >= 0 {
+			if end := lastIndexOf(text, "}"); end > start {
+				json.Unmarshal([]byte(text[start:end+1]), &result)
+			}
+		}
+		if result.Intent == "" {
+			return nil, fmt.Errorf("parse failed")
+		}
+	}
+	if result.Entities == nil {
+		result.Entities = map[string]string{}
+	}
+	return &result, nil
+}
 
 func intentDetectionPrompt() string {
-	return `You are an intent classifier for a School ERP assistant called EduBot. Classify the user message into exactly one intent.
+	return `You are an intent classifier for a School ERP assistant. Classify into exactly one intent.
 
-Available intents:
-GUIDE: guide_create_student, guide_create_class, guide_create_exam, guide_create_fee, guide_create_teacher, guide_mark_attendance, guide_enter_results, guide_create_event, guide_create_timetable
-DIAGNOSTIC: diagnostic (user reports something failed/broken/not working)
-ACADEMIC_YEAR: academic_year_status, academic_year_list
-CLASS: class_list, class_search, class_attendance, class_fee_collection
-TEACHER: teacher_search, teacher_current_period, teacher_list
-STUDENT: student_search, student_results, student_attendance, student_count, student_top, student_weak
-EVENT: event_upcoming, event_today, event_search
-EXAM: exam_upcoming, exam_performance, exam_schedule
-RESULT: result_class_performance, result_top, result_weak, result_trends
-FEE: fee_summary, fee_student_status, fee_defaulters
-SUBSCRIPTION: subscription_status, subscription_usage
-SUPPORT: support_contact, support_ticket
-GREETING: greeting
-STATS: school_stats (general overview/dashboard)
-UNKNOWN: unknown
+Intents: guide_create_student, guide_create_class, guide_create_exam, guide_mark_attendance, guide_create_teacher, guide_enter_results, diagnostic, academic_year_status, class_list, class_search, class_attendance, teacher_search, teacher_current_period, teacher_list, student_search, student_results, student_attendance, student_count, student_top, student_weak, event_upcoming, exam_upcoming, exam_performance, result_class_performance, result_top, result_weak, fee_summary, fee_student_status, fee_defaulters, subscription_status, support_contact, greeting, school_stats, unknown
 
-The user may write in English, Urdu, Roman Urdu, or a mix. Handle spelling mistakes gracefully.
-Examples: "kitne student hain" = student_count, "Ali ka result" = student_results, "fee kitni collect hui" = fee_summary, "class 5 ki attendance" = class_attendance, "teacher Ali kahan hai" = teacher_current_period
+User may write in English, Urdu, Roman Urdu, or mixed. Handle spelling mistakes.
+Extract entities: student_name, class_name, teacher_name, exam_name, subject_name.
 
-Extract entities when present: student_name, class_name, teacher_name, exam_name, subject_name.
-
-Respond ONLY with valid JSON (no markdown, no explanation):
-{"intent": "...", "category": "...", "entities": {}, "confidence": 0.0-1.0, "language": "en|ur|roman_ur|mixed"}`
+Respond ONLY with JSON: {"intent":"...","category":"...","entities":{},"confidence":0.0-1.0,"language":"en|ur|roman_ur|mixed"}`
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────
 
 func indexOf(s, substr string) int {
 	for i := 0; i <= len(s)-len(substr); i++ {

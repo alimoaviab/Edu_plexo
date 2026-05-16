@@ -422,7 +422,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
         <div className={`flex h-11 items-center gap-2 px-3 ${isCollapsed ? "justify-center" : "justify-between"}`}>
           <div className="flex items-center gap-2">
             <div className="flex h-5.5 w-5.5 flex-shrink-0 items-center justify-center rounded bg-blue-600 shadow-sm">
-              <span className="material-symbols-outlined text-[12px] font-bold text-white">school</span>
+              <span className="material-symbols-outlined text-[13px] font-bold text-white">school</span>
             </div>
             {!isCollapsed && (
               <span className="text-[13px] font-bold tracking-tight text-slate-900">Eduplexo</span>
@@ -445,27 +445,16 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
             const isExpanded = expandedGroups[group.label] !== false;
             return (
               <div key={group.label} className="space-y-0.5">
-                {!isCollapsed && (
-                  <button
-                    onClick={() => toggleGroup(group.label)}
-                    className="group flex w-full items-center justify-between px-2 py-1 text-[8px] font-bold normal-case tracking-[0.15em] text-blue-600/40 transition-colors hover:text-blue-600"
-                  >
-                    <span>{group.label}</span>
-                    <span className={`material-symbols-outlined text-[10px] transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>
-                      expand_more
-                    </span>
-                  </button>
-                )}
-                <div className={`overflow-hidden space-y-0.5 transition-all duration-300 ${!isCollapsed && !isExpanded ? "max-h-0 opacity-0" : "max-h-[800px] opacity-100"}`}>
+                <div className="space-y-0.5">
                   {group.items.map((item) => {
                     const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                     return isCollapsed ? (
                       <Tooltip key={item.href} text={item.label}>
                         <Link
                           to={item.href}
-                          className={`flex h-7 w-7 items-center justify-center rounded transition-all duration-200 ${isActive ? "bg-blue-600 text-white shadow-sm" : "text-blue-600/50 hover:bg-blue-50 hover:text-blue-600"}`}
+                          className={`flex h-7 w-7 items-center justify-center rounded transition-all duration-200 ${isActive ? "bg-blue-600 !text-white shadow-sm" : "text-slate-400 hover:bg-blue-50 hover:text-blue-600"}`}
                         >
-                          <span className={`material-symbols-outlined text-[15px] ${isActive ? "font-bold" : ""}`}>
+                          <span className={`material-symbols-outlined text-[16px] ${isActive ? "font-bold" : ""}`}>
                             {item.icon}
                           </span>
                         </Link>
@@ -474,9 +463,9 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
                       <Link
                         key={item.href}
                         to={item.href}
-                        className={`premium-nav-item group flex h-6.5 items-center gap-2 px-2.5 py-1 text-[11px] font-bold ${isActive ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "text-slate-600 hover:bg-blue-50/50 hover:text-blue-600"}`}
+                        className={`group flex h-7 items-center gap-2.5 px-2.5 py-1 text-[11px] font-bold transition-all duration-200 rounded-lg ${isActive ? "bg-blue-600 !text-white shadow-md shadow-blue-600/20" : "text-slate-500 hover:bg-blue-50/50 hover:text-blue-600"}`}
                       >
-                        <span className={`material-symbols-outlined text-[14px] transition-colors ${isActive ? "font-bold text-white" : "text-slate-400 group-hover:text-blue-600"}`}>
+                        <span className={`material-symbols-outlined text-[16px] transition-colors ${isActive ? "text-white" : "text-slate-400 group-hover:text-blue-600"}`}>
                           {item.icon}
                         </span>
                         <span className="truncate tracking-tight">{item.label}</span>
@@ -509,9 +498,9 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
                 </div>
                 <button
                   onClick={logout}
-                  className="rounded p-0.5 text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                  className="rounded p-1 text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500"
                 >
-                  <span className="material-symbols-outlined text-[14px]">logout</span>
+                  <span className="material-symbols-outlined text-[15px]">logout</span>
                 </button>
               </>
             )}
