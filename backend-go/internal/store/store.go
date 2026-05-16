@@ -25,8 +25,7 @@ import (
 // (no concurrency benchmarks, single-process server). Phase 3 swaps this for
 // PostgreSQL via the repository interfaces below.
 type MemStore struct {
-	mu    sync.RWMutex
-	idxMu sync.RWMutex
+	mu sync.RWMutex
 
 	Schools        []*School
 	Users          []*User
@@ -59,6 +58,14 @@ type MemStore struct {
 	FeePayments    []*FeePayment
 	FeeAdjustments []*FeeAdjustment
 	ClassFees      []*ClassFee
+
+	// Finance collections.
+	SchoolPackages []*SchoolPackage
+	Expenses       []*Expense
+	RevenueRecords []*RevenueRecord
+	Invoices       []*Invoice
+	Transactions   []*Transaction
+	Subscriptions  []*Subscription
 
 	// ─── Lookup indexes (perf phase 1) ──────────────────────────────────
 	//

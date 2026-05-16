@@ -1,0 +1,17 @@
+# Secrets
+.env.production
+*.pem
+*.key
+
+# SSL certificates
+certbot/
+
+# Backups (too large for git)
+backups/*.sql.gz
+backups/*.dump
+
+# Nginx cache
+nginx_cache/
+
+# Logs
+logs/

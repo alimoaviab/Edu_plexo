@@ -1,0 +1,285 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Eduplexo — VPS Production Docker Compose (Hostinger KVM 2)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Optimized for limited-RAM VPS (4GB). Runs ONLY backend infrastructure:
+#   - nginx (reverse proxy + SSL termination)
+#   - backend-go (single instance, optimized)
+#   - postgres (tuned for 4GB RAM)
+#   - redis (cache + pub/sub)
+#   - migrate (one-shot migration runner)
+#
+# Frontends are deployed on Vercel with custom domains.
+#
+# Deploy:
+#   docker compose -f docker-compose.vps.yml --env-file .env.production up -d --build
+#
+# Architecture:
+#   Vercel (frontends) → Nginx (443) → backend-go (8080) → PostgreSQL + Redis
+
+services:
+  # ─── Nginx Reverse Proxy + SSL ────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: eduplexo_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      backend-go:
+        condition: service_healthy
+    networks:
+      - frontend
+      - backend
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.5"
+        reservations:
+          memory: 32M
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/nginx-health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ─── Certbot (SSL Certificate Renewal) ────────────────────────────────
+  certbot:
+    image: certbot/certbot:latest
+    container_name: eduplexo_certbot
+    restart: "no"
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done;'"
+    networks:
+      - frontend
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.1"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # ─── Go Backend ──────────────────────────────────────────────────────
+  backend-go:
+    build:
+      context: ../backend-go
+      dockerfile: ../deploy/dockerfiles/Dockerfile.backend
+    container_name: eduplexo_backend
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment:
+      PORT: "8080"
+      APP_NAME: school
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      COOKIE_SECURE: "true"
+      JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      DEFAULT_ADMIN_EMAIL: ${DEFAULT_ADMIN_EMAIL}
+      DEFAULT_ADMIN_PASS: ${DEFAULT_ADMIN_PASS}
+      GOMAXPROCS: "2"
+      GOMEMLIMIT: "512MiB"
+    expose:
+      - "8080"
+    networks:
+      - backend
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 640M
+          cpus: "1.5"
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/health/live || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "30m"
+        max-file: "5"
+    stop_grace_period: 30s
+
+  # ─── PostgreSQL ──────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: eduplexo_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    expose:
+      - "5432"
+    networks:
+      - db
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=768MB
+      -c work_mem=8MB
+      -c maintenance_work_mem=128MB
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c max_connections=50
+      -c wal_buffers=8MB
+      -c checkpoint_completion_target=0.9
+      -c max_wal_size=1GB
+      -c min_wal_size=256MB
+      -c log_min_duration_statement=500
+      -c log_checkpoints=on
+      -c log_connections=on
+      -c log_disconnections=on
+      -c log_lock_waits=on
+      -c log_temp_files=0
+      -c track_activities=on
+      -c track_counts=on
+      -c track_io_timing=on
+      -c huge_pages=off
+      -c jit=off
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+          cpus: "1.5"
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ─── Redis ───────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: eduplexo_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --appendfsync everysec
+      --tcp-keepalive 300
+      --timeout 300
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --requirepass ${REDIS_PASSWORD}
+      --rename-command FLUSHALL ""
+      --rename-command FLUSHDB ""
+      --rename-command DEBUG ""
+    volumes:
+      - redis_data:/data
+    expose:
+      - "6379"
+    networks:
+      - db
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+          cpus: "0.3"
+        reservations:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ─── Database Migrations ─────────────────────────────────────────────
+  migrate:
+    image: migrate/migrate:v4.18.1
+    container_name: eduplexo_migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../backend-go/migrations:/migrations:ro
+    command:
+      [
+        "-path", "/migrations",
+        "-database", "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable",
+        "up",
+      ]
+    networks:
+      - db
+    restart: "no"
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: "0.2"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+networks:
+  frontend:
+    name: eduplexo_frontend
+    driver: bridge
+  backend:
+    name: eduplexo_backend
+    driver: bridge
+  db:
+    name: eduplexo_db
+    driver: bridge
+    internal: true
+
+volumes:
+  postgres_data:
+    name: eduplexo_vps_postgres
+  redis_data:
+    name: eduplexo_vps_redis
+  nginx_cache:
+    name: eduplexo_vps_nginx_cache
