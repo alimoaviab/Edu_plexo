@@ -20,7 +20,6 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Breadcrumb } from "@/components/ui";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
-import { AIAssistant } from "@/components/ai/AIAssistant";
 import {
   getSelectedAcademicYearId,
   setSelectedAcademicYearId,
@@ -42,7 +41,10 @@ type NavGroup = {
 const adminNavGroups: NavGroup[] = [
   {
     label: "Reports",
-    items: [{ label: "Dashboard", href: "/admin/dashboard", icon: "dashboard" }],
+    items: [
+      { label: "Dashboard", href: "/admin/dashboard", icon: "dashboard" },
+      { label: "AI Copilot", href: "/admin/ai", icon: "smart_toy" },
+    ],
   },
   {
     label: "Academic",
@@ -271,7 +273,6 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
   const [academyYears, setAcademyYears] = useState<AcademicYearRow[]>([]);
   const [selectedAcademyYearId, setSelectedAcademicYearIdState] = useState<string>("");
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-  const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   const navGroups = useMemo(() => navGroupsForRole(user?.role), [user]);
 
@@ -390,21 +391,6 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
 
   const content = (
     <div className="flex h-screen bg-background text-slate-900 font-sans overflow-hidden">
-      {showAIAssistant ? (
-        <div className="fixed inset-0 z-50 pointer-events-none">
-          <div className="pointer-events-auto">
-            <AIAssistant onClose={() => setShowAIAssistant(false)} />
-          </div>
-        </div>
-      ) : (
-        <button
-          onClick={() => setShowAIAssistant(true)}
-          className="fixed bottom-6 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-slate-900 text-white shadow-2xl hover:scale-105 transition-transform animate-glow"
-          aria-label="Open AI Assistant"
-        >
-          <span className="material-symbols-outlined text-[28px]">smart_toy</span>
-        </button>
-      )}
       {/* Sidebar */}
       {/* Mobile overlay backdrop */}
       {!isCollapsed && (
@@ -479,7 +465,17 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
           })}
         </nav>
 
-        <div className={`mt-auto border-t border-slate-50 p-1.5 ${isCollapsed ? "flex justify-center" : ""}`}>
+        <div className={`mt-auto border-t border-slate-50 p-1.5 space-y-1 ${isCollapsed ? "flex flex-col items-center" : ""}`}>
+          {(user.role === "admin" || user.role === "super_admin") && (
+            <Link
+              to="/admin/ai"
+              className={`w-full rounded border border-blue-100 bg-blue-50/70 px-2 py-1.5 transition-colors hover:bg-blue-100 hover:border-blue-200 ${isCollapsed ? "flex items-center justify-center" : "flex items-center gap-2"}`}
+              aria-label="Open AI copilot"
+            >
+              <span className="material-symbols-outlined text-[15px] text-blue-600">smart_toy</span>
+              {!isCollapsed && <span className="text-[10px] font-bold text-blue-700">AI Copilot</span>}
+            </Link>
+          )}
           <div className={`flex w-full items-center gap-2 rounded border border-slate-50 bg-slate-50/30 px-2 py-1 transition-colors group ${isCollapsed ? "justify-center" : ""}`}>
             <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-blue-600 shadow-sm">
               <span className="text-[9px] font-bold text-white">
@@ -587,7 +583,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
           </div>
         </header>
 
-        <div key={pathname} className="w-full flex-1 overflow-y-auto animate-fade-in-up px-4 py-3 md:px-8 md:pt-4 custom-scrollbar relative z-10">
+        <div key={pathname} className="w-full flex-1 overflow-y-auto animate-fade-in-up px-3 py-3 md:px-6 md:py-4 lg:px-8 custom-scrollbar relative z-10">
           <ErrorBoundary
             title="This page ran into a problem"
             message="A part of this page failed to render. Try the action again, or refresh the page."

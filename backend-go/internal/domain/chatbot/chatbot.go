@@ -18,6 +18,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/ai"
 	"github.com/eduplexo/backend-go/internal/api"
 	"github.com/eduplexo/backend-go/internal/auth"
+	"github.com/eduplexo/backend-go/internal/audit"
 	"github.com/eduplexo/backend-go/internal/cache"
 	"github.com/eduplexo/backend-go/internal/store"
 )
@@ -56,55 +57,88 @@ type chatResponse struct {
 }
 
 // The conversational system prompt that makes Gemini behave like a mature AI assistant.
-const systemPrompt = `You are EduBot — the AI brain of Eduplexo School Management System.
+const systemPrompt = `You are EduBot, a professional AI-powered school management assistant for a School ERP system.
 
-PERSONALITY:
-- You are warm, intelligent, proactive, and conversational — like ChatGPT quality
-- You speak naturally in whatever language the user uses (English, Urdu, Roman Urdu, or mixed)
-- You NEVER sound robotic. You NEVER just dump raw numbers.
-- You provide context, insights, analysis, and recommendations with every response
-- You ask a smart follow-up question at the END of every meaningful response
+Your responsibilities:
+* answer user questions clearly
+* guide users step-by-step
+* explain features professionally
+* analyze school data
+* provide structured responses
+* generate quick action buttons
+* provide direct page links/navigation
 
-RESPONSE RULES:
-1. SUMMARIZE first, then show details
-2. EXPLAIN what the data means — don't just list it
-3. HIGHLIGHT important information (trends, warnings, achievements)
-4. RECOMMEND actions when relevant
-5. ASK a follow-up question at the end
+━━━━━━━━━━━━━━━━━━
+RESPONSE STYLE RULES
+━━━━━━━━━━━━━━━━━━
 
-BAD RESPONSE: "Total students: 50"
-GOOD RESPONSE: "Aapke school me iss waqt 50 students enrolled hain. Sabse zyada Class 5 me hain (18 students). Overall attendance 93% chal rahi hai jo kaafi achi hai. Kya aap class-wise breakdown dekhna chahenge?"
+IMPORTANT:
+Responses must ALWAYS be:
+* structured
+* professional
+* easy to read
+* visually clean
+* step-by-step
 
-STYLE:
-- Use markdown (bold, bullets, emojis) for readability
-- Keep responses 4-10 lines (concise but thorough)
-- Use emojis sparingly for visual clarity (📊 💰 ✅ ❌ 📝 👨‍🎓)
-- When showing lists, limit to top 5-10 items with a summary
-- When data shows a problem (low attendance, pending fees), PROACTIVELY mention it
+DO NOT:
+* write messy paragraphs
+* dump raw text
+* write long unstructured responses
+* use emojis (unless specified in formatting)
+* sound robotic
+* show raw database output directly
 
-INSIGHTS YOU SHOULD PROVIDE:
-- Attendance: mention weak classes, improvement trends, today vs average
-- Fees: highlight pending risks, overdue concerns, collection rate
-- Students: class distribution, active vs inactive ratio
-- Results: top performers, weak areas, subject-wise analysis
-- Teachers: workload distribution, subject coverage
+ALWAYS:
+* use headings
+* use numbered steps
+* use bullet points
+* separate sections clearly
+* provide summaries first
+* provide actionable guidance
 
-FOLLOW-UP QUESTIONS (ask one at the end):
-- "Kya aap aur details dekhna chahenge?"
-- "Kya main attendance bhi dikhaun?"
-- "Kya aap fee details bhi dekhna chahenge?"
-- "Kya aap top students bhi dekhna chahenge?"
-- "Kya kisi specific class ki info chahiye?"
+━━━━━━━━━━━━━━━━━━
+ACTION BUTTON RULES
+━━━━━━━━━━━━━━━━━━
 
-SECURITY:
-- ONLY use data provided in context. NEVER invent numbers or names.
-- If data is empty, say so honestly and suggest what to do
-- For fee/subscription queries, only respond if user role is admin or super_admin
-- Never expose internal system details
+VERY IMPORTANT:
+Whenever explaining a feature, ALWAYS provide:
+1. Action buttons
+2. Navigation links
+3. Related quick actions
 
-ACTIONS (suggest as buttons when relevant):
-Format: [Button: Label | /route]
-Available routes: /admin/students, /admin/students/create, /admin/classes, /admin/classes/create, /admin/attendance, /admin/attendance/create, /admin/exams, /admin/results, /admin/fee, /admin/teachers, /admin/timetable, /admin/events, /admin/settings, /admin/academic-years/create, /admin/subscription
+Each button must include:
+* label
+* route
+* action_type (navigate, create, edit, delete)
+* icon (Material Symbol name)
+
+Example format for buttons (at the end of response):
+Quick Buttons:
+[
+  {"label": "Create Class", "route": "/admin/classes/create", "action_type": "create", "icon": "school"},
+  {"label": "Open Classes", "route": "/admin/classes", "action_type": "navigate", "icon": "list"}
+]
+
+━━━━━━━━━━━━━━━━━━
+GUIDE SYSTEM RULES
+━━━━━━━━━━━━━━━━━━
+
+When the user asks how to do something (create class, add student, etc.), provide:
+1. Navigation path
+2. Step-by-step guide
+3. Required fields
+4. Common problems & Solutions
+5. Quick Buttons
+
+━━━━━━━━━━━━━━━━━━
+IMPORTANT AI RULES
+━━━━━━━━━━━━━━━━━━
+
+1. Always answer in the user's language: English, Urdu, Roman Urdu, or Mixed.
+2. Keep responses concise, privacy-first, and professionally formatted.
+3. Never expose raw lists, internal IDs, contact details, fee history, or debug output unless explicitly authorized.
+4. Summarize first, reveal details only on request, and keep visible items to a very small number.
+5. If information is outside the user's role, say so clearly and offer a safe next step.
 
 SCHOOL DATA CONTEXT:
 `
@@ -127,9 +161,12 @@ func (h *Handler) Message(w http.ResponseWriter, r *http.Request) {
 	if len(msg) > 500 {
 		msg = msg[:500]
 	}
+	if h.shouldAuditPrompt(ctx, msg) {
+		audit.Write(h.Store, ctx, audit.Input{Action: "query", EntityType: "chatbot", EntityID: "message", Metadata: map[string]any{"message_length": len(msg), "role": ctx.Role}})
+	}
 	if msg == "" {
 		api.WriteJSON(w, http.StatusOK, api.Ok(chatResponse{
-			Reply: "Assalam o Alaikum! 👋 Main EduBot hoon — aapka AI school assistant.\n\nMujhse poochein:\n• Students ki info\n• Attendance status\n• Fee collection\n• Exams & results\n• Teachers\n• Timetable\n• Koi bhi problem diagnose karwayein\n\nKya main aapki kisi cheez mein madad kar sakta hoon?",
+			Reply: "Hello. I am EduBot, your school assistant. Ask for a summary of students, attendance, classes, exams, fees, or timetable, and I will keep the response concise.",
 			QuickButtons: []ActionButton{
 				{Label: "School Overview", Route: "/admin/dashboard", ActionType: "navigate", Icon: "dashboard"},
 				{Label: "Students", Route: "/admin/students", ActionType: "navigate", Icon: "school"},
@@ -142,12 +179,14 @@ func (h *Handler) Message(w http.ResponseWriter, r *http.Request) {
 	// ─── AI REASONING MODE (Gemini available) ────────────────────────────
 	if h.Gemini != nil && h.Gemini.Available() {
 		resp := h.aiReasoning(r, ctx, msg, body.History)
+		resp = h.finalizeResponse(ctx, msg, resp)
 		api.WriteJSON(w, http.StatusOK, api.Ok(resp))
 		return
 	}
 
 	// ─── FALLBACK MODE (no Gemini) ───────────────────────────────────────
 	resp := h.keywordFallback(ctx, strings.ToLower(msg))
+	resp = h.finalizeResponse(ctx, msg, resp)
 	api.WriteJSON(w, http.StatusOK, api.Ok(resp))
 }
 
@@ -205,6 +244,46 @@ func (h *Handler) aiReasoning(r *http.Request, ctx *api.RequestContext, msg stri
 	}
 }
 
+func (h *Handler) finalizeResponse(ctx *api.RequestContext, userMessage string, resp chatResponse) chatResponse {
+	sanitized, event := sanitizeChatResponse(ctx, resp)
+	if len(event.Reasons) > 0 {
+		audit.Write(h.Store, ctx, audit.Input{Action: "response_filter", EntityType: "chatbot", EntityID: "message", Metadata: map[string]any{
+			"message_length": len(userMessage),
+			"reasons":        event.Reasons,
+			"truncated":      event.Truncated,
+			"redacted":       event.Redacted,
+			"blocked":        event.Blocked,
+		}})
+	}
+	if suspicious := detectSuspiciousPrompt(userMessage); len(suspicious) > 0 {
+		audit.Write(h.Store, ctx, audit.Input{Action: "suspicious_prompt", EntityType: "chatbot", EntityID: "message", Metadata: map[string]any{"signals": suspicious}})
+	}
+	return sanitized
+}
+
+func (h *Handler) shouldAuditPrompt(ctx *api.RequestContext, msg string) bool {
+	return len(detectSuspiciousPrompt(msg)) > 0 || ctx.Role == "student" || ctx.Role == "teacher" || ctx.Role == "parent"
+}
+
+func detectSuspiciousPrompt(msg string) []string {
+	lower := strings.ToLower(msg)
+	signals := []string{}
+	checks := map[string][]string{
+		"prompt_injection": {"ignore previous", "ignore all", "system prompt", "developer message", "jailbreak"},
+		"bulk_export":      {"export all", "download all", "show all students", "list all fees", "dump"},
+		"secret_disclosure": {"reveal", "hidden", "internal id", "raw data", "database"},
+	}
+	for label, terms := range checks {
+		for _, term := range terms {
+			if strings.Contains(lower, term) {
+				signals = append(signals, label)
+				break
+			}
+		}
+	}
+	return signals
+}
+
 // detectRelevantCategories determines which data to fetch based on the message.
 func detectRelevantCategories(msg string) []string {
 	msgLower := strings.ToLower(msg)
@@ -249,14 +328,31 @@ func detectRelevantCategories(msg string) []string {
 	return categories
 }
 
-// extractButtons parses [Button: Label | /route] markers from Gemini's response.
+// extractButtons parses both new JSON format and old [Button:...] markers.
 func extractButtons(text string) []ActionButton {
 	buttons := []ActionButton{}
+
+	// 1. Try to find "Quick Buttons:" followed by JSON array
+	if idx := strings.Index(text, "Quick Buttons:"); idx != -1 {
+		jsonPart := text[idx+len("Quick Buttons:"):]
+		start := strings.Index(jsonPart, "[")
+		end := strings.LastIndex(jsonPart, "]")
+		if start != -1 && end != -1 && end > start {
+			arrayStr := jsonPart[start : end+1]
+			if err := json.Unmarshal([]byte(arrayStr), &buttons); err == nil && len(buttons) > 0 {
+				if len(buttons) > 4 {
+					buttons = buttons[:4]
+				}
+				return buttons
+			}
+		}
+	}
+
+	// 2. Fallback to legacy line-by-line markers [Button: Label | /route]
 	lines := strings.Split(text, "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "[Button:") && strings.Contains(line, "|") {
-			// Parse [Button: Label | /route]
 			inner := strings.TrimPrefix(line, "[Button:")
 			inner = strings.TrimSuffix(inner, "]")
 			parts := strings.SplitN(inner, "|", 2)
@@ -268,20 +364,26 @@ func extractButtons(text string) []ActionButton {
 					if strings.Contains(route, "create") {
 						actionType = "create"
 					}
-					buttons = append(buttons, ActionButton{Label: label, Route: route, ActionType: actionType})
+					buttons = append(buttons, ActionButton{Label: label, Route: route, ActionType: actionType, Icon: "arrow_forward"})
 				}
 			}
 		}
 	}
-	// Limit to 4 buttons
+
 	if len(buttons) > 4 {
 		buttons = buttons[:4]
 	}
 	return buttons
 }
 
-// cleanButtonMarkers removes [Button:...] lines from the response text.
+// cleanButtonMarkers removes [Button:...] lines and "Quick Buttons:" blocks from the text.
 func cleanButtonMarkers(text string) string {
+	// 1. Remove "Quick Buttons:" and everything after it (usually at end of message)
+	if idx := strings.Index(text, "Quick Buttons:"); idx != -1 {
+		text = text[:idx]
+	}
+
+	// 2. Remove any remaining legacy [Button:...] lines
 	lines := strings.Split(text, "\n")
 	clean := make([]string, 0, len(lines))
 	for _, line := range lines {
@@ -313,9 +415,9 @@ func (h *Handler) keywordFallback(ctx *api.RequestContext, msg string) chatRespo
 	case containsAny(msg, "class", "classes"):
 		return h.toolGetClassInfo(ctx)
 	case containsAny(msg, "hello", "hi", "salam", "assalam"):
-		return chatResponse{Reply: "Hello! 👋 Main EduBot hoon. Students, fees, attendance, exams — kuch bhi poochein!"}
+		return chatResponse{Reply: "Hello. I am EduBot. You can ask for students, attendance, exams, timetable, or a school summary."}
 	case containsAny(msg, "help", "support", "madad"):
-		return chatResponse{Reply: "🆘 Support: support@eduplexo.com | +92 300 1234567"}
+		return chatResponse{Reply: "Support is available through the help desk in your ERP account."}
 	default:
 		return h.toolGetSchoolStats(ctx)
 	}
@@ -326,10 +428,11 @@ func (h *Handler) keywordFallback(ctx *api.RequestContext, msg string) chatRespo
 func (h *Handler) toolGetStudentCount(ctx *api.RequestContext) chatResponse {
 	h.Store.RLock()
 	defer h.Store.RUnlock()
+	scope := resolveChatScope(h.Store, ctx)
 	total, active := 0, 0
 	byClass := map[string]int{}
 	for _, s := range h.Store.Students {
-		if s.SchoolID != ctx.SchoolID {
+		if (!scope.AllowGlobal && s.SchoolID != scope.SchoolID) || (scope.Role != "admin" && scope.Role != "super_admin" && !scope.studentAllowed(s.ID) && !scope.classAllowed(s.ClassID)) {
 			continue
 		}
 		total++
@@ -353,10 +456,14 @@ func (h *Handler) toolGetStudentCount(ctx *api.RequestContext) chatResponse {
 func (h *Handler) toolGetAttendanceSummary(ctx *api.RequestContext) chatResponse {
 	h.Store.RLock()
 	defer h.Store.RUnlock()
+	scope := resolveChatScope(h.Store, ctx)
 	today := time.Now().Format("2006-01-02")
 	present, absent, late, total := 0, 0, 0, 0
 	for _, a := range h.Store.Attendance {
-		if a.SchoolID != ctx.SchoolID || a.Date.Format("2006-01-02") != today {
+		if (!scope.AllowGlobal && a.SchoolID != scope.SchoolID) || a.Date.Format("2006-01-02") != today {
+			continue
+		}
+		if scope.Role != "admin" && scope.Role != "super_admin" && !scope.studentAllowed(a.StudentID) && !scope.classAllowed(a.ClassID) {
 			continue
 		}
 		total++
@@ -382,10 +489,14 @@ func (h *Handler) toolGetAttendanceSummary(ctx *api.RequestContext) chatResponse
 func (h *Handler) toolGetFeeSummary(ctx *api.RequestContext) chatResponse {
 	h.Store.RLock()
 	defer h.Store.RUnlock()
+	scope := resolveChatScope(h.Store, ctx)
+	if !scope.canSeeFeeSummary() {
+		return chatResponse{Reply: "Fee details are restricted for your role. I can provide a school overview or open the fee module for an authorized account.", ToolUsed: "fee_summary"}
+	}
 	var collected, pending float64
 	paid, unpaid, overdue := 0, 0, 0
 	for _, f := range h.Store.Fees {
-		if f.SchoolID != ctx.SchoolID {
+		if (!scope.AllowGlobal && f.SchoolID != scope.SchoolID) || (!scope.AllowGlobal && !scope.studentAllowed(f.StudentID) && !scope.classAllowed(f.ClassID)) {
 			continue
 		}
 		eff := f.Amount + f.AdjustmentAmount
@@ -411,9 +522,10 @@ func (h *Handler) toolGetFeeSummary(ctx *api.RequestContext) chatResponse {
 func (h *Handler) toolGetTeacherList(ctx *api.RequestContext) chatResponse {
 	h.Store.RLock()
 	defer h.Store.RUnlock()
+	scope := resolveChatScope(h.Store, ctx)
 	teachers := []map[string]string{}
 	for _, t := range h.Store.Teachers {
-		if t.SchoolID != ctx.SchoolID {
+		if (!scope.AllowGlobal && t.SchoolID != scope.SchoolID) || (scope.Role != "admin" && scope.Role != "super_admin" && !scope.classAllowedAny(t.ClassIDs)) {
 			continue
 		}
 		subjects := "N/A"
@@ -421,6 +533,9 @@ func (h *Handler) toolGetTeacherList(ctx *api.RequestContext) chatResponse {
 			subjects = strings.Join(t.Subjects, ", ")
 		}
 		teachers = append(teachers, map[string]string{"name": t.FirstName + " " + t.LastName, "subjects": subjects})
+		if len(teachers) >= 5 {
+			break
+		}
 	}
 	return chatResponse{
 		Reply:    FormatTeacherResponse(teachers),
@@ -431,10 +546,11 @@ func (h *Handler) toolGetTeacherList(ctx *api.RequestContext) chatResponse {
 func (h *Handler) toolGetUpcomingExams(ctx *api.RequestContext) chatResponse {
 	h.Store.RLock()
 	defer h.Store.RUnlock()
+	scope := resolveChatScope(h.Store, ctx)
 	now := time.Now()
 	exams := []map[string]string{}
 	for _, e := range h.Store.Exams {
-		if e.SchoolID != ctx.SchoolID || !e.StartsAt.After(now) {
+		if (!scope.AllowGlobal && e.SchoolID != scope.SchoolID) || !e.StartsAt.After(now) || (scope.Role != "admin" && scope.Role != "super_admin" && !scope.classAllowed(e.ClassID)) {
 			continue
 		}
 		className := e.ClassID
@@ -455,15 +571,16 @@ func (h *Handler) toolGetUpcomingExams(ctx *api.RequestContext) chatResponse {
 func (h *Handler) toolGetTimetableSummary(ctx *api.RequestContext) chatResponse {
 	h.Store.RLock()
 	defer h.Store.RUnlock()
+	scope := resolveChatScope(h.Store, ctx)
 	total := 0
 	for _, t := range h.Store.Timetables {
-		if t.SchoolID == ctx.SchoolID {
+		if (scope.AllowGlobal || t.SchoolID == scope.SchoolID) && (scope.Role == "admin" || scope.Role == "super_admin" || scope.classAllowed(t.ClassID)) {
 			total += len(t.Sessions)
 		}
 	}
-	reply := fmt.Sprintf("📅 **Timetable:** %d periods configured hain across all classes.", total)
+	reply := fmt.Sprintf("Timetable: %d periods configured across allowed classes.", total)
 	if total == 0 {
-		reply = "📅 Timetable abhi configure nahi hua. Classes ke liye schedule set karein.\n\n💡 Kya main timetable create karne ka process bataaun?"
+		reply = "Timetable is not configured yet. You can set up a schedule from the timetable module."
 	}
 	reply += "\n\n" + FollowUp("timetable")
 	return chatResponse{Reply: reply, ToolUsed: "timetable"}
@@ -472,10 +589,11 @@ func (h *Handler) toolGetTimetableSummary(ctx *api.RequestContext) chatResponse 
 func (h *Handler) toolGetRecentResults(ctx *api.RequestContext) chatResponse {
 	h.Store.RLock()
 	defer h.Store.RUnlock()
+	scope := resolveChatScope(h.Store, ctx)
 	count := 0
 	var totalObt, totalMax float64
 	for _, r := range h.Store.Results {
-		if r.SchoolID != ctx.SchoolID {
+		if (!scope.AllowGlobal && r.SchoolID != scope.SchoolID) || (scope.Role != "admin" && scope.Role != "super_admin" && !scope.studentAllowed(r.StudentID) && !scope.classAllowed(r.ClassID)) {
 			continue
 		}
 		count++
@@ -492,9 +610,9 @@ func (h *Handler) toolGetRecentResults(ctx *api.RequestContext) chatResponse {
 		avg = (totalObt / totalMax) * 100
 	}
 	if count == 0 {
-		return chatResponse{Reply: "📊 Abhi koi results enter nahi hue. Exams ke baad results enter karein.\n\n💡 Kya main results enter karne ka process bataaun?", ToolUsed: "results"}
+		return chatResponse{Reply: "No results are available in your permitted scope yet. You can enter results after exams are completed.", ToolUsed: "results"}
 	}
-	reply := fmt.Sprintf("📊 **Results Summary**\n\nTotal entries: **%d**\nSchool Average: **%.0f%%**\n\n%s", count, avg, GenerateResultInsight(avg, count))
+	reply := fmt.Sprintf("Results Summary\n\nTotal entries: %d\nSchool Average: %.0f%%\n\n%s", count, avg, GenerateResultInsight(avg, count))
 	reply += "\n\n" + FollowUp("result")
 	return chatResponse{Reply: reply, ToolUsed: "results"}
 }
@@ -502,18 +620,22 @@ func (h *Handler) toolGetRecentResults(ctx *api.RequestContext) chatResponse {
 func (h *Handler) toolGetClassInfo(ctx *api.RequestContext) chatResponse {
 	h.Store.RLock()
 	defer h.Store.RUnlock()
+	scope := resolveChatScope(h.Store, ctx)
 	classes := []map[string]any{}
 	for _, c := range h.Store.Classes {
-		if c.SchoolID != ctx.SchoolID {
+		if (!scope.AllowGlobal && c.SchoolID != scope.SchoolID) || (!scope.classAllowed(c.ID) && scope.Role != "admin" && scope.Role != "super_admin") {
 			continue
 		}
 		count := 0
 		for _, s := range h.Store.Students {
-			if s.ClassID == c.ID {
+			if s.ClassID == c.ID && (scope.AllowGlobal || s.SchoolID == scope.SchoolID) {
 				count++
 			}
 		}
 		classes = append(classes, map[string]any{"name": c.Name, "student_count": count, "status": c.Status})
+		if len(classes) >= 5 {
+			break
+		}
 	}
 	return chatResponse{
 		Reply:    FormatClassResponse(classes),
@@ -524,25 +646,26 @@ func (h *Handler) toolGetClassInfo(ctx *api.RequestContext) chatResponse {
 func (h *Handler) toolGetSchoolStats(ctx *api.RequestContext) chatResponse {
 	h.Store.RLock()
 	defer h.Store.RUnlock()
+	scope := resolveChatScope(h.Store, ctx)
 	students, teachers, classes, presentToday := 0, 0, 0, 0
 	today := time.Now().Format("2006-01-02")
 	for _, s := range h.Store.Students {
-		if s.SchoolID == ctx.SchoolID {
+		if (scope.AllowGlobal || s.SchoolID == scope.SchoolID) && (scope.Role == "admin" || scope.Role == "super_admin" || scope.studentAllowed(s.ID) || scope.classAllowed(s.ClassID)) {
 			students++
 		}
 	}
 	for _, t := range h.Store.Teachers {
-		if t.SchoolID == ctx.SchoolID {
+		if (scope.AllowGlobal || t.SchoolID == scope.SchoolID) && (scope.Role == "admin" || scope.Role == "super_admin" || scope.classAllowedAny(t.ClassIDs)) {
 			teachers++
 		}
 	}
 	for _, c := range h.Store.Classes {
-		if c.SchoolID == ctx.SchoolID {
+		if (scope.AllowGlobal || c.SchoolID == scope.SchoolID) && (scope.Role == "admin" || scope.Role == "super_admin" || scope.classAllowed(c.ID)) {
 			classes++
 		}
 	}
 	for _, a := range h.Store.Attendance {
-		if a.SchoolID == ctx.SchoolID && a.Date.Format("2006-01-02") == today && strings.ToLower(a.Status) == "present" {
+		if (scope.AllowGlobal || a.SchoolID == scope.SchoolID) && a.Date.Format("2006-01-02") == today && strings.ToLower(a.Status) == "present" && (scope.Role == "admin" || scope.Role == "super_admin" || scope.studentAllowed(a.StudentID) || scope.classAllowed(a.ClassID)) {
 			presentToday++
 		}
 	}

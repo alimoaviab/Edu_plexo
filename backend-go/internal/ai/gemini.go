@@ -114,8 +114,8 @@ func (g *GeminiClient) GenerateResponse(ctx context.Context, systemPrompt string
 	reqBody := map[string]any{
 		"contents": contents,
 		"generationConfig": map[string]any{
-			"temperature":     0.7,
-			"maxOutputTokens": 1024,
+				"temperature":     0.3,
+				"maxOutputTokens": 600,
 			"topP":            0.9,
 		},
 	}
