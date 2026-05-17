@@ -1,29 +1,34 @@
 /**
- * Parent fees view.
+ * Parent Fees — premium redesign matching the admin/parent dashboards'
+ * compact aesthetic.
  *
- * The backend returns a normalised shape:
- *   { summary: { total, paid, due, percentage_paid, status },
- *     rows: [{ id, month, year, total, paid, pending, status, due_date, invoice_no }],
- *     due_notices: [...],
- *     student_id, student_name }
+ * Visual contract:
+ *   - Hero strip: child identity + payment status + last invoice number.
+ *   - 4-up KPI row using StatCardCompact (admin pattern):
+ *       Total Payable · Total Paid · Outstanding · Recovery Rate.
+ *   - Recovery progress bar sits below the KPIs as a "ledger pulse".
+ *   - Two-column body:
+ *       Left  — Fee Components (each invoice row, status pill).
+ *       Right — Payment History (receipt rows, verified ticks).
+ *   - Premium empty + loading states.
  *
- * The original page expected a richer "old" shape (`fee_summary`,
- * `fee_details`, `payment_history`) which the Go backend never
- * implemented. Reading `data.fee_summary.pending` directly was
- * crashing the parent portal with "Cannot read properties of
- * undefined (reading 'pending')".
+ * API contract is preserved 1:1 with the previous implementation:
+ *   GET /api/parent/fees?student_id=… → { summary, rows, due_notices, … }
  *
- * We adapt the backend response into the same UI sections — Financial
- * Overview, Fee Components, Payment History — and tolerate missing
- * fields with sensible defaults so an empty ledger renders cleanly
- * instead of throwing.
+ * The same `adapt()` function maps the backend shape into the view model so
+ * the UI never trips on missing fields. Only JSX/styling changed.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+
 import { SchoolShell } from "@/layouts/SchoolShell";
-import { DataState, Skeleton } from "@/components/ui";
+import { DataState, Skeleton, StatCardCompact } from "@/components/ui";
 import { serviceRequest } from "@/services/service-client";
 import { useSelectedChild } from "@/contexts/SelectedChildContext";
+
+// ────────────────────────────────────────────────────────────────────────
+// API + view model contracts (preserved verbatim from the previous file)
+// ────────────────────────────────────────────────────────────────────────
 
 interface FeesApiResponse {
   summary?: {
@@ -61,8 +66,11 @@ interface FeesView {
     key: string;
     label: string;
     amount: number;
+    paidAmount: number;
+    pendingAmount: number;
     dueDate: string;
     status: string;
+    invoiceNo: string;
   }>;
   payments: Array<{
     receiptNo: string;
@@ -80,12 +88,12 @@ function adapt(api: FeesApiResponse | null): FeesView | null {
     key: r.id || `${r.month || "row"}-${i}`,
     label: r.month && r.year ? `${r.month} ${r.year}` : r.month || `Row ${i + 1}`,
     amount: Number(r.total || 0),
+    paidAmount: Number(r.paid || 0),
+    pendingAmount: Number(r.pending || 0),
     dueDate: r.due_date || "—",
     status: r.status || "pending",
+    invoiceNo: r.invoice_no || "",
   }));
-  // The backend doesn't expose itemised payments yet — derive a simple
-  // "what's paid" view from the same rows. Once the payments endpoint
-  // lands the adapter can switch to it without changing this UI.
   const payments = rows
     .filter((r) => Number(r.paid || 0) > 0)
     .map((r, i) => ({
@@ -107,6 +115,10 @@ function adapt(api: FeesApiResponse | null): FeesView | null {
   };
 }
 
+// ────────────────────────────────────────────────────────────────────────
+// Page
+// ────────────────────────────────────────────────────────────────────────
+
 export function ParentFeesPage() {
   const { selectedChild, loading: childLoading } = useSelectedChild();
   const [data, setData] = useState<FeesView | null>(null);
@@ -120,7 +132,7 @@ export function ParentFeesPage() {
       try {
         if (!selectedChild) return;
         const res = await serviceRequest<FeesApiResponse>(
-          `/api/parent/fees?student_id=${encodeURIComponent(selectedChild.student_id)}`
+          `/api/parent/fees?student_id=${encodeURIComponent(selectedChild.student_id)}`,
         );
         if (cancelled) return;
         if (res.ok) {
@@ -142,12 +154,29 @@ export function ParentFeesPage() {
     };
   }, [selectedChild]);
 
+  // Latest invoice number — first row that has one set; falls back to "—".
+  const latestInvoice = useMemo(
+    () => data?.components.find((c) => !!c.invoiceNo)?.invoiceNo || "",
+    [data],
+  );
+
+  // ────────────────────────────────────────────────────────────────────
+  // States
+  // ────────────────────────────────────────────────────────────────────
+
   if (childLoading || (loading && !data)) {
     return (
       <SchoolShell eyebrow="Guardian Portal" title="Fee Statement">
         <div className="space-y-4">
-          <Skeleton className="h-40 w-full rounded-2xl" />
-          <Skeleton className="h-64 w-full rounded-2xl" />
+          <Skeleton className="h-24 w-full rounded-2xl" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {Array(4)
+              .fill(0)
+              .map((_, i) => (
+                <Skeleton key={i} className="h-[80px] w-full rounded-xl" />
+              ))}
+          </div>
+          <Skeleton className="h-80 w-full rounded-2xl" />
         </div>
       </SchoolShell>
     );
@@ -168,8 +197,7 @@ export function ParentFeesPage() {
   if (!data || data.summary.total === 0) {
     return (
       <SchoolShell eyebrow="Guardian Portal" title="Fee Statement">
-        <DataState
-          variant="empty"
+        <PremiumEmpty
           title="No fees on record"
           message={`There are no fee invoices yet for ${selectedChild.student_name}.`}
         />
@@ -178,158 +206,367 @@ export function ParentFeesPage() {
   }
 
   const { summary, components, payments } = data;
+  const recoveryPercent = Math.max(0, Math.min(100, summary.percentagePaid));
+  const isPaidUp = summary.pending <= 0 && summary.total > 0;
 
+  // ────────────────────────────────────────────────────────────────────
   return (
     <SchoolShell eyebrow="Guardian Portal" title="Fee Statement">
-      <div className="space-y-6">
-        {/* Financial Summary */}
-        <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">
-                Financial Overview
-              </p>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                Ledger Summary
-              </h2>
-            </div>
-            <div
-              className={`px-3 py-1.5 rounded-full border text-[11px] font-black uppercase tracking-widest ${
-                summary.pending > 0
-                  ? "bg-amber-50 text-amber-600 border-amber-100"
-                  : "bg-blue-50 text-blue-600 border-blue-100"
+      {/* ── Hero strip ───────────────────────────────────────────────── */}
+      <div className="mb-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 overflow-hidden relative">
+        <div className="relative z-10 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[9px] font-black text-blue-600 uppercase tracking-wider border border-blue-100">
+              Fee Ledger
+            </span>
+            <span className="text-[10px] font-bold text-slate-400 normal-case truncate">
+              Viewing: {selectedChild.student_name}
+            </span>
+            {latestInvoice ? (
+              <span className="text-[10px] font-bold text-slate-400 normal-case">
+                Latest: {latestInvoice}
+              </span>
+            ) : null}
+            <span
+              className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border inline-flex items-center gap-1 ${
+                isPaidUp
+                  ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                  : summary.pending > 0
+                    ? "bg-amber-50 text-amber-600 border-amber-100"
+                    : "bg-slate-50 text-slate-500 border-slate-100"
               }`}
             >
-              Status: {summary.status}
-            </div>
+              {isPaidUp ? (
+                <span className="material-symbols-outlined text-[12px]">check_circle</span>
+              ) : (
+                <span className="material-symbols-outlined text-[12px]">pending_actions</span>
+              )}
+              {isPaidUp ? "All paid" : summary.status}
+            </span>
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { label: "Total Payable", value: summary.total, icon: "account_balance" },
-              { label: "Total Paid", value: summary.paid, icon: "payments" },
-              {
-                label: "Outstanding",
-                value: summary.pending,
-                icon: "pending_actions",
-                highlight: true,
-              },
-              {
-                label: "Recovery Rate",
-                value: `${summary.percentagePaid}%`,
-                icon: "trending_up",
-                isRaw: true,
-              },
-            ].map((m) => (
-              <div
-                key={m.label}
-                className="p-4 rounded-xl border border-slate-50 bg-slate-50/30"
-              >
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-1">
-                  {m.label}
-                </p>
-                <p
-                  className={`text-lg font-black ${
-                    m.highlight ? "text-blue-600" : "text-slate-900"
-                  }`}
-                >
-                  {m.isRaw
-                    ? String(m.value)
-                    : `Rs. ${Number(m.value || 0).toLocaleString()}`}
-                </p>
+          <h2 className="text-xl font-black text-slate-900 tracking-tight">
+            Financial Overview
+          </h2>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
+            <div className="flex items-center gap-1.5 text-slate-500">
+              <span className="material-symbols-outlined text-[14px]">school</span>
+              <span className="text-[11px] font-bold">
+                {selectedChild.class_name}
+                {selectedChild.class_section
+                  ? ` - ${selectedChild.class_section}`
+                  : ""}
+              </span>
+            </div>
+            {selectedChild.academic_year ? (
+              <div className="flex items-center gap-1.5 text-slate-500">
+                <span className="material-symbols-outlined text-[14px]">calendar_today</span>
+                <span className="text-[11px] font-bold">
+                  {selectedChild.academic_year}
+                </span>
               </div>
-            ))}
+            ) : null}
+            <div className="flex items-center gap-1.5 text-slate-500">
+              <span className="material-symbols-outlined text-[14px]">receipt_long</span>
+              <span className="text-[11px] font-bold">
+                {components.length} invoice{components.length === 1 ? "" : "s"}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Fee Components */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
-              <h3 className="text-[13px] font-black text-slate-900 tracking-tight">
+        <div className="flex flex-wrap items-stretch gap-3 md:border-l md:border-slate-100 md:pl-6 shrink-0">
+          <div className="rounded-xl border border-blue-100/60 bg-blue-50/30 px-4 py-2.5 min-w-[110px]">
+            <p className="text-[9px] font-black text-blue-700/70 uppercase tracking-[0.1em]">
+              Paid
+            </p>
+            <p className="text-lg font-black text-blue-700 leading-tight tabular-nums">
+              Rs. {summary.paid.toLocaleString()}
+            </p>
+          </div>
+          <div
+            className={`rounded-xl border px-4 py-2.5 min-w-[110px] ${
+              summary.pending > 0
+                ? "border-amber-100/60 bg-amber-50/30"
+                : "border-emerald-100/60 bg-emerald-50/30"
+            }`}
+          >
+            <p
+              className={`text-[9px] font-black uppercase tracking-[0.1em] ${summary.pending > 0 ? "text-amber-700/70" : "text-emerald-700/70"}`}
+            >
+              Outstanding
+            </p>
+            <p
+              className={`text-lg font-black leading-tight tabular-nums ${summary.pending > 0 ? "text-amber-700" : "text-emerald-700"}`}
+            >
+              Rs. {summary.pending.toLocaleString()}
+            </p>
+          </div>
+        </div>
+
+        <span className="material-symbols-outlined absolute right-[-10px] bottom-[-20px] text-[120px] text-slate-50 opacity-50 select-none pointer-events-none">
+          payments
+        </span>
+      </div>
+
+      {/* ── KPI strip ─────────────────────────────────────────────────── */}
+      <div className="mb-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCardCompact
+          label="Total Payable"
+          value={`Rs. ${summary.total.toLocaleString()}`}
+          icon="account_balance"
+          accent="slate"
+          hint="Across all invoices"
+        />
+        <StatCardCompact
+          label="Total Paid"
+          value={`Rs. ${summary.paid.toLocaleString()}`}
+          icon="payments"
+          accent="blue"
+          hint={`${summary.percentagePaid}% recovered`}
+        />
+        <StatCardCompact
+          label="Outstanding"
+          value={`Rs. ${summary.pending.toLocaleString()}`}
+          icon="pending_actions"
+          accent={summary.pending > 0 ? "rose" : "emerald"}
+          hint={
+            summary.pending > 0
+              ? `${100 - summary.percentagePaid}% remaining`
+              : "Cleared"
+          }
+        />
+        <StatCardCompact
+          label="Recovery Rate"
+          value={`${recoveryPercent}%`}
+          icon="trending_up"
+          accent="emerald"
+          hint="Of total payable"
+        />
+      </div>
+
+      {/* ── Recovery progress strip ──────────────────────────────────── */}
+      <div className="mb-4 flex items-center justify-between px-4 py-2.5 bg-blue-50/30 rounded-xl border border-blue-100/50">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white shrink-0">
+            <span className="material-symbols-outlined text-[14px]">checklist</span>
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold text-slate-700">Ledger Pulse</p>
+            <p className="text-[8px] font-medium text-slate-500 normal-case tracking-tighter truncate">
+              Rs. {summary.paid.toLocaleString()} of Rs.{" "}
+              {summary.total.toLocaleString()} settled
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 flex-1 max-w-md mx-6">
+          <div className="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-1000 ${isPaidUp ? "bg-emerald-500" : "bg-blue-600"}`}
+              style={{ width: `${recoveryPercent}%` }}
+            />
+          </div>
+          <span className="text-[10px] font-bold text-blue-600 tabular-nums">
+            {recoveryPercent}%
+          </span>
+        </div>
+        <span className="text-[9px] font-bold text-slate-400 normal-case">
+          {isPaidUp ? "All clear" : `Rs. ${summary.pending.toLocaleString()} due`}
+        </span>
+      </div>
+
+      {/* ── Body grid: components (2/3) + payments (1/3) ────────────── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Fee Components */}
+        <div className="lg:col-span-2 premium-card p-3.5">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h3 className="text-[10px] font-bold normal-case text-slate-400">
                 Fee Components
               </h3>
-              <span className="material-symbols-outlined text-slate-300">receipt_long</span>
+              <p className="text-[9px] font-medium text-slate-400 normal-case">
+                Each invoice and its current status
+              </p>
             </div>
+            <span className="material-symbols-outlined text-slate-300 text-base">
+              receipt_long
+            </span>
+          </div>
+
+          {components.length > 0 ? (
             <div className="divide-y divide-slate-50">
-              {components.length > 0 ? (
-                components.map((fee) => (
+              {components.map((fee) => {
+                const tone = statusTone(fee.status);
+                return (
                   <div
                     key={fee.key}
-                    className="px-6 py-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors"
+                    className="px-1 py-3 flex items-center justify-between hover:bg-slate-50/40 transition-colors rounded-lg"
                   >
-                    <div>
-                      <p className="text-[11px] font-black text-slate-800">{fee.label}</p>
-                      <p className="text-[9px] font-medium text-slate-400 mt-0.5">
-                        Due: {fee.dueDate}
-                      </p>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${tone.bg} ${tone.text}`}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">
+                          {fee.status === "paid"
+                            ? "verified"
+                            : fee.status === "partial"
+                              ? "hourglass_top"
+                              : "schedule"}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-black text-slate-900 truncate">
+                          {fee.label}
+                        </p>
+                        <p className="text-[10px] font-medium text-slate-400 truncate">
+                          Due: {fee.dueDate}
+                          {fee.invoiceNo ? ` · #${fee.invoiceNo}` : ""}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[11px] font-black text-slate-900">
+                    <div className="text-right shrink-0">
+                      <p className="text-[12px] font-black text-slate-900 tabular-nums">
                         Rs. {fee.amount.toLocaleString()}
                       </p>
                       <span
-                        className={`text-[8px] font-black uppercase tracking-widest ${
-                          fee.status === "paid"
-                            ? "text-blue-600"
-                            : fee.status === "partial"
-                              ? "text-emerald-600"
-                              : "text-amber-500"
-                        }`}
+                        className={`inline-flex items-center gap-1 mt-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider border ${tone.bg} ${tone.text} ${tone.border}`}
                       >
                         {fee.status}
                       </span>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="p-8 text-center text-slate-400 text-xs">
-                  No fee components yet.
-                </div>
-              )}
+                );
+              })}
             </div>
-          </div>
+          ) : (
+            <PremiumEmpty
+              compact
+              title="No fee components yet"
+              message="Invoices for this student will appear here once issued."
+            />
+          )}
+        </div>
 
-          {/* Recent Payments */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
-              <h3 className="text-[13px] font-black text-slate-900 tracking-tight">
+        {/* Payment History */}
+        <div className="premium-card p-3.5">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h3 className="text-[10px] font-bold normal-case text-slate-400">
                 Payment History
               </h3>
-              <span className="material-symbols-outlined text-slate-300">history</span>
+              <p className="text-[9px] font-medium text-slate-400 normal-case">
+                Most recent receipts
+              </p>
             </div>
-            <div className="divide-y divide-slate-50">
-              {payments.length > 0 ? (
-                payments.map((p) => (
-                  <div
-                    key={p.receiptNo}
-                    className="px-6 py-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
-                        <span className="material-symbols-outlined text-[18px]">verified</span>
+            <span className="material-symbols-outlined text-slate-300 text-base">
+              history
+            </span>
+          </div>
+
+          {payments.length > 0 ? (
+            <div className="space-y-1.5 max-h-[360px] overflow-y-auto custom-scrollbar pr-1">
+              {payments.map((p) => (
+                <div
+                  key={p.receiptNo}
+                  className="rounded-lg border border-slate-100 p-2.5 hover:border-blue-100 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="h-8 w-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                        <span className="material-symbols-outlined text-[16px]">
+                          verified
+                        </span>
                       </div>
-                      <div>
-                        <p className="text-[11px] font-black text-slate-800">{p.receiptNo}</p>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-black text-slate-800 truncate">
+                          {p.receiptNo}
+                        </p>
                         <p className="text-[9px] font-medium text-slate-400">
-                          {p.date} · {p.method}
+                          {p.date}
+                          {p.method && p.method !== "—" ? ` · ${p.method}` : ""}
                         </p>
                       </div>
                     </div>
-                    <p className="text-[11px] font-black text-blue-600">
+                    <p className="text-[12px] font-black text-blue-600 shrink-0 tabular-nums">
                       Rs. {p.amount.toLocaleString()}
                     </p>
                   </div>
-                ))
-              ) : (
-                <div className="p-8 text-center text-slate-400 text-xs">
-                  No payments recorded yet.
                 </div>
-              )}
+              ))}
             </div>
-          </div>
+          ) : (
+            <PremiumEmpty
+              compact
+              title="No payments yet"
+              message="Receipts will appear here as soon as a payment is recorded."
+            />
+          )}
         </div>
       </div>
     </SchoolShell>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────────────────────────────
+
+function statusTone(status: string) {
+  switch (status) {
+    case "paid":
+      return {
+        bg: "bg-blue-50",
+        text: "text-blue-600",
+        border: "border-blue-100",
+      };
+    case "partial":
+      return {
+        bg: "bg-emerald-50",
+        text: "text-emerald-600",
+        border: "border-emerald-100",
+      };
+    case "overdue":
+      return {
+        bg: "bg-rose-50",
+        text: "text-rose-600",
+        border: "border-rose-100",
+      };
+    default:
+      return {
+        bg: "bg-amber-50",
+        text: "text-amber-600",
+        border: "border-amber-100",
+      };
+  }
+}
+
+function PremiumEmpty({
+  title,
+  message,
+  compact = false,
+}: {
+  title: string;
+  message: string;
+  compact?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 ${compact ? "p-8" : "p-12"} text-center flex flex-col items-center justify-center`}
+    >
+      <div
+        className={`${compact ? "h-10 w-10" : "h-12 w-12"} rounded-full bg-white shadow-sm flex items-center justify-center mb-3`}
+      >
+        <span
+          className={`material-symbols-outlined text-slate-300 ${compact ? "text-[20px]" : "text-[24px]"}`}
+        >
+          receipt_long
+        </span>
+      </div>
+      <p className={`${compact ? "text-[12px]" : "text-[13px]"} font-black text-slate-700`}>
+        {title}
+      </p>
+      <p className={`${compact ? "text-[10px]" : "text-[11px]"} text-slate-500 mt-1 max-w-sm`}>
+        {message}
+      </p>
+    </div>
   );
 }
