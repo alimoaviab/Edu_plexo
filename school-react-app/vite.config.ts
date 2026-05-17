@@ -24,12 +24,12 @@ export default defineConfig(({ mode }) => {
       proxy: {
         ...(apiTarget
           ? {
-              "/api": {
-                target: apiTarget,
-                changeOrigin: true,
-                secure: false,
-              },
-            }
+            "/api": {
+              target: apiTarget,
+              changeOrigin: true,
+              secure: false,
+            },
+          }
           : {}),
         // Plexa chatbot service (always proxied to FastAPI on :8001)
         "/chat": {

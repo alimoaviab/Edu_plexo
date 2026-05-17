@@ -462,11 +462,10 @@ export function ChatWidget() {
           return (
             <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               <div className={`flex flex-col gap-2 max-w-[88%]`}>
-                <div className={`px-3 py-2 text-[13px] leading-relaxed ${
-                  msg.role === "user"
+                <div className={`px-3 py-2 text-[13px] leading-relaxed ${msg.role === "user"
                     ? "bg-blue-600 text-white rounded-2xl rounded-tr-sm"
                     : "bg-white text-slate-700 rounded-2xl rounded-tl-sm border border-slate-200 shadow-sm"
-                }`}>
+                  }`}>
                   {showDots ? (
                     <div className="plexa-typing flex items-center gap-1.5 py-0.5">
                       <span className="plexa-dot" />
