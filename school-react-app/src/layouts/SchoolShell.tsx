@@ -85,10 +85,12 @@ const adminNavGroups: NavGroup[] = [
     label: "Subscription",
     items: [{ label: "Subscription", href: "/admin/subscription", icon: "card_membership" }],
   },
+  /*
   {
     label: "Domain",
     items: [{ label: "Connect Domain", href: "/admin/connect-domain", icon: "language" }],
   },
+  */
   {
     label: "Settings",
     items: [{ label: "Settings", href: "/admin/settings", icon: "settings" }],
