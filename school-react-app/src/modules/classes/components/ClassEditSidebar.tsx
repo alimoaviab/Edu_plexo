@@ -1,5 +1,6 @@
 import { useState, FormEvent } from "react";
 import { ClassRow, ClassFormInput, ClassSubject, GradeThreshold } from "../types/class.types";
+import { Select } from "@/components/ui";
 
 export function ClassEditSidebar({
     classItem,
@@ -168,14 +169,15 @@ export function ClassEditSidebar({
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-[10px] font-bold normal-case  text-slate-500 pl-1">Session Cycle <span className="text-red-500">*</span></label>
-                                        <select
+                                        <Select
                                             value={currentForm.academic_year_id}
                                             onChange={(e) => setForm({ ...form, academic_year_id: e.target.value })}
-                                            className={`h-11 w-full px-3 text-[11px] font-bold normal-case tracking-tight border rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/5 transition-all ${errors.academic_year_id ? "border-red-500 bg-red-50/30" : "border-slate-200 bg-white focus:border-blue-400 text-slate-700"}`}
-                                        >
-                                            <option value="">Select Cycle</option>
-                                            {academicYearOptions.map((opt) => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
-                                        </select>
+                                            options={[
+                                                { label: "Select Cycle", value: "" },
+                                                ...academicYearOptions.map((opt) => ({ label: opt.label, value: opt.id }))
+                                            ]}
+                                            className={`h-11 ${errors.academic_year_id ? "border-red-500 bg-red-50/30" : "border-slate-200"}`}
+                                        />
                                     </div>
                                 </div>
 

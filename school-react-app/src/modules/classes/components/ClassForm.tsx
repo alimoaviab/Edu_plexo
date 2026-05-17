@@ -346,18 +346,15 @@ export function ClassForm({
                                 </div>
 
                                 {/* Teacher */}
-                                <div className="flex-1 min-w-[80px]">
-                                    <select
+                                    <Select
                                         value={subject.teacher_id || ""}
                                         onChange={(e) => updateSubject(index, "teacher_id", e.target.value)}
-                                        className="w-full h-8 rounded-lg border border-slate-200 bg-white px-1 text-[9px] font-bold text-slate-600 outline-none focus:border-blue-300"
-                                    >
-                                        <option value="">Teacher</option>
-                                        {teacherOptions.map((o) => (
-                                            <option key={o.id} value={o.id}>{o.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                                        options={[
+                                            { label: "Teacher", value: "" },
+                                            ...teacherOptions.map((o) => ({ label: o.label, value: o.id }))
+                                        ]}
+                                        className="h-8 text-[10px] font-bold px-2 py-0 border-slate-200"
+                                    />
 
                                 {/* Marks */}
                                 <div className="flex items-center gap-1 ml-auto">
