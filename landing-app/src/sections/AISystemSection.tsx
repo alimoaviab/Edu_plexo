@@ -15,7 +15,7 @@ export const AISystemSection = () => {
     {
       id: "welcome",
       sender: "bot",
-      text: "Hello! I am **Plexora**, your Eduplexo AI Command Agent. I have real-time access to your school's database. Ask me about classes, students, attendance, or finance. 🚀",
+      text: "Hello! I am **Plexa**, your Eduplexo AI Command Agent. I have real-time access to your school's database. Ask me about classes, students, attendance, or finance. 🚀",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
@@ -28,7 +28,7 @@ export const AISystemSection = () => {
   const [demoStep, setDemoStep] = useState(0);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const typingTimerRef = useRef<any>(null);
 
   // Auto scroll to bottom of chat
   useEffect(() => {
@@ -110,7 +110,7 @@ export const AISystemSection = () => {
       } else if (q.includes("fee") || q.includes("collection") || q.includes("predict") || q.includes("finance")) {
         botText = "Analyzing transaction patterns & payment delays: \n\n• Expected Collection: **$24,500**\n• High Risk of Default: **3 accounts ($1,200 total)**\n\n*💡 AI Recommendation: Send friendly ledger automated reminders to the 3 flagged accounts by clicking 'Approve Reminders'.*";
       } else if (q.includes("hello") || q.includes("hi") || q.includes("hey") || q.includes("plexora")) {
-        botText = "Hello! I am **Plexora**, your Eduplexo AI Agent. How can I help you manage your school today? You can ask me details about student enrollment, classrooms, today's attendance metrics, or financial collections!";
+        botText = "Hello! I am **Plexa**, your Eduplexo AI Agent. How can I help you manage your school today? You can ask me details about student enrollment, classrooms, today's attendance metrics, or financial collections!";
       } else {
         botText = `I have completed an audit based on your query: "${text}". Currently, your school is running optimally with **20 active classes**, **290 students**, and **94.8% average attendance**. Is there any specific metric you want me to analyze?`;
       }
@@ -284,7 +284,7 @@ export const AISystemSection = () => {
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-semibold mb-6"
             >
               <BrainCircuit className="w-4 h-4 animate-pulse" />
-              <span className="tracking-wide">Meet Plexora AI Agent</span>
+              <span className="tracking-wide">Meet Plexa AI Agent</span>
             </motion.div>
 
             <motion.h2
@@ -307,7 +307,7 @@ export const AISystemSection = () => {
               transition={{ delay: 0.2 }}
               className="text-lg text-slate-400 mb-8 leading-relaxed font-medium"
             >
-              Say goodbye to boring forms and complex queries. **Plexora** is your conversational ERP command agent. Just ask questions, verify metrics, and dispatch automatic notifications through a sleek dialogue interface.
+              Say goodbye to boring forms and complex queries. **Plexa** is your conversational ERP command agent. Just ask questions, verify metrics, and dispatch automatic notifications through a sleek dialogue interface.
             </motion.p>
 
             <div className="space-y-5">
@@ -315,7 +315,7 @@ export const AISystemSection = () => {
                 { 
                   icon: TrendingUp, 
                   title: "Instant SQL-free Analytics", 
-                  desc: "Plexora turns natural questions like 'how many students' or 'how many classes' into database-level queries instantly.", 
+                  desc: "Plexa turns natural questions like 'how many students' or 'how many classes' into database-level queries instantly.", 
                   color: "text-emerald-400",
                   bgColor: "bg-emerald-500/5"
                 },
@@ -354,7 +354,7 @@ export const AISystemSection = () => {
             </div>
           </div>
 
-          {/* Right Visual: Interactive Plexora Chatbot Simulator (7 Cols) */}
+          {/* Right Visual: Interactive Plexa Chatbot Simulator (7 Cols) */}
           <div className="lg:col-span-7">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -384,7 +384,7 @@ export const AISystemSection = () => {
 
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-white text-base">Plexora AI</span>
+                      <span className="font-bold text-white text-base">Plexa AI</span>
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 font-extrabold uppercase tracking-wide">
                         Agent
                       </span>
@@ -480,7 +480,7 @@ export const AISystemSection = () => {
                       className="flex justify-start"
                     >
                       <div className="bg-slate-900 border border-slate-800/80 rounded-2xl rounded-tl-none px-4 py-3 text-slate-400 flex items-center gap-1.5 shadow-lg">
-                        <span className="text-xs font-semibold text-slate-400">Plexora is typing</span>
+                        <span className="text-xs font-semibold text-slate-400">Plexa is typing</span>
                         <div className="flex gap-1 items-center mt-1">
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.3s]" />
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce [animation-delay:-0.15s]" />
@@ -528,7 +528,7 @@ export const AISystemSection = () => {
                       disabled={isAutoplayActive}
                       value={inputVal}
                       onChange={(e) => setInputVal(e.target.value)}
-                      placeholder={isAutoplayActive ? "Autoplay typing demo active..." : "Ask Plexora: e.g. how many classes..."}
+                      placeholder={isAutoplayActive ? "Autoplay typing demo active..." : "Ask Plexa: e.g. how many classes..."}
                       className="w-full bg-slate-900 border border-slate-800/80 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500/80 focus:ring-1 focus:ring-blue-500/30 transition-all disabled:opacity-60"
                     />
                     

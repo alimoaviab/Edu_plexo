@@ -19,7 +19,7 @@ async def check_rate_limit(user_id: str) -> bool:
         True if the request is allowed, False if rate limited.
     """
     r = await get_redis()
-    key = f"edubot:ratelimit:{user_id}"
+    key = f"plexa:ratelimit:{user_id}"
     now = time.time()
     window_start = now - 60  # 1-minute window
 

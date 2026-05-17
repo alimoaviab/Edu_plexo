@@ -25,7 +25,7 @@ class CallerContext:
     language: str = "english"
 
 
-_caller_var: ContextVar[CallerContext | None] = ContextVar("edubot_caller", default=None)
+_caller_var: ContextVar[CallerContext | None] = ContextVar("plexa_caller", default=None)
 
 
 def set_caller(caller: CallerContext) -> object:

@@ -10,7 +10,7 @@ export const DashboardShowcase = () => {
     { id: "admin", label: "Admin Dashboard", icon: Layout, image: "/admin-preview.png" },
     { id: "students", label: "Student Records", icon: Users, image: "/students-preview.png" },
     { id: "security", label: "Access Control", icon: Shield, image: "/security-preview.png" },
-    { id: "ai", label: "AI Chatbot", icon: MessageSquare, image: "/ai-preview.png" },
+    { id: "ai", label: "Plexa AI", icon: MessageSquare, image: "/ai-preview.png" },
   ];
 
   return (

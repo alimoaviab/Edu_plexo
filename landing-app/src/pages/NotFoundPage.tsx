@@ -13,7 +13,7 @@ export const NotFoundPage = () => {
           Dashboard
         </Link>
         <Link className="book about-us" to="/about">
-          Plexora
+          Plexa
         </Link>
         <button
           type="button"

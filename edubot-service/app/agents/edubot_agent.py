@@ -1,4 +1,4 @@
-"""EduBot agent — OpenAI Agents SDK backed by Gemini (primary) + OpenRouter (fallback).
+"""Plexa agent — OpenAI Agents SDK backed by Gemini (primary) + OpenRouter (fallback).
 
 Architecture:
   - Primary: Gemini 2.5 Flash via Google's OpenAI-compatible endpoint
@@ -97,13 +97,14 @@ def create_agent(role: str, name: str, language: str, use_fallback: bool = False
     model = _fallback_model if (use_fallback and _fallback_model) else _primary_model
 
     return Agent(
-        name="EduBot",
+        name="Plexa",
         model=model,
         instructions=build_instruction(role=role, name=name, language=language),
         tools=_tools,
         model_settings=ModelSettings(
             temperature=0.5,
             top_p=0.95,
+            max_tokens=4096,
         ),
     )
 

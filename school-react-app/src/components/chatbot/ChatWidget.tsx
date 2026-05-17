@@ -53,10 +53,10 @@ const UI_STRINGS: Record<Language, {
   connectionError: string;
 }> = {
   english: {
-    title: "EduBot",
+    title: "Plexa",
     subtitle: "AI assistant for your school",
     placeholder: "Type your message…",
-    greeting: "Hello! I am EduBot.",
+    greeting: "Hello! I am Plexa.",
     greetingHint: "Try asking:",
     clearTitle: "Clear chat",
     closeTitle: "Close",
@@ -67,10 +67,10 @@ const UI_STRINGS: Record<Language, {
     connectionError: "Connection error. Please check your internet and try again.",
   },
   urdu: {
-    title: "EduBot",
+    title: "Plexa",
     subtitle: "Aapke school ka AI assistant",
     placeholder: "Apna sawal likhein…",
-    greeting: "Assalam o Alaikum! Main EduBot hun.",
+    greeting: "Assalam o Alaikum! Main Plexa hun.",
     greetingHint: "Yeh pooch kar dekhein:",
     clearTitle: "Chat saaf karein",
     closeTitle: "Band karein",
@@ -85,7 +85,7 @@ const UI_STRINGS: Record<Language, {
 // ─── Helpers ────────────────────────────────────────────────────────────
 
 function getSessionId(): string {
-  const key = "edubot_session_id";
+  const key = "plexa_session_id";
   let id = localStorage.getItem(key);
   if (!id) {
     id = crypto.randomUUID();
@@ -102,7 +102,7 @@ function getStoredJWT(): string | undefined {
 }
 
 function readStoredLanguage(): Language {
-  const v = localStorage.getItem("edubot_language");
+  const v = localStorage.getItem("plexa_language");
   return v === "urdu" ? "urdu" : "english";
 }
 
@@ -150,7 +150,7 @@ const ICON_BY_INTENT: Record<string, string> = {
 };
 
 /**
- * EduBot Chat Widget — floating bottom-right chat panel with streaming.
+ * Plexa Chat Widget — floating bottom-right chat panel with streaming.
  * Uses POST + ReadableStream against /chat/stream so we can include the
  * Authorization header (which native EventSource does not support).
  */
@@ -170,7 +170,7 @@ export function ChatWidget() {
   const isRtl = false;
 
   useEffect(() => {
-    const saved = localStorage.getItem("edubot_messages");
+    const saved = localStorage.getItem("plexa_messages");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -184,13 +184,13 @@ export function ChatWidget() {
       // Don't persist messages still being streamed
       const persistable = messages.filter(m => !m.streaming);
       if (persistable.length > 0) {
-        localStorage.setItem("edubot_messages", JSON.stringify(persistable.slice(-50)));
+        localStorage.setItem("plexa_messages", JSON.stringify(persistable.slice(-50)));
       }
     }
   }, [messages]);
 
   useEffect(() => {
-    localStorage.setItem("edubot_language", language);
+    localStorage.setItem("plexa_language", language);
   }, [language]);
 
   useEffect(() => {
@@ -366,8 +366,8 @@ export function ChatWidget() {
     } catch { /* ignore */ }
 
     setMessages([]);
-    localStorage.removeItem("edubot_messages");
-    localStorage.removeItem("edubot_session_id");
+    localStorage.removeItem("plexa_messages");
+    localStorage.removeItem("plexa_session_id");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -387,7 +387,7 @@ export function ChatWidget() {
       <button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 z-[60] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-2xl shadow-blue-600/30 hover:bg-blue-700 hover:scale-105 transition-all"
-        aria-label="Open AI Assistant"
+        aria-label="Open Plexa"
       >
         <span className="material-symbols-outlined text-[28px]">smart_toy</span>
         <span className="absolute top-0 right-0 flex h-3 w-3">
@@ -401,7 +401,7 @@ export function ChatWidget() {
   return (
     <div
       dir={isRtl ? "rtl" : "ltr"}
-      className="edubot-widget fixed bottom-6 right-6 z-[60] w-[400px] h-[560px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300"
+      className="plexa-widget fixed bottom-6 right-6 z-[60] w-[400px] h-[560px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300"
     >
       {/* Header */}
       <div dir="ltr" className="flex items-center justify-between px-4 py-3 bg-blue-600 text-white">
@@ -434,7 +434,7 @@ export function ChatWidget() {
       </div>
 
       {/* Messages */}
-      <div className={`flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 ${isRtl ? "edubot-rtl" : ""}`}>
+      <div className={`flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 ${isRtl ? "plexa-rtl" : ""}`}>
         {messages.length === 0 && (
           <div className="text-center py-8">
             <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
@@ -468,16 +468,16 @@ export function ChatWidget() {
                     : "bg-white text-slate-700 rounded-2xl rounded-tl-sm border border-slate-200 shadow-sm"
                 }`}>
                   {showDots ? (
-                    <div className="edubot-typing flex items-center gap-1.5 py-0.5">
-                      <span className="edubot-dot" />
-                      <span className="edubot-dot" />
-                      <span className="edubot-dot" />
+                    <div className="plexa-typing flex items-center gap-1.5 py-0.5">
+                      <span className="plexa-dot" />
+                      <span className="plexa-dot" />
+                      <span className="plexa-dot" />
                     </div>
                   ) : msg.role === "assistant" ? (
-                    <div className="edubot-prose break-words max-w-none">
+                    <div className="plexa-prose break-words max-w-none">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                       {msg.streaming && (
-                        <span className="edubot-caret" aria-hidden="true">▍</span>
+                        <span className="plexa-caret" aria-hidden="true">▍</span>
                       )}
                     </div>
                   ) : (

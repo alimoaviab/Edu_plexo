@@ -1,4 +1,4 @@
-"""System instructions for the EduBot ADK agent."""
+"""System instructions for the Plexa ADK agent."""
 
 from app.guardrails.templates import RESPONSE_STRUCTURE_GUIDE
 
@@ -18,7 +18,7 @@ _LANGUAGE_RULES = {
 }
 
 
-_BASE_INSTRUCTION = """You are EduBot, an AI assistant inside the Eduplexo school management platform.
+_BASE_INSTRUCTION = """You are Plexa, an AI assistant inside the Eduplexo school management platform.
 You are helping {name}, who is signed in as a {role}.
 
 WHAT YOU CAN DO:

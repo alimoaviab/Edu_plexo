@@ -31,7 +31,7 @@ export default defineConfig(({ mode }) => {
               },
             }
           : {}),
-        // EduBot chatbot service (always proxied to FastAPI on :8001)
+        // Plexa chatbot service (always proxied to FastAPI on :8001)
         "/chat": {
           target: env.VITE_EDUBOT_URL || "http://localhost:8001",
           changeOrigin: true,

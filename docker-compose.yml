@@ -8,14 +8,14 @@
 #   * frontend        — School SPA (admin/teacher/student) on :3000
 #   * super-admin     — Super Admin SPA on :3001
 #   * landing         — Public marketing site on :3002
-#   * edubot          — EduBot AI chatbot (FastAPI/Python) on :8001
+#   * edubot          — Plexa AI chatbot (FastAPI/Python) on :8001
 #
 # After `docker compose up --build`:
 #   * Landing at   http://localhost:3002
 #   * Frontend at  http://localhost:3000
 #   * Super Admin  http://localhost:3001
 #   * Backend at   http://localhost:8080
-#   * EduBot at    http://localhost:8001
+#   * Plexa at    http://localhost:8001
 #   * Postgres on  127.0.0.1:5432  (user/pass: school_user/school_password)
 #   * Redis on     127.0.0.1:6379
 #
@@ -261,10 +261,10 @@ services:
     container_name: school_edubot
     restart: unless-stopped
     environment:
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-AIzaSyAj5TKwKILB8dikjkdELq5N5Sz9TEXi6bs}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-AIzaSyD5wU_vDzOsOcpKdRMducehJb1DzqTqOfw}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash-lite}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-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}
-      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-google/gemini-2.5-flash}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-google/gemini-2.0-flash-lite-001}
       JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me}
       GO_BACKEND_URL: http://backend-go:8080
       GO_BACKEND_TIMEOUT: "8"

@@ -1,4 +1,4 @@
-"""FastAPI application entry point for EduBot service."""
+"""FastAPI application entry point for Plexa service."""
 
 from contextlib import asynccontextmanager
 
@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="EduBot Service",
+    title="Plexa Service",
     description="AI chatbot microservice for Eduplexo — OpenAI Agents SDK + Gemini",
     version="2.0.0",
     lifespan=lifespan,

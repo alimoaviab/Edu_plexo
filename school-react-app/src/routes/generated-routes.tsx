@@ -49,7 +49,7 @@ export const adminRoutes: RouteObject[] = [
   { path: "/admin/academic-years/:id/edit", element: lazyPage(() => import("@/pages/role/admin/academic-years/Param_id/edit"), "AdminAcademicYearEditPage") },
 
   // AI Copilot
-  // (Removed — replaced by the floating EduBot chat widget which lives in
+  // (Removed — replaced by the floating Plexa chat widget which lives in
   // src/components/chatbot/ChatWidget.tsx and is mounted globally.)
 
   // Announcements

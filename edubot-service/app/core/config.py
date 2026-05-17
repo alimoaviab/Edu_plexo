@@ -4,16 +4,16 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """EduBot service configuration."""
+    """Plexa service configuration."""
 
     # AI — Primary (Gemini via OpenAI-compatible endpoint)
     GEMINI_API_KEY: str
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_MODEL: str = "gemini-2.0-flash-lite"
     GEMINI_TIMEOUT_SECONDS: int = 30
 
     # AI — Fallback (OpenRouter)
     OPENROUTER_API_KEY: str = ""
-    OPENROUTER_MODEL: str = "google/gemini-2.5-flash"
+    OPENROUTER_MODEL: str = "google/gemini-2.0-flash-lite-001"
 
     # Auth
     JWT_SECRET: str

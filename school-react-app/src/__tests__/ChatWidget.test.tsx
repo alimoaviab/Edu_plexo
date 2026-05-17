@@ -1,5 +1,5 @@
 /**
- * ChatWidget Tests — EduBot frontend (streaming version).
+ * ChatWidget Tests — Plexa frontend (streaming version).
  *
  * The widget streams responses from /chat/stream over Server-Sent Events.
  * Each test mocks fetch to return a ReadableStream of SSE frames and asserts
@@ -110,7 +110,7 @@ describe("ChatWidget — rendering", () => {
   it("R2: opens the panel on click", () => {
     renderWidget();
     openWidget();
-    expect(screen.getByText("EduBot")).toBeTruthy();
+    expect(screen.getByText("Plexa")).toBeTruthy();
     expect(screen.getByPlaceholderText(/type your message/i)).toBeTruthy();
   });
 
@@ -148,7 +148,7 @@ describe("ChatWidget — session id", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     const body = JSON.parse((fetchMock.mock.calls[0] as any[])[1].body);
     expect(body.session_id).toMatch(/^uuid-/);
-    expect(mockStorage.edubot_session_id).toBe(body.session_id);
+    expect(mockStorage.plexa_session_id).toBe(body.session_id);
   });
 
   it("S2: reuses the same session id across messages", async () => {
@@ -314,7 +314,7 @@ describe("ChatWidget — error handling", () => {
   });
 
   it("E3: 503 → server detail surfaced", async () => {
-    const fetchMock = mockErrorOnce(503, { detail: "EduBot is taking too long. Please try again." });
+    const fetchMock = mockErrorOnce(503, { detail: "Plexa is taking too long. Please try again." });
     vi.stubGlobal("fetch", fetchMock);
 
     renderWidget();
@@ -322,7 +322,7 @@ describe("ChatWidget — error handling", () => {
     fireEvent.change(getInput(), { target: { value: "hi" } });
     fireEvent.click(getSendButton());
 
-    await waitFor(() => expect(screen.getByText(/edubot is taking too long/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/Plexa is taking too long/i)).toBeTruthy());
   });
 
   it("E4: network failure → connection error", async () => {
@@ -356,7 +356,7 @@ describe("ChatWidget — error handling", () => {
 
 describe("ChatWidget — localStorage persistence", () => {
   it("L1: restores messages on mount", () => {
-    mockStorage.edubot_messages = JSON.stringify([
+    mockStorage.plexa_messages = JSON.stringify([
       { id: "1", role: "user", content: "old user msg", timestamp: new Date().toISOString() },
       { id: "2", role: "assistant", content: "old bot reply", timestamp: new Date().toISOString() },
     ]);
@@ -381,7 +381,7 @@ describe("ChatWidget — localStorage persistence", () => {
 
     await waitFor(() => expect(screen.getByText(/saved reply/)).toBeTruthy());
     await waitFor(() => {
-      const raw = mockStorage.edubot_messages;
+      const raw = mockStorage.plexa_messages;
       expect(raw).toBeTruthy();
       const stored = JSON.parse(raw);
       expect(stored.some((m: any) => m.content === "saved user")).toBe(true);
@@ -390,7 +390,7 @@ describe("ChatWidget — localStorage persistence", () => {
   });
 
   it("L4: corrupt JSON in localStorage doesn't crash", () => {
-    mockStorage.edubot_messages = "{not json";
+    mockStorage.plexa_messages = "{not json";
     expect(() => renderWidget()).not.toThrow();
   });
 });
@@ -423,8 +423,8 @@ describe("ChatWidget — clear chat", () => {
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(mockStorage.edubot_messages).toBeUndefined();
-      expect(mockStorage.edubot_session_id).toBeUndefined();
+      expect(mockStorage.plexa_messages).toBeUndefined();
+      expect(mockStorage.plexa_session_id).toBeUndefined();
     });
     const [url, init] = fetchMock.mock.calls[1] as [string, RequestInit];
     expect(url).toBe("/chat/session");

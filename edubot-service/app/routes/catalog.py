@@ -1,6 +1,6 @@
 """Frontend route catalog — what each role can navigate to.
 
-This catalog is the source of truth for action buttons EduBot can suggest.
+This catalog is the source of truth for action buttons Plexa can suggest.
 It mirrors the React Router routes in school-react-app/src/routes/.
 
 WHY THIS EXISTS HERE: the LLM may hallucinate routes. We constrain it to
@@ -45,7 +45,7 @@ CATALOG: list[RouteAction] = [
     # ─── Classes ──────────────────────────────────────────────────────────
     RouteAction(
         label="Create Class",
-        label_urdu="نئی کلاس بنائیں",
+        label_urdu="Nayi Class Banayein",
         path="/admin/classes/create",
         intent="create",
         keywords=["create class", "create a class", "add class", "add a class", "new class", "make class", "make a class", "نئی کلاس", "کلاس بنا"],
@@ -53,7 +53,7 @@ CATALOG: list[RouteAction] = [
     ),
     RouteAction(
         label="View Classes",
-        label_urdu="کلاسز دیکھیں",
+        label_urdu="Classes Dekhein",
         path="/admin/classes",
         intent="navigate",
         keywords=["class", "classes", "section", "کلاس"],
@@ -63,7 +63,7 @@ CATALOG: list[RouteAction] = [
     # ─── Students ─────────────────────────────────────────────────────────
     RouteAction(
         label="Add Student",
-        label_urdu="طالب علم شامل کریں",
+        label_urdu="Student Add Karein",
         path="/admin/students",
         intent="create",
         keywords=["add student", "add a student", "new student", "create student", "create a student", "register student", "طالب علم شامل", "نیا طالب"],
@@ -71,7 +71,7 @@ CATALOG: list[RouteAction] = [
     ),
     RouteAction(
         label="View Students",
-        label_urdu="طلبہ دیکھیں",
+        label_urdu="Students Dekhein",
         path="/admin/students",
         intent="navigate",
         keywords=["student", "students", "طلبہ", "طالب علم"],
@@ -81,7 +81,7 @@ CATALOG: list[RouteAction] = [
     # ─── Teachers ─────────────────────────────────────────────────────────
     RouteAction(
         label="Add Teacher",
-        label_urdu="استاد شامل کریں",
+        label_urdu="Teacher Add Karein",
         path="/admin/teachers",
         intent="create",
         keywords=["add teacher", "add a teacher", "new teacher", "create teacher", "create a teacher", "hire teacher", "استاد شامل", "نیا استاد"],
@@ -89,7 +89,7 @@ CATALOG: list[RouteAction] = [
     ),
     RouteAction(
         label="View Teachers",
-        label_urdu="اساتذہ دیکھیں",
+        label_urdu="Teachers Dekhein",
         path="/admin/teachers",
         intent="navigate",
         keywords=["teacher", "teachers", "faculty", "اساتذہ", "استاد"],
@@ -99,7 +99,7 @@ CATALOG: list[RouteAction] = [
     # ─── Subjects ─────────────────────────────────────────────────────────
     RouteAction(
         label="Manage Subjects",
-        label_urdu="مضامین کا انتظام",
+        label_urdu="Subjects Dekhein",
         path="/admin/subjects",
         intent="navigate",
         keywords=["subject", "subjects", "مضمون", "مضامین"],
@@ -109,7 +109,7 @@ CATALOG: list[RouteAction] = [
     # ─── Attendance ───────────────────────────────────────────────────────
     RouteAction(
         label="Mark Attendance",
-        label_urdu="حاضری لگائیں",
+        label_urdu="Attendance Lagayein",
         path="/admin/attendance/create",
         intent="create",
         keywords=["mark attendance", "take attendance", "حاضری لگ", "حاضری لیں"],
@@ -117,7 +117,7 @@ CATALOG: list[RouteAction] = [
     ),
     RouteAction(
         label="View Attendance",
-        label_urdu="حاضری دیکھیں",
+        label_urdu="Attendance Dekhein",
         path="/admin/attendance",
         intent="navigate",
         keywords=["attendance", "حاضری"],
@@ -127,7 +127,7 @@ CATALOG: list[RouteAction] = [
     # ─── Exams / Tests ────────────────────────────────────────────────────
     RouteAction(
         label="Create Exam",
-        label_urdu="امتحان بنائیں",
+        label_urdu="Exam Banayein",
         path="/admin/exams",
         intent="create",
         keywords=["create exam", "new exam", "schedule exam", "امتحان بنا", "نیا امتحان"],
@@ -135,7 +135,7 @@ CATALOG: list[RouteAction] = [
     ),
     RouteAction(
         label="View Exams",
-        label_urdu="امتحانات دیکھیں",
+        label_urdu="Exams Dekhein",
         path="/admin/exams",
         intent="navigate",
         keywords=["exam", "exams", "test", "امتحان"],
@@ -143,7 +143,7 @@ CATALOG: list[RouteAction] = [
     ),
     RouteAction(
         label="Enter Marks",
-        label_urdu="نمبر درج کریں",
+        label_urdu="Marks Enter Karein",
         path="/admin/exams/marks",
         intent="create",
         keywords=["enter marks", "add marks", "grade", "نمبر درج", "نمبر لگ"],
@@ -153,7 +153,7 @@ CATALOG: list[RouteAction] = [
     # ─── Results ──────────────────────────────────────────────────────────
     RouteAction(
         label="View Results",
-        label_urdu="نتائج دیکھیں",
+        label_urdu="Results Dekhein",
         path="/admin/results",
         intent="navigate",
         keywords=["result", "results", "marks", "نتیجہ", "نتائج"],
@@ -163,7 +163,7 @@ CATALOG: list[RouteAction] = [
     # ─── Homework ─────────────────────────────────────────────────────────
     RouteAction(
         label="Create Homework",
-        label_urdu="ہوم ورک بنائیں",
+        label_urdu="Homework Banayein",
         path="/admin/homework",
         intent="create",
         keywords=["create homework", "assign homework", "new homework", "ہوم ورک بنا", "ہوم ورک دیں"],
@@ -171,7 +171,7 @@ CATALOG: list[RouteAction] = [
     ),
     RouteAction(
         label="View Homework",
-        label_urdu="ہوم ورک دیکھیں",
+        label_urdu="Homework Dekhein",
         path="/admin/homework",
         intent="navigate",
         keywords=["homework", "assignment", "ہوم ورک"],
@@ -181,7 +181,7 @@ CATALOG: list[RouteAction] = [
     # ─── Fees ─────────────────────────────────────────────────────────────
     RouteAction(
         label="Open Fees",
-        label_urdu="فیس کھولیں",
+        label_urdu="Fees Kholein",
         path="/admin/fee",
         intent="navigate",
         keywords=["fee", "fees", "payment", "voucher", "فیس"],
@@ -191,7 +191,7 @@ CATALOG: list[RouteAction] = [
     # ─── Timetable ────────────────────────────────────────────────────────
     RouteAction(
         label="Open Timetable",
-        label_urdu="ٹائم ٹیبل کھولیں",
+        label_urdu="Timetable Kholein",
         path="/admin/timetable",
         intent="navigate",
         keywords=["timetable", "schedule", "ٹائم ٹیبل"],
@@ -201,7 +201,7 @@ CATALOG: list[RouteAction] = [
     # ─── Announcements ────────────────────────────────────────────────────
     RouteAction(
         label="Create Announcement",
-        label_urdu="اعلان بنائیں",
+        label_urdu="Announcement Banayein",
         path="/admin/announcements/create",
         intent="create",
         keywords=["create announcement", "new announcement", "post announcement", "اعلان بنا", "نیا اعلان"],
@@ -209,7 +209,7 @@ CATALOG: list[RouteAction] = [
     ),
     RouteAction(
         label="View Announcements",
-        label_urdu="اعلانات دیکھیں",
+        label_urdu="Announcements Dekhein",
         path="/admin/announcements",
         intent="navigate",
         keywords=["announcement", "announcements", "اعلان"],
@@ -219,7 +219,7 @@ CATALOG: list[RouteAction] = [
     # ─── Events ───────────────────────────────────────────────────────────
     RouteAction(
         label="Create Event",
-        label_urdu="ایونٹ بنائیں",
+        label_urdu="Event Banayein",
         path="/admin/events/create",
         intent="create",
         keywords=["create event", "schedule event", "new event", "ایونٹ بنا"],
@@ -227,7 +227,7 @@ CATALOG: list[RouteAction] = [
     ),
     RouteAction(
         label="View Events",
-        label_urdu="ایونٹس دیکھیں",
+        label_urdu="Events Dekhein",
         path="/admin/events",
         intent="navigate",
         keywords=["event", "events", "ایونٹ"],
@@ -237,7 +237,7 @@ CATALOG: list[RouteAction] = [
     # ─── Behavior ─────────────────────────────────────────────────────────
     RouteAction(
         label="View Behavior",
-        label_urdu="سلوک کے ریکارڈ",
+        label_urdu="Behavior Dekhein",
         path="/admin/behavior",
         intent="navigate",
         keywords=["behavior", "behaviour", "سلوک"],
@@ -247,7 +247,7 @@ CATALOG: list[RouteAction] = [
     # ─── Leave ────────────────────────────────────────────────────────────
     RouteAction(
         label="Open Leave",
-        label_urdu="چھٹیاں کھولیں",
+        label_urdu="Leave Kholein",
         path="/admin/leave",
         intent="navigate",
         keywords=["leave", "absence", "چھٹی"],
@@ -257,7 +257,7 @@ CATALOG: list[RouteAction] = [
     # ─── Live class / exam ────────────────────────────────────────────────
     RouteAction(
         label="Open Live Classes",
-        label_urdu="لائیو کلاس",
+        label_urdu="Live Classes",
         path="/admin/live-classes",
         intent="navigate",
         keywords=["live class", "online class", "video class", "لائیو کلاس"],
@@ -267,7 +267,7 @@ CATALOG: list[RouteAction] = [
     # ─── Dashboard ────────────────────────────────────────────────────────
     RouteAction(
         label="Open Dashboard",
-        label_urdu="ڈیش بورڈ",
+        label_urdu="Dashboard",
         path="/admin/dashboard",
         intent="navigate",
         keywords=["dashboard", "overview", "summary", "ڈیش بورڈ"],
@@ -277,7 +277,7 @@ CATALOG: list[RouteAction] = [
     # ─── Settings ─────────────────────────────────────────────────────────
     RouteAction(
         label="Open Settings",
-        label_urdu="ترتیبات",
+        label_urdu="Settings",
         path="/admin/settings",
         intent="navigate",
         keywords=["setting", "settings", "ترتیبات"],
