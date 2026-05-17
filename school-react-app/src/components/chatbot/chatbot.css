@@ -1,0 +1,219 @@
+/* ─── EduBot Chat Widget Styles ──────────────────────────────────────── */
+
+/* Smooth typing-dots animation. Uses a continuous wave so it feels fluid
+   even when the response arrives quickly (no jarring stop). */
+.edubot-typing {
+  height: 14px;
+}
+
+.edubot-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+  display: inline-block;
+  opacity: 0.55;
+  animation: edubot-bounce 1.1s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.edubot-dot:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.edubot-dot:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+@keyframes edubot-bounce {
+  0%, 70%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.45;
+  }
+  35% {
+    transform: translateY(-5px) scale(1.15);
+    opacity: 1;
+  }
+}
+
+/* ─── Markdown / prose styling for assistant replies ────────────────── */
+
+.edubot-prose {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #334155;
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.edubot-prose p {
+  margin: 0 0 0.5rem;
+}
+.edubot-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.edubot-prose h1,
+.edubot-prose h2,
+.edubot-prose h3,
+.edubot-prose h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0.5rem 0 0.35rem;
+  letter-spacing: 0;
+}
+
+.edubot-prose strong {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.edubot-prose ul,
+.edubot-prose ol {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.1rem;
+}
+.edubot-prose li {
+  margin: 0.15rem 0;
+}
+.edubot-prose li::marker {
+  color: #64748b;
+}
+
+.edubot-prose a {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.edubot-prose code {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 12px;
+  background: #f1f5f9;
+  color: #0f172a;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.edubot-prose pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 12px;
+  margin: 0.4rem 0;
+}
+
+/* ─── Tables ────────────────────────────────────────────────────────── */
+
+.edubot-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 12px;
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  table-layout: auto;
+}
+
+.edubot-prose thead {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.edubot-prose th {
+  text-align: left;
+  font-weight: 600;
+  color: #0f172a;
+  padding: 7px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.edubot-prose td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: top;
+}
+
+.edubot-prose tr:last-child td {
+  border-bottom: none;
+}
+
+.edubot-prose tbody tr:nth-child(even) td {
+  background: #fafbfc;
+}
+
+.edubot-prose tbody tr:hover td {
+  background: #eff6ff;
+}
+
+/* Right-align numeric columns when the markdown specifies `---:` */
+.edubot-prose th[align="right"],
+.edubot-prose td[align="right"] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.edubot-prose th[align="center"],
+.edubot-prose td[align="center"] {
+  text-align: center;
+}
+
+/* ─── RTL / Urdu support ────────────────────────────────────────────── */
+
+.edubot-rtl {
+  direction: rtl;
+}
+
+.edubot-widget[dir="rtl"] .edubot-prose {
+  font-family: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq",
+    "Iansui", -apple-system, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.9;
+}
+
+.edubot-widget[dir="rtl"] .edubot-prose ul,
+.edubot-widget[dir="rtl"] .edubot-prose ol {
+  padding-left: 0;
+  padding-right: 1.1rem;
+}
+
+.edubot-widget[dir="rtl"] .edubot-prose th {
+  text-align: right;
+}
+
+.edubot-widget[dir="rtl"] .edubot-prose td {
+  text-align: right;
+}
+
+/* Scrollbar polish (webkit only) */
+.edubot-prose::-webkit-scrollbar {
+  width: 6px;
+}
+.edubot-prose::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+.edubot-prose::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+
+/* ─── Streaming caret (the blinking block at the end of an in-progress reply) */
+.edubot-caret {
+  display: inline-block;
+  margin-left: 1px;
+  color: #2563eb;
+  font-weight: 700;
+  animation: edubot-blink 1s steps(1) infinite;
+  transform: translateY(-1px);
+}
+
+@keyframes edubot-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
