@@ -1,6 +1,13 @@
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import { Button, Input } from "@/components/ui";
 import { SettingsFormInput } from "../types/settings.types";
+import {
+    compressImageToBudget,
+    formatBytes,
+} from "@/utils/image-compress";
+import { showToast } from "@/utils/toast";
+
+const ACCEPTED_LOGO_TYPES = "image/png,image/jpeg,image/jpg,image/webp,image/svg+xml";
 
 export function SettingsForm({
     initialValues,
@@ -13,12 +20,58 @@ export function SettingsForm({
 }) {
     const [form, setForm] = useState<SettingsFormInput>(initialValues);
     const [saving, setSaving] = useState(false);
+    const [optimizing, setOptimizing] = useState(false);
+    const [logoMeta, setLogoMeta] = useState<{
+        originalBytes: number;
+        compressedBytes: number;
+    } | null>(null);
+    const logoInputRef = useRef<HTMLInputElement | null>(null);
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setSaving(true);
         await onSave(form);
         setSaving(false);
+    }
+
+    async function handleLogoFile(event: ChangeEvent<HTMLInputElement>) {
+        const file = event.target.files?.[0];
+        // Reset the input value so picking the same file twice still fires.
+        event.target.value = "";
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+            showToast("Please choose an image file.", "error");
+            return;
+        }
+
+        setOptimizing(true);
+        try {
+            const result = await compressImageToBudget(file, {
+                targetBytes: 100 * 1024,
+            });
+            setForm((prev) => ({ ...prev, logo_url: result.dataUrl }));
+            setLogoMeta({
+                originalBytes: file.size,
+                compressedBytes: result.sizeBytes,
+            });
+            showToast(
+                `Logo optimized: ${formatBytes(file.size)} → ${formatBytes(result.sizeBytes)}.`,
+                "success"
+            );
+        } catch (err) {
+            showToast(
+                err instanceof Error ? err.message : "Could not process image.",
+                "error"
+            );
+        } finally {
+            setOptimizing(false);
+        }
+    }
+
+    function clearLogo() {
+        setForm((prev) => ({ ...prev, logo_url: "" }));
+        setLogoMeta(null);
     }
 
     const renderSection = () => {
@@ -132,15 +185,87 @@ export function SettingsForm({
             case "branding":
                 return (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-8">
-                        <div className="flex flex-col items-center justify-center p-12 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100/50 transition-all group cursor-pointer">
-                            <div className="w-20 h-20 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                <span className="material-symbols-outlined text-3xl text-slate-300">add_photo_alternate</span>
+                        <input
+                            ref={logoInputRef}
+                            type="file"
+                            accept={ACCEPTED_LOGO_TYPES}
+                            onChange={handleLogoFile}
+                            className="hidden"
+                        />
+
+                        {form.logo_url ? (
+                            <div className="p-6 rounded-[2rem] border border-slate-200 bg-white flex flex-col md:flex-row items-center gap-6">
+                                <div className="w-32 h-32 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                    <img
+                                        src={form.logo_url}
+                                        alt="Institutional logo"
+                                        className="max-w-full max-h-full object-contain"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0 text-center md:text-left">
+                                    <p className="text-sm font-bold text-slate-900">
+                                        Institutional logo
+                                    </p>
+                                    {logoMeta ? (
+                                        <p className="text-xs font-medium text-slate-500 mt-1">
+                                            Optimized {formatBytes(logoMeta.originalBytes)} →{" "}
+                                            <span className="text-emerald-600 font-bold">
+                                                {formatBytes(logoMeta.compressedBytes)}
+                                            </span>
+                                        </p>
+                                    ) : (
+                                        <p className="text-xs font-medium text-slate-500 mt-1">
+                                    
+                                        </p>
+                                    )}
+                                    <div className="mt-3 flex flex-wrap gap-2 justify-center md:justify-start">
+                                        <button
+                                            type="button"
+                                            onClick={() => logoInputRef.current?.click()}
+                                            disabled={optimizing}
+                                            className="px-3 py-2 rounded-xl bg-slate-900 text-white text-[11px] font-bold disabled:opacity-50"
+                                        >
+                                            Replace logo
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={clearLogo}
+                                            disabled={optimizing}
+                                            className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-[11px] font-bold disabled:opacity-50"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="text-center">
-                                <p className="text-sm font-bold text-slate-900">Upload Institutional Logo</p>
-                                <p className="text-xs font-medium text-slate-400 mt-1">PNG, SVG or JPG (Max 2MB)</p>
-                            </div>
-                        </div>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => logoInputRef.current?.click()}
+                                disabled={optimizing}
+                                className="w-full flex flex-col items-center justify-center p-12 rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50 hover:bg-slate-100/50 transition-all group cursor-pointer disabled:cursor-wait disabled:opacity-70"
+                            >
+                                <div className="w-20 h-20 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    {optimizing ? (
+                                        <span className="h-6 w-6 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600" />
+                                    ) : (
+                                        <span className="material-symbols-outlined text-3xl text-slate-300">
+                                            add_photo_alternate
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-slate-900">
+                                        {optimizing
+                                            ? "Optimizing in the background…"
+                                            : "Upload Institutional Logo"}
+                                    </p>
+                                    <p className="text-xs font-medium text-slate-400 mt-1">
+                                        Any size accepted. We compress to ~100 KB before saving.
+                                    </p>
+                                </div>
+                            </button>
+                        )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>

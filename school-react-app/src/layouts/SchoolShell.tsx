@@ -25,6 +25,7 @@ import {
   setSelectedAcademicYearId,
 } from "@/services/academic-year-context";
 import { useAuth, type Role } from "@/hooks/useAuth";
+import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { ChildSwitcher } from "@/components/parent/ChildSwitcher";
 
 type NavItem = {
@@ -146,6 +147,10 @@ const parentNavGroups: NavGroup[] = [
     ],
   },
   {
+    label: "Requests",
+    items: [{ label: "Leave", href: "/parent/leave", icon: "event_busy" }],
+  },
+  {
     label: "School",
     items: [{ label: "Events", href: "/parent/events", icon: "event" }],
   },
@@ -262,6 +267,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
   const pathname = location.pathname;
 
   const { user, loading: authLoading, logout } = useAuth();
+  const { schoolName: brandedName, logoUrl: brandedLogo } = useSchoolBranding();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     // Default collapsed on mobile, expanded on desktop
     if (typeof window !== "undefined") {
@@ -467,19 +473,27 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
         </nav>
 
         <div className={`mt-auto border-t border-slate-50 p-1.5 space-y-1 ${isCollapsed ? "flex flex-col items-center" : ""}`}>
-          <div className={`flex w-full items-center gap-2 rounded border border-slate-50 bg-slate-50/30 px-2 py-1 transition-colors group ${isCollapsed ? "justify-center" : ""}`}>
-            <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded bg-blue-600 shadow-sm">
-              <span className="text-[9px] font-bold text-white">
-                {(user.email || "--").substring(0, 2).toUpperCase()}
-              </span>
+          <div className={`flex w-full items-center gap-2.5 rounded-lg border border-slate-50 bg-slate-50/30 px-2.5 py-1.5 transition-colors group ${isCollapsed ? "justify-center" : ""}`}>
+            <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-blue-600 shadow-sm">
+              {brandedLogo ? (
+                <img
+                  src={brandedLogo}
+                  alt={brandedName || "School logo"}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-[11px] font-bold text-white">
+                  {(brandedName || user.email || "--").substring(0, 2).toUpperCase()}
+                </span>
+              )}
             </div>
             {!isCollapsed && (
               <>
                 <div className="flex flex-col min-w-0 text-left flex-1">
-                  <span className="truncate text-[10px] font-bold text-slate-900">
-                    {(user.email || "user").split("@")[0]}
+                  <span className="truncate text-[12px] font-bold text-slate-900">
+                    {brandedName || (user.email || "user").split("@")[0]}
                   </span>
-                  <span className="text-[8px] font-bold normal-case  text-slate-400">
+                  <span className="text-[10px] font-bold normal-case  text-slate-400">
                     {user.role === "student" ? "Parent/Student" : user.role.replace("_", " ")}
                   </span>
                 </div>
@@ -487,7 +501,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
                   onClick={logout}
                   className="rounded p-1 text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500"
                 >
-                  <span className="material-symbols-outlined text-[15px]">logout</span>
+                  <span className="material-symbols-outlined text-[18px]">logout</span>
                 </button>
               </>
             )}

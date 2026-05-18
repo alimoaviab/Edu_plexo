@@ -193,6 +193,7 @@ export const parentRoutes: RouteObject[] = [
   { path: "/parent/results", element: lazyPage(() => import("@/pages/role/parent/results"), "ParentResultsPage") },
   { path: "/parent/student-attendance", element: lazyPage(() => import("@/pages/role/parent/student-attendance"), "ParentStudentAttendancePage") },
   { path: "/parent/timetable", element: lazyPage(() => import("@/pages/role/parent/timetable"), "ParentTimetablePage") },
+  { path: "/parent/leave", element: lazyPage(() => import("@/pages/role/parent/leave"), "ParentLeaveRoute") },
 ];
 
 // ─── Student Routes (lazy-loaded) ────────────────────────────────────────

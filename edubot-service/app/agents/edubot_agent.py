@@ -35,17 +35,26 @@ from app.tools.catalog import (
 logger = structlog.get_logger()
 
 
-# ─── Primary: Gemini via OpenAI-compatible endpoint ───────────────────────
+# ─── Primary: Groq or Gemini ───────────────────────────────────────────────
 
-_gemini_client = AsyncOpenAI(
-    api_key=settings.GEMINI_API_KEY,
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-)
-
-_primary_model = OpenAIChatCompletionsModel(
-    model=settings.GEMINI_MODEL,
-    openai_client=_gemini_client,
-)
+if settings.GROQ_API_KEY:
+    _groq_client = AsyncOpenAI(
+        api_key=settings.GROQ_API_KEY,
+        base_url="https://api.groq.com/openai/v1",
+    )
+    _primary_model = OpenAIChatCompletionsModel(
+        model=settings.GROQ_MODEL,
+        openai_client=_groq_client,
+    )
+else:
+    _gemini_client = AsyncOpenAI(
+        api_key=settings.GEMINI_API_KEY or "dummy",
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    )
+    _primary_model = OpenAIChatCompletionsModel(
+        model=settings.GEMINI_MODEL,
+        openai_client=_gemini_client,
+    )
 
 
 # ─── Fallback: OpenRouter ─────────────────────────────────────────────────

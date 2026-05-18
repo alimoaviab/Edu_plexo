@@ -84,6 +84,7 @@ var roleAccessMatrix = map[string]map[Feature][]Action{
 		"timetable":     {ActionView},
 		"behavior":      {ActionView},
 		"events":        {ActionView},
+		"leave":         {ActionView, ActionCreate},
 	},
 	"student": {
 		"settings":      {ActionView},

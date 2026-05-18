@@ -107,6 +107,39 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		h.Store.RUnlock()
 	}
 
+	// Parent scope is union-of-children. We compute the set once and
+	// fold it into the cache key so two parents with different
+	// linked children never share a cached payload.
+	//
+	// Dev-seed compatibility: same fallback as the create handler —
+	// when the StudentParents table hasn't been populated, the rest
+	// of the parent portal treats every student in the tenant as a
+	// child (see parent.resolveStudent). We mirror that here so the
+	// list isn't empty when the dashboard / attendance pages happily
+	// resolve a child.
+	var parentChildIDs []string
+	if ctx.Role == "parent" {
+		h.Store.RLock()
+		seen := map[string]bool{}
+		for _, link := range h.Store.StudentParents {
+			if link.SchoolID == ctx.SchoolID && link.ParentUserID == ctx.UserID && !seen[link.StudentID] {
+				parentChildIDs = append(parentChildIDs, link.StudentID)
+				seen[link.StudentID] = true
+			}
+		}
+		if len(parentChildIDs) == 0 {
+			for _, s := range h.Store.Students {
+				if s.SchoolID == ctx.SchoolID && !seen[s.ID] {
+					parentChildIDs = append(parentChildIDs, s.ID)
+					seen[s.ID] = true
+				}
+			}
+		}
+		h.Store.RUnlock()
+		sort.Strings(parentChildIDs)
+		scopedRequesterID = "parent:" + fmt.Sprintf("%v", parentChildIDs)
+	}
+
 	cacheKey := listCacheKey(ctx.SchoolID, ctx.Role, scopedRequesterID, q.Encode())
 	if h.Cache != nil && h.Cache.Available() {
 		if b, err := h.Cache.Get(r.Context(), cacheKey); err == nil && b != nil {
@@ -149,6 +182,25 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			requesterType = "teacher"
 		}
 
+		// If parent, scope to the linked children's leave records.
+		// Backend pulls the union; query-string filters (status, dates,
+		// requester_id) still apply, but requester_type is forced.
+		var parentAllowed map[string]bool
+		if ctx.Role == "parent" {
+			parentAllowed = map[string]bool{}
+			for _, id := range parentChildIDs {
+				parentAllowed[id] = true
+			}
+			requesterType = "student"
+			// If the parent passed an explicit requester_id, only allow
+			// it if it's actually one of their kids — otherwise the
+			// filter is silently zeroed so we never leak.
+			if requesterID != "" && !parentAllowed[requesterID] {
+				requesterID = ""
+				parentAllowed = map[string]bool{"__none__": true}
+			}
+		}
+
 		startDate, hasStart := api.ParseDate(q.Get("start_date"))
 		endDate, hasEnd := api.ParseDate(q.Get("end_date"))
 
@@ -165,6 +217,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			if requesterID != "" && l.RequesterID != requesterID {
+				continue
+			}
+			if parentAllowed != nil && !parentAllowed[l.RequesterID] {
 				continue
 			}
 			if hasStart && l.StartDate.Before(startDate) {
@@ -286,6 +341,60 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			h.Store.RUnlock()
 			if body.RequesterID == "" {
 				return nil, api.NewControlledError("NOT_FOUND", "Teacher profile not found.", 404, nil)
+			}
+		}
+
+		// Parent is filing on behalf of a linked child. We accept an
+		// explicit body.RequesterID (the parent picked a child) and
+		// validate it against the StudentParents links; if missing we
+		// fall back to the first linked child.
+		//
+		// Dev-seed compatibility: when no StudentParents links exist
+		// for this parent, the rest of the parent portal
+		// (dashboard / attendance / homework) already falls back to
+		// "any student in the same tenant" via parent.resolveStudent.
+		// We mirror that here so the parent portal's "viewable child"
+		// set matches the "fileable-leave" set — otherwise the UI
+		// shows the child everywhere but rejects the submission.
+		if ctx.Role == "parent" {
+			body.RequesterType = "student"
+			h.Store.RLock()
+			allowed := map[string]bool{}
+			var firstChildID string
+			hasLinks := false
+			for _, link := range h.Store.StudentParents {
+				if link.SchoolID == ctx.SchoolID && link.ParentUserID == ctx.UserID {
+					hasLinks = true
+					allowed[link.StudentID] = true
+					if firstChildID == "" {
+						firstChildID = link.StudentID
+					}
+				}
+			}
+			if !hasLinks {
+				for _, s := range h.Store.Students {
+					if s.SchoolID == ctx.SchoolID {
+						allowed[s.ID] = true
+						if firstChildID == "" {
+							firstChildID = s.ID
+						}
+					}
+				}
+			}
+			h.Store.RUnlock()
+
+			if body.RequesterID == "" {
+				body.RequesterID = firstChildID
+			} else if !allowed[body.RequesterID] {
+				return nil, api.NewControlledError(
+					"FORBIDDEN",
+					"You can only file leave for your own children.",
+					403,
+					nil,
+				)
+			}
+			if body.RequesterID == "" {
+				return nil, api.NewControlledError("NOT_FOUND", "No linked child found for this parent.", 404, nil)
 			}
 		}
 

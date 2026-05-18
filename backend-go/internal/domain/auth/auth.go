@@ -19,13 +19,28 @@ import (
 
 // Handler bundles dependencies for the auth routes.
 type Handler struct {
-	Cfg   config.Config
-	Store *store.MemStore
+	Cfg     config.Config
+	Store   *store.MemStore
+	Persist func(table string, doc any)
 }
 
 // New returns a configured auth handler.
+//
+// Note: callers should prefer NewWithPersist when a persistence layer
+// is configured — otherwise users created during signup live in
+// memory only and disappear on restart, which surfaces to the user
+// as "Invalid email or password" the next day.
 func New(cfg config.Config, s *store.MemStore) *Handler {
-	return &Handler{Cfg: cfg, Store: s}
+	return &Handler{Cfg: cfg, Store: s, Persist: func(string, any) {}}
+}
+
+// NewWithPersist returns a handler that pushes signup writes (school,
+// academic year, user) to PostgreSQL via the provided save function.
+func NewWithPersist(cfg config.Config, s *store.MemStore, save func(string, any)) *Handler {
+	if save == nil {
+		save = func(string, any) {}
+	}
+	return &Handler{Cfg: cfg, Store: s, Persist: save}
 }
 
 // loginRequest mirrors the body the original /api/auth/login endpoint
@@ -297,8 +312,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		yearID := store.NewID("ay")
 		year := time.Now().Year()
 
-		h.Store.Lock()
-		h.Store.Schools = append(h.Store.Schools, &store.School{
+		newSchool := &store.School{
 			ID:        store.NewID("sch"),
 			SchoolID:  schoolID,
 			Name:      schoolName,
@@ -306,8 +320,8 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			Status:    "active", // Bypassing Super Admin approval for now: changed from "pending"
 			CreatedAt: now,
 			UpdatedAt: now,
-		})
-		h.Store.AcademicYears = append(h.Store.AcademicYears, &store.AcademicYear{
+		}
+		newYear := &store.AcademicYear{
 			ID:          yearID,
 			SchoolID:    schoolID,
 			Year:        formatYearRange(year),
@@ -318,8 +332,8 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			Description: "Default academic year",
 			CreatedAt:   now,
 			UpdatedAt:   now,
-		})
-		h.Store.Users = append(h.Store.Users, &store.User{
+		}
+		newUser := &store.User{
 			ID:           store.NewID("usr"),
 			SchoolID:     schoolID,
 			Email:        email,
@@ -333,8 +347,23 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			Status:    "active",
 			CreatedAt: now,
 			UpdatedAt: now,
-		})
+		}
+
+		h.Store.Lock()
+		h.Store.Schools = append(h.Store.Schools, newSchool)
+		h.Store.AcademicYears = append(h.Store.AcademicYears, newYear)
+		h.Store.Users = append(h.Store.Users, newUser)
 		h.Store.Unlock()
+
+		// Push the freshly-minted school/year/user to PostgreSQL.
+		// Without this the row only exists in memory and the next
+		// server restart wipes it — the user comes back the next day
+		// to "Invalid email or password" because PG never saw their
+		// account. Order matters: school first (FK target), then
+		// year, then user.
+		h.Persist("schools", newSchool)
+		h.Persist("academic_years", newYear)
+		h.Persist("users", newUser)
 
 		// Bypassing Super Admin approval for now: status is "active", token is still omitted (user goes to /auth/login)
 		api.WriteJSON(w, http.StatusCreated, map[string]any{
@@ -367,8 +396,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	activeYearID := h.findActiveAcademicYearID(school.SchoolID)
 
 	userID := store.NewID("usr")
-	h.Store.Lock()
-	h.Store.Users = append(h.Store.Users, &store.User{
+	newUser := &store.User{
 		ID:           userID,
 		SchoolID:     school.SchoolID,
 		Email:        email,
@@ -382,8 +410,16 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		Status:    "active",
 		CreatedAt: now,
 		UpdatedAt: now,
-	})
+	}
+	h.Store.Lock()
+	h.Store.Users = append(h.Store.Users, newUser)
 	h.Store.Unlock()
+
+	// Persist the user so it survives a server restart. Without this
+	// the account only exists in MemStore — pg.Load on the next boot
+	// wipes the in-memory state and reloads from PG, leaving the
+	// user unable to log in.
+	h.Persist("users", newUser)
 
 	claims := authpkg.Claims{
 		SchoolID:             school.SchoolID,

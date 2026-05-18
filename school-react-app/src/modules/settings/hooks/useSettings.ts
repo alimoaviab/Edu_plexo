@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import { showToast } from "@/utils/toast";
 import { SettingsFormInput } from "../types/settings.types";
@@ -6,6 +7,7 @@ import * as service from "../services/settings.service";
 
 export function useSettings() {
     const { state, run } = useSafeAsync<SettingsFormInput>();
+    const queryClient = useQueryClient();
 
     const loadSettings = useCallback(() => {
         return run(async () => {
@@ -43,9 +45,13 @@ export function useSettings() {
 
             showToast("Settings saved.", "success");
             await loadSettings();
+            // Refresh anything else that consumes branding (e.g. the
+            // sidebar footer card) so the new logo / name appears
+            // without a page reload.
+            queryClient.invalidateQueries({ queryKey: ["settings", "branding"] });
             return result;
         },
-        [loadSettings]
+        [loadSettings, queryClient]
     );
 
     useEffect(() => {

@@ -84,7 +84,6 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 		api.WriteJSON(w, http.StatusOK, map[string]any{"status": "alive"})
 	})
 
-	authH := authdomain.New(cfg, s)
 	saveFn := func(table string, doc any) {
 			switch {
 			case len(table) > 7 && table[len(table)-7:] == ":delete":
@@ -97,6 +96,8 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 				pg.Save(table, doc)
 			}
 	}
+
+	authH := authdomain.NewWithPersist(cfg, s, saveFn)
 
 	// ─── WebSocket endpoint (requires auth) ──────────────────────────────
 	r.Group(func(r chi.Router) {
