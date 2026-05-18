@@ -45,10 +45,8 @@
   font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 20;
   font-weight: normal;
   font-style: normal;
-  line-height: 1;
   letter-spacing: normal;
   text-transform: none;
-  display: inline-block;
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;
@@ -56,10 +54,6 @@
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-feature-settings: "liga";
-  /* Prevent text overflow when font hasn't loaded */
-  overflow: hidden;
-  width: 1em;
-  height: 1em;
 }
 
 @keyframes fadeInUp {

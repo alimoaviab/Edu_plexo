@@ -10,16 +10,16 @@
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" /></noscript>
     <style>
       .material-symbols-outlined {
-        opacity: 0;
-        overflow: hidden;
-        display: inline-block;
-        width: 1em;
-        height: 1em;
-        line-height: 1;
+        color: transparent !important;
+        overflow: hidden !important;
+        display: inline-block !important;
+        width: 1em !important;
+        height: 1em !important;
+        line-height: 1 !important;
+        vertical-align: middle;
       }
       html.material-icons-loaded .material-symbols-outlined {
-        opacity: 1;
-        transition: opacity 0.1s ease-in;
+        color: inherit !important;
       }
     </style>
     <script>
@@ -31,7 +31,7 @@
           document.fonts.load('20px "Material Symbols Outlined"').then(reveal).catch(reveal);
           document.fonts.ready.then(reveal);
         }
-        setTimeout(reveal, 4000);
+        setTimeout(reveal, 5000);
       })();
     </script>
     <title>Eduplexo — Super Admin</title>
