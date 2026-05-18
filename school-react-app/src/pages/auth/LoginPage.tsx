@@ -5,14 +5,21 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Eye, EyeOff, ArrowRight, CheckCircle, AlertCircle, ShieldCheck, BookOpen, GraduationCap } from "lucide-react";
 import { decodeJwtPayload } from "@/utils/jwt";
 
 type Role = "admin" | "teacher" | "student";
 
-const ROLES: { key: Role; label: string; icon: string }[] = [
-  { key: "admin", label: "Admin", icon: "admin_panel_settings" },
-  { key: "teacher", label: "Teacher", icon: "local_library" },
-  { key: "student", label: "Student", icon: "school" },
+const ROLE_ICONS: Record<Role, React.ReactNode> = {
+  admin: <ShieldCheck size={20} />,
+  teacher: <BookOpen size={20} />,
+  student: <GraduationCap size={20} />,
+};
+
+const ROLES: { key: Role; label: string }[] = [
+  { key: "admin", label: "Admin" },
+  { key: "teacher", label: "Teacher" },
+  { key: "student", label: "Student" },
 ];
 
 const ROLE_ROUTES: Record<string, string> = {
@@ -157,7 +164,7 @@ export function LoginPage() {
                   selectedRole === role.key ? "text-blue-600 bg-white shadow-sm ring-1 ring-white/50" : "text-gray-400 hover:text-gray-600"
                 }`}
               >
-                <span className="material-symbols-outlined text-[20px] w-5 h-5 flex items-center justify-center overflow-hidden flex-shrink-0 select-none">{role.icon}</span>
+                <span className="w-5 h-5 flex items-center justify-center flex-shrink-0">{ROLE_ICONS[role.key]}</span>
                 <span className="tracking-wide">{role.label}</span>
               </button>
             ))}
@@ -174,17 +181,17 @@ export function LoginPage() {
               <div className="relative">
                 <input name="password" type={showPassword ? "text" : "password"} required value={formData.password} onChange={handleChange} placeholder="••••••••" className="w-full h-12 pl-6 pr-14 bg-white/50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-blue-600 transition-all outline-none text-gray-900 font-bold placeholder:text-gray-300" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" tabIndex={-1}>
-                  <span className="material-symbols-outlined text-[20px]">{showPassword ? "visibility_off" : "visibility"}</span>
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
 
-            {error && <p className="text-[11px] text-red-500 font-bold bg-red-50/80 p-4 rounded-2xl border border-red-100 flex items-center gap-2 shadow-sm"><span className="material-symbols-outlined text-[16px]">error</span>{error}</p>}
+            {error && <p className="text-[11px] text-red-500 font-bold bg-red-50/80 p-4 rounded-2xl border border-red-100 flex items-center gap-2 shadow-sm"><AlertCircle size={16} className="flex-shrink-0" />{error}</p>}
 
             <button type="submit" disabled={loading || success} className={`w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${success ? "bg-green-600" : ""}`}>
               {loading ? "Authenticating..." : success ? "Welcome Back!" : "Sign In"}
-              {!loading && !success && <span className="material-symbols-outlined text-[20px]">arrow_forward</span>}
-              {success && <span className="material-symbols-outlined text-[20px]">check_circle</span>}
+              {!loading && !success && <ArrowRight size={20} />}
+              {success && <CheckCircle size={20} />}
             </button>
           </form>
 
