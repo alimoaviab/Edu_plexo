@@ -1,22 +1,30 @@
 /**
- * Student / Parent Dashboard.
+ * Student / Parent Dashboard — live wired.
  *
- * Per the spec, parents and students live in the same portal. When a parent's
- * email is linked to multiple children, the linked profiles surface here so
- * the parent can switch between them (the linked-children switcher lands
- * once we wire `/parents/me/children`).
+ * - Parent: pulls /api/parent/dashboard/stats + /api/parent/children. The
+ *   linked-children switcher surfaces the names; tapping a child sets it
+ *   as the active student for subsequent module screens.
+ * - Student: same API, scoped server-side via the JWT.
+ *
+ * Module navigation uses the same /modules/* route group as admin/teacher
+ * so we share screens across roles. Each screen renders role-aware UI.
  */
 
-import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { Card } from '@/components/ui/Card';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { Header } from '@/components/layout/Header';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { StatTile } from '@/components/ui/StatTile';
+import { ErrorState } from '@/components/ui/EmptyState';
+import { useParentChildren, useParentDashboard } from '@/hooks';
+import { useActiveChildStore } from '@/store/active-child-store';
 import { useAuthStore } from '@/store/auth-store';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
+import { formatCount, formatCurrency, formatPercent } from '@/utils/format';
+import type { ParentChildRow, ParentDashboardStats } from '@/services/types';
 
 interface ModuleEntry {
   key: string;
@@ -24,29 +32,37 @@ interface ModuleEntry {
   icon: IconName;
   accent: 'primary' | 'success' | 'warning' | 'error';
   description: string;
+  href: string;
 }
 
 const MODULES: ModuleEntry[] = [
-  { key: 'timetable',    label: 'Timetable',    icon: 'calendar',     accent: 'success', description: 'Class schedule' },
-  { key: 'attendance',   label: 'Attendance',   icon: 'check-circle', accent: 'success', description: 'My attendance' },
-  { key: 'homework',     label: 'Homework',     icon: 'book',         accent: 'primary', description: 'Assignments' },
-  { key: 'exams',        label: 'Exams',        icon: 'clipboard',    accent: 'warning', description: 'Upcoming exams' },
-  { key: 'results',      label: 'Results',      icon: 'star',         accent: 'success', description: 'My grades' },
-  { key: 'live-classes', label: 'Live Classes', icon: 'video',        accent: 'primary', description: 'Online sessions' },
-  { key: 'fees',         label: 'Fee Charges',  icon: 'wallet',       accent: 'success', description: 'Pay or view dues' },
-  { key: 'events',       label: 'Events',       icon: 'megaphone',    accent: 'primary', description: 'School calendar' },
+  { key: 'timetable',    label: 'Timetable',    icon: 'calendar',     accent: 'success', description: 'Class schedule',     href: '/modules/timetable' },
+  { key: 'attendance',   label: 'Attendance',   icon: 'check-circle', accent: 'success', description: 'My attendance',      href: '/modules/attendance' },
+  { key: 'homework',     label: 'Homework',     icon: 'book',         accent: 'primary', description: 'Assignments',        href: '/modules/homework' },
+  { key: 'exams',        label: 'Exams',        icon: 'clipboard',    accent: 'warning', description: 'Upcoming exams',     href: '/modules/exams' },
+  { key: 'results',      label: 'Results',      icon: 'star',         accent: 'success', description: 'My grades',          href: '/modules/results' },
+  { key: 'live-classes', label: 'Live Classes', icon: 'video',        accent: 'primary', description: 'Online sessions',    href: '/modules/live-classes' },
+  { key: 'fees',         label: 'Fee Charges',  icon: 'wallet',       accent: 'success', description: 'Pay or view dues',   href: '/modules/fees' },
+  { key: 'announcements',label: 'Announcements',icon: 'megaphone',    accent: 'primary', description: 'School notices',     href: '/modules/announcements' },
+  { key: 'events',       label: 'Events',       icon: 'megaphone',    accent: 'primary', description: 'School calendar',    href: '/modules/events' },
 ];
 
 export default function StudentDashboard() {
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const [refreshing, setRefreshing] = useState(false);
-
-  function onRefresh() {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
-  }
-
   const isParent = user?.role === 'parent';
+
+  const dashboard = useParentDashboard();
+  const childrenQ = useParentChildren();
+
+  const stats = (dashboard.data ?? {}) as ParentDashboardStats;
+  const refreshing =
+    (dashboard.isFetching || childrenQ.isFetching) && !!dashboard.data;
+
+  function refresh() {
+    dashboard.refetch();
+    childrenQ.refetch();
+  }
 
   return (
     <ScreenContainer flush>
@@ -56,7 +72,7 @@ export default function StudentDashboard() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={onRefresh}
+            onRefresh={refresh}
             tintColor={colors.primary}
             colors={[colors.primary]}
           />
@@ -69,47 +85,157 @@ export default function StudentDashboard() {
             subtitle={user?.email ?? ''}
           />
 
+          {dashboard.isError ? (
+            <ErrorState
+              title="Couldn't load dashboard"
+              message={dashboard.error?.message ?? 'Please try again.'}
+              onRetry={() => dashboard.refetch()}
+            />
+          ) : null}
+
           {isParent ? (
-            <Card style={styles.childCard}>
-              <View style={styles.childRow}>
-                <View style={styles.childAvatar}>
-                  <Icon name="family" size={22} color={colors.primary} />
-                </View>
-                <View style={styles.childText}>
-                  <Text style={styles.childTitle}>Linked Children</Text>
-                  <Text style={styles.childSubtitle}>
-                    Children linked to your email will appear here once the parent
-                    profile sync runs.
-                  </Text>
-                </View>
-              </View>
-            </Card>
+            <ChildrenStrip
+              children={childrenQ.children}
+              loading={childrenQ.isLoading}
+            />
           ) : null}
 
           <View style={styles.statsRow}>
             <StatTile
               label="Attendance"
-              value="—"
+              value={
+                dashboard.isLoading
+                  ? '…'
+                  : formatPercent(stats.attendance?.percent ?? 0)
+              }
               accent="success"
               icon={<Icon name="check-circle" size={20} color={colors.success} />}
             />
             <StatTile
               label="Homework Due"
-              value="—"
+              value={
+                dashboard.isLoading
+                  ? '…'
+                  : formatCount(stats.homework_due ?? 0)
+              }
               accent="warning"
               icon={<Icon name="book" size={20} color={colors.warning} />}
             />
           </View>
 
+          {stats.fees ? (
+            <View style={styles.statsRow}>
+              <StatTile
+                label="Fees Pending"
+                value={formatCurrency(stats.fees.pending ?? 0)}
+                accent="warning"
+                icon={<Icon name="wallet" size={20} color={colors.warning} />}
+              />
+              <StatTile
+                label="Upcoming Exams"
+                value={formatCount(stats.upcoming_exams ?? 0)}
+                accent="primary"
+                icon={<Icon name="clipboard" size={20} color={colors.primary} />}
+              />
+            </View>
+          ) : null}
+
           <SectionTitle title="Modules" />
           <View style={styles.grid}>
             {MODULES.map((m) => (
-              <ModuleCard key={m.key} entry={m} />
+              <ModuleCard
+                key={m.key}
+                entry={m}
+                onPress={() => router.push(m.href as never)}
+              />
             ))}
           </View>
         </View>
       </ScrollView>
     </ScreenContainer>
+  );
+}
+
+function ChildrenStrip({
+  children,
+  loading,
+}: {
+  children: ParentChildRow[];
+  loading: boolean;
+}) {
+  const activeId = useActiveChildStore((s) => s.studentId);
+  const setActive = useActiveChildStore((s) => s.set);
+
+  if (loading) {
+    return (
+      <Card style={styles.childCard} padding="md">
+        <Text style={styles.childTitle}>Linked Children</Text>
+        <Text style={styles.childSubtitle}>Loading…</Text>
+      </Card>
+    );
+  }
+  if (!children.length) {
+    return (
+      <Card style={styles.childCard} padding="md">
+        <View style={styles.childRow}>
+          <View style={styles.childAvatar}>
+            <Icon name="family" size={22} color={colors.primary} />
+          </View>
+          <View style={styles.childText}>
+            <Text style={styles.childTitle}>Linked Children</Text>
+            <Text style={styles.childSubtitle}>
+              No children are linked to this email yet. Contact the school
+              admin to link a student profile.
+            </Text>
+          </View>
+        </View>
+      </Card>
+    );
+  }
+
+  return (
+    <View style={styles.childCard}>
+      <Text style={[styles.childTitle, { marginBottom: spacing.sm }]}>
+        Linked Children
+      </Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ gap: spacing.sm }}
+      >
+        {children.map((child) => {
+          const id = child.student_id ?? child.id ?? '';
+          const isActive = id === activeId;
+          return (
+            <Pressable
+              key={id || child.full_name}
+              onPress={() => setActive(id)}
+              style={({ pressed }) => [
+                styles.childChip,
+                shadows.card,
+                isActive && styles.childChipActive,
+                pressed && styles.pressed,
+              ]}
+            >
+              <View style={styles.childAvatar}>
+                <Icon name="graduation" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.chipName} numberOfLines={1}>
+                  {child.full_name ?? 'Student'}
+                </Text>
+                <Text style={styles.chipMeta} numberOfLines={1}>
+                  {[child.class_name, child.section].filter(Boolean).join(' · ')}
+                </Text>
+              </View>
+              {isActive ? (
+                <Icon name="check-circle" size={18} color={colors.primary} />
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -121,7 +247,7 @@ function SectionTitle({ title }: { title: string }) {
   );
 }
 
-function ModuleCard({ entry }: { entry: ModuleEntry }) {
+function ModuleCard({ entry, onPress }: { entry: ModuleEntry; onPress: () => void }) {
   const tint =
     entry.accent === 'primary'
       ? colors.primaryLight
@@ -141,6 +267,7 @@ function ModuleCard({ entry }: { entry: ModuleEntry }) {
 
   return (
     <Pressable
+      onPress={onPress}
       style={({ pressed }) => [styles.moduleCard, shadows.card, pressed && styles.pressed]}
       android_ripple={{ color: colors.gray100 }}
     >
@@ -164,14 +291,35 @@ const styles = StyleSheet.create({
   childCard: { marginBottom: spacing.md },
   childRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   childAvatar: {
-    width: 48, height: 48,
+    width: 40,
+    height: 40,
     borderRadius: radius.md,
     backgroundColor: colors.primaryLight,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   childText: { flex: 1 },
   childTitle: { ...typography.h4, color: colors.gray900 },
   childSubtitle: { ...typography.bodySm, color: colors.gray500, marginTop: 2 },
+
+  childChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    minWidth: 220,
+  },
+  childChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  chipName: { ...typography.bodyMd, fontWeight: '700', color: colors.gray900 },
+  chipMeta: { ...typography.bodySm, color: colors.gray500 },
 
   statsRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
 
@@ -190,9 +338,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   moduleIcon: {
-    width: 44, height: 44,
+    width: 44,
+    height: 40,
     borderRadius: radius.md,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   moduleLabel: { ...typography.bodyMd, fontWeight: '700', color: colors.gray900 },
   moduleDescription: { ...typography.bodySm, color: colors.gray500 },

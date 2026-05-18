@@ -41,6 +41,20 @@
       "expo-font",
       "expo-secure-store",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to attach to homework or upload payment proofs.",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to use the camera for profile photos and homework submissions."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/adaptive-icon.png",
+          "color": "#2563EB"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash.png",
@@ -54,7 +68,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiBaseUrl": "https://app.eduplexo.com/api",
+      "apiBaseUrl": "https://app.eduplexo.com",
       "appName": "EduPlexo"
     }
   }

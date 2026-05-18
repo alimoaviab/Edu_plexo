@@ -1,9 +1,12 @@
 /**
  * Root layout — installs providers and gates routing on auth hydration.
  *
- * The auth store reads the JWT from secure storage on first mount. Until
- * that finishes we keep the splash screen visible so the user never sees
- * a flash of the login screen when they're already signed in.
+ * Uses PersistQueryClientProvider so the last good data shows up instantly
+ * on cold starts; stale data is replaced by a background refetch when the
+ * network returns.
+ *
+ * The WebSocket hub is mounted here so any module screen sees real-time
+ * updates without each screen re-establishing the connection.
  */
 
 import { useEffect } from 'react';
@@ -13,22 +16,15 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 
+import { queryClient, queryPersister } from '@/api/query-client';
 import { useAuthStore } from '@/store/auth-store';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import { useNotificationsRegistration } from '@/hooks/useNotificationsRegistration';
 import { colors } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
 
 const ROLE_HOME: Record<string, string> = {
   admin: '/(admin)',
@@ -45,6 +41,9 @@ function ProtectedRouter() {
   const hydrated = useAuthStore((s) => s.hydrated);
   const hydrate = useAuthStore((s) => s.hydrate);
 
+  useWebSocket({ enabled: !!user });
+  useNotificationsRegistration({ enabled: !!user });
+
   useEffect(() => {
     hydrate();
   }, [hydrate]);
@@ -59,7 +58,6 @@ function ProtectedRouter() {
       router.replace('/(auth)/login');
       return;
     }
-
     if (user && inAuthGroup) {
       const home = ROLE_HOME[user.role] ?? '/(admin)';
       router.replace(home as never);
@@ -77,10 +75,13 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={{ persister: queryPersister, maxAge: 24 * 60 * 60 * 1000 }}
+        >
           <StatusBar style="dark" backgroundColor={colors.surface} />
           <ProtectedRouter />
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

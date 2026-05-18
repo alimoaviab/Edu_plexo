@@ -1,9 +1,11 @@
 import { Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { ModuleListScreen, type ModuleListItem } from '@/components/layout/ModuleListScreen';
 import { useAuthStore } from '@/store/auth-store';
 
 export default function Settings() {
+  const router = useRouter();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
 
@@ -15,12 +17,12 @@ export default function Settings() {
   }
 
   const items: ModuleListItem[] = [
-    { key: 'profile', label: user?.email ?? 'Account', description: 'Profile & preferences', icon: 'shield', accent: 'primary' },
-    { key: 'academic-year', label: 'Academic Year', description: 'Switch active year', icon: 'calendar', accent: 'success' },
-    { key: 'school', label: 'School Profile', description: 'Branding & contact info', icon: 'graduation', accent: 'primary' },
-    { key: 'roles', label: 'Roles & Access', description: 'Permissions matrix', icon: 'users', accent: 'primary' },
-    { key: 'subscription', label: 'Subscription', description: 'Plan & billing', icon: 'wallet', accent: 'success' },
-    { key: 'notifications', label: 'Notifications', description: 'Email, SMS, push', icon: 'bell', accent: 'warning' },
+    { key: 'profile', label: user?.email ?? 'Account', description: 'Profile & preferences', icon: 'shield', accent: 'primary', onPress: () => router.push('/modules/profile' as never) },
+    { key: 'academic-year', label: 'Academic Year', description: 'Switch active year', icon: 'calendar', accent: 'success', onPress: () => router.push('/modules/academic-year' as never) },
+    { key: 'school', label: 'School Profile', description: 'Branding & contact info', icon: 'graduation', accent: 'primary', onPress: () => router.push('/modules/settings' as never) },
+    { key: 'roles', label: 'Roles & Access', description: 'Permissions matrix', icon: 'users', accent: 'primary', onPress: () => router.push('/modules/settings' as never) },
+    { key: 'subscription', label: 'Subscription', description: 'Plan & billing', icon: 'wallet', accent: 'success', onPress: () => router.push('/modules/subscription' as never) },
+    { key: 'notifications', label: 'Notifications', description: 'Notifications inbox', icon: 'bell', accent: 'warning', onPress: () => router.push('/modules/notifications' as never) },
     { key: 'logout', label: 'Sign Out', description: 'End your session', icon: 'logout', accent: 'error', onPress: confirmLogout },
   ];
 
