@@ -261,8 +261,8 @@ services:
     container_name: school_edubot
     restart: unless-stopped
     environment:
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-AIzaSyD5wU_vDzOsOcpKdRMducehJb1DzqTqOfw}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash-lite}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-AIzaSyBCUjoPxUsCNhjthHgwjtEL1Y0vNL8dh6s}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-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}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-google/gemini-2.0-flash-lite-001}
       JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me}

@@ -147,49 +147,45 @@ async def run_with_fallback(agent_kwargs: dict, user_input: str) -> str:
 
 
 async def stream_with_fallback(agent_kwargs: dict, user_input: str):
-    """Stream the agent with automatic fallback. Yields (text_chunk, is_fallback).
-
-    If primary fails, retries with fallback model.
+    """Bypass agents SDK and call Gemini directly to avoid compatibility issues.
     """
-    # Try primary
+    import os
+    from openai import AsyncOpenAI
+    
+    api_key = os.getenv("GEMINI_API_KEY")
+    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    
+    if not api_key:
+        yield "Gemini API key is missing in .env"
+        return
+        
+    client = AsyncOpenAI(
+        api_key=api_key,
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    )
+    
     try:
-        agent = create_agent(**agent_kwargs, use_fallback=False)
-        result = Runner.run_streamed(agent, user_input)
-        got_text = False
-        async for event in result.stream_events():
-            text = _extract_text(event)
-            if text:
-                got_text = True
-                yield text
-        if not got_text and result.final_output:
-            yield result.final_output
-        if got_text or result.final_output:
-            return
+        response = await client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": user_input}],
+            stream=False
+        )
+        content = response.choices[0].message.content
+        if content:
+            yield content
+        else:
+            yield "Received empty response from Gemini."
     except Exception as e:
-        logger.warning("primary_stream_failed", error=str(e))
-
-    # Fallback
-    if _fallback_model:
-        try:
-            agent = create_agent(**agent_kwargs, use_fallback=True)
-            result = Runner.run_streamed(agent, user_input)
-            got_text = False
-            async for event in result.stream_events():
-                text = _extract_text(event)
-                if text:
-                    got_text = True
-                    yield text
-            if not got_text and result.final_output:
-                yield result.final_output
-            logger.info("fallback_stream_used")
-        except Exception as e:
-            logger.error("fallback_stream_failed", error=str(e))
+        logger.error("direct_gemini_failed", error=str(e))
+        yield f"Error calling Gemini: {str(e)}"
 
 
 def _extract_text(event) -> str:
     """Extract text delta from a stream event."""
+    # pyrefly: ignore [missing-import]
     from agents.stream_events import RawResponsesStreamEvent
 
+    # Try standard RawResponsesStreamEvent
     if isinstance(event, RawResponsesStreamEvent):
         data = event.data
         if hasattr(data, "choices"):
@@ -199,4 +195,35 @@ def _extract_text(event) -> str:
                     text = getattr(delta, "content", None)
                     if text:
                         return text
+
+    # Fallback: check if event has data and choices directly
+    data = getattr(event, "data", None)
+    if data:
+        choices = getattr(data, "choices", None)
+        if choices:
+            for choice in choices:
+                delta = getattr(choice, "delta", None)
+                if delta:
+                    text = getattr(delta, "content", None)
+                    if text:
+                        return text
+
+    # Fallback: check if event itself has choices (raw OpenAI chunk)
+    choices = getattr(event, "choices", None)
+    if choices:
+        for choice in choices:
+            delta = getattr(choice, "delta", None)
+            if delta:
+                text = getattr(delta, "content", None)
+                if text:
+                    return text
+
+    # Fallback: check if event has 'content' or 'text' attribute
+    content = getattr(event, "content", None)
+    if content:
+        return content
+    text = getattr(event, "text", None)
+    if text:
+        return text
+
     return ""
