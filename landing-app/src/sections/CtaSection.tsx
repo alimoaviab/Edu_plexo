@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2, ShieldCheck } from "@/components/icons";
 
 import { whatsappUrl, WhatsappMessages } from "@/lib/whatsapp";
+import { SIGNUP_URL } from "@/lib/config";
 
 export const CtaSection = () => {
   return (
@@ -35,9 +36,7 @@ export const CtaSection = () => {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-12">
               <a
-                href={whatsappUrl(WhatsappMessages.freeTrial())}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={SIGNUP_URL}
                 className="w-full sm:w-auto px-10 py-5 bg-blue-600 text-white rounded-full font-bold shadow-lg shadow-blue-600/30 hover:bg-blue-500 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 text-lg"
               >
                 Start Free Trial <ArrowRight className="w-5 h-5" />

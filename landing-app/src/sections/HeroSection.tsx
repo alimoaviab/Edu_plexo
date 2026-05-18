@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { ArrowRight, Play, ShieldCheck, Zap, BarChart3, Users, CreditCard, Sparkles } from "@/components/icons";
-import { LOGIN_URL } from "@/lib/config";
+import { LOGIN_URL, SIGNUP_URL } from "@/lib/config";
 import { whatsappUrl, WhatsappMessages } from "@/lib/whatsapp";
 
 export const HeroSection = () => {
@@ -94,9 +94,7 @@ export const HeroSection = () => {
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
               <a
-                href={whatsappUrl(WhatsappMessages.freeTrial())}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={SIGNUP_URL}
                 className="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white rounded-full font-semibold shadow-[0_8px_30px_rgba(37,99,235,0.24)] hover:bg-blue-700 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(37,99,235,0.32)] transition-all duration-300 flex items-center justify-center gap-2"
               >
                 Start Free Trial <ArrowRight className="w-4 h-4" />

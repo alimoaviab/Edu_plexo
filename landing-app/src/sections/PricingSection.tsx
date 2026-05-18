@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { CheckCircle2, Building2 } from "@/components/icons";
 
 import { whatsappUrl, WhatsappMessages } from "@/lib/whatsapp";
+import { SIGNUP_URL } from "@/lib/config";
 
 export const PricingSection = () => {
   const [isYearly, setIsYearly] = useState(false);
@@ -129,10 +130,10 @@ export const PricingSection = () => {
                 href={
                   plan.priceMonthly === "Custom"
                     ? whatsappUrl(WhatsappMessages.contactSales(plan.name))
-                    : whatsappUrl(WhatsappMessages.freeTrial(plan.name))
+                    : SIGNUP_URL
                 }
-                target="_blank"
-                rel="noopener noreferrer"
+                target={plan.priceMonthly === "Custom" ? "_blank" : undefined}
+                rel={plan.priceMonthly === "Custom" ? "noopener noreferrer" : undefined}
                 className={`w-full py-4 rounded-xl font-bold transition-all duration-300 flex justify-center items-center gap-2 ${
                   plan.isPopular
                     ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30 hover:bg-blue-700"
