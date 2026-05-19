@@ -76,7 +76,10 @@ const adminNavGroups: NavGroup[] = [
   },
   {
     label: "Operations",
-    items: [{ label: "Events", href: "/admin/events", icon: "event" }],
+    items: [
+      { label: "Events", href: "/admin/events", icon: "event" },
+      { label: "Certificates", href: "/admin/certificates", icon: "workspace_premium" },
+    ],
   },
   {
     label: "Finance",
