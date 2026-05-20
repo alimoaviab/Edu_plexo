@@ -49,6 +49,7 @@ var roleAccessMatrix = map[string]map[Feature][]Action{
 		"behavior":      {ActionView, ActionCreate, ActionUpdate, ActionDelete, ActionManage},
 		"leave":         {ActionView, ActionCreate, ActionUpdate, ActionDelete, ActionManage},
 		"events":        {ActionView, ActionCreate, ActionUpdate, ActionDelete, ActionManage},
+		"certificates":  {ActionView, ActionCreate, ActionUpdate, ActionDelete, ActionManage},
 	},
 	"teacher": {
 		"settings":      {ActionView},

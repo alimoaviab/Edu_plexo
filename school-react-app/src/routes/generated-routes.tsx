@@ -101,6 +101,11 @@ export const adminRoutes: RouteObject[] = [
   { path: "/admin/leave", element: lazyPage(() => import("@/pages/role/admin/leave"), "LeavePage") },
   { path: "/admin/leave/:id", element: lazyPage(() => import("@/pages/role/admin/leave/Param_id"), "AdminLeaveDetailPage") },
 
+  // Certificates
+  { path: "/admin/certificates", element: lazyPage(() => import("@/pages/role/admin/certificates"), "AdminCertificatesPage") },
+  { path: "/admin/certificates/create", element: lazyPage(() => import("@/pages/role/admin/certificates/create"), "AdminCertificateCreatePage") },
+  { path: "/admin/certificates/generate/:id", element: lazyPage(() => import("@/pages/role/admin/certificates/generate/Param_id"), "AdminCertificateGeneratePage") },
+
   // Live Classes
   { path: "/admin/live-class", element: lazyPage(() => import("@/pages/role/admin/live-class"), "LiveClassPage") },
   { path: "/admin/live-class/create", element: lazyPage(() => import("@/pages/role/admin/live-class/create"), "AdminLiveClassCreatePage") },

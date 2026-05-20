@@ -15,6 +15,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/attendance"
 	authdomain "github.com/eduplexo/backend-go/internal/domain/auth"
 	"github.com/eduplexo/backend-go/internal/domain/behavior"
+	"github.com/eduplexo/backend-go/internal/domain/certificates"
 	"github.com/eduplexo/backend-go/internal/domain/classes"
 	"github.com/eduplexo/backend-go/internal/domain/dashboard"
 	"github.com/eduplexo/backend-go/internal/domain/events"
@@ -275,6 +276,19 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Get("/settings", seH.Get)
 			r.Patch("/settings", seH.Update)
 			r.Put("/settings", seH.Update)
+
+			// ─── Certificates ─────────────────────────────────────────────
+			certH := certificates.New(s, saveFn)
+			r.Get("/certificates/templates", certH.ListTemplates)
+			r.Get("/certificates/templates/{id}", certH.GetTemplate)
+			r.Post("/certificates/templates", certH.CreateTemplate)
+			r.Patch("/certificates/templates/{id}", certH.UpdateTemplate)
+			r.Delete("/certificates/templates/{id}", certH.DeleteTemplate)
+			r.Post("/certificates/templates/{id}/duplicate", certH.DuplicateTemplate)
+			r.Get("/certificates", certH.ListCertificates)
+			r.Post("/certificates/generate", certH.Generate)
+			r.Post("/certificates/{id}/revoke", certH.Revoke)
+			r.Get("/certificates/verify/{code}", certH.Verify)
 
 			// ─── Fees domain (full implementation) ────────────────────────
 			fH := fees.NewWithCache(s, saveFn, rdb)

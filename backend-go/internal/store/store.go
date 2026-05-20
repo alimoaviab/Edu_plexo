@@ -63,6 +63,10 @@ type MemStore struct {
 	SchoolPackages []*SchoolPackage
 	Expenses       []*Expense
 	RevenueRecords []*RevenueRecord
+
+	// Certificate collections.
+	CertificateTemplates  []*CertificateTemplate
+	GeneratedCertificates []*GeneratedCertificate
 	Invoices       []*Invoice
 	Transactions   []*Transaction
 	Subscriptions  []*Subscription
