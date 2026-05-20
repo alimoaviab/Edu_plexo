@@ -175,6 +175,12 @@ export function CertificateListPage() {
                   ]}
                   actions={[
                     {
+                      label: "View",
+                      icon: "visibility",
+                      to: `/admin/certificates/edit/${template._id}`,
+                      accent: "blue",
+                    },
+                    {
                       label: "Edit",
                       icon: "edit",
                       to: `/admin/certificates/edit/${template._id}`,
