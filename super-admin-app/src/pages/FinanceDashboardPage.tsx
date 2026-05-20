@@ -1,206 +1,149 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { PageHeader } from '../components/PageHeader'
+import { apiRequest } from '@/lib/api'
 
 interface FinanceStats {
   total_revenue: number
   monthly_revenue: number
   total_expenses: number
   net_profit: number
-  expense_breakdown: {
-    mutual: number
-    ali: number
-    abdul_rehman: number
-  }
+  expense_breakdown: Record<string, number>
   total_schools: number
   active_packages: number
+}
+
+function formatCurrency(amount: number): string {
+  if (amount >= 1000000) return `Rs ${(amount / 1000000).toFixed(1)}M`
+  if (amount >= 1000) return `Rs ${(amount / 1000).toFixed(1)}K`
+  return `Rs ${amount.toLocaleString()}`
 }
 
 export function FinanceDashboardPage() {
   const navigate = useNavigate()
   const [stats, setStats] = useState<FinanceStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const { apiRequest } = await import('../lib/api')
-        const response = await apiRequest('/api/super-admin/finance/dashboard')
+    loadStats()
+  }, [])
 
-        if (!response.ok) {
-          throw new Error(response.message || 'Failed to fetch finance stats')
-        }
-
-        setStats(response.data)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
-      } finally {
-        setLoading(false)
-      }
+  async function loadStats() {
+    setLoading(true)
+    const response = await apiRequest('/api/super-admin/finance/dashboard')
+    if (response.ok && response.data) {
+      setStats(response.data)
     }
-
-    fetchStats()
-  }, [navigate])
+    setLoading(false)
+  }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="h-8 w-8 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+        <div className="h-8 w-8 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin" />
       </div>
     )
   }
 
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-        {error}
-      </div>
-    )
-  }
+  if (!stats) return null
 
-  if (!stats) {
-    return <div>No data available</div>
-  }
-
-  const cards = [
-    {
-      label: 'Total Revenue',
-      value: `$${stats.total_revenue.toFixed(2)}`,
-      icon: 'trending_up',
-      color: 'bg-green-50 text-green-600',
-    },
-    {
-      label: 'Monthly Revenue',
-      value: `$${stats.monthly_revenue.toFixed(2)}`,
-      icon: 'calendar_month',
-      color: 'bg-blue-50 text-blue-600',
-    },
-    {
-      label: 'Total Expenses',
-      value: `$${stats.total_expenses.toFixed(2)}`,
-      icon: 'trending_down',
-      color: 'bg-orange-50 text-orange-600',
-    },
-    {
-      label: 'Net Profit',
-      value: `$${stats.net_profit.toFixed(2)}`,
-      icon: 'account_balance',
-      color: `${stats.net_profit >= 0 ? 'bg-purple-50 text-purple-600' : 'bg-red-50 text-red-600'}`,
-    },
-  ]
+  const profitMargin = stats.total_revenue > 0 ? ((stats.net_profit / stats.total_revenue) * 100).toFixed(1) : '0'
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Finance Dashboard"
-        description="Monitor revenue, expenses, and profitability"
-      />
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {cards.map((card) => (
-          <div
-            key={card.label}
-            className="bg-white rounded-lg border border-slate-200 p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-slate-600 font-medium">{card.label}</p>
-                <p className="text-2xl font-bold text-slate-900 mt-2">{card.value}</p>
-              </div>
-              <div className={`h-10 w-10 rounded-lg ${card.color} flex items-center justify-center`}>
-                <span className="material-symbols-outlined text-lg">{card.icon}</span>
-              </div>
-            </div>
-          </div>
-        ))}
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-bold text-slate-900">Finance Dashboard</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Revenue, expenses, and profitability overview</p>
+        </div>
+        <button onClick={loadStats} className="h-7 px-3 rounded-lg border border-slate-200 text-[10px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+          Refresh
+        </button>
       </div>
 
-      {/* Expense Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Expense Breakdown</h3>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-sm text-blue-600">trending_up</span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Revenue</span>
+          </div>
+          <p className="text-xl font-bold text-slate-900">{formatCurrency(stats.total_revenue)}</p>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-sm text-blue-600">calendar_month</span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Monthly Revenue</span>
+          </div>
+          <p className="text-xl font-bold text-slate-900">{formatCurrency(stats.monthly_revenue)}</p>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-sm text-blue-600">trending_down</span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Expenses</span>
+          </div>
+          <p className="text-xl font-bold text-slate-900">{formatCurrency(stats.total_expenses)}</p>
+        </div>
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-sm text-blue-600">account_balance</span>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Net Profit</span>
+          </div>
+          <p className={`text-xl font-bold ${stats.net_profit >= 0 ? 'text-slate-900' : 'text-red-600'}`}>{formatCurrency(stats.net_profit)}</p>
+        </div>
+      </div>
+
+      {/* Expense Breakdown + Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Expense Breakdown</h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-3 w-3 rounded-full bg-blue-500" />
-                <span className="text-sm text-slate-600">Mutual Expenses</span>
+            {Object.entries(stats.expense_breakdown).map(([type, amount]) => (
+              <div key={type} className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+                  <span className="text-[11px] font-medium text-slate-600 capitalize">{type.replace('_', ' ')} Expenses</span>
+                </div>
+                <span className="text-[11px] font-bold text-slate-900">{formatCurrency(amount)}</span>
               </div>
-              <span className="font-semibold text-slate-900">
-                ${stats.expense_breakdown.mutual.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-3 w-3 rounded-full bg-orange-500" />
-                <span className="text-sm text-slate-600">Ali Expenses</span>
-              </div>
-              <span className="font-semibold text-slate-900">
-                ${stats.expense_breakdown.ali.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-3 w-3 rounded-full bg-purple-500" />
-                <span className="text-sm text-slate-600">Abdul Rehman Expenses</span>
-              </div>
-              <span className="font-semibold text-slate-900">
-                ${stats.expense_breakdown.abdul_rehman.toFixed(2)}
-              </span>
-            </div>
+            ))}
           </div>
         </div>
 
-        {/* Summary Stats */}
-        <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Summary</h3>
+        <div className="bg-white rounded-lg border border-slate-200 p-4">
+          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-4">Summary</h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Total Schools</span>
-              <span className="font-semibold text-slate-900">{stats.total_schools}</span>
+              <span className="text-[11px] font-medium text-slate-600">Total Schools</span>
+              <span className="text-[11px] font-bold text-slate-900">{stats.total_schools}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Active Packages</span>
-              <span className="font-semibold text-slate-900">{stats.active_packages}</span>
+              <span className="text-[11px] font-medium text-slate-600">Active Packages</span>
+              <span className="text-[11px] font-bold text-slate-900">{stats.active_packages}</span>
             </div>
             <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-              <span className="text-sm font-medium text-slate-700">Profit Margin</span>
-              <span className="font-semibold text-slate-900">
-                {stats.total_revenue > 0
-                  ? ((stats.net_profit / stats.total_revenue) * 100).toFixed(1)
-                  : 0}
-                %
-              </span>
+              <span className="text-[11px] font-semibold text-slate-700">Profit Margin</span>
+              <span className="text-[11px] font-bold text-slate-900">{profitMargin}%</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white rounded-lg border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <button
-            onClick={() => navigate('/packages')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-medium text-sm"
-          >
-            <span className="material-symbols-outlined text-lg">add</span>
-            Manage Packages
+      <div className="bg-white rounded-lg border border-slate-200 p-4">
+        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3">Quick Actions</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <button onClick={() => navigate('/packages')} className="flex items-center gap-2 p-2.5 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-colors text-left">
+            <span className="material-symbols-outlined text-sm text-blue-600">inventory_2</span>
+            <span className="text-[11px] font-semibold text-slate-700">Manage Packages</span>
           </button>
-          <button
-            onClick={() => navigate('/expenses')}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors font-medium text-sm"
-          >
-            <span className="material-symbols-outlined text-lg">add</span>
-            Add Expense
+          <button onClick={() => navigate('/expenses')} className="flex items-center gap-2 p-2.5 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-colors text-left">
+            <span className="material-symbols-outlined text-sm text-blue-600">receipt_long</span>
+            <span className="text-[11px] font-semibold text-slate-700">Add Expense</span>
           </button>
-          <button
-            onClick={() => navigate('/analytics')}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 transition-colors font-medium text-sm"
-          >
-            <span className="material-symbols-outlined text-lg">analytics</span>
-            View Analytics
+          <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 p-2.5 rounded-lg border border-slate-100 hover:border-blue-200 hover:bg-blue-50 transition-colors text-left">
+            <span className="material-symbols-outlined text-sm text-blue-600">dashboard</span>
+            <span className="text-[11px] font-semibold text-slate-700">Dashboard</span>
           </button>
         </div>
       </div>
