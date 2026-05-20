@@ -4,7 +4,6 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
   { label: 'Schools', href: '/schools', icon: 'apartment' },
-  { label: 'Plans', href: '/plans', icon: 'credit_card' },
   { label: 'Payments', href: '/payments', icon: 'payments' },
   { label: 'Finance', href: '/finance', icon: 'trending_up' },
   { label: 'Packages', href: '/packages', icon: 'inventory_2' },

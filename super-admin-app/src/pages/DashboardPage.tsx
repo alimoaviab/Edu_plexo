@@ -129,7 +129,6 @@ export function DashboardPage() {
 
   const quickActions = [
     { label: 'Add School', icon: 'add_business', href: '/schools' },
-    { label: 'Create Plan', icon: 'card_membership', href: '/plans' },
     { label: 'Broadcast', icon: 'campaign', href: '/broadcast' },
     { label: 'Reports', icon: 'assessment', href: '/reports' },
     { label: 'Finance', icon: 'account_balance_wallet', href: '/finance' },
