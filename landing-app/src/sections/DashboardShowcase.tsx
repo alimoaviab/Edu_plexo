@@ -6,15 +6,15 @@ export const DashboardShowcase = () => {
   const [activeTab, setActiveTab] = useState(0);
 
   const tabs = [
-    { id: "analytics", label: "Analytics UI", icon: LineChart, image: "/analytics-preview.png" },
+    { id: "analytics", label: "Analytics Dashboard", icon: LineChart, image: "/analytics-preview.png" },
     { id: "admin", label: "Admin Dashboard", icon: Layout, image: "/admin-preview.png" },
     { id: "students", label: "Student Records", icon: Users, image: "/students-preview.png" },
     { id: "security", label: "Access Control", icon: Shield, image: "/security-preview.png" },
-    { id: "ai", label: "Plexa AI", icon: MessageSquare, image: "/ai-preview.png" },
+    { id: "ai", label: "Plexa AI Agent", icon: MessageSquare, image: "/ai-preview.png" },
   ];
 
   return (
-    <section id="dashboard" className="py-24 bg-white overflow-hidden">
+    <section id="dashboard" className="py-24 bg-white overflow-hidden" aria-labelledby="dashboard-heading">
       {/* Anchor alias for footer/navbar links that use "#platform". */}
       <span id="platform" aria-hidden="true" className="block -translate-y-20" />
       <div className="max-w-7xl mx-auto px-6">
@@ -23,13 +23,14 @@ export const DashboardShowcase = () => {
           {/* Content Left */}
           <div className="w-full lg:w-1/3">
             <motion.h2
+              id="dashboard-heading"
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               className="text-4xl font-bold text-slate-900 mb-6 tracking-tight"
             >
-              Designed for <br />
-              <span className="text-blue-600">maximum clarity.</span>
+              School ERP Dashboard Designed for <br />
+              <span className="text-blue-600">Maximum Clarity</span>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, x: -20 }}
@@ -38,7 +39,7 @@ export const DashboardShowcase = () => {
               transition={{ delay: 0.1 }}
               className="text-lg text-slate-600 mb-10"
             >
-              We stripped away the noise to give you an interface that is as powerful as it is beautiful. Data you need, right when you need it.
+              EduPlexo strips away the noise to give you an interface that is as powerful as it is beautiful. Data you need, right when you need it.
             </motion.p>
 
             <div className="space-y-4">
@@ -91,10 +92,13 @@ export const DashboardShowcase = () => {
                    >
                      <img
                        src={tabs[activeTab].image}
-                       alt={tabs[activeTab].label}
+                       alt={`EduPlexo ${tabs[activeTab].label} — School Management System Dashboard Preview`}
                        className={`w-full h-full border-none ${
                          tabs[activeTab].id === "ai" ? "object-contain p-4 bg-slate-50" : "object-cover object-top"
                        }`}
+                       loading="lazy"
+                       width="800"
+                       height="600"
                      />
                    </motion.div>
                  </AnimatePresence>

@@ -12,16 +12,17 @@ export const RoleBasedExperienceSection = () => {
   ];
 
   return (
-    <section className="py-24 bg-white">
+    <section id="platform" className="py-24 bg-white" aria-labelledby="role-based-heading">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <motion.h2
+            id="role-based-heading"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight"
           >
-            Built for <span className="text-blue-600">everyone</span>.
+            School ERP Built for <span className="text-blue-600">Everyone</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -30,16 +31,18 @@ export const RoleBasedExperienceSection = () => {
             transition={{ delay: 0.1 }}
             className="text-lg text-slate-600 font-medium"
           >
-            Distinct, perfectly-tailored experiences for every role in your institution.
+            EduPlexo delivers distinct, perfectly-tailored experiences for every role in your educational institution.
           </motion.p>
         </div>
 
         {/* Tabs Row */}
-        <div className="flex gap-4 overflow-x-auto pb-4 justify-start md:justify-center mb-8 scrollbar-hide">
+        <div className="flex gap-4 overflow-x-auto pb-4 justify-start md:justify-center mb-8 scrollbar-hide" role="tablist">
           {roles.map((role, idx) => (
             <button
               key={role.id}
               onClick={() => setActiveRole(idx)}
+              role="tab"
+              aria-selected={activeRole === idx}
               className={`flex items-center gap-2 px-6 py-3 rounded-full whitespace-nowrap transition-all duration-300 font-semibold ${
                 activeRole === idx
                   ? "bg-slate-900 text-white shadow-lg shadow-slate-900/20"
@@ -66,10 +69,10 @@ export const RoleBasedExperienceSection = () => {
               {activeRole === 0 && (
                 <div className="flex flex-col md:flex-row gap-8 items-center h-full">
                    <div className="flex-1 space-y-6">
-                      <h3 className="text-3xl font-bold text-slate-900">Total Operational Control</h3>
-                      <p className="text-slate-600 text-lg leading-relaxed">Oversee multiple campuses, manage staff permissions, and access high-level analytics in real time.</p>
+                      <h3 className="text-3xl font-bold text-slate-900">Admin Dashboard — Total Operational Control</h3>
+                      <p className="text-slate-600 text-lg leading-relaxed">Oversee multiple campuses, manage staff permissions, and access high-level analytics in real time with the EduPlexo admin portal.</p>
                       <ul className="space-y-3">
-                         {["Multi-branch management", "Advanced permission roles", "System-wide analytics"].map((item, i) => (
+                         {["Multi-branch school management", "Advanced permission roles", "System-wide analytics dashboard"].map((item, i) => (
                            <li key={i} className="flex items-center gap-3 text-slate-700 font-medium">
                              <div className="w-2 h-2 rounded-full bg-blue-500" /> {item}
                            </li>
@@ -79,8 +82,11 @@ export const RoleBasedExperienceSection = () => {
                    <div className="flex-1 w-full h-[320px] relative overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm bg-white">
                       <img
                         src="/role-admin-preview.png"
-                        alt="Admin Experience"
+                        alt="EduPlexo Admin Dashboard — School Management System Admin Portal"
                         className="w-full h-full object-cover object-top border-none"
+                        loading="lazy"
+                        width="600"
+                        height="320"
                       />
                    </div>
                 </div>
@@ -88,10 +94,10 @@ export const RoleBasedExperienceSection = () => {
               {activeRole === 1 && (
                 <div className="flex flex-col md:flex-row gap-8 items-center h-full">
                    <div className="flex-1 space-y-6">
-                      <h3 className="text-3xl font-bold text-slate-900">Empower Educators</h3>
-                      <p className="text-slate-600 text-lg leading-relaxed">Spend less time on paperwork and more time teaching with automated grading and attendance tools.</p>
+                      <h3 className="text-3xl font-bold text-slate-900">Teacher Portal — Empower Educators</h3>
+                      <p className="text-slate-600 text-lg leading-relaxed">Spend less time on paperwork and more time teaching with automated grading, attendance tools, and the teacher dashboard.</p>
                       <ul className="space-y-3">
-                         {["One-click attendance", "Automated gradebooks", "Classroom behavior tracking"].map((item, i) => (
+                         {["One-click attendance marking", "Automated gradebook management", "Classroom behavior tracking"].map((item, i) => (
                            <li key={i} className="flex items-center gap-3 text-slate-700 font-medium">
                              <div className="w-2 h-2 rounded-full bg-emerald-500" /> {item}
                            </li>
@@ -101,8 +107,11 @@ export const RoleBasedExperienceSection = () => {
                    <div className="flex-1 w-full h-[320px] relative overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm bg-white">
                       <img
                         src="/role-teacher-preview.png"
-                        alt="Teacher Experience"
+                        alt="EduPlexo Teacher Dashboard — School Management Teacher Portal"
                         className="w-full h-full object-cover object-top border-none"
+                        loading="lazy"
+                        width="600"
+                        height="320"
                       />
                    </div>
                 </div>
@@ -110,21 +119,24 @@ export const RoleBasedExperienceSection = () => {
               {activeRole === 2 && (
                 <div className="flex flex-col md:flex-row gap-8 items-center h-full">
                    <div className="flex-1 space-y-6">
-                     <h3 className="text-3xl font-bold text-slate-900">Student Independence</h3>
-                     <p className="text-slate-600 text-lg leading-relaxed">A dedicated portal for students to track their assignments, join live classes, and view their progress.</p>
+                     <h3 className="text-3xl font-bold text-slate-900">Student Portal — Student Independence</h3>
+                     <p className="text-slate-600 text-lg leading-relaxed">A dedicated student portal for tracking assignments, joining live classes, and viewing academic progress in the school ERP.</p>
                       <ul className="space-y-3">
-                       {["Digital assignments", "Live class links", "Personal timetable"].map((item, i) => (
+                       {["Digital assignment submission", "Live class links integration", "Personal timetable viewer"].map((item, i) => (
                            <li key={i} className="flex items-center gap-3 text-slate-700 font-medium">
-                          <div className="w-2 h-2 rounded-full bg-purple-500" /> {item}
-                           </li>
+                         <div className="w-2 h-2 rounded-full bg-purple-500" /> {item}
+                          </li>
                          ))}
                       </ul>
                    </div>
                    <div className="flex-1 w-full h-[320px] relative overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm bg-white">
                       <img
                         src="/role-student-preview.png"
-                        alt="Student Experience"
+                        alt="EduPlexo Student Portal — School Management Student Dashboard"
                         className="w-full h-full object-cover object-top border-none"
+                        loading="lazy"
+                        width="600"
+                        height="320"
                       />
                    </div>
                 </div>
