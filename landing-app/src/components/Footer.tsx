@@ -10,7 +10,7 @@
  * Internal `#section` anchors smooth-scroll on the home route and gracefully
  * fall back to '/'-prefixed navigation on sub-pages (about, privacy, etc.).
  */
-
+// ksjhanksasm
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, MessageCircle } from '@/components/icons';
 
