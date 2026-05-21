@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, BookOpen, GraduationCap } from "@/components/icons";
+import { ShieldCheck, BookOpen, Users } from "@/components/icons";
 
 export const RoleBasedExperienceSection = () => {
   const [activeRole, setActiveRole] = useState(0);
@@ -8,7 +8,7 @@ export const RoleBasedExperienceSection = () => {
   const roles = [
     { id: "admin", label: "Admin", icon: ShieldCheck },
     { id: "teacher", label: "Teacher", icon: BookOpen },
-    { id: "student", label: "Student", icon: GraduationCap },
+    { id: "parent", label: "Parent", icon: Users },
   ];
 
   return (
@@ -73,22 +73,22 @@ export const RoleBasedExperienceSection = () => {
                       <p className="text-slate-600 text-lg leading-relaxed">Oversee multiple campuses, manage staff permissions, and access high-level analytics in real time with the EduPlexo admin portal.</p>
                       <ul className="space-y-3">
                          {["Multi-branch school management", "Advanced permission roles", "System-wide analytics dashboard"].map((item, i) => (
-                           <li key={i} className="flex items-center gap-3 text-slate-700 font-medium">
-                             <div className="w-2 h-2 rounded-full bg-blue-500" /> {item}
-                           </li>
+                            <li key={i} className="flex items-center gap-3 text-slate-700 font-medium">
+                              <div className="w-2 h-2 rounded-full bg-blue-500" /> {item}
+                            </li>
                          ))}
                       </ul>
                    </div>
-                   <div className="flex-1 w-full h-[320px] relative overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm bg-white">
-                      <img
-                        src="/role-admin-preview.png"
-                        alt="EduPlexo Admin Dashboard — School Management System Admin Portal"
-                        className="w-full h-full object-cover object-top border-none"
-                        loading="lazy"
-                        width="600"
-                        height="320"
-                      />
-                   </div>
+                    <div className="flex-1 w-full h-[320px] overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm bg-white">
+                       <img
+                         src="/role-admin-preview.png"
+                         alt="EduPlexo Admin Dashboard — School Management System Admin Portal"
+                         className="w-full h-full object-cover object-top border-none"
+                         loading="lazy"
+                         width="600"
+                         height="320"
+                       />
+                    </div>
                 </div>
               )}
               {activeRole === 1 && (
@@ -98,47 +98,47 @@ export const RoleBasedExperienceSection = () => {
                       <p className="text-slate-600 text-lg leading-relaxed">Spend less time on paperwork and more time teaching with automated grading, attendance tools, and the teacher dashboard.</p>
                       <ul className="space-y-3">
                          {["One-click attendance marking", "Automated gradebook management", "Classroom behavior tracking"].map((item, i) => (
-                           <li key={i} className="flex items-center gap-3 text-slate-700 font-medium">
-                             <div className="w-2 h-2 rounded-full bg-emerald-500" /> {item}
-                           </li>
+                            <li key={i} className="flex items-center gap-3 text-slate-700 font-medium">
+                              <div className="w-2 h-2 rounded-full bg-blue-500" /> {item}
+                            </li>
                          ))}
                       </ul>
                    </div>
-                   <div className="flex-1 w-full h-[320px] relative overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm bg-white">
-                      <img
-                        src="/role-teacher-preview.png"
-                        alt="EduPlexo Teacher Dashboard — School Management Teacher Portal"
-                        className="w-full h-full object-cover object-top border-none"
-                        loading="lazy"
-                        width="600"
-                        height="320"
-                      />
-                   </div>
+                    <div className="flex-1 w-full h-[320px] overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm bg-white">
+                       <img
+                         src="/role-teacher-preview.png"
+                         alt="EduPlexo Teacher Dashboard — School Management Teacher Portal"
+                         className="w-full h-full object-cover object-top border-none"
+                         loading="lazy"
+                         width="600"
+                         height="320"
+                       />
+                    </div>
                 </div>
               )}
               {activeRole === 2 && (
                 <div className="flex flex-col md:flex-row gap-8 items-center h-full">
                    <div className="flex-1 space-y-6">
-                     <h3 className="text-3xl font-bold text-slate-900">Student Portal — Student Independence</h3>
-                     <p className="text-slate-600 text-lg leading-relaxed">A dedicated student portal for tracking assignments, joining live classes, and viewing academic progress in the school ERP.</p>
+                     <h3 className="text-3xl font-bold text-slate-900">Parent Portal — Fee Payments & Progress Tracking</h3>
+                     <p className="text-slate-600 text-lg leading-relaxed">A dedicated parent portal for secure online fee payments, real-time tracking of children's attendance and grades, and direct teacher communication.</p>
                       <ul className="space-y-3">
-                       {["Digital assignment submission", "Live class links integration", "Personal timetable viewer"].map((item, i) => (
+                       {["Secure online fee payment & digital receipts", "Real-time student attendance & grade tracking", "Direct parent-teacher messaging channels"].map((item, i) => (
                            <li key={i} className="flex items-center gap-3 text-slate-700 font-medium">
-                         <div className="w-2 h-2 rounded-full bg-purple-500" /> {item}
+                         <div className="w-2 h-2 rounded-full bg-blue-500" /> {item}
                           </li>
                          ))}
                       </ul>
                    </div>
-                   <div className="flex-1 w-full h-[320px] relative overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm bg-white">
-                      <img
-                        src="/role-student-preview.png"
-                        alt="EduPlexo Student Portal — School Management Student Dashboard"
-                        className="w-full h-full object-cover object-top border-none"
-                        loading="lazy"
-                        width="600"
-                        height="320"
-                      />
-                   </div>
+                    <div className="flex-1 w-full h-[320px] overflow-hidden rounded-2xl border border-slate-200/80 shadow-sm bg-white">
+                       <img
+                         src="/role-parent-preview.png"
+                         alt="EduPlexo Parent Portal — School Management Parent Dashboard"
+                         className="w-full h-full object-cover object-top border-none"
+                         loading="lazy"
+                         width="600"
+                         height="320"
+                       />
+                    </div>
                 </div>
               )}
             </motion.div>
