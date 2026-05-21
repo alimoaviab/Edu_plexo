@@ -76,7 +76,7 @@ export const PricingSection = () => {
 
   return (
     <section id="pricing" className="py-24 bg-slate-50" aria-labelledby="pricing-heading">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-6">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <motion.h2
             id="pricing-heading"
@@ -119,7 +119,7 @@ export const PricingSection = () => {
           </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 xl:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 xl:gap-10 justify-items-center">
           {plans.map((plan, index) => (
             <motion.div
               key={index}
@@ -127,7 +127,7 @@ export const PricingSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`relative bg-white rounded-[2rem] p-6 md:p-8 transition-all duration-300 flex flex-col hover:-translate-y-2 ${
+              className={`relative w-full max-w-md bg-white rounded-[2rem] p-6 md:p-8 transition-all duration-300 flex flex-col hover:-translate-y-2 ${
                 plan.isPopular
                   ? "border-2 border-blue-500 shadow-2xl shadow-blue-500/10 scale-[1.02] z-10"
                   : "border border-slate-200/60 shadow-lg hover:shadow-xl"
