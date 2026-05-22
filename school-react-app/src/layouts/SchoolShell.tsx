@@ -120,6 +120,7 @@ const teacherNavGroups: NavGroup[] = [
       { label: "Attendance", href: "/teacher/attendance", icon: "fact_check" },
       { label: "Live classes", href: "/teacher/live-class", icon: "videocam" },
       { label: "Homework", href: "/teacher/homework", icon: "assignment" },
+      { label: "Question Papers", href: "/teacher/question-papers", icon: "description" },
       { label: "Leave", href: "/teacher/leave", icon: "event_available" },
     ],
   },

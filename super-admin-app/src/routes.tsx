@@ -11,6 +11,7 @@ import { FinanceDashboardPage } from './pages/FinanceDashboardPage'
 import { PackagesPage } from './pages/PackagesPage'
 import { ExpensesPage } from './pages/ExpensesPage'
 import { ModerationPage } from './pages/ModerationPage'
+import { GlobalQuestionBankPage } from './pages/GlobalQuestionBankPage'
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -28,6 +29,7 @@ export const router = createBrowserRouter([
       { path: '/packages', element: <PackagesPage /> },
       { path: '/expenses', element: <ExpensesPage /> },
       { path: '/moderation', element: <ModerationPage /> },
+      { path: '/question-bank', element: <GlobalQuestionBankPage /> },
     ],
   },
 ])

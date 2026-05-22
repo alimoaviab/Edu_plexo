@@ -4,12 +4,13 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
   { label: 'Schools', href: '/schools', icon: 'apartment' },
+  { label: 'Question Bank', href: '/question-bank', icon: 'quiz' },
+  { label: 'Moderation', href: '/moderation', icon: 'shield' },
   { label: 'Plans', href: '/plans', icon: 'credit_card' },
   { label: 'Payments', href: '/payments', icon: 'payments' },
   { label: 'Finance', href: '/finance', icon: 'trending_up' },
   { label: 'Packages', href: '/packages', icon: 'inventory_2' },
   { label: 'Expenses', href: '/expenses', icon: 'receipt_long' },
-  { label: 'Moderation', href: '/moderation', icon: 'shield' },
   { label: 'Users', href: '/users', icon: 'group' },
 ]
 

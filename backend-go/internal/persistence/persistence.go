@@ -107,6 +107,18 @@ func extractSchoolID(doc any) string {
 		return v.SchoolID
 	case *store.AuditLog:
 		return v.SchoolID
+	case *store.CertificateTemplate:
+		return v.SchoolID
+	case *store.GeneratedCertificate:
+		return v.SchoolID
+	case *store.Chapter:
+		return v.SchoolID
+	case *store.Question:
+		return v.SchoolID
+	case *store.QuestionPaper:
+		return v.SchoolID
+	case *store.StarCollection:
+		return v.SchoolID
 	default:
 		return ""
 	}
@@ -232,6 +244,8 @@ var tableOrder = []string{
 	"behaviors", "events", "leaves", "timetables", "live_classes",
 	"notifications", "fee_types", "class_fees", "fees",
 	"fee_adjustments", "fee_payments", "school_settings", "audit_logs",
+	"certificate_templates", "generated_certificates",
+	"chapters", "questions", "question_papers", "star_collections",
 }
 
 func tableOrderIndex(table string) int {
@@ -481,6 +495,24 @@ func (p *Persister) FullSnapshot(ctx context.Context, s *store.MemStore) error {
 	}
 	for _, v := range s.AuditLogs {
 		plan = append(plan, write{table: "audit_logs", doc: v})
+	}
+	for _, v := range s.CertificateTemplates {
+		plan = append(plan, write{table: "certificate_templates", doc: v})
+	}
+	for _, v := range s.GeneratedCertificates {
+		plan = append(plan, write{table: "generated_certificates", doc: v})
+	}
+	for _, v := range s.Chapters {
+		plan = append(plan, write{table: "chapters", doc: v})
+	}
+	for _, v := range s.Questions {
+		plan = append(plan, write{table: "questions", doc: v})
+	}
+	for _, v := range s.QuestionPapers {
+		plan = append(plan, write{table: "question_papers", doc: v})
+	}
+	for _, v := range s.StarCollections {
+		plan = append(plan, write{table: "star_collections", doc: v})
 	}
 	s.RUnlock()
 
