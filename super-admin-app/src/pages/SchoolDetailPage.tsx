@@ -33,19 +33,6 @@ export function SchoolDetailPage() {
   const navigate = useNavigate()
   const [school, setSchool] = useState<SchoolDetail | null>(null)
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [newPassword, setNewPassword] = useState('')
-
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    principal_name: '',
-    website: ''
-  })
 
   const loadDetails = async () => {
     setLoading(true)
@@ -53,46 +40,11 @@ export function SchoolDetailPage() {
     if (res.ok && res.data) {
       const s = res.data as SchoolDetail
       setSchool(s)
-      setFormData({
-        name: s.name || '',
-        email: s.email || '',
-        phone: s.phone || '',
-        address: s.address || '',
-        city: s.city || '',
-        principal_name: s.principal_name || '',
-        website: s.website || ''
-      })
     }
     setLoading(false)
   }
 
   useEffect(() => { loadDetails() }, [id])
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    const res = await apiRequest(`/api/super-admin/schools/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(formData)
-    })
-    if (res.ok) {
-      await loadDetails()
-    }
-    setSaving(false)
-  }
-
-  const handleChangePassword = async () => {
-    if (!newPassword) return
-    setSaving(true)
-    const res = await apiRequest(`/api/super-admin/schools/${id}/password`, {
-      method: 'PATCH',
-      body: JSON.stringify({ password: newPassword })
-    })
-    if (res.ok) {
-      setNewPassword('')
-    }
-    setSaving(false)
-  }
 
   const handleStatusChange = async (newStatus: string) => {
     const res = await apiRequest(`/api/super-admin/schools/${id}/status`, {
@@ -170,146 +122,61 @@ export function SchoolDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* LEFT: School Profile */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Profile Form */}
-          <form onSubmit={handleUpdateProfile} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          {/* Profile View (Read-Only) */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <span className="material-symbols-outlined text-blue-600 text-[18px]">apartment</span>
                 School Profile
               </h3>
-              <span className="text-[10px] font-semibold text-slate-400">Edit details</span>
+              <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">visibility</span>
+                View only
+              </span>
             </div>
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">School Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full h-8 px-3 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-blue-500"
-                  placeholder="School name"
-                />
+                <div className="w-full h-8 px-3 rounded-lg border border-slate-100 bg-slate-50 text-[12px] font-medium text-slate-900 flex items-center">
+                  {school.name || '—'}
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Principal Name</label>
-                <input
-                  type="text"
-                  value={formData.principal_name}
-                  onChange={(e) => setFormData({...formData, principal_name: e.target.value})}
-                  className="w-full h-8 px-3 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-blue-500"
-                  placeholder="Principal name"
-                />
+                <div className="w-full h-8 px-3 rounded-lg border border-slate-100 bg-slate-50 text-[12px] font-medium text-slate-900 flex items-center">
+                  {school.principal_name || '—'}
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Contact Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className="w-full h-8 px-3 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-blue-500"
-                  placeholder="Email address"
-                />
+                <div className="w-full h-8 px-3 rounded-lg border border-slate-100 bg-slate-50 text-[12px] font-medium text-slate-900 flex items-center">
+                  {school.email || '—'}
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Contact Phone</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  className="w-full h-8 px-3 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-blue-500"
-                  placeholder="Phone number"
-                />
+                <div className="w-full h-8 px-3 rounded-lg border border-slate-100 bg-slate-50 text-[12px] font-medium text-slate-900 flex items-center">
+                  {school.phone || '—'}
+                </div>
               </div>
               <div className="md:col-span-2 space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Address</label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  className="w-full h-8 px-3 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-blue-500"
-                  placeholder="Full address"
-                />
+                <div className="w-full h-8 px-3 rounded-lg border border-slate-100 bg-slate-50 text-[12px] font-medium text-slate-900 flex items-center">
+                  {school.address || '—'}
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">City</label>
-                <input
-                  type="text"
-                  value={formData.city}
-                  onChange={(e) => setFormData({...formData, city: e.target.value})}
-                  className="w-full h-8 px-3 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-blue-500"
-                  placeholder="City"
-                />
+                <div className="w-full h-8 px-3 rounded-lg border border-slate-100 bg-slate-50 text-[12px] font-medium text-slate-900 flex items-center">
+                  {school.city || '—'}
+                </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Website</label>
-                <input
-                  type="url"
-                  value={formData.website}
-                  onChange={(e) => setFormData({...formData, website: e.target.value})}
-                  className="w-full h-8 px-3 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-blue-500"
-                  placeholder="Website URL"
-                />
-              </div>
-            </div>
-            <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => loadDetails()}
-                disabled={saving}
-                className="h-7 px-3 rounded-lg border border-slate-200 bg-white text-[10px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="h-7 px-4 rounded-lg bg-blue-600 text-white text-[10px] font-bold hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-1.5"
-              >
-                <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                {saving ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
-
-          {/* Admin Password */}
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <div className="px-5 py-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span className="material-symbols-outlined text-slate-500 text-[18px]">lock</span>
-                Admin Password
-              </h3>
-            </div>
-            <div className="p-5 flex items-end gap-3">
-              <div className="flex-1 space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">New Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full h-8 px-3 pr-8 rounded-lg border border-slate-200 text-[12px] font-medium text-slate-900 placeholder-slate-400 outline-none focus:border-blue-500"
-                    placeholder="Enter new password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">
-                      {showPassword ? "visibility_off" : "visibility"}
-                    </span>
-                  </button>
+                <div className="w-full h-8 px-3 rounded-lg border border-slate-100 bg-slate-50 text-[12px] font-medium text-slate-900 flex items-center">
+                  {school.website || '—'}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleChangePassword}
-                disabled={saving || !newPassword}
-                className="h-8 px-4 rounded-lg bg-slate-900 text-white text-[10px] font-bold hover:bg-slate-800 disabled:opacity-50 transition-colors flex items-center gap-1.5"
-              >
-                <span className="material-symbols-outlined text-[14px]">key</span>
-                Update
-              </button>
             </div>
           </div>
         </div>
