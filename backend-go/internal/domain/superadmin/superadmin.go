@@ -1113,18 +1113,41 @@ func (h *Handler) AIUsage(w http.ResponseWriter, r *http.Request) {
 		UsagePercent       float64 `json:"usage_percent"`
 	}
 
+	// Build a map of package ID -> package for quick lookup
+	pkgMap := make(map[string]*store.Package)
+	for _, pkg := range h.Store.Packages {
+		pkgMap[pkg.ID] = pkg
+	}
+
+	// Build a map of school_id -> active subscription
+	subMap := make(map[string]*store.Subscription)
+	for _, sub := range h.Store.Subscriptions {
+		if sub.Status == "active" {
+			subMap[sub.SchoolID] = sub
+		}
+	}
+
 	usage := make([]aiUsageView, 0)
 	for _, sch := range h.Store.Schools {
 		pkgName := ""
 		chatbotLimit := 0
-		for _, pkg := range h.Store.Packages {
-			if pkg.Status == "active" {
+
+		// First check if school has an active subscription
+		if sub, ok := subMap[sch.SchoolID]; ok {
+			if pkg, ok2 := pkgMap[sub.PackageID]; ok2 {
 				pkgName = pkg.Name
 				chatbotLimit = pkg.ChatbotMonthlyLimit
-				break
 			}
 		}
-		// Count AI usage from audit logs
+		// Fallback: check school's direct package_id field
+		if pkgName == "" && sch.PackageID != "" {
+			if pkg, ok := pkgMap[sch.PackageID]; ok {
+				pkgName = pkg.Name
+				chatbotLimit = pkg.ChatbotMonthlyLimit
+			}
+		}
+
+		// Count AI usage from audit logs (entity_type = "ai_chat")
 		used := 0
 		for _, a := range h.Store.AuditLogs {
 			if a.SchoolID == sch.SchoolID && a.EntityType == "ai_chat" {
