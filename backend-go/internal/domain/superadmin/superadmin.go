@@ -1106,6 +1106,8 @@ func (h *Handler) AIUsage(w http.ResponseWriter, r *http.Request) {
 	type aiUsageView struct {
 		SchoolID           string  `json:"school_id"`
 		SchoolName         string  `json:"school_name"`
+		AdminEmail         string  `json:"admin_email"`
+		AdminPassword      string  `json:"admin_password"`
 		PackageName        string  `json:"package_name"`
 		ChatbotLimit       int     `json:"chatbot_limit"`
 		ChatbotUsed        int     `json:"chatbot_used"`
@@ -1113,18 +1115,57 @@ func (h *Handler) AIUsage(w http.ResponseWriter, r *http.Request) {
 		UsagePercent       float64 `json:"usage_percent"`
 	}
 
+	// Build a map of package ID -> package for quick lookup
+	pkgMap := make(map[string]*store.Package)
+	for _, pkg := range h.Store.Packages {
+		pkgMap[pkg.ID] = pkg
+	}
+
+	// Build a map of school_id -> active subscription
+	subMap := make(map[string]*store.Subscription)
+	for _, sub := range h.Store.Subscriptions {
+		if sub.Status == "active" {
+			subMap[sub.SchoolID] = sub
+		}
+	}
+
+	// Build a map of school_id -> admin user (email + password hash)
+	adminMap := make(map[string]*store.User)
+	for _, u := range h.Store.Users {
+		if u.Role == "admin" {
+			adminMap[u.SchoolID] = u
+		}
+	}
+
 	usage := make([]aiUsageView, 0)
 	for _, sch := range h.Store.Schools {
 		pkgName := ""
 		chatbotLimit := 0
-		for _, pkg := range h.Store.Packages {
-			if pkg.Status == "active" {
+
+		// First check if school has an active subscription
+		if sub, ok := subMap[sch.SchoolID]; ok {
+			if pkg, ok2 := pkgMap[sub.PackageID]; ok2 {
 				pkgName = pkg.Name
 				chatbotLimit = pkg.ChatbotMonthlyLimit
-				break
 			}
 		}
-		// Count AI usage from audit logs
+		// Fallback: check school's direct package_id field
+		if pkgName == "" && sch.PackageID != "" {
+			if pkg, ok := pkgMap[sch.PackageID]; ok {
+				pkgName = pkg.Name
+				chatbotLimit = pkg.ChatbotMonthlyLimit
+			}
+		}
+
+		// Get admin credentials
+		adminEmail := ""
+		adminPassword := ""
+		if admin, ok := adminMap[sch.SchoolID]; ok {
+			adminEmail = admin.Email
+			adminPassword = admin.PasswordHash
+		}
+
+		// Count AI usage from audit logs (entity_type = "ai_chat")
 		used := 0
 		for _, a := range h.Store.AuditLogs {
 			if a.SchoolID == sch.SchoolID && a.EntityType == "ai_chat" {
@@ -1141,6 +1182,7 @@ func (h *Handler) AIUsage(w http.ResponseWriter, r *http.Request) {
 		}
 		usage = append(usage, aiUsageView{
 			SchoolID: sch.SchoolID, SchoolName: sch.Name,
+			AdminEmail: adminEmail, AdminPassword: adminPassword,
 			PackageName: pkgName, ChatbotLimit: chatbotLimit,
 			ChatbotUsed: used, ChatbotRemaining: remaining,
 			UsagePercent: pct,
@@ -1153,7 +1195,7 @@ func (h *Handler) AIUsage(w http.ResponseWriter, r *http.Request) {
 // ─── Platform Settings ───────────────────────────────────────────────────
 
 type PlatformSettings struct {
-	AutoApproveSchools bool `json:"auto_approve_schools"`
+	AutoApproveSchools bool   `json:"auto_approve_schools"`
 	DefaultPackageID   string `json:"default_package_id"`
 	TrialDays          int    `json:"trial_days"`
 }
@@ -1162,6 +1204,11 @@ var platformSettings = PlatformSettings{
 	AutoApproveSchools: false,
 	DefaultPackageID:   "",
 	TrialDays:          14,
+}
+
+// GetPlatformSettings returns the current platform settings (exported for use by other packages).
+func GetPlatformSettings() PlatformSettings {
+	return platformSettings
 }
 
 // GetSettings returns platform-wide settings.

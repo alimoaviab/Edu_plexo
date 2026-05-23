@@ -38,6 +38,7 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 		fn   func(context.Context, *store.MemStore) error
 	}{
 		{"schools", p.loadSchools},
+		{"packages", p.loadPackages},
 		{"users", p.loadUsers},
 		{"academic_years", p.loadAcademicYears},
 		{"subjects", p.loadSubjects},
@@ -79,6 +80,7 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 	// whole MemStore — that would also zero the embedded sync.RWMutex we
 	// are currently holding.
 	s.Schools = nil
+	s.Packages = nil
 	s.Users = nil
 	s.AcademicYears = nil
 	s.Subjects = nil
@@ -135,6 +137,42 @@ func (p *Persister) loadSchools(ctx context.Context, s *store.MemStore) error {
 			return err
 		}
 		s.Schools = append(s.Schools, v)
+	}
+	return rows.Err()
+}
+
+func (p *Persister) loadPackages(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, name, price, billing_cycle, start_date, expiry_date,
+			student_limit, teacher_limit, parent_limit, class_limit, storage_limit_mb,
+			chatbot_monthly_limit, ai_usage_limit, question_gen_limit, exam_gen_limit,
+			live_classes_limit, broadcast_limit, support_type, custom_modules,
+			mod_attendance, mod_homework, mod_exams, mod_question_bank,
+			mod_live_classes, mod_broadcast, mod_fees, mod_behavior,
+			mod_certificates, mod_analytics, status, created_at, updated_at
+		FROM packages ORDER BY created_at`)
+	if err != nil {
+		// Table might not exist yet — graceful degradation
+		log.Printf("[persistence] loadPackages: %v (table may not exist yet)", err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		v := &store.Package{}
+		var modules []byte
+		if err := rows.Scan(&v.ID, &v.Name, &v.Price, &v.BillingCycle, &v.StartDate, &v.ExpiryDate,
+			&v.StudentLimit, &v.TeacherLimit, &v.ParentLimit, &v.ClassLimit, &v.StorageLimitMB,
+			&v.ChatbotMonthlyLimit, &v.AIUsageLimit, &v.QuestionGenLimit, &v.ExamGenLimit,
+			&v.LiveClassesLimit, &v.BroadcastLimit, &v.SupportType, &modules,
+			&v.ModAttendance, &v.ModHomework, &v.ModExams, &v.ModQuestionBank,
+			&v.ModLiveClasses, &v.ModBroadcast, &v.ModFees, &v.ModBehavior,
+			&v.ModCertificates, &v.ModAnalytics, &v.Status, &v.CreatedAt, &v.UpdatedAt); err != nil {
+			return err
+		}
+		if modules != nil {
+			json.Unmarshal(modules, &v.CustomModules)
+		}
+		s.Packages = append(s.Packages, v)
 	}
 	return rows.Err()
 }

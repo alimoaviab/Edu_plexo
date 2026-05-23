@@ -81,6 +81,8 @@ func upsertRow(ctx context.Context, tx pgx.Tx, table string, doc any) error {
 		return upsertQuestionPaper(ctx, tx, v)
 	case *store.StarCollection:
 		return upsertStarCollection(ctx, tx, v)
+	case *store.Package:
+		return upsertPackage(ctx, tx, v)
 	}
 	return fmt.Errorf("upsert: unknown document type for table %s", table)
 }
@@ -870,5 +872,49 @@ func upsertStarCollection(ctx context.Context, tx pgx.Tx, v *store.StarCollectio
 		ON CONFLICT (id) DO UPDATE SET
 			name=EXCLUDED.name, color=EXCLUDED.color
 	`, v.ID, v.UserID, v.SchoolID, v.Name, v.Color, v.CreatedAt)
+	return err
+}
+
+// ─── Packages ────────────────────────────────────────────────────────────
+
+func upsertPackage(ctx context.Context, tx pgx.Tx, v *store.Package) error {
+	modules, _ := jsonOrArray(v.CustomModules)
+	_, err := tx.Exec(ctx, `
+		INSERT INTO packages (id, name, price, billing_cycle, start_date, expiry_date,
+			student_limit, teacher_limit, parent_limit, class_limit, storage_limit_mb,
+			chatbot_monthly_limit, ai_usage_limit, question_gen_limit, exam_gen_limit,
+			live_classes_limit, broadcast_limit, support_type, custom_modules,
+			mod_attendance, mod_homework, mod_exams, mod_question_bank,
+			mod_live_classes, mod_broadcast, mod_fees, mod_behavior,
+			mod_certificates, mod_analytics, status, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32)
+		ON CONFLICT (id) DO UPDATE SET
+			name=EXCLUDED.name, price=EXCLUDED.price, billing_cycle=EXCLUDED.billing_cycle,
+			start_date=EXCLUDED.start_date, expiry_date=EXCLUDED.expiry_date,
+			student_limit=EXCLUDED.student_limit, teacher_limit=EXCLUDED.teacher_limit,
+			parent_limit=EXCLUDED.parent_limit, class_limit=EXCLUDED.class_limit,
+			storage_limit_mb=EXCLUDED.storage_limit_mb,
+			chatbot_monthly_limit=EXCLUDED.chatbot_monthly_limit,
+			ai_usage_limit=EXCLUDED.ai_usage_limit,
+			question_gen_limit=EXCLUDED.question_gen_limit,
+			exam_gen_limit=EXCLUDED.exam_gen_limit,
+			live_classes_limit=EXCLUDED.live_classes_limit,
+			broadcast_limit=EXCLUDED.broadcast_limit,
+			support_type=EXCLUDED.support_type, custom_modules=EXCLUDED.custom_modules,
+			mod_attendance=EXCLUDED.mod_attendance, mod_homework=EXCLUDED.mod_homework,
+			mod_exams=EXCLUDED.mod_exams, mod_question_bank=EXCLUDED.mod_question_bank,
+			mod_live_classes=EXCLUDED.mod_live_classes, mod_broadcast=EXCLUDED.mod_broadcast,
+			mod_fees=EXCLUDED.mod_fees, mod_behavior=EXCLUDED.mod_behavior,
+			mod_certificates=EXCLUDED.mod_certificates, mod_analytics=EXCLUDED.mod_analytics,
+			status=EXCLUDED.status, updated_at=EXCLUDED.updated_at
+	`, v.ID, v.Name, v.Price, defaultStr(v.BillingCycle, "monthly"),
+		v.StartDate, v.ExpiryDate,
+		v.StudentLimit, v.TeacherLimit, v.ParentLimit, v.ClassLimit, v.StorageLimitMB,
+		v.ChatbotMonthlyLimit, v.AIUsageLimit, v.QuestionGenLimit, v.ExamGenLimit,
+		v.LiveClassesLimit, v.BroadcastLimit, defaultStr(v.SupportType, "email"), modules,
+		v.ModAttendance, v.ModHomework, v.ModExams, v.ModQuestionBank,
+		v.ModLiveClasses, v.ModBroadcast, v.ModFees, v.ModBehavior,
+		v.ModCertificates, v.ModAnalytics, defaultStr(v.Status, "active"),
+		v.CreatedAt, v.UpdatedAt)
 	return err
 }

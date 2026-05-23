@@ -4,6 +4,8 @@ import { apiRequest } from '@/lib/api'
 interface AIUsage {
   school_id: string
   school_name: string
+  admin_email: string
+  admin_password: string
   package_name: string
   chatbot_limit: number
   chatbot_used: number
@@ -86,6 +88,7 @@ export function AIUsagePage() {
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
                 <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">School</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">Admin Email</th>
                 <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">Package</th>
                 <th className="text-center px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">Used</th>
                 <th className="text-center px-4 py-3 text-[10px] font-bold text-slate-500 uppercase">Limit</th>
@@ -101,6 +104,9 @@ export function AIUsagePage() {
                   <tr key={u.school_id} className="hover:bg-blue-50/30 transition-colors">
                     <td className="px-4 py-3">
                       <p className="text-[12px] font-semibold text-slate-900">{u.school_name}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-[11px] font-medium text-slate-700">{u.admin_email || '—'}</p>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[11px] font-medium text-slate-700">{u.package_name || '—'}</span>

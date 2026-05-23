@@ -15,6 +15,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/api"
 	authpkg "github.com/eduplexo/backend-go/internal/auth"
 	"github.com/eduplexo/backend-go/internal/config"
+	"github.com/eduplexo/backend-go/internal/domain/superadmin"
 	"github.com/eduplexo/backend-go/internal/store"
 )
 
@@ -377,15 +378,34 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		yearID := store.NewID("ay")
 		year := time.Now().Year()
 
+		// Check platform settings for auto-approve behavior
+		settings := superadmin.GetPlatformSettings()
+		var schoolStatus string
+		var approvalStatus string
+		var approvedAt *time.Time
+		var approvedBy string
+
+		if settings.AutoApproveSchools {
+			schoolStatus = "active"
+			approvalStatus = "approved"
+			approvedAt = &now
+			approvedBy = "auto"
+		} else {
+			schoolStatus = "pending"
+			approvalStatus = "pending"
+			approvedAt = nil
+			approvedBy = ""
+		}
+
 		newSchool := &store.School{
 			ID:               store.NewID("sch"),
 			SchoolID:         schoolID,
 			Name:             schoolName,
 			Code:             uniqueCode,
-			Status:           "active",
-			ApprovalStatus:   "approved",
-			ApprovedAt:       &now,
-			ApprovedBy:       "auto",
+			Status:           schoolStatus,
+			ApprovalStatus:   approvalStatus,
+			ApprovedAt:       approvedAt,
+			ApprovedBy:       approvedBy,
 			CreatedAt:        now,
 			UpdatedAt:        now,
 		}
@@ -434,12 +454,19 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		h.Persist("users", newUser)
 
 		// Bypassing Super Admin approval for now: status is "active", token is still omitted (user goes to /auth/login)
+		var message string
+		if settings.AutoApproveSchools {
+			message = "Your school account is active. Please log in."
+		} else {
+			message = "Your school registration is pending approval. You will be notified once approved."
+		}
+
 		api.WriteJSON(w, http.StatusCreated, map[string]any{
 			"ok":      true,
 			"success": true,
-			"message": "Your school account is active. Please log in.",
+			"message": message,
 			"data": map[string]any{
-				"status":    "active",
+				"status":    schoolStatus,
 				"school_id": schoolID,
 			},
 		})
