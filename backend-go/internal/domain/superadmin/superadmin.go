@@ -1106,6 +1106,8 @@ func (h *Handler) AIUsage(w http.ResponseWriter, r *http.Request) {
 	type aiUsageView struct {
 		SchoolID           string  `json:"school_id"`
 		SchoolName         string  `json:"school_name"`
+		AdminEmail         string  `json:"admin_email"`
+		AdminPassword      string  `json:"admin_password"`
 		PackageName        string  `json:"package_name"`
 		ChatbotLimit       int     `json:"chatbot_limit"`
 		ChatbotUsed        int     `json:"chatbot_used"`
@@ -1124,6 +1126,14 @@ func (h *Handler) AIUsage(w http.ResponseWriter, r *http.Request) {
 	for _, sub := range h.Store.Subscriptions {
 		if sub.Status == "active" {
 			subMap[sub.SchoolID] = sub
+		}
+	}
+
+	// Build a map of school_id -> admin user (email + password hash)
+	adminMap := make(map[string]*store.User)
+	for _, u := range h.Store.Users {
+		if u.Role == "admin" {
+			adminMap[u.SchoolID] = u
 		}
 	}
 
@@ -1147,6 +1157,14 @@ func (h *Handler) AIUsage(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		// Get admin credentials
+		adminEmail := ""
+		adminPassword := ""
+		if admin, ok := adminMap[sch.SchoolID]; ok {
+			adminEmail = admin.Email
+			adminPassword = admin.PasswordHash
+		}
+
 		// Count AI usage from audit logs (entity_type = "ai_chat")
 		used := 0
 		for _, a := range h.Store.AuditLogs {
@@ -1164,6 +1182,7 @@ func (h *Handler) AIUsage(w http.ResponseWriter, r *http.Request) {
 		}
 		usage = append(usage, aiUsageView{
 			SchoolID: sch.SchoolID, SchoolName: sch.Name,
+			AdminEmail: adminEmail, AdminPassword: adminPassword,
 			PackageName: pkgName, ChatbotLimit: chatbotLimit,
 			ChatbotUsed: used, ChatbotRemaining: remaining,
 			UsagePercent: pct,
