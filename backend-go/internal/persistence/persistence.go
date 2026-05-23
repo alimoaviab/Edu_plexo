@@ -237,7 +237,7 @@ func (p *Persister) drainQueue() []write {
 // tableOrder defines the FK-safe insertion order. Parent tables first,
 // child tables after. This prevents FK violations during flush.
 var tableOrder = []string{
-	"schools", "users", "academic_years", "subjects",
+	"schools", "packages", "users", "academic_years", "subjects",
 	"teachers", "classes",
 	"students", "parents", "student_parents",
 	"attendance", "exams", "results", "homework", "announcements",
@@ -416,6 +416,9 @@ func (p *Persister) FullSnapshot(ctx context.Context, s *store.MemStore) error {
 	plan := make([]write, 0, 1024)
 	for _, v := range s.Schools {
 		plan = append(plan, write{table: "schools", doc: v})
+	}
+	for _, v := range s.Packages {
+		plan = append(plan, write{table: "packages", doc: v})
 	}
 	for _, v := range s.Users {
 		plan = append(plan, write{table: "users", doc: v})
