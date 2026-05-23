@@ -1153,7 +1153,7 @@ func (h *Handler) AIUsage(w http.ResponseWriter, r *http.Request) {
 // ─── Platform Settings ───────────────────────────────────────────────────
 
 type PlatformSettings struct {
-	AutoApproveSchools bool `json:"auto_approve_schools"`
+	AutoApproveSchools bool   `json:"auto_approve_schools"`
 	DefaultPackageID   string `json:"default_package_id"`
 	TrialDays          int    `json:"trial_days"`
 }
@@ -1162,6 +1162,11 @@ var platformSettings = PlatformSettings{
 	AutoApproveSchools: false,
 	DefaultPackageID:   "",
 	TrialDays:          14,
+}
+
+// GetPlatformSettings returns the current platform settings (exported for use by other packages).
+func GetPlatformSettings() PlatformSettings {
+	return platformSettings
 }
 
 // GetSettings returns platform-wide settings.
