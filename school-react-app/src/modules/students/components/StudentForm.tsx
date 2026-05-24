@@ -502,7 +502,7 @@ export function StudentForm(props: StudentFormProps | LegacyStudentFormProps) {
         <Button
           type="submit"
           disabled={saving || (existingParent && (existingParent as any).role_mismatch) || false}
-          className="h-10 px-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-600/20 text-[10px] font-bold normal-case  transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-10 px-12 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg shadow-blue-600/20 text-[10px] font-bold normal-case  transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving
             ? mode === "edit"

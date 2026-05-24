@@ -184,6 +184,18 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 					for _, cid := range t.ClassIDs {
 						teacherClassIDs[cid] = true
 					}
+					// Also include classes from timetable sessions
+					for _, tt := range h.Store.Timetables {
+						if tt.SchoolID != ctx.SchoolID {
+							continue
+						}
+						for _, sess := range tt.Sessions {
+							if sess.TeacherID == t.ID {
+								teacherClassIDs[tt.ClassID] = true
+								break
+							}
+						}
+					}
 					break
 				}
 			}

@@ -441,6 +441,19 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		h.Store.Schools = append(h.Store.Schools, newSchool)
 		h.Store.AcademicYears = append(h.Store.AcademicYears, newYear)
 		h.Store.Users = append(h.Store.Users, newUser)
+
+		// ─── Auto 14-day free trial subscription ─────────────────────────
+		trialSub := &store.Subscription{
+			ID:          store.NewID("sub"),
+			SchoolID:    schoolID,
+			PackageID:   "trial",
+			Status:      "active",
+			AutoRenew:   false,
+			NextRenewal: now.AddDate(0, 0, 14),
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
+		h.Store.Subscriptions = append(h.Store.Subscriptions, trialSub)
 		h.Store.Unlock()
 
 		// Push the freshly-minted school/year/user to PostgreSQL.
@@ -452,6 +465,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		h.Persist("schools", newSchool)
 		h.Persist("academic_years", newYear)
 		h.Persist("users", newUser)
+		h.Persist("subscriptions", trialSub)
 
 		// Bypassing Super Admin approval for now: status is "active", token is still omitted (user goes to /auth/login)
 		var message string

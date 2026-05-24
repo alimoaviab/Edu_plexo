@@ -598,6 +598,27 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		h.Store.Unlock()
 		h.Persist("teachers", newTeacher)
 		audit.Write(h.Store, ctx, audit.Input{Action: "create", EntityType: "teacher", EntityID: newTeacher.ID, After: newTeacher})
+
+		// Direct PG write so the immediate frontend refetch (which
+		// hits the PG paginated path) sees the new row without waiting
+		// for the background flush queue. The Persist call above is kept
+		// as belt-and-suspenders — the upsert is idempotent.
+		if h.Pool != nil {
+			_, _ = h.Pool.Exec(r.Context(), `
+				INSERT INTO teachers (id, school_id, academic_year_id, user_id, email,
+					employee_no, first_name, last_name, phone, qualification,
+					subject_ids, subjects, class_ids, status, joined_at,
+					created_at, updated_at)
+				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+				ON CONFLICT (id) DO NOTHING
+			`, newTeacher.ID, newTeacher.SchoolID, newTeacher.AcademicYearID,
+				newTeacher.UserID, newTeacher.Email,
+				newTeacher.EmployeeNo, newTeacher.FirstName, newTeacher.LastName,
+				newTeacher.Phone, newTeacher.Qualification,
+				newTeacher.SubjectIDs, newTeacher.Subjects, newTeacher.ClassIDs,
+				newTeacher.Status, newTeacher.JoinedAt, newTeacher.CreatedAt, newTeacher.UpdatedAt)
+		}
+
 		h.invalidateCaches(r.Context(), ctx.SchoolID, yearID)
 		return newTeacher, nil
 	}))
@@ -612,8 +633,22 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	api.WriteResult(w, api.ServiceTry(func() (*store.Teacher, error) {
-		if err := auth.AssertPermission(ctx, "teachers", auth.ActionUpdate); err != nil {
-			return nil, err
+		// Allow self-update: teachers can update their own profile
+		isSelfUpdate := false
+		if ctx.Role == "teacher" {
+			h.Store.RLock()
+			for _, t := range h.Store.Teachers {
+				if t.ID == id && t.SchoolID == ctx.SchoolID && t.UserID == ctx.UserID {
+					isSelfUpdate = true
+					break
+				}
+			}
+			h.Store.RUnlock()
+		}
+		if !isSelfUpdate {
+			if err := auth.AssertPermission(ctx, "teachers", auth.ActionUpdate); err != nil {
+				return nil, err
+			}
 		}
 		h.Store.Lock()
 		defer h.Store.Unlock()
@@ -621,6 +656,8 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			if t.ID == id && t.SchoolID == ctx.SchoolID {
 				if v, ok := body["first_name"]; ok { _ = json.Unmarshal(v, &t.FirstName) }
 				if v, ok := body["last_name"]; ok { _ = json.Unmarshal(v, &t.LastName) }
+				if v, ok := body["phone"]; ok { _ = json.Unmarshal(v, &t.Phone) }
+				if v, ok := body["qualification"]; ok { _ = json.Unmarshal(v, &t.Qualification) }
 				if v, ok := body["status"]; ok { _ = json.Unmarshal(v, &t.Status) }
 				t.UpdatedAt = time.Now()
 				h.Persist("teachers", t)

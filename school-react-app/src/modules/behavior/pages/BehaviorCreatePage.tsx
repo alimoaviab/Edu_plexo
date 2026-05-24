@@ -37,17 +37,13 @@ export function BehaviorCreatePage() {
   const loadDependencies = useCallback(() => {
     return Promise.all([
       runStudents(async () => {
-        const result = await serviceRequest<Array<{
-          _id?: string;
-          id?: string;
-          name?: string;
-          first_name?: string;
-          last_name?: string;
-          class_id?: string | { _id?: string; id?: string; $oid?: string };
-        }>>("/api/students");
+        const result = await serviceRequest<any>("/api/students");
         if (!result.ok) throw new Error(result.error.message || "Failed to load students");
 
-        return (result.data ?? []).map((student) => {
+        const rawData = result.data;
+        const students = Array.isArray(rawData) ? rawData : (rawData?.data ?? []);
+
+        return students.map((student: any) => {
           const fullName = [student.first_name, student.last_name].filter(Boolean).join(" ").trim();
           const classId = toId(student.class_id);
 
@@ -56,16 +52,19 @@ export function BehaviorCreatePage() {
             name: student.name?.trim() || fullName || "Unnamed Student",
             class_id: classId
           };
-        }).filter((student) => Boolean(student._id));
+        }).filter((student: any) => Boolean(student._id));
       }),
       runClasses(async () => {
-        const result = await serviceRequest<Array<{ _id?: string; id?: string; name?: string }>>("/api/classes");
+        const result = await serviceRequest<any>("/api/classes");
         if (!result.ok) throw new Error(result.error.message || "Failed to load classes");
 
-        return (result.data ?? []).map((item) => ({
+        const rawData = result.data;
+        const classes = Array.isArray(rawData) ? rawData : (rawData?.data ?? []);
+
+        return classes.map((item: any) => ({
           _id: toId(item._id) || toId(item.id),
           name: item.name?.trim() || "Unnamed Class"
-        })).filter((item) => Boolean(item._id));
+        })).filter((item: any) => Boolean(item._id));
       })
     ]);
   }, [runStudents, runClasses]);

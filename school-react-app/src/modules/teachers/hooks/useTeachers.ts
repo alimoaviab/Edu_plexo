@@ -80,6 +80,8 @@ export function useTeachers(params: UseTeachersParams = {}) {
                 return result;
             }
             showToast("Teacher created.", "success");
+            // Small delay to ensure backend cache invalidation completes
+            await new Promise(resolve => setTimeout(resolve, 300));
             await loadTeachers();
             publish("teachers");
             return result;

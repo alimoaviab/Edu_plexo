@@ -25,7 +25,7 @@ export function useStudents(filters?: { class_id?: string; status?: string }) {
 		resource: "students",
 		initialLimit: 25,
 		initialFilters: filters,
-		staleTime: 10 * 60 * 1000, // 10 minutes — student data is relatively stable
+		staleTime: 30 * 1000, // 30 seconds — ensures fresh data after create/update
 	});
 
 	useEffect(() => {
@@ -43,6 +43,8 @@ export function useStudents(filters?: { class_id?: string; status?: string }) {
 				return result;
 			}
 			showToast("Student created.", "success");
+			// Small delay to ensure backend cache invalidation completes
+			await new Promise(resolve => setTimeout(resolve, 300));
 			await queryClient.invalidateQueries({ queryKey: ["students"] });
 			list.refetch();
 			publish("students");

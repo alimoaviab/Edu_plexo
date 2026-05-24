@@ -44,59 +44,74 @@ export function useAuth() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const loadUser = () => {
+      const token = localStorage.getItem("token");
 
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const payload = decodeJwtPayload(token);
-      if (!payload) throw new Error("Invalid token");
-
-      const email = payload.actor_email || payload.email || "";
-
-      if (isTokenExpired(payload)) {
-        throw new Error("Token expired");
+      if (!token) {
+        setUser(null);
+        setLoading(false);
+        return;
       }
 
-      enforceSchoolBoundary(payload.school_id);
+      try {
+        const payload = decodeJwtPayload(token);
+        if (!payload) throw new Error("Invalid token");
 
-      const scopedKey = `academic_year_id:${payload.school_id}`;
-      const scopedYear = localStorage.getItem(scopedKey);
-      if (!scopedYear && payload.active_academic_year_id) {
-        localStorage.setItem(scopedKey, payload.active_academic_year_id);
+        const email = payload.actor_email || payload.email || "";
+
+        if (isTokenExpired(payload)) {
+          throw new Error("Token expired");
+        }
+
+        enforceSchoolBoundary(payload.school_id);
+
+        const scopedKey = `academic_year_id:${payload.school_id}`;
+        const scopedYear = localStorage.getItem(scopedKey);
+        if (!scopedYear && payload.active_academic_year_id) {
+          localStorage.setItem(scopedKey, payload.active_academic_year_id);
+        }
+        const effectiveYear =
+          scopedYear || payload.active_academic_year_id || "";
+        if (effectiveYear) {
+          localStorage.setItem("academic_year_id", effectiveYear);
+        } else {
+          localStorage.removeItem("academic_year_id");
+        }
+
+        const profileId = localStorage.getItem("profile_id") || undefined;
+        const classId = localStorage.getItem("class_id") || undefined;
+        const studentId = localStorage.getItem("student_id") || undefined;
+
+        setUser({
+          id: payload.sub,
+          email,
+          role: payload.role,
+          schoolId: payload.school_id,
+          activeAcademicYearId:
+            effectiveYear || payload.active_academic_year_id,
+          profileId,
+          classId,
+          studentId,
+        });
+      } catch (e) {
+        console.error("Failed to decode token", e);
+        localStorage.removeItem("token");
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-      const effectiveYear =
-        scopedYear || payload.active_academic_year_id || "";
-      if (effectiveYear) {
-        localStorage.setItem("academic_year_id", effectiveYear);
-      } else {
-        localStorage.removeItem("academic_year_id");
-      }
+    };
 
-      const profileId = localStorage.getItem("profile_id") || undefined;
-      const classId = localStorage.getItem("class_id") || undefined;
-      const studentId = localStorage.getItem("student_id") || undefined;
+    loadUser();
 
-      setUser({
-        id: payload.sub,
-        email,
-        role: payload.role,
-        schoolId: payload.school_id,
-        activeAcademicYearId:
-          effectiveYear || payload.active_academic_year_id,
-        profileId,
-        classId,
-        studentId,
-      });
-    } catch (e) {
-      console.error("Failed to decode token", e);
-      localStorage.removeItem("token");
-    } finally {
-      setLoading(false);
-    }
+    // Re-check auth state when token changes (e.g. after login navigates here)
+    const handleAuthChange = () => loadUser();
+    window.addEventListener("auth-changed", handleAuthChange);
+    window.addEventListener("storage", handleAuthChange);
+    return () => {
+      window.removeEventListener("auth-changed", handleAuthChange);
+      window.removeEventListener("storage", handleAuthChange);
+    };
   }, []);
 
   const logout = () => {
