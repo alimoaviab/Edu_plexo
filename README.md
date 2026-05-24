@@ -219,3 +219,5 @@ cd backend-go
 ./scripts/smoke.sh        # 27 endpoints + cross-tenant guard + writes
 ./scripts/smoke_fees.sh   # full fees flow: types → class config → generate → adjust → pay → ledger
 ```
+
+
