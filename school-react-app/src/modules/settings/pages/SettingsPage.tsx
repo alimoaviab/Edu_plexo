@@ -18,11 +18,9 @@ export function SettingsPage() {
 
     if (state.status === "loading" || state.status === "idle") {
         return (
-            <div className="space-y-6">
+            <div className="space-y-4">
+                <Skeleton className="h-12 w-full rounded-xl" />
                 <Skeleton className="h-[400px] w-full rounded-xl" />
-                <div className="grid grid-cols-4 gap-6">
-                    <Skeleton className="h-24 w-full rounded-xl" />
-                </div>
             </div>
         );
     }
@@ -45,47 +43,33 @@ export function SettingsPage() {
     if (!school) return null;
 
     return (
-        <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Sidebar Navigation */}
-                <div className="lg:col-span-3 space-y-1">
-                    {tabs.map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                                activeTab === tab.id 
-                                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" 
-                                : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                            }`}
-                        >
-                            <AppIcon name={tab.icon} />
-                            {tab.label}
-                        </button>
-                    ))}
+        <div className="space-y-5">
+            {/* Horizontal Tabs */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-1.5 flex items-center gap-1 overflow-x-auto">
+                {tabs.map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                            activeTab === tab.id
+                                ? "bg-blue-600 text-white shadow-sm shadow-blue-600/20"
+                                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                        }`}
+                    >
+                        <AppIcon name={tab.icon} size={16} />
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
 
-                    <div className="mt-8 p-4 rounded-2xl bg-blue-50 border border-blue-100">
-                        <div className="flex items-center gap-2 text-blue-600 mb-2">
-                            <AppIcon name="CheckCircle" size={18} />
-                            <span className="text-[10px] font-bold normal-case ">Enterprise Plan</span>
-                        </div>
-                        <p className="text-[11px] font-medium text-blue-700 leading-relaxed">
-                            Your institutional data is protected with 256-bit encryption.
-                        </p>
-                    </div>
+            {/* Content Area */}
+            <div className="premium-card p-5 md:p-6">
+                <div className="mb-6 border-b border-slate-100 pb-4">
+                    <h2 className="text-lg font-bold text-slate-900">{tabs.find(t => t.id === activeTab)?.label}</h2>
+                    <p className="text-xs text-slate-500 mt-1">Configure your institution's {activeTab} parameters and visibility.</p>
                 </div>
 
-                {/* Main Content Area */}
-                <div className="lg:col-span-9 space-y-6">
-                    <div className="premium-card p-6 md:p-8">
-                        <div className="mb-8 border-b border-slate-100 pb-6">
-                           <h2 className="text-xl font-bold text-slate-900">{tabs.find(t => t.id === activeTab)?.label}</h2>
-                           <p className="text-sm text-slate-500 mt-1">Configure your institution's {activeTab} parameters and visibility.</p>
-                        </div>
-                        
-                        <SettingsForm initialValues={school} onSave={saveSettings} activeTab={activeTab} />
-                    </div>
-                </div>
+                <SettingsForm initialValues={school} onSave={saveSettings} activeTab={activeTab} />
             </div>
         </div>
     );

@@ -117,10 +117,24 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		defer h.Store.RUnlock()
 		s := h.findSettings(ctx.SchoolID)
 		if s == nil {
+			// No settings record yet — seed from the school's signup data
+			// so the admin sees their school name pre-filled.
+			var schoolName string
+			var schoolEmail string
+			for _, sch := range h.Store.Schools {
+				if sch.SchoolID == ctx.SchoolID {
+					schoolName = sch.Name
+					schoolEmail = sch.Email
+					break
+				}
+			}
 			return map[string]any{
 				"school_id": ctx.SchoolID,
-				"profile":   nil,
-				"branding":  nil,
+				"profile": map[string]any{
+					"schoolName": schoolName,
+					"email":      schoolEmail,
+				},
+				"branding": nil,
 				"academic":  nil,
 			}, nil
 		}
