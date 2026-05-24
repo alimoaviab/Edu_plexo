@@ -63,11 +63,16 @@ export function TeacherTimetablePage() {
   useEffect(() => {
     if (!user?.profileId) return;
     void runClasses(async () => {
-      const result = await serviceRequest<any>(`/api/teachers/${user.profileId}`);
+      const result = await serviceRequest<any>(`/api/classes`);
       if (!result.ok) throw new Error(result.error?.message || "Failed to load classes");
       const data = result.data as any;
-      const classes = data?.classes || [];
-      return classes;
+      const rawClasses = data?.data || [];
+      return rawClasses.map((c: any) => ({
+        id: c._id || c.id,
+        name: c.name || "",
+        section: c.section || "A",
+        studentCount: c.student_count ?? c.enrolled_students ?? 0,
+      }));
     });
   }, [user?.profileId, runClasses]);
 

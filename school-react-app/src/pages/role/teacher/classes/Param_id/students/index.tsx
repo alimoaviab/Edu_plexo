@@ -23,12 +23,25 @@ export function TeacherClassStudentsPage() {
 
     useEffect(() => {
         void run(async () => {
-            const result = await serviceRequest<StudentsResponse>(`/api/school/classes/${params.id}/students`);
+            const result = await serviceRequest<any>(`/api/students?class_id=${params.id}`);
             if (!result.ok) {
                 throw new Error(result.error.message || "Failed to load students");
             }
 
-            return result.data;
+            const raw = result.data as any;
+            const students = (raw?.data || raw || []).map((s: any) => ({
+                id: s._id || s.id,
+                name: `${s.first_name || ""} ${s.last_name || ""}`.trim(),
+                roll_no: s.roll_no || s.admission_no || "",
+                email: s.guardian?.email || "",
+                status: s.status || "active",
+            }));
+
+            return {
+                class: params.id || "",
+                total_students: students.length,
+                students,
+            };
         }).catch(() => {
             // useSafeAsync already captures the error.
         });

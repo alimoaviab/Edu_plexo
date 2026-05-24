@@ -23,6 +23,7 @@ const defaultSubjects: ClassSubject[] = [
 
 const initialForm: ClassFormInput = {
     name: "",
+    section: "A",
     code: "",
     display_order: 1,
     passing_percentage: 33,
@@ -62,6 +63,7 @@ export function ClassForm({
 }) {
     const [form, setForm] = useState<ClassFormInput>(initialData ? {
         name: initialData.name,
+        section: initialData.section || "A",
         code: initialData.code || "",
         display_order: initialData.display_order || 1,
         passing_percentage: initialData.passing_percentage || 33,
@@ -79,6 +81,7 @@ export function ClassForm({
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [teacherSearch, setTeacherSearch] = useState("");
+    const [selectedSections, setSelectedSections] = useState<string[]>(initialData?.section ? [initialData.section] : ["A"]);
 
     // Auto-select logic for contextual creation
     useEffect(() => {
@@ -122,9 +125,23 @@ export function ClassForm({
         event.preventDefault();
         if (!validate()) return;
         setSaving(true);
-        const result = await onCreate(form);
-        if (result && (result as any).ok !== false) {
-             if (!initialData) setForm(initialForm);
+        
+        // If editing, just update the single class
+        if (initialData) {
+            const result = await onCreate({ ...form, section: selectedSections[0] || "A" });
+            if (result && (result as any).ok !== false) {
+                // success
+            }
+        } else {
+            // Create one class per selected section
+            for (const section of selectedSections) {
+                const className = selectedSections.length > 1 
+                    ? `${form.name} ${section}` 
+                    : form.name;
+                await onCreate({ ...form, name: className, section });
+            }
+            setForm(initialForm);
+            setSelectedSections(["A"]);
         }
         setSaving(false);
     }
@@ -188,6 +205,23 @@ export function ClassForm({
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Actions Bar - Top */}
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                <Link
+                    to="/admin/classes"
+                    className="px-4 py-2 text-[11px] font-bold normal-case  text-slate-400 hover:text-slate-600 transition-all"
+                >
+                    Cancel
+                </Link>
+                <Button
+                    type="submit"
+                    disabled={saving}
+                    className="min-w-[140px] h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition-all text-[10px] font-bold normal-case "
+                >
+                    {saving ? "Saving..." : "Save class"}
+                </Button>
+            </div>
+
             {/* Summary Bar */}
             <div className="flex items-center gap-4 p-1.5 bg-slate-50/50 rounded-xl border border-slate-100 text-[11px] font-bold normal-case  text-slate-500">
                 <div className="flex items-center gap-2">
@@ -214,7 +248,7 @@ export function ClassForm({
 
             <div className="premium-card p-3 bg-white border border-slate-200 shadow-sm rounded-xl space-y-3">
                 {/* Basic Info Section */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <Input
                         label="Class name *"
                         placeholder="Class 10"
@@ -223,6 +257,37 @@ export function ClassForm({
                         error={errors.name}
                         className="font-bold"
                     />
+                    <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-slate-500">Sections *</label>
+                        <div className="flex items-center gap-2 h-10">
+                            {["A", "B", "C"].map((s) => (
+                                <button
+                                    key={s}
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedSections(prev => 
+                                            prev.includes(s) 
+                                                ? prev.filter(x => x !== s).length === 0 ? [s] : prev.filter(x => x !== s)
+                                                : [...prev, s]
+                                        );
+                                        setForm(f => ({ ...f, section: selectedSections.includes(s) ? selectedSections.filter(x => x !== s)[0] || "A" : s }));
+                                    }}
+                                    className={`h-9 w-9 rounded-lg border text-sm font-bold transition-all ${
+                                        selectedSections.includes(s)
+                                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                                            : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
+                                    }`}
+                                >
+                                    {s}
+                                </button>
+                            ))}
+                        </div>
+                        {selectedSections.length > 1 && !initialData && (
+                            <p className="text-[9px] font-bold text-blue-600">
+                                {selectedSections.length} classes will be created
+                            </p>
+                        )}
+                    </div>
                     <div className="space-y-1">
                         <label className="text-[11px] font-bold text-slate-500">Grade (1-12) *</label>
                         <select
@@ -506,16 +571,10 @@ export function ClassForm({
 
             {/* Actions Bar */}
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-                <Link
-                    to="/admin/classes"
-                    className="px-4 py-2 text-[11px] font-bold normal-case  text-slate-400 hover:text-slate-600 transition-all"
-                >
-                    Cancel
-                </Link>
                 <Button
                     type="submit"
                     disabled={saving}
-                    className="min-w-[140px] h-9 bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-md transition-all text-[10px] font-bold normal-case "
+                    className="min-w-[140px] h-9 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-md transition-all text-[10px] font-bold normal-case "
                 >
                     {saving ? "Saving..." : "Save class"}
                 </Button>

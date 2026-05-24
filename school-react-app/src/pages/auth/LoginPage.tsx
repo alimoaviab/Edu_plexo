@@ -183,7 +183,10 @@ export function LoginPage() {
       }
 
       setSuccess(true);
-      if (payload?.token) localStorage.setItem("token", payload.token);
+      if (payload?.token) {
+        localStorage.setItem("token", payload.token);
+        window.dispatchEvent(new Event("auth-changed"));
+      }
 
       setTimeout(() => {
         const targetRole = payload?.role || selectedRole;

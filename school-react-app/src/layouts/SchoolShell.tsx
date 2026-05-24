@@ -179,6 +179,7 @@ const studentNavGroups: NavGroup[] = [
       { label: "Live classes", href: "/student/live-class", icon: "videocam" },
       { label: "Homework", href: "/student/homework", icon: "assignment" },
       { label: "Leave", href: "/student/leave", icon: "event_available" },
+      { label: "Certificates", href: "/student/certificates", icon: "workspace_premium" },
     ],
   },
   {

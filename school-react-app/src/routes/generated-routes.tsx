@@ -253,6 +253,7 @@ export const studentRoutes: RouteObject[] = [
   { path: "/student/exams", element: lazyPage(() => import("@/pages/role/student/exams"), "StudentExamsPage") },
   { path: "/student/fees", element: lazyPage(() => import("@/pages/role/student/fees"), "StudentFeesPage") },
   { path: "/student/homework", element: lazyPage(() => import("@/pages/role/student/homework"), "StudentHomeworkPage") },
+  { path: "/student/homework/:id", element: lazyPage(() => import("@/pages/role/student/homework/Param_id"), "StudentHomeworkViewPage") },
   { path: "/student/homework/:id/review", element: lazyPage(() => import("@/pages/role/student/homework/Param_id/review"), "StudentHomeworkReviewPage") },
   { path: "/student/live-class", element: lazyPage(() => import("@/pages/role/student/live-class"), "StudentLiveClassPage") },
   { path: "/student/live-exam", element: lazyPage(() => import("@/pages/role/student/live-exam"), "StudentLiveExamPage") },
@@ -261,4 +262,5 @@ export const studentRoutes: RouteObject[] = [
   { path: "/student/results", element: lazyPage(() => import("@/pages/role/student/results"), "StudentResultsPage") },
   { path: "/student/timetable", element: lazyPage(() => import("@/pages/role/student/timetable"), "StudentTimetablePage") },
   { path: "/student/leave", element: lazyPage(() => import("@/pages/role/student/leave")) },
+  { path: "/student/certificates", element: lazyPage(() => import("@/pages/role/student/certificates"), "StudentCertificatesPage") },
 ];

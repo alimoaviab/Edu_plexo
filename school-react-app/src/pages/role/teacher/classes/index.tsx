@@ -54,6 +54,7 @@ type ClassItem = {
   upcoming_exams: number;
   pending_assignments: number;
   students_preview: StudentPreview[];
+  is_incharge?: boolean;
 };
 
 type TeacherClassesResponse = {
@@ -89,9 +90,37 @@ export function TeacherClassesPage() {
 
   const fetchClasses = () => {
     void run(async () => {
-      const result = await serviceRequest<TeacherClassesResponse>(`/api/teachers/${teacherId}`);
+      const result = await serviceRequest<TeacherClassesResponse>(`/api/classes`);
       if (!result.ok) throw new Error(result.error.message || "Failed to load classes");
-      return result.data;
+      // The /api/classes endpoint returns { data: [...], meta: {...} } shape.
+      // Transform it to match the TeacherClassesResponse shape expected by the UI.
+      const raw = result.data as any;
+      const classes: ClassItem[] = (raw?.data || raw?.classes || []).map((c: any) => ({
+        id: c._id || c.id,
+        name: c.name || "",
+        section: c.section || "A",
+        capacity: c.capacity || 40,
+        academic_year: c.academic_year || c.academic_year_id || "",
+        enrolled_students: c.enrolled_students ?? c.student_count ?? 0,
+        lectures_today: c.lectures_today ?? 0,
+        attendance_pending: c.attendance_pending ?? false,
+        upcoming_exams: c.upcoming_exams ?? 0,
+        pending_assignments: c.pending_assignments ?? 0,
+        students_preview: c.students_preview || [],
+        is_incharge: c.class_teacher_id === teacherId || (c.teacher_ids || []).includes(teacherId),
+      }));
+      return {
+        teacher: { id: teacherId, first_name: "", last_name: "", employee_no: "" },
+        classes,
+        stats: {
+          totalClasses: classes.length,
+          totalStudents: classes.reduce((sum: number, c: ClassItem) => sum + c.enrolled_students, 0),
+          pendingAttendance: classes.filter((c: ClassItem) => c.attendance_pending).length,
+          todayLectures: classes.reduce((sum: number, c: ClassItem) => sum + c.lectures_today, 0),
+          upcomingExams: classes.reduce((sum: number, c: ClassItem) => sum + c.upcoming_exams, 0),
+        },
+        school: { name: "", session: "" },
+      } as TeacherClassesResponse;
     });
   };
 
@@ -221,15 +250,45 @@ export function TeacherClassesPage() {
 
         {/* MAIN CONTENT AREA */}
         {filteredClasses.length > 0 ? (
-          viewMode === "grid" ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredClasses.map((cls) => (
-                <ClassCard key={cls.id} classItem={cls} />
-              ))}
-            </div>
-          ) : (
-            <ListView tableData={filteredClasses} />
-          )
+          <>
+            {/* Assigned Classes (Incharge) */}
+            {filteredClasses.filter(c => c.is_incharge).length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm text-blue-600">shield_person</span>
+                  Assigned Classes (Incharge)
+                </h3>
+                {viewMode === "grid" ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredClasses.filter(c => c.is_incharge).map((cls) => (
+                      <ClassCard key={cls.id} classItem={cls} />
+                    ))}
+                  </div>
+                ) : (
+                  <ListView tableData={filteredClasses.filter(c => c.is_incharge)} />
+                )}
+              </div>
+            )}
+
+            {/* Period-based Classes (Timetable) */}
+            {filteredClasses.filter(c => !c.is_incharge).length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm text-emerald-600">schedule</span>
+                  Classes with Assigned Periods
+                </h3>
+                {viewMode === "grid" ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredClasses.filter(c => !c.is_incharge).map((cls) => (
+                      <ClassCard key={cls.id} classItem={cls} />
+                    ))}
+                  </div>
+                ) : (
+                  <ListView tableData={filteredClasses.filter(c => !c.is_incharge)} />
+                )}
+              </div>
+            )}
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-100">
             <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">

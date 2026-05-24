@@ -546,8 +546,22 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.WriteResult(w, api.ServiceTry(func() (*store.Student, error) {
-		if err := auth.AssertPermission(ctx, "students", auth.ActionUpdate); err != nil {
-			return nil, err
+		// Allow self-update: students can update their own profile
+		isSelfUpdate := false
+		if ctx.Role == "student" {
+			h.Store.RLock()
+			for _, s := range h.Store.Students {
+				if s.ID == id && s.SchoolID == ctx.SchoolID && s.UserID == ctx.UserID {
+					isSelfUpdate = true
+					break
+				}
+			}
+			h.Store.RUnlock()
+		}
+		if !isSelfUpdate {
+			if err := auth.AssertPermission(ctx, "students", auth.ActionUpdate); err != nil {
+				return nil, err
+			}
 		}
 
 		h.Store.Lock()
