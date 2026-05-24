@@ -133,10 +133,13 @@ export function BlogIndexPage() {
               transition={{ duration: 0.4, delay: index * 0.05 }}
               className="bg-white rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col"
             >
-              <div className="h-48 bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
-                <span className="text-4xl font-extrabold text-blue-200">
-                  {post.category.charAt(0)}
-                </span>
+              <div className="h-48 bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center overflow-hidden">
+                <img
+                  src={`/blog/${post.slug}.png`}
+                  alt={post.title}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
               </div>
               <div className="p-6 flex flex-col flex-1">
                 <div className="flex items-center gap-2 mb-3">
