@@ -1,6 +1,9 @@
 package persistence
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 // nullableString converts an empty string to a nil interface so PostgreSQL
 // stores NULL instead of "" in nullable columns.
@@ -50,4 +53,12 @@ func jsonOrArray(v any) ([]byte, error) {
 		return []byte("[]"), nil
 	}
 	return body, nil
+}
+
+// nullableTime converts a zero time to nil so PostgreSQL stores NULL.
+func nullableTime(t time.Time) any {
+	if t.IsZero() {
+		return nil
+	}
+	return t
 }

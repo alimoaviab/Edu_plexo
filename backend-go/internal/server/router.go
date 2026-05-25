@@ -26,6 +26,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/homework"
 	"github.com/eduplexo/backend-go/internal/domain/leave"
 	"github.com/eduplexo/backend-go/internal/domain/liveclass"
+	"github.com/eduplexo/backend-go/internal/domain/messaging"
 	"github.com/eduplexo/backend-go/internal/domain/notifications"
 	"github.com/eduplexo/backend-go/internal/domain/packages"
 	"github.com/eduplexo/backend-go/internal/domain/parent"
@@ -504,6 +505,18 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Get("/parent/performance-chart", pH.PerformanceChart)
 			r.Get("/parent/live-classes", pH.LiveClasses)
 			r.Get("/school/my-classes", clH.List)
+
+			// ─── Messaging / Chat ────────────────────────────────────────
+			msgH := messaging.New(s, saveFn, rdb, wsHub)
+			r.Get("/messages/conversations", msgH.ListConversations)
+			r.Post("/messages/conversations", msgH.CreateConversation)
+			r.Get("/messages/conversations/{id}/messages", msgH.ListMessages)
+			r.Post("/messages/conversations/{id}/messages", msgH.SendMessage)
+			r.Post("/messages/conversations/{id}/seen", msgH.MarkSeen)
+			r.Post("/messages/conversations/{id}/typing", msgH.Typing)
+			r.Get("/messages/contacts", msgH.ListContacts)
+			r.Post("/messages/broadcast", msgH.SendBroadcast)
+			r.Get("/messages/broadcasts", msgH.ListBroadcasts)
 
 			r.Post("/dev/seed-academic-years", stubs.NotImplemented(""))
 			r.Get("/auth/google", authH.GoogleStatus)

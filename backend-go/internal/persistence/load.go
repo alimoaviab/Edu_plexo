@@ -71,6 +71,9 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 		{"questions", p.loadQuestions},
 		{"question_papers", p.loadQuestionPapers},
 		{"star_collections", p.loadStarCollections},
+		{"conversations", p.loadConversations},
+		{"chat_messages", p.loadChatMessages},
+		{"broadcasts", p.loadBroadcasts},
 	}
 
 	s.Lock()
@@ -113,6 +116,9 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 	s.Questions = nil
 	s.QuestionPapers = nil
 	s.StarCollections = nil
+	s.Conversations = nil
+	s.ChatMessages = nil
+	s.Broadcasts = nil
 
 	for _, l := range loaders {
 		if err := l.fn(ctx, s); err != nil {
@@ -1078,3 +1084,94 @@ func (p *Persister) loadStarCollections(ctx context.Context, s *store.MemStore) 
 
 
 
+
+// ─── Messaging Loaders ───────────────────────────────────────────────────
+
+func (p *Persister) loadConversations(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `SELECT id, school_id, type, created_at, updated_at FROM conversations`)
+	if err != nil {
+		log.Printf("[persistence] loadConversations: %v (table may not exist yet)", err)
+		return nil
+	}
+	defer rows.Close()
+	convByID := map[string]*store.Conversation{}
+	for rows.Next() {
+		v := &store.Conversation{}
+		if err := rows.Scan(&v.ID, &v.SchoolID, &v.Type, &v.CreatedAt, &v.UpdatedAt); err != nil {
+			return err
+		}
+		convByID[v.ID] = v
+		s.Conversations = append(s.Conversations, v)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	// Load participants
+	pRows, err := p.pool.Query(ctx, `SELECT conversation_id, user_id, role, joined_at FROM conversation_participants`)
+	if err != nil {
+		return nil
+	}
+	defer pRows.Close()
+	for pRows.Next() {
+		var cid string
+		var p store.ConversationParticipant
+		if err := pRows.Scan(&cid, &p.UserID, &p.Role, &p.JoinedAt); err != nil {
+			return err
+		}
+		if conv := convByID[cid]; conv != nil {
+			conv.Participants = append(conv.Participants, p)
+		}
+	}
+	return pRows.Err()
+}
+
+func (p *Persister) loadChatMessages(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, conversation_id, sender_id, text, attachment_url, attachment_type,
+			reply_to_id, delivered_at, seen_at, expires_at, created_at
+		FROM chat_messages ORDER BY created_at`)
+	if err != nil {
+		log.Printf("[persistence] loadChatMessages: %v (table may not exist yet)", err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		v := &store.ChatMessage{}
+		var deliveredAt, seenAt, expiresAt *time.Time
+		if err := rows.Scan(&v.ID, &v.ConversationID, &v.SenderID, &v.Text,
+			&v.AttachmentURL, &v.AttachmentType, &v.ReplyToID,
+			&deliveredAt, &seenAt, &expiresAt, &v.CreatedAt); err != nil {
+			return err
+		}
+		if deliveredAt != nil {
+			v.DeliveredAt = *deliveredAt
+		}
+		if seenAt != nil {
+			v.SeenAt = *seenAt
+		}
+		if expiresAt != nil {
+			v.ExpiresAt = *expiresAt
+		}
+		s.ChatMessages = append(s.ChatMessages, v)
+	}
+	return rows.Err()
+}
+
+func (p *Persister) loadBroadcasts(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, school_id, sender_id, target_group, message, type, created_at
+		FROM broadcasts ORDER BY created_at DESC`)
+	if err != nil {
+		log.Printf("[persistence] loadBroadcasts: %v (table may not exist yet)", err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		v := &store.Broadcast{}
+		if err := rows.Scan(&v.ID, &v.SchoolID, &v.SenderID, &v.TargetGroup, &v.Message, &v.Type, &v.CreatedAt); err != nil {
+			return err
+		}
+		s.Broadcasts = append(s.Broadcasts, v)
+	}
+	return rows.Err()
+}

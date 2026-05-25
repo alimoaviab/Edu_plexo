@@ -83,6 +83,12 @@ func upsertRow(ctx context.Context, tx pgx.Tx, table string, doc any) error {
 		return upsertStarCollection(ctx, tx, v)
 	case *store.Package:
 		return upsertPackage(ctx, tx, v)
+	case *store.Conversation:
+		return upsertConversation(ctx, tx, v)
+	case *store.ChatMessage:
+		return upsertChatMessage(ctx, tx, v)
+	case *store.Broadcast:
+		return upsertBroadcast(ctx, tx, v)
 	}
 	return fmt.Errorf("upsert: unknown document type for table %s", table)
 }
@@ -919,3 +925,55 @@ func upsertPackage(ctx context.Context, tx pgx.Tx, v *store.Package) error {
 	return err
 }
 
+
+// ─── Messaging UPSERTs ───────────────────────────────────────────────────
+
+func upsertConversation(ctx context.Context, tx pgx.Tx, v *store.Conversation) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO conversations (id, school_id, type, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5)
+		ON CONFLICT (id) DO UPDATE SET
+			type=EXCLUDED.type, updated_at=EXCLUDED.updated_at
+	`, v.ID, v.SchoolID, v.Type, v.CreatedAt, v.UpdatedAt)
+	if err != nil {
+		return err
+	}
+	// Replace participants
+	if _, err := tx.Exec(ctx, `DELETE FROM conversation_participants WHERE conversation_id=$1`, v.ID); err != nil {
+		return err
+	}
+	for _, p := range v.Participants {
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO conversation_participants (conversation_id, user_id, role, joined_at)
+			VALUES ($1,$2,$3,$4)
+			ON CONFLICT DO NOTHING
+		`, v.ID, p.UserID, p.Role, p.JoinedAt); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func upsertChatMessage(ctx context.Context, tx pgx.Tx, v *store.ChatMessage) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO chat_messages (id, conversation_id, sender_id, text,
+			attachment_url, attachment_type, reply_to_id,
+			delivered_at, seen_at, expires_at, created_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+		ON CONFLICT (id) DO UPDATE SET
+			seen_at=EXCLUDED.seen_at
+	`, v.ID, v.ConversationID, v.SenderID, v.Text,
+		v.AttachmentURL, v.AttachmentType, v.ReplyToID,
+		nullableTime(v.DeliveredAt), nullableTime(v.SeenAt), nullableTime(v.ExpiresAt), v.CreatedAt)
+	return err
+}
+
+func upsertBroadcast(ctx context.Context, tx pgx.Tx, v *store.Broadcast) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO broadcasts (id, school_id, sender_id, target_group, message, type, created_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7)
+		ON CONFLICT (id) DO UPDATE SET
+			message=EXCLUDED.message, type=EXCLUDED.type
+	`, v.ID, v.SchoolID, v.SenderID, v.TargetGroup, v.Message, defaultStr(v.Type, "text"), v.CreatedAt)
+	return err
+}

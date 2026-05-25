@@ -100,6 +100,11 @@ type MemStore struct {
 	StudentWallets      []*StudentWallet
 	WalletTransactions  []*WalletTransaction
 
+	// ─── Messaging ──────────────────────────────────────────────────────
+	Conversations []*Conversation
+	ChatMessages  []*ChatMessage
+	Broadcasts    []*Broadcast
+
 	// ─── Lookup indexes (perf phase 1) ──────────────────────────────────
 	//
 	// These are read-mostly maps maintained by RebuildIndexes() and
