@@ -1109,7 +1109,9 @@ func (h *Handler) RecordPayment(w http.ResponseWriter, r *http.Request) {
 			return nil, api.NewControlledError("INVALID_STATE", "Invoice already paid.", 400, nil)
 		}
 		applied := body.Amount
+		overpayment := 0.0
 		if applied > outstanding {
+			overpayment = applied - outstanding
 			applied = outstanding
 		}
 
@@ -1165,6 +1167,12 @@ func (h *Handler) RecordPayment(w http.ResponseWriter, r *http.Request) {
 			Action: "create", EntityType: "fee", EntityID: pay.ID,
 			Metadata: map[string]any{"scope": "payment", "fee_id": fee.ID, "amount": applied},
 		})
+
+		// Handle overpayment → credit to student wallet
+		if overpayment > 0 {
+			h.addCredit(ctx.SchoolID, fee.StudentID, fee.ID, "Overpayment credit from fee payment", ctx.UserID, overpayment)
+		}
+
 		h.syncInvoicesForClassLocked(ctx, fee.ClassID)
 		h.invalidateAll(r, ctx.SchoolID)
 		return pay, nil

@@ -373,6 +373,19 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Post("/fees/adjustments", fH.CreateAdjustment)
 			r.Delete("/fees/adjustments/{id}", fH.DeleteAdjustment)
 
+			// Scholarships
+			r.Get("/scholarships", fH.GetScholarship)
+			r.Post("/scholarships", fH.SaveScholarship)
+
+			// Fee Discounts
+			r.Get("/fee-discounts", fH.ListDiscounts)
+			r.Post("/fee-discounts", fH.CreateDiscount)
+			r.Delete("/fee-discounts/{id}", fH.DeleteDiscount)
+
+			// Student Wallet / Credit
+			r.Get("/wallet", fH.GetWallet)
+			r.Get("/wallet/transactions", fH.GetWalletTransactions)
+
 			r.Get("/school/fees/dashboard-stats", fH.DashboardStats)
 			r.Get("/school/fees/classes-summary", fH.ClassesSummary)
 

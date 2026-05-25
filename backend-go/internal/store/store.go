@@ -94,6 +94,12 @@ type MemStore struct {
 	Transactions   []*Transaction
 	Subscriptions  []*Subscription
 
+	// Fee extensions: scholarships, discounts, wallets.
+	StudentScholarships []*StudentScholarship
+	StudentFeeDiscounts []*StudentFeeDiscount
+	StudentWallets      []*StudentWallet
+	WalletTransactions  []*WalletTransaction
+
 	// ─── Lookup indexes (perf phase 1) ──────────────────────────────────
 	//
 	// These are read-mostly maps maintained by RebuildIndexes() and
