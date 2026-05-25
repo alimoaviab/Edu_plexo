@@ -289,9 +289,9 @@ export function StudentListPage() {
             className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
           >
             <option value="all">Performance: All</option>
-            <option value="topper">🏆 Topper Students</option>
-            <option value="weak">⚠️ Weak Students</option>
-            <option value="progress">📊 Student Progress</option>
+            <option value="topper">Topper Students</option>
+            <option value="weak">Weak Students</option>
+            <option value="progress">Student Progress</option>
           </select>
         </div>
 
@@ -358,8 +358,8 @@ export function StudentListPage() {
                     title={`${row.first_name} ${row.last_name}`}
                     subtitle={`ID: ${row.admission_no}`}
                     status={{
-                      label: (row as any)._analytics?.performance_type === "topper" ? "🏆 Topper" 
-                           : (row as any)._analytics?.performance_type === "weak" ? "⚠️ Weak"
+                      label: (row as any)._analytics?.performance_type === "topper" ? "Topper" 
+                           : (row as any)._analytics?.performance_type === "weak" ? "Weak"
                            : row.status === "active" ? "Active" : "Inactive",
                       accent: (row as any)._analytics?.performance_type === "topper" ? "amber"
                             : (row as any)._analytics?.performance_type === "weak" ? "rose"
