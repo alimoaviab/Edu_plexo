@@ -723,8 +723,12 @@ func (h *Handler) ApproveSchool(w http.ResponseWriter, r *http.Request) {
 
 	for _, s := range h.Store.Schools {
 		if s.ID == id || s.SchoolID == id {
+			now := time.Now()
 			s.Status = "active"
-			s.UpdatedAt = time.Now()
+			s.ApprovalStatus = "approved"
+			s.ApprovedAt = &now
+			s.ApprovedBy = ctx.UserID
+			s.UpdatedAt = now
 
 			targetSchoolID := s.SchoolID
 			for _, u := range h.Store.Users {
