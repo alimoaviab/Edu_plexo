@@ -53,6 +53,12 @@ export function SchoolsPage() {
     if (res.ok) loadSchools()
   }
 
+  const handleDelete = async (schoolId: string, schoolName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete "${schoolName}"? This cannot be undone.`)) return
+    const res = await apiRequest(`/api/super-admin/schools/${schoolId}`, { method: 'DELETE' })
+    if (res.ok) loadSchools()
+  }
+
   const statusBadge = (status: string) => {
     const map: Record<string, string> = {
       active: 'bg-blue-50 text-blue-700 border-blue-100',
@@ -181,6 +187,9 @@ export function SchoolsPage() {
                           Activate
                         </button>
                       )}
+                      <button onClick={() => handleDelete(school._id, school.name)} className="h-6 px-2.5 text-[10px] font-semibold text-red-700 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors">
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
