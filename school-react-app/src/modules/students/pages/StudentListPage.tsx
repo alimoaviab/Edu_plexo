@@ -8,6 +8,7 @@ import { useClasses } from "../../classes/hooks/useClasses";
 import { useSubjects } from "../../subjects/hooks/useSubjects";
 import { StudentRow } from "../types/student.types";
 import { showToast } from "@/utils/toast";
+import { serviceRequest } from "@/services/service-client";
 
 export function StudentListPage() {
   const navigate = useNavigate();
@@ -25,13 +26,32 @@ export function StudentListPage() {
   // (not currently consumed; left out intentionally).
   const [searchQuery, setSearchQuery] = useState(currentParams.get("search") || "");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">((currentParams.get("status") as any) || "all");
+  const [performanceFilter, setPerformanceFilter] = useState(currentParams.get("performance") || "all");
   const [viewMode, setViewMode] = useState<"grid" | "list">((currentParams.get("view") as any) || "grid");
+  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
 
   useEffect(() => {
     setSearchQuery(currentParams.get("search") || "");
     setStatusFilter((currentParams.get("status") as any) || "all");
+    setPerformanceFilter(currentParams.get("performance") || "all");
     setViewMode((currentParams.get("view") as any) || "grid");
   }, [currentParams.toString()]);
+
+  // Fetch analytics when performance filter is active
+  useEffect(() => {
+    if (performanceFilter !== "all") {
+      const params = new URLSearchParams();
+      if (classFilter) params.set("class_id", classFilter);
+      params.set("performance", performanceFilter);
+      serviceRequest(`/api/students/analytics?${params}`).then((res: any) => {
+        if (res.ok || res.success) {
+          setAnalyticsData((res.data as any)?.items || []);
+        }
+      });
+    } else {
+      setAnalyticsData([]);
+    }
+  }, [performanceFilter, classFilter]);
 
   const classOptions = ((classesState.data as any)?.data || []).map((cls: any) => ({
     id: cls._id,
@@ -46,6 +66,35 @@ export function StudentListPage() {
   }
 
   const filteredRows = useMemo(() => {
+    // When performance filter is active, use analytics data instead
+    if (performanceFilter !== "all" && analyticsData.length > 0) {
+      const q = searchQuery.trim().toLowerCase();
+      return analyticsData.filter((row: any) => {
+        if (q.length === 0) return true;
+        return (row.admission_no || "").toLowerCase().includes(q) ||
+          `${row.first_name} ${row.last_name}`.toLowerCase().includes(q);
+      }).map((row: any) => ({
+        _id: row.student_id,
+        admission_no: row.admission_no || "",
+        first_name: row.first_name || "",
+        last_name: row.last_name || "",
+        class_id: row.class_name || row.class_id || "",
+        section: row.section || "",
+        status: row.status || "active",
+        guardian: row.guardian || { name: "", phone: "", email: "" },
+        // Analytics extras
+        _analytics: {
+          exam_score: row.exam_score,
+          attendance_score: row.attendance_score,
+          homework_score: row.homework_score,
+          progress_score: row.progress_score,
+          performance_type: row.performance_type,
+          rank: row.rank,
+          trend: row.trend,
+        }
+      })) as any[];
+    }
+
     const rows = students || [];
     const q = searchQuery.trim().toLowerCase();
     return rows.filter((row: StudentRow) => {
@@ -58,7 +107,7 @@ export function StudentListPage() {
       const statusMatch = statusFilter === "all" ? true : row.status === statusFilter;
       return queryMatch && statusMatch;
     });
-  }, [students, searchQuery, statusFilter]);
+  }, [students, searchQuery, statusFilter, performanceFilter, analyticsData]);
 
   const columns: DataTableColumn<StudentRow>[] = [
     {
@@ -218,6 +267,32 @@ export function StudentListPage() {
             <option value="active">Active only</option>
             <option value="inactive">Archived</option>
           </select>
+          <select
+            value={classFilter}
+            onChange={(e) => {
+              updateQuery({ class_id: e.target.value });
+            }}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+          >
+            <option value="">Class: All</option>
+            {classOptions.map((cls: { id: string; label: string }) => (
+              <option key={cls.id} value={cls.id}>{cls.label}</option>
+            ))}
+          </select>
+          <select
+            value={performanceFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              setPerformanceFilter(value);
+              updateQuery({ performance: value });
+            }}
+            className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none cursor-pointer transition-all hover:border-slate-300 focus:border-blue-400"
+          >
+            <option value="all">Performance: All</option>
+            <option value="topper">🏆 Topper Students</option>
+            <option value="weak">⚠️ Weak Students</option>
+            <option value="progress">📊 Student Progress</option>
+          </select>
         </div>
 
         <div className="flex items-center gap-3">
@@ -283,8 +358,12 @@ export function StudentListPage() {
                     title={`${row.first_name} ${row.last_name}`}
                     subtitle={`ID: ${row.admission_no}`}
                     status={{
-                      label: row.status === "active" ? "Active" : "Inactive",
-                      accent: row.status === "active" ? "blue" : "slate",
+                      label: (row as any)._analytics?.performance_type === "topper" ? "🏆 Topper" 
+                           : (row as any)._analytics?.performance_type === "weak" ? "⚠️ Weak"
+                           : row.status === "active" ? "Active" : "Inactive",
+                      accent: (row as any)._analytics?.performance_type === "topper" ? "amber"
+                            : (row as any)._analytics?.performance_type === "weak" ? "rose"
+                            : row.status === "active" ? "blue" : "slate",
                     }}
                     hoverActions={[
                       {
@@ -315,6 +394,10 @@ export function StudentListPage() {
                     metrics={[
                       { label: "Class", value: row.class_id },
                       { label: "Section", value: row.section || "General" },
+                      ...((row as any)._analytics ? [
+                        { label: "Exam", value: `${(row as any)._analytics.exam_score}%`, tone: (row as any)._analytics.exam_score >= 80 ? "text-emerald-600" : (row as any)._analytics.exam_score < 40 ? "text-red-600" : "text-blue-600" },
+                        { label: "Progress", value: `${(row as any)._analytics.progress_score}%`, tone: (row as any)._analytics.progress_score >= 80 ? "text-emerald-600" : (row as any)._analytics.progress_score < 50 ? "text-red-600" : "text-blue-600" },
+                      ] : []),
                     ]}
                   >
                     <div className="space-y-2 mt-2">

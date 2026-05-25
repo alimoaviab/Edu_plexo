@@ -139,6 +139,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			stH := students.NewPG(s, saveFn, pg.Pool(), rdb)
 			// Subscription limit checker is set after subH is created below
 			r.Get("/students", stH.List)
+			r.Get("/students/analytics", stH.Analytics)
 			r.Post("/students", stH.Create)
 			r.Get("/students/{id}", stH.Get)
 			r.Patch("/students/{id}", stH.Update)
