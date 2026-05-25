@@ -946,7 +946,8 @@ func upsertConversation(ctx context.Context, tx pgx.Tx, v *store.Conversation) e
 		if _, err := tx.Exec(ctx, `
 			INSERT INTO conversation_participants (conversation_id, user_id, role, joined_at)
 			VALUES ($1,$2,$3,$4)
-			ON CONFLICT DO NOTHING
+			ON CONFLICT (conversation_id, user_id) DO UPDATE SET
+				role=EXCLUDED.role, joined_at=EXCLUDED.joined_at
 		`, v.ID, p.UserID, p.Role, p.JoinedAt); err != nil {
 			return err
 		}

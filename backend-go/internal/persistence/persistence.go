@@ -318,11 +318,9 @@ func (p *Persister) flush(ctx context.Context) error {
 				p.mu.Unlock()
 			}
 
-			// Only log non-FK errors (FK errors are expected and handled by snapshot order)
-			if !isFKError(writeErr) {
-				docJSON, _ := json.Marshal(w.doc)
-				log.Printf("[persistence] upsert %s failed: %v | data: %.200s", w.table, writeErr, string(docJSON))
-			}
+			// Log all errors for debugging
+			docJSON, _ := json.Marshal(w.doc)
+			log.Printf("[persistence] upsert %s failed: %v | data: %.200s", w.table, writeErr, string(docJSON))
 		} else {
 			_, _ = tx.Exec(ctx, "RELEASE SAVEPOINT sp")
 			succeeded++

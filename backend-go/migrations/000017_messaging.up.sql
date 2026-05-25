@@ -2,7 +2,7 @@
 
 CREATE TABLE IF NOT EXISTS conversations (
     id TEXT PRIMARY KEY,
-    school_id TEXT NOT NULL REFERENCES schools(id),
+    school_id TEXT NOT NULL REFERENCES schools(school_id) ON DELETE CASCADE,
     type TEXT NOT NULL DEFAULT 'private',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 
 CREATE TABLE IF NOT EXISTS broadcasts (
     id TEXT PRIMARY KEY,
-    school_id TEXT NOT NULL REFERENCES schools(id),
+    school_id TEXT NOT NULL REFERENCES schools(school_id) ON DELETE CASCADE,
     sender_id TEXT NOT NULL,
     target_group TEXT NOT NULL DEFAULT '',
     message TEXT NOT NULL DEFAULT '',
