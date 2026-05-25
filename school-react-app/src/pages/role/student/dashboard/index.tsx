@@ -628,7 +628,6 @@ export function StudentDashboardPage() {
                 { label: "Fees", href: "/student/fees", icon: "payments" },
                 { label: "Homework", href: "/student/homework", icon: "assignment" },
                 { label: "Announcements", href: "/student/announcements", icon: "campaign" },
-                { label: "Events", href: "/student/events", icon: "event" },
                 { label: "Leave", href: "/student/leave", icon: "event_busy" },
               ].map((action) => (
                 <Link
