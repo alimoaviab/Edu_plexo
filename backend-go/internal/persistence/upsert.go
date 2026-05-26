@@ -93,6 +93,14 @@ func upsertRow(ctx context.Context, tx pgx.Tx, table string, doc any) error {
 		return upsertSchedule(ctx, tx, v)
 	case *store.ScheduleReminder:
 		return upsertScheduleReminder(ctx, tx, v)
+	case *store.StudentScholarship:
+		return upsertStudentScholarship(ctx, tx, v)
+	case *store.StudentFeeDiscount:
+		return upsertStudentFeeDiscount(ctx, tx, v)
+	case *store.StudentWallet:
+		return upsertStudentWallet(ctx, tx, v)
+	case *store.WalletTransaction:
+		return upsertWalletTransaction(ctx, tx, v)
 	}
 	return fmt.Errorf("upsert: unknown document type for table %s", table)
 }
@@ -1026,5 +1034,56 @@ func upsertScheduleReminder(ctx context.Context, tx pgx.Tx, v *store.ScheduleRem
 			status=EXCLUDED.status, sent_at=EXCLUDED.sent_at
 	`, v.ID, v.SchoolID, v.ScheduleID, v.UserID, v.TriggerAt, v.Status, v.NotifyType,
 		v.SentAt, v.CreatedAt)
+	return err
+}
+
+// ─── Fee Extension UPSERTs ───────────────────────────────────────────────
+
+func upsertStudentScholarship(ctx context.Context, tx pgx.Tx, v *store.StudentScholarship) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO student_scholarships (id, school_id, student_id, enabled, type, value,
+			apply_monthly, apply_fine, apply_onetime, start_date, end_date, notes, created_by, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+		ON CONFLICT (id) DO UPDATE SET
+			enabled=EXCLUDED.enabled, type=EXCLUDED.type, value=EXCLUDED.value,
+			apply_monthly=EXCLUDED.apply_monthly, apply_fine=EXCLUDED.apply_fine,
+			apply_onetime=EXCLUDED.apply_onetime, start_date=EXCLUDED.start_date,
+			end_date=EXCLUDED.end_date, notes=EXCLUDED.notes, updated_at=EXCLUDED.updated_at
+	`, v.ID, v.SchoolID, v.StudentID, v.Enabled, v.Type, v.Value,
+		v.ApplyMonthly, v.ApplyFine, v.ApplyOnetime, v.StartDate, v.EndDate,
+		v.Notes, v.CreatedBy, v.CreatedAt, v.UpdatedAt)
+	return err
+}
+
+func upsertStudentFeeDiscount(ctx context.Context, tx pgx.Tx, v *store.StudentFeeDiscount) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO student_fee_discounts (id, school_id, student_id, fee_id, type, value,
+			apply_mode, month, year, notes, created_by, created_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+		ON CONFLICT (id) DO UPDATE SET
+			type=EXCLUDED.type, value=EXCLUDED.value, apply_mode=EXCLUDED.apply_mode,
+			month=EXCLUDED.month, year=EXCLUDED.year, notes=EXCLUDED.notes
+	`, v.ID, v.SchoolID, v.StudentID, v.FeeID, v.Type, v.Value,
+		v.ApplyMode, v.Month, v.Year, v.Notes, v.CreatedBy, v.CreatedAt)
+	return err
+}
+
+func upsertStudentWallet(ctx context.Context, tx pgx.Tx, v *store.StudentWallet) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO student_wallets (id, school_id, student_id, credit_balance, updated_at)
+		VALUES ($1,$2,$3,$4,$5)
+		ON CONFLICT (id) DO UPDATE SET
+			credit_balance=EXCLUDED.credit_balance, updated_at=EXCLUDED.updated_at
+	`, v.ID, v.SchoolID, v.StudentID, v.CreditBalance, v.UpdatedAt)
+	return err
+}
+
+func upsertWalletTransaction(ctx context.Context, tx pgx.Tx, v *store.WalletTransaction) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO wallet_transactions (id, school_id, student_id, type, amount, reason, fee_id, balance_after, created_by, created_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+		ON CONFLICT (id) DO UPDATE SET
+			type=EXCLUDED.type, amount=EXCLUDED.amount, balance_after=EXCLUDED.balance_after
+	`, v.ID, v.SchoolID, v.StudentID, v.Type, v.Amount, v.Reason, v.FeeID, v.BalanceAfter, v.CreatedBy, v.CreatedAt)
 	return err
 }

@@ -496,6 +496,18 @@ func (p *Persister) FullSnapshot(ctx context.Context, s *store.MemStore) error {
 	for _, v := range s.ScheduleReminders {
 		plan = append(plan, write{table: "schedule_reminders", doc: v})
 	}
+	for _, v := range s.StudentScholarships {
+		plan = append(plan, write{table: "student_scholarships", doc: v})
+	}
+	for _, v := range s.StudentFeeDiscounts {
+		plan = append(plan, write{table: "student_fee_discounts", doc: v})
+	}
+	for _, v := range s.StudentWallets {
+		plan = append(plan, write{table: "student_wallets", doc: v})
+	}
+	for _, v := range s.WalletTransactions {
+		plan = append(plan, write{table: "wallet_transactions", doc: v})
+	}
 	for _, v := range s.FeeTypes {
 		plan = append(plan, write{table: "fee_types", doc: v})
 	}

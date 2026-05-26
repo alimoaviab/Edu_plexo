@@ -281,6 +281,17 @@ type createInput struct {
 	RollNo      string          `json:"roll_no,omitempty"`
 	DateOfBirth *time.Time      `json:"date_of_birth,omitempty"`
 	Gender      string          `json:"gender,omitempty"`
+
+	// Scholarship fields (applied during student creation)
+	ScholarshipEnabled      bool    `json:"scholarship_enabled,omitempty"`
+	ScholarshipType         string  `json:"scholarship_type,omitempty"`         // percentage | fixed
+	ScholarshipValue        float64 `json:"scholarship_value,omitempty"`
+	ScholarshipApplyMonthly bool    `json:"scholarship_apply_monthly,omitempty"`
+	ScholarshipApplyFine    bool    `json:"scholarship_apply_fine,omitempty"`
+	ScholarshipApplyOnetime bool    `json:"scholarship_apply_onetime,omitempty"`
+	ScholarshipStart        string  `json:"scholarship_start,omitempty"`
+	ScholarshipEnd          string  `json:"scholarship_end,omitempty"`
+	ScholarshipNotes        string  `json:"scholarship_notes,omitempty"`
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -518,6 +529,47 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 		if h.OnStudentCreated != nil {
 			h.OnStudentCreated(ctx, newStudent)
+		}
+
+		// ─── Create scholarship if provided ──────────────────────────────
+		if body.ScholarshipEnabled && body.ScholarshipValue > 0 {
+			startDate := time.Now()
+			endDate := startDate.AddDate(1, 0, 0) // default 1 year
+			if body.ScholarshipStart != "" {
+				if t, err := time.Parse("2006-01-02", body.ScholarshipStart); err == nil {
+					startDate = t
+				}
+			}
+			if body.ScholarshipEnd != "" {
+				if t, err := time.Parse("2006-01-02", body.ScholarshipEnd); err == nil {
+					endDate = t
+				}
+			}
+			scholarshipType := body.ScholarshipType
+			if scholarshipType == "" {
+				scholarshipType = "percentage"
+			}
+			scholarship := &store.StudentScholarship{
+				ID:           store.NewID("schol"),
+				SchoolID:     ctx.SchoolID,
+				StudentID:    newStudent.ID,
+				Enabled:      true,
+				Type:         scholarshipType,
+				Value:        body.ScholarshipValue,
+				ApplyMonthly: body.ScholarshipApplyMonthly,
+				ApplyFine:    body.ScholarshipApplyFine,
+				ApplyOnetime: body.ScholarshipApplyOnetime,
+				StartDate:    startDate,
+				EndDate:      endDate,
+				Notes:        body.ScholarshipNotes,
+				CreatedBy:    ctx.UserID,
+				CreatedAt:    now,
+				UpdatedAt:    now,
+			}
+			h.Store.Lock()
+			h.Store.StudentScholarships = append(h.Store.StudentScholarships, scholarship)
+			h.Store.Unlock()
+			h.Persist("student_scholarships", scholarship)
 		}
 
 		return newStudent, nil

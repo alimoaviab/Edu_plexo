@@ -76,6 +76,10 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 		{"broadcasts", p.loadBroadcasts},
 		{"schedules", p.loadSchedules},
 		{"schedule_reminders", p.loadScheduleReminders},
+		{"student_scholarships", p.loadStudentScholarships},
+		{"student_fee_discounts", p.loadStudentFeeDiscounts},
+		{"student_wallets", p.loadStudentWallets},
+		{"wallet_transactions", p.loadWalletTransactions},
 	}
 
 	s.Lock()
@@ -123,6 +127,10 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 	s.Broadcasts = nil
 	s.Schedules = nil
 	s.ScheduleReminders = nil
+	s.StudentScholarships = nil
+	s.StudentFeeDiscounts = nil
+	s.StudentWallets = nil
+	s.WalletTransactions = nil
 
 	for _, l := range loaders {
 		if err := l.fn(ctx, s); err != nil {
@@ -1239,6 +1247,95 @@ func (p *Persister) loadScheduleReminders(ctx context.Context, s *store.MemStore
 		}
 		v.SentAt = sentAt
 		s.ScheduleReminders = append(s.ScheduleReminders, v)
+	}
+	return rows.Err()
+}
+
+// ─── Fee Extension Loaders ───────────────────────────────────────────────
+
+func (p *Persister) loadStudentScholarships(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, school_id, student_id, enabled, type, value,
+			apply_monthly, apply_fine, apply_onetime, start_date, end_date,
+			notes, created_by, created_at, updated_at
+		FROM student_scholarships`)
+	if err != nil {
+		log.Printf("[persistence] loadStudentScholarships: %v (table may not exist yet)", err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		v := &store.StudentScholarship{}
+		if err := rows.Scan(&v.ID, &v.SchoolID, &v.StudentID, &v.Enabled, &v.Type, &v.Value,
+			&v.ApplyMonthly, &v.ApplyFine, &v.ApplyOnetime, &v.StartDate, &v.EndDate,
+			&v.Notes, &v.CreatedBy, &v.CreatedAt, &v.UpdatedAt); err != nil {
+			log.Printf("[persistence] loadStudentScholarships row: %v", err)
+			continue
+		}
+		s.StudentScholarships = append(s.StudentScholarships, v)
+	}
+	return rows.Err()
+}
+
+func (p *Persister) loadStudentFeeDiscounts(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, school_id, student_id, fee_id, type, value,
+			apply_mode, month, year, notes, created_by, created_at
+		FROM student_fee_discounts`)
+	if err != nil {
+		log.Printf("[persistence] loadStudentFeeDiscounts: %v (table may not exist yet)", err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		v := &store.StudentFeeDiscount{}
+		if err := rows.Scan(&v.ID, &v.SchoolID, &v.StudentID, &v.FeeID, &v.Type, &v.Value,
+			&v.ApplyMode, &v.Month, &v.Year, &v.Notes, &v.CreatedBy, &v.CreatedAt); err != nil {
+			log.Printf("[persistence] loadStudentFeeDiscounts row: %v", err)
+			continue
+		}
+		s.StudentFeeDiscounts = append(s.StudentFeeDiscounts, v)
+	}
+	return rows.Err()
+}
+
+func (p *Persister) loadStudentWallets(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, school_id, student_id, credit_balance, updated_at
+		FROM student_wallets`)
+	if err != nil {
+		log.Printf("[persistence] loadStudentWallets: %v (table may not exist yet)", err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		v := &store.StudentWallet{}
+		if err := rows.Scan(&v.ID, &v.SchoolID, &v.StudentID, &v.CreditBalance, &v.UpdatedAt); err != nil {
+			log.Printf("[persistence] loadStudentWallets row: %v", err)
+			continue
+		}
+		s.StudentWallets = append(s.StudentWallets, v)
+	}
+	return rows.Err()
+}
+
+func (p *Persister) loadWalletTransactions(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, school_id, student_id, type, amount, reason, fee_id, balance_after, created_by, created_at
+		FROM wallet_transactions ORDER BY created_at DESC`)
+	if err != nil {
+		log.Printf("[persistence] loadWalletTransactions: %v (table may not exist yet)", err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		v := &store.WalletTransaction{}
+		if err := rows.Scan(&v.ID, &v.SchoolID, &v.StudentID, &v.Type, &v.Amount,
+			&v.Reason, &v.FeeID, &v.BalanceAfter, &v.CreatedBy, &v.CreatedAt); err != nil {
+			log.Printf("[persistence] loadWalletTransactions row: %v", err)
+			continue
+		}
+		s.WalletTransactions = append(s.WalletTransactions, v)
 	}
 	return rows.Err()
 }

@@ -38,6 +38,7 @@ interface FeesApiResponse {
     due?: number;
     percentage_paid?: number;
     status?: string;
+    credit_balance?: number;
   };
   rows?: Array<{
     id?: string;
@@ -62,6 +63,7 @@ interface FeesView {
     pending: number;
     percentagePaid: number;
     status: string;
+    creditBalance: number;
   };
   components: Array<{
     key: string;
@@ -110,6 +112,7 @@ function adapt(api: FeesApiResponse | null): FeesView | null {
       pending: Number(summary.due || 0),
       percentagePaid: Number(summary.percentage_paid || 0),
       status: summary.status || "—",
+      creditBalance: Number(summary.credit_balance || 0),
     },
     components,
     payments,
@@ -335,11 +338,11 @@ export function ParentFeesPage() {
           }
         />
         <StatCardCompact
-          label="Recovery Rate"
-          value={`${recoveryPercent}%`}
-          icon="trending_up"
-          accent="emerald"
-          hint="Of total payable"
+          label="Available Credit"
+          value={`Rs. ${summary.creditBalance.toLocaleString()}`}
+          icon="wallet"
+          accent={summary.creditBalance > 0 ? "emerald" : "slate"}
+          hint={summary.creditBalance > 0 ? "Can be applied" : "No credit"}
         />
       </div>
 

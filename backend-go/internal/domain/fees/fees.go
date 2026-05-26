@@ -1863,6 +1863,16 @@ func (h *Handler) StudentFees(w http.ResponseWriter, r *http.Request) {
 		if total > 0 {
 			percentage = int((paid * 100) / total)
 		}
+
+		// Get student wallet credit balance
+		var creditBalance float64
+		for _, w := range h.Store.StudentWallets {
+			if w.SchoolID == ctx.SchoolID && w.StudentID == stu.ID {
+				creditBalance = w.CreditBalance
+				break
+			}
+		}
+
 		return map[string]any{
 			"summary": map[string]any{
 				"total":           total,
@@ -1870,6 +1880,7 @@ func (h *Handler) StudentFees(w http.ResponseWriter, r *http.Request) {
 				"due":             pending,
 				"percentage_paid": percentage,
 				"status":          feeStatus(total, paid),
+				"credit_balance":  creditBalance,
 			},
 			"rows":         monthly,
 			"due_notices":  dueNotices,

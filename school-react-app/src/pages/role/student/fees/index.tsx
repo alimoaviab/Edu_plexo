@@ -43,6 +43,7 @@ type FeesResponse = {
     pending: number;
     percentage_paid: number;
     status: string;
+    credit_balance?: number;
   };
   fee_details: Array<{
     fee_type: string;
@@ -266,11 +267,11 @@ export function StudentFeesPage() {
           hint={summary.pending > 0 ? "Outstanding" : "Cleared"}
         />
         <StatCardCompact
-          label="Paid %"
-          value={`${recoveryPercent}%`}
-          icon="trending_up"
-          accent="emerald"
-          hint="Of total payable"
+          label="Available Credit"
+          value={`Rs. ${(summary.credit_balance || 0).toLocaleString()}`}
+          icon="wallet"
+          accent={(summary.credit_balance || 0) > 0 ? "emerald" : "slate"}
+          hint={(summary.credit_balance || 0) > 0 ? "Can be applied" : "No credit"}
         />
       </div>
 
