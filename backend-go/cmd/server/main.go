@@ -71,6 +71,9 @@ func main() {
 		// Ensure bootstrap admin users exist even after loading from PG.
 		// This guarantees we can always log in as the platform owner.
 		store.EnsureBootstrapUsers(s)
+		// Ensure all schools have required default records for every feature.
+		// This is the permanent fix for "new features don't apply to old accounts".
+		store.EnsureSchoolDefaults(s)
 		// Refresh the lookup indexes now that PG has hydrated all users
 		// and schools — the maps built earlier only saw the bootstrap
 		// rows.
