@@ -542,18 +542,14 @@ export function StudentForm(props: StudentFormProps | LegacyStudentFormProps) {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
-                  label="Start Date"
-                  type="date"
-                  value={(form as any).scholarship_start || ""}
-                  onChange={(e) => setForm({ ...form, scholarship_start: e.target.value } as any)}
+                  label="Academic Year"
+                  type="number"
+                  placeholder="e.g. 2024"
+                  value={(form as any).scholarship_year || ""}
+                  onChange={(e) => setForm({ ...form, scholarship_year: e.target.value } as any)}
                   className="h-11 rounded-xl bg-white"
-                />
-                <Input
-                  label="End Date"
-                  type="date"
-                  value={(form as any).scholarship_end || ""}
-                  onChange={(e) => setForm({ ...form, scholarship_end: e.target.value } as any)}
-                  className="h-11 rounded-xl bg-white"
+                  min="2000"
+                  max="2100"
                 />
               </div>
               <div>

@@ -289,8 +289,7 @@ type createInput struct {
 	ScholarshipApplyMonthly bool    `json:"scholarship_apply_monthly,omitempty"`
 	ScholarshipApplyFine    bool    `json:"scholarship_apply_fine,omitempty"`
 	ScholarshipApplyOnetime bool    `json:"scholarship_apply_onetime,omitempty"`
-	ScholarshipStart        string  `json:"scholarship_start,omitempty"`
-	ScholarshipEnd          string  `json:"scholarship_end,omitempty"`
+	ScholarshipYear         int     `json:"scholarship_year,omitempty"`
 	ScholarshipNotes        string  `json:"scholarship_notes,omitempty"`
 }
 
@@ -533,17 +532,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 		// ─── Create scholarship if provided ──────────────────────────────
 		if body.ScholarshipEnabled && body.ScholarshipValue > 0 {
-			startDate := time.Now()
-			endDate := startDate.AddDate(1, 0, 0) // default 1 year
-			if body.ScholarshipStart != "" {
-				if t, err := time.Parse("2006-01-02", body.ScholarshipStart); err == nil {
-					startDate = t
-				}
-			}
-			if body.ScholarshipEnd != "" {
-				if t, err := time.Parse("2006-01-02", body.ScholarshipEnd); err == nil {
-					endDate = t
-				}
+			var startDate, endDate time.Time
+			if body.ScholarshipYear > 0 {
+				// Use the provided year
+				startDate = time.Date(body.ScholarshipYear, time.January, 1, 0, 0, 0, 0, time.UTC)
+				endDate = time.Date(body.ScholarshipYear, time.December, 31, 23, 59, 59, 0, time.UTC)
+			} else {
+				// Default to current year
+				now := time.Now()
+				startDate = time.Date(now.Year(), time.January, 1, 0, 0, 0, 0, time.UTC)
+				endDate = time.Date(now.Year(), time.December, 31, 23, 59, 59, 0, time.UTC)
 			}
 			scholarshipType := body.ScholarshipType
 			if scholarshipType == "" {

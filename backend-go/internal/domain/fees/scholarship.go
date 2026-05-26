@@ -21,8 +21,7 @@ type scholarshipInput struct {
 	ApplyMonthly bool    `json:"apply_monthly"`
 	ApplyFine    bool    `json:"apply_fine"`
 	ApplyOnetime bool    `json:"apply_onetime"`
-	StartDate    string  `json:"start_date"`
-	EndDate      string  `json:"end_date"`
+	Year         int     `json:"year"`          // Academic year (e.g., 2024, 2025)
 	Notes        string  `json:"notes"`
 }
 
@@ -85,26 +84,22 @@ func (h *Handler) SaveScholarship(w http.ResponseWriter, r *http.Request) {
 		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "percentage value cannot exceed 100.", 400, nil))
 		return
 	}
-
-	startDate, ok := api.ParseDate(body.StartDate)
-	if !ok {
-		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "start_date is required.", 400, nil))
-		return
-	}
-	endDate, ok := api.ParseDate(body.EndDate)
-	if !ok {
-		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "end_date is required.", 400, nil))
+	if body.Year <= 0 {
+		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "year is required and must be positive.", 400, nil))
 		return
 	}
 
 	now := time.Now()
+	// Set start date to Jan 1 of the given year and end date to Dec 31 of the same year
+	startDate := time.Date(body.Year, time.January, 1, 0, 0, 0, 0, time.UTC)
+	endDate := time.Date(body.Year, time.December, 31, 23, 59, 59, 0, time.UTC)
 
 	h.Store.Lock()
 	defer h.Store.Unlock()
 
-	// Check if scholarship already exists for this student — update it
+	// Check if scholarship already exists for this student and year — update it
 	for _, s := range h.Store.StudentScholarships {
-		if s.SchoolID == ctx.SchoolID && s.StudentID == body.StudentID {
+		if s.SchoolID == ctx.SchoolID && s.StudentID == body.StudentID && s.StartDate.Year() == body.Year {
 			s.Enabled = body.Enabled
 			s.Type = body.Type
 			s.Value = body.Value
