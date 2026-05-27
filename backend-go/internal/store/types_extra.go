@@ -244,6 +244,7 @@ type LiveClass struct {
 	SchoolID        string    `json:"school_id"`
 	AcademicYearID  string    `json:"academic_year_id,omitempty"`
 	ClassID         string    `json:"class_id"`
+	Section         string    `json:"section,omitempty"`
 	Subject         string    `json:"subject,omitempty"`
 	Title           string    `json:"title"`
 	Description     string    `json:"description,omitempty"`

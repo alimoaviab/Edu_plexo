@@ -13,7 +13,7 @@ import { serviceRequest } from "@/services/service-client";
 
 export interface AttendanceRecord {
   date: string;
-  status: "present" | "absent" | "unmarked";
+  status: "present" | "absent" | "late" | "leave" | "unmarked";
 }
 
 export interface ParentAttendanceSummary {

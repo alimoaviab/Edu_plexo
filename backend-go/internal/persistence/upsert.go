@@ -597,17 +597,17 @@ func upsertTimetable(ctx context.Context, tx pgx.Tx, v *store.Timetable) error {
 
 func upsertLiveClass(ctx context.Context, tx pgx.Tx, v *store.LiveClass) error {
 	_, err := tx.Exec(ctx, `
-		INSERT INTO live_classes (id, school_id, academic_year_id, class_id, subject, title,
+		INSERT INTO live_classes (id, school_id, academic_year_id, class_id, section, subject, title,
 			starts_at, ends_at, host_teacher_id, join_url, provider, status,
 			created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 		ON CONFLICT (id) DO UPDATE SET
-			subject=EXCLUDED.subject, title=EXCLUDED.title,
+			section=EXCLUDED.section, subject=EXCLUDED.subject, title=EXCLUDED.title,
 			starts_at=EXCLUDED.starts_at, ends_at=EXCLUDED.ends_at,
 			host_teacher_id=EXCLUDED.host_teacher_id, join_url=EXCLUDED.join_url,
 			provider=EXCLUDED.provider, status=EXCLUDED.status,
 			updated_at=EXCLUDED.updated_at
-	`, v.ID, v.SchoolID, nullableString(v.AcademicYearID), v.ClassID, v.Subject, v.Title,
+	`, v.ID, v.SchoolID, nullableString(v.AcademicYearID), v.ClassID, v.Section, v.Subject, v.Title,
 		v.StartsAt, v.EndsAt, nullableString(v.HostTeacherID), v.JoinURL,
 		defaultStr(v.Provider, "jitsi"), v.Status, v.CreatedAt, v.UpdatedAt)
 	return err

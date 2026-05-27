@@ -130,6 +130,7 @@ func (h *Handler) hydrate(rows []*store.LiveClass) []map[string]any {
 			"academic_year_id":  l.AcademicYearID,
 			"class_id":          l.ClassID,
 			"class_name":        className,
+			"section":           l.Section,
 			"subject":           l.Subject,
 			"title":             l.Title,
 			"description":       l.Description,
@@ -197,11 +198,13 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		classID := q.Get("class_id")
 		statusQ := q.Get("status")
 
-		// Student scoping: only their class.
+		section := q.Get("section")
+		// Student scoping: only their class and section.
 		if ctx.Role == "student" {
 			h.Store.RLock()
 			if s := access.StudentProfileLocked(h.Store, ctx); s != nil {
 				classID = s.ClassID
+				section = s.Section
 			}
 			h.Store.RUnlock()
 		}
@@ -237,6 +240,13 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 			if classID != "" && l.ClassID != classID {
+				continue
+			}
+			if section != "" && l.Section != "" && l.Section != section {
+				continue
+			}
+			// For students, if a class session has a section targeted, they must be in that section
+			if ctx.Role == "student" && l.Section != "" && l.Section != section {
 				continue
 			}
 			if ctx.Role == "teacher" && !teacherClassIDs[l.ClassID] {
@@ -293,6 +303,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 type scheduleInput struct {
 	ClassID         string `json:"class_id"`
+	Section         string `json:"section"`
 	Subject         string `json:"subject"`
 	Title           string `json:"title"`
 	Description     string `json:"description"`
@@ -329,13 +340,21 @@ func (h *Handler) Schedule(w http.ResponseWriter, r *http.Request) {
 			return nil, api.NewControlledError("VALIDATION_ERROR", "ends_at must be after starts_at.", 400, nil)
 		}
 
-		// TEACHER PERMISSION CHECK: Teachers can only create sessions for assigned classes
+		// TEACHER PERMISSION CHECK: Teachers can only create sessions for assigned classes & subjects
 		if ctx.Role == "teacher" {
 			h.Store.RLock()
-			found := access.CanAccessClassLocked(h.Store, ctx, body.ClassID)
+			allowedClass := access.CanAccessClassLocked(h.Store, ctx, body.ClassID)
+			allowedSubject := access.CanAccessSubjectLocked(h.Store, ctx, body.HostTeacherID, body.Subject)
+			teacherProfile := access.TeacherProfileLocked(h.Store, ctx)
 			h.Store.RUnlock()
-			if !found {
+			if !allowedClass {
 				return nil, api.NewControlledError("FORBIDDEN", "You are not assigned to this class. Only assigned teachers can create sessions.", 403, nil)
+			}
+			if !allowedSubject && body.Subject != "" {
+				return nil, api.NewControlledError("FORBIDDEN", "You are not assigned to teach this subject.", 403, nil)
+			}
+			if teacherProfile != nil && body.HostTeacherID == "" {
+				body.HostTeacherID = teacherProfile.ID
 			}
 		}
 
@@ -380,6 +399,7 @@ func (h *Handler) Schedule(w http.ResponseWriter, r *http.Request) {
 			SchoolID:        ctx.SchoolID,
 			AcademicYearID:  ctx.ActiveAcademicYearID,
 			ClassID:         body.ClassID,
+			Section:         body.Section,
 			Subject:         body.Subject,
 			Title:           body.Title,
 			Description:     body.Description,

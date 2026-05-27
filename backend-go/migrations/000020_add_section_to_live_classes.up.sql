@@ -1,0 +1,1 @@
+ALTER TABLE live_classes ADD COLUMN section TEXT NOT NULL DEFAULT '';

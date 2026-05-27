@@ -42,6 +42,9 @@ func (h *Handler) LiveClasses(w http.ResponseWriter, r *http.Request) {
 			if lc.ClassID != student.ClassID {
 				continue
 			}
+			if lc.Section != "" && lc.Section != student.Section {
+				continue
+			}
 			// Filter by academic year if set
 			if lc.AcademicYearID != "" && student.AcademicYearID != "" && lc.AcademicYearID != student.AcademicYearID {
 				continue
@@ -94,6 +97,7 @@ func (h *Handler) LiveClasses(w http.ResponseWriter, r *http.Request) {
 				"teacher_name": teacherName,
 				"class_name":   className,
 				"class_id":     lc.ClassID,
+				"section":      lc.Section,
 				"starts_at":    lc.StartsAt,
 				"ends_at":      lc.EndsAt,
 				"join_url":     lc.JoinURL,

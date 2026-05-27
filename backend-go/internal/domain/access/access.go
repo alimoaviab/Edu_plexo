@@ -1,6 +1,8 @@
 package access
 
 import (
+	"strings"
+
 	"github.com/eduplexo/backend-go/internal/api"
 	"github.com/eduplexo/backend-go/internal/store"
 )
@@ -133,6 +135,68 @@ func CanAccessStudentLocked(s *store.MemStore, ctx *api.RequestContext, studentI
 			return ParentStudentIDsLocked(s, ctx)[studentID]
 		case "teacher":
 			return TeacherClassIDsLocked(s, ctx)[st.ClassID]
+		}
+	}
+	return false
+}
+
+func CanAccessSubjectLocked(s *store.MemStore, ctx *api.RequestContext, teacherID, subjectNameOrID string) bool {
+	if subjectNameOrID == "" {
+		return true
+	}
+	if IsPrivileged(ctx) {
+		return true
+	}
+	var t *store.Teacher
+	for _, tc := range s.Teachers {
+		if tc.SchoolID == ctx.SchoolID && tc.ID == teacherID {
+			t = tc
+			break
+		}
+	}
+	if t == nil {
+		// Fallback to checking teacher profile matching current UserID
+		for _, tc := range s.Teachers {
+			if tc.SchoolID == ctx.SchoolID && tc.UserID == ctx.UserID {
+				t = tc
+				break
+			}
+		}
+	}
+	if t == nil {
+		return false
+	}
+	// Check if subjectID matches in teacher's SubjectIDs
+	for _, sid := range t.SubjectIDs {
+		if sid == subjectNameOrID {
+			return true
+		}
+	}
+	// Check if subject name matches in teacher's Subjects
+	for _, subName := range t.Subjects {
+		if len(subName) > 0 && (subName == subjectNameOrID || len(subjectNameOrID) > 0 && (subName[0] == subjectNameOrID[0] || subName == subjectNameOrID)) {
+			// Case-insensitive/exact match
+			if len(subName) == len(subjectNameOrID) && (subName == subjectNameOrID || strings.EqualFold(subName, subjectNameOrID)) {
+				return true
+			}
+		}
+	}
+	// Check Subjects slice in store to see if teacher teaches it
+	for _, sub := range s.Subjects {
+		if sub.SchoolID == ctx.SchoolID && (sub.ID == subjectNameOrID || strings.EqualFold(sub.Name, subjectNameOrID)) {
+			if sub.TeacherID == t.ID {
+				return true
+			}
+		}
+	}
+	// Check classes to see if the teacher is assigned to this subject inside class.Subjects
+	for _, cls := range s.Classes {
+		if cls.SchoolID == ctx.SchoolID {
+			for _, clsSub := range cls.Subjects {
+				if (clsSub.Name == subjectNameOrID || strings.EqualFold(clsSub.Name, subjectNameOrID)) && clsSub.TeacherID == t.ID {
+					return true
+				}
+			}
 		}
 	}
 	return false

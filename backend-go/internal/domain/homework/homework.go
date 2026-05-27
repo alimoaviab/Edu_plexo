@@ -378,10 +378,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 		if ctx.Role == "teacher" {
 			h.Store.RLock()
-			allowed := access.CanAccessClassLocked(h.Store, ctx, body.ClassID)
+			allowedClass := access.CanAccessClassLocked(h.Store, ctx, body.ClassID)
+			allowedSubject := access.CanAccessSubjectLocked(h.Store, ctx, body.TeacherID, body.SubjectID)
 			h.Store.RUnlock()
-			if !allowed {
+			if !allowedClass {
 				return nil, api.NewControlledError("FORBIDDEN", "You can only create homework for assigned classes.", 403, nil)
+			}
+			if !allowedSubject && body.SubjectID != "" {
+				return nil, api.NewControlledError("FORBIDDEN", "You can only create homework for assigned subjects.", 403, nil)
 			}
 		}
 		dueAt, ok := api.ParseDate(body.DueAt)

@@ -758,7 +758,7 @@ func (p *Persister) loadTimetables(ctx context.Context, s *store.MemStore) error
 
 func (p *Persister) loadLiveClasses(ctx context.Context, s *store.MemStore) error {
 	rows, err := p.pool.Query(ctx, `
-		SELECT id, school_id, COALESCE(academic_year_id,''), class_id, subject, title,
+		SELECT id, school_id, COALESCE(academic_year_id,''), class_id, COALESCE(section,''), subject, title,
 			starts_at, ends_at, COALESCE(host_teacher_id,''), join_url, provider, status,
 			created_at, updated_at FROM live_classes`)
 	if err != nil {
@@ -767,7 +767,7 @@ func (p *Persister) loadLiveClasses(ctx context.Context, s *store.MemStore) erro
 	defer rows.Close()
 	for rows.Next() {
 		v := &store.LiveClass{}
-		if err := rows.Scan(&v.ID, &v.SchoolID, &v.AcademicYearID, &v.ClassID, &v.Subject, &v.Title,
+		if err := rows.Scan(&v.ID, &v.SchoolID, &v.AcademicYearID, &v.ClassID, &v.Section, &v.Subject, &v.Title,
 			&v.StartsAt, &v.EndsAt, &v.HostTeacherID, &v.JoinURL, &v.Provider, &v.Status,
 			&v.CreatedAt, &v.UpdatedAt); err != nil {
 			return err
