@@ -19,9 +19,21 @@ const materialToLucideMap: Record<string, string> = {
   chevron_right: "ChevronRight",
   expand_more: "ChevronDown",
   arrow_drop_down: "ChevronDown",
+  keyboard_arrow_down: "ChevronDown",
+  keyboardarrowdown: "ChevronDown",
+  keyboard_arrow_up: "ChevronUp",
+  keyboardarrowup: "ChevronUp",
+  keyboard_arrow_left: "ChevronLeft",
+  keyboardarrowleft: "ChevronLeft",
+  keyboard_arrow_right: "ChevronRight",
+  keyboardarrowright: "ChevronRight",
   unfold_more: "ChevronsUpDown",
   menu: "Menu",
   close: "X",
+  list: "List",
+  view_list: "List",
+  viewlist: "List",
+  format_list_bulleted: "List",
   logout: "LogOut",
   login: "LogIn",
   external_link: "ExternalLink",
@@ -30,6 +42,9 @@ const materialToLucideMap: Record<string, string> = {
   open_in_new: "ExternalLink",
 
   // Actions
+  archive: "Archive",
+  chat: "MessageSquare",
+  forum: "MessageCircle",
   add: "Plus",
   add_circle: "PlusCircle",
   add_box: "PlusSquare",
@@ -66,6 +81,7 @@ const materialToLucideMap: Record<string, string> = {
   content_copy: "Copy",
   more_horiz: "MoreHorizontal",
   more_vert: "MoreVertical",
+  label: "Tag",
   progress_activity: "Loader2",
   check: "Check",
   "check-circle": "CheckCircle2",
@@ -83,6 +99,7 @@ const materialToLucideMap: Record<string, string> = {
   school: "GraduationCap",
   graduation: "GraduationCap",
   class: "BookOpen",
+  brain: "Brain",
   apartment: "Building2",
   business: "Building2",
   meeting_room: "DoorOpen",
@@ -118,6 +135,7 @@ const materialToLucideMap: Record<string, string> = {
   how_to_reg: "UserCheck",
 
   // General App / Tech
+  title: "Type",
   dashboard: "LayoutDashboard",
   settings: "Settings",
   shield: "Shield",
@@ -156,6 +174,8 @@ const materialToLucideMap: Record<string, string> = {
   insights: "TrendingUp",
   trending_up: "TrendingUp",
   trending_down: "TrendingDown",
+  query_stats: "BarChart3",
+  leaderboard: "BarChart3",
   image: "Image",
   video: "Video",
   video_camera_back: "Video",
@@ -192,6 +212,9 @@ const materialToLucideMap: Record<string, string> = {
   db: "Database",
   security: "Shield",
   auto_awesome: "Sparkles",
+  pending_actions: "Clock3",
+  cloud_done: "CheckCircle2",
+  refresh_ccw: "RefreshCcw",
   auto_fix_high: "Wand2",
   beach_access: "Umbrella",
   free_breakfast: "Coffee",
@@ -220,12 +243,55 @@ const materialToLucideMap: Record<string, string> = {
   cell_tower: "Radio"
 };
 
+const normalizeIconName = (value: string): string =>
+  value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+const normalizedLucideIconMap = Object.fromEntries(
+  Object.keys(Icons).map((iconName) => [normalizeIconName(iconName), iconName])
+) as Record<string, keyof typeof Icons>;
+
+const normalizedMaterialToLucideMap = Object.fromEntries(
+  Object.entries(materialToLucideMap).map(([key, value]) => [normalizeIconName(key), value])
+) as Record<string, string>;
+
 // Helper function to convert snake_case (common in Material Icons) to PascalCase (Lucide)
 const snakeToPascal = (str: string): string => {
   return str
     .split(/[-_]+/)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join("");
+};
+
+export const resolveAppIconName = (name: string): keyof typeof Icons | undefined => {
+  const trimmedName = name.trim();
+
+  if (!trimmedName) {
+    return undefined;
+  }
+
+  if (trimmedName in Icons) {
+    return trimmedName as keyof typeof Icons;
+  }
+
+  const normalizedName = normalizeIconName(trimmedName);
+  const normalizedLucideName = normalizedLucideIconMap[normalizedName];
+  if (normalizedLucideName) {
+    return normalizedLucideName;
+  }
+
+  const mappedName = normalizedMaterialToLucideMap[normalizedName];
+  if (mappedName) {
+    const normalizedMappedName = normalizedLucideIconMap[normalizeIconName(mappedName)];
+    return normalizedMappedName ?? (mappedName as keyof typeof Icons);
+  }
+
+  const pascalName = snakeToPascal(trimmedName);
+  const normalizedPascalName = normalizedLucideIconMap[normalizeIconName(pascalName)];
+  if (normalizedPascalName) {
+    return normalizedPascalName;
+  }
+
+  return undefined;
 };
 
 export function AppIcon({
@@ -239,25 +305,8 @@ export function AppIcon({
     return null;
   }
 
-  // 1. Check if name is already a valid Lucide icon key directly
-  let resolvedName = name as keyof typeof Icons;
-
-  // 2. If not, check if it's a known Material Icon translation
-  if (!(resolvedName in Icons)) {
-    const cleanName = name.trim().toLowerCase();
-    const mapped = materialToLucideMap[cleanName];
-    if (mapped) {
-      resolvedName = mapped as keyof typeof Icons;
-    } else {
-      // 3. Fallback: try converting snake_case to PascalCase (e.g. check_circle -> CheckCircle)
-      const pascal = snakeToPascal(name);
-      if (pascal in Icons) {
-        resolvedName = pascal as keyof typeof Icons;
-      }
-    }
-  }
-
-  const Icon = Icons[resolvedName] as any;
+  const resolvedName = resolveAppIconName(name);
+  const Icon = resolvedName ? (Icons[resolvedName] as any) : undefined;
 
   if (!Icon) {
     console.warn("Missing icon mapping or Lucide icon:", name);
