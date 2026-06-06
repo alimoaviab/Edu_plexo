@@ -418,17 +418,17 @@ func upsertExam(ctx context.Context, tx pgx.Tx, v *store.Exam) error {
 	}
 	_, err := tx.Exec(ctx, `
 		INSERT INTO exams (id, school_id, academic_year_id, class_id, teacher_id,
-			subject, title, type, starts_at, max_marks, status, description,
+			subject, title, type, term, starts_at, max_marks, status, description,
 			created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 		ON CONFLICT (id) DO UPDATE SET
 			class_id=EXCLUDED.class_id, teacher_id=EXCLUDED.teacher_id,
 			subject=EXCLUDED.subject, title=EXCLUDED.title, type=EXCLUDED.type,
-			starts_at=EXCLUDED.starts_at, max_marks=EXCLUDED.max_marks,
+			term=EXCLUDED.term, starts_at=EXCLUDED.starts_at, max_marks=EXCLUDED.max_marks,
 			status=EXCLUDED.status, description=EXCLUDED.description,
 			updated_at=EXCLUDED.updated_at
 	`, v.ID, v.SchoolID, nullableString(v.AcademicYearID), v.ClassID, nullableString(v.TeacherID),
-		v.Subject, v.Title, examType, v.StartsAt, v.MaxMarks, v.Status, v.Description,
+		v.Subject, v.Title, examType, v.Term, v.StartsAt, v.MaxMarks, v.Status, v.Description,
 		v.CreatedAt, v.UpdatedAt)
 	return err
 }
@@ -864,23 +864,27 @@ func upsertChapter(ctx context.Context, tx pgx.Tx, v *store.Chapter) error {
 
 func upsertQuestion(ctx context.Context, tx pgx.Tx, v *store.Question) error {
 	_, err := tx.Exec(ctx, `
-		INSERT INTO questions (id, school_id, created_by, created_by_name, board_id, class_id,
-			subject_id, subject_name, chapter_id, topic_id, type, difficulty, question_html,
-			options, marks, status, is_global, approval_status, approved_by,
-			approved_at, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+		INSERT INTO questions (id, school_id, created_by, created_by_name, board_id, syllabus,
+			class_id, class_name, subject_id, subject_name, chapter_id, chapter_name, topic_id,
+			type, difficulty, question_html, options, answer, marks, metadata, status, is_global,
+			approval_status, approved_by, approved_at, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20::jsonb,$21,$22,$23,$24,$25,$26,$27)
 		ON CONFLICT (id) DO UPDATE SET
-			board_id=EXCLUDED.board_id, class_id=EXCLUDED.class_id, subject_id=EXCLUDED.subject_id,
-			subject_name=EXCLUDED.subject_name, chapter_id=EXCLUDED.chapter_id, topic_id=EXCLUDED.topic_id,
+			board_id=EXCLUDED.board_id, syllabus=EXCLUDED.syllabus, class_id=EXCLUDED.class_id,
+			class_name=EXCLUDED.class_name, subject_id=EXCLUDED.subject_id,
+			subject_name=EXCLUDED.subject_name, chapter_id=EXCLUDED.chapter_id,
+			chapter_name=EXCLUDED.chapter_name, topic_id=EXCLUDED.topic_id,
 			type=EXCLUDED.type, difficulty=EXCLUDED.difficulty,
 			question_html=EXCLUDED.question_html, options=EXCLUDED.options,
-			marks=EXCLUDED.marks, status=EXCLUDED.status,
+			answer=EXCLUDED.answer, marks=EXCLUDED.marks, metadata=EXCLUDED.metadata,
+			status=EXCLUDED.status,
 			is_global=EXCLUDED.is_global, approval_status=EXCLUDED.approval_status,
 			approved_by=EXCLUDED.approved_by, approved_at=EXCLUDED.approved_at,
 			updated_at=EXCLUDED.updated_at
-	`, v.ID, v.SchoolID, v.CreatedBy, v.CreatedByName, nullableString(v.BoardID), v.ClassID,
-		v.SubjectID, v.SubjectName, v.ChapterID, nullableString(v.TopicID), defaultStr(v.Type, "short"),
-		defaultStr(v.Difficulty, "medium"), v.QuestionHTML, v.Options, v.Marks,
+	`, v.ID, v.SchoolID, v.CreatedBy, v.CreatedByName, nullableString(v.BoardID), v.Syllabus,
+		v.ClassID, v.ClassName, v.SubjectID, v.SubjectName, v.ChapterID, v.ChapterName,
+		nullableString(v.TopicID), defaultStr(v.Type, "question_answers"), defaultStr(v.Difficulty, "medium"),
+		v.QuestionHTML, v.Options, v.Answer, v.Marks, defaultStr(v.Metadata, "{}"),
 		defaultStr(v.Status, "active"), v.IsGlobal,
 		defaultStr(v.ApprovalStatus, "pending"), v.ApprovedBy, v.ApprovedAt,
 		v.CreatedAt, v.UpdatedAt)
@@ -982,18 +986,26 @@ func upsertStoreSubscription(ctx context.Context, tx pgx.Tx, v *store.Subscripti
 		planName = "growth"
 	}
 	status := defaultStr(v.Status, "active")
-	studentLimit := 500
-	price := 0
-	switch planName {
-	case "starter":
-		studentLimit = 200
-		price = 4000
-	case "growth":
+	studentLimit := v.StudentLimit
+	price := v.Price
+	if studentLimit <= 0 {
 		studentLimit = 500
-		price = 9000
-	case "custom", "enterprise":
-		studentLimit = 800
-		price = 0
+		switch planName {
+		case "starter":
+			studentLimit = 200
+		case "growth":
+			studentLimit = 500
+		case "custom", "enterprise":
+			studentLimit = 800
+		}
+	}
+	if price <= 0 {
+		switch planName {
+		case "starter":
+			price = 4000
+		case "growth":
+			price = 9000
+		}
 	}
 	isTrial := strings.EqualFold(v.PackageID, "trial") || strings.EqualFold(status, "trial")
 	trialStart := (*time.Time)(nil)
