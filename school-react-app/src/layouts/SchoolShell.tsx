@@ -86,6 +86,7 @@ const adminNavGroups: NavGroup[] = [
     items: [
       { label: "Announcements", href: "/admin/announcements", icon: "campaign" },
       { label: "Certificates", href: "/admin/certificates", icon: "workspace_premium" },
+      { label: "Template Designer", href: "/admin/templates", icon: "palette" },
     ],
   },
   {
@@ -297,6 +298,9 @@ const routeToModuleMap: Record<string, string> = {
   "/admin/live-class": "live-classes",
   "/admin/announcements": "announcements",
   "/admin/certificates": "certificates",
+  "/admin/templates": "certificates",
+  "/admin/templates/create": "certificates",
+  "/admin/templates/edit/:id": "certificates",
   "/admin/fee": "fee",
   "/admin/subscription": "subscription",
   "/admin/schedule": "schedule",
@@ -367,6 +371,7 @@ const MODULE_NAMES: Record<string, string> = {
   "conversations": "Instant Conversations & Chat",
   "live-classes": "Live Classes Integration (Jitsi)",
   "certificates": "Student Certificate Generator",
+  "templates": "Template Designer",
   "schedule": "Event Calendar Schedules",
 };
 
@@ -525,6 +530,37 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
     });
     return totalRate;
   }, [availablePackages, selectedItems]);
+
+  const isAllSelected = useMemo(() => {
+    if (!availablePackages.length) return false;
+    return availablePackages.every((pkg) =>
+      pkg.modules.every((m: string) => selectedItems.includes(m))
+    );
+  }, [availablePackages, selectedItems]);
+
+  const handleSelectAllToggle = () => {
+    if (isAllSelected) {
+      const mandatoryIds: string[] = [];
+      availablePackages.forEach((pkg) => {
+        if (pkg.mandatory) {
+          if (!mandatoryIds.includes(pkg.id)) mandatoryIds.push(pkg.id);
+          pkg.modules.forEach((m: string) => {
+            if (!mandatoryIds.includes(m)) mandatoryIds.push(m);
+          });
+        }
+      });
+      setSelectedItems(mandatoryIds);
+    } else {
+      const allIds: string[] = [];
+      availablePackages.forEach((pkg) => {
+        if (!allIds.includes(pkg.id)) allIds.push(pkg.id);
+        pkg.modules.forEach((m: string) => {
+          if (!allIds.includes(m)) allIds.push(m);
+        });
+      });
+      setSelectedItems(allIds);
+    }
+  };
 
   const estimatedCost = useMemo(() => {
     const cost = studentLimit * totalRateForDisplay;
@@ -919,7 +955,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
                       />
                     </div>
                     {/* Common limit presets */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       {[100, 250, 500, 1000].map((preset) => (
                         <button
                           key={preset}
@@ -934,6 +970,19 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
                           {preset}
                         </button>
                       ))}
+                      <div className="mx-1.5 h-4 w-px bg-slate-200/80" />
+                      <button
+                        type="button"
+                        onClick={handleSelectAllToggle}
+                        className={`px-3 py-2 text-[10px] font-black rounded-xl border transition-all flex items-center gap-1.5 ${
+                          isAllSelected
+                            ? "bg-green-600 border-green-600 text-white shadow-sm"
+                            : "bg-white border-slate-100 text-slate-600 hover:border-slate-200"
+                        }`}
+                      >
+                        <AppIcon name={isAllSelected ? "CheckSquare" : "Square"} size={12} />
+                        {isAllSelected ? "Deselect All" : "Select All"}
+                      </button>
                     </div>
                   </div>
                 </div>

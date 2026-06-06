@@ -191,12 +191,14 @@ func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 			if remaining > 0 {
 				daysRemaining = int(remaining.Hours() / 24)
 				isExpired = false
-				if sub.Status == "trial" {
-					elapsedDays := int(time.Since(sub.StartDate).Hours() / 24)
-					if elapsedDays >= 13 {
-						trialWarning = "urgent"
-					} else if elapsedDays >= 10 {
-						trialWarning = "warning"
+				if sub.Status == "trial" || sub.Status == "active" {
+					if sub.Status == "trial" {
+						elapsedDays := int(time.Since(sub.StartDate).Hours() / 24)
+						if elapsedDays >= 13 {
+							trialWarning = "urgent"
+						} else if elapsedDays >= 10 {
+							trialWarning = "warning"
+						}
 					}
 					builderRequired = len(selected) == 1
 				}

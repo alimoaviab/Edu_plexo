@@ -306,6 +306,7 @@ func PackageModules(selected []string) map[string]bool {
 		"billing":      true,
 		"payment":      true,
 		"support":      true,
+		"settings":     true,
 	}
 	for _, raw := range selected {
 		item := strings.ToLower(strings.TrimSpace(raw))
