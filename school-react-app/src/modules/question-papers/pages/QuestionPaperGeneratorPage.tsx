@@ -74,10 +74,33 @@ export function QuestionPaperGeneratorPage() {
 
   const syllabi = getSyllabusOptions();
   const classes = useMemo(() => getClassesFromConfig(syllabusConfig), [syllabusConfig]);
-  const subjects = useMemo(
-    () => (className ? getSubjectsFromConfig(syllabusConfig, className) : []),
-    [syllabusConfig, className],
-  );
+  const subjects = useMemo(() => {
+    if (!className) return [];
+    
+    // The user explicitly requested to ONLY use the data from subject-question-types.json
+    // to populate the subjects dropdown to avoid any duplicates from PTB config.
+    try {
+      const config = customQuestionTypesConfig as Record<string, Record<string, Record<string, unknown>>>;
+      // Check both exact and uppercase syllabusId (e.g. 'ptb' vs 'PTB')
+      const classSubjects = config[syllabusId]?.[className] || config[syllabusId.toUpperCase()]?.[className] || config[syllabusId.toLowerCase()]?.[className];
+      
+      if (classSubjects) {
+        return Object.keys(classSubjects).map((key) => {
+          // Remove English translations in parentheses (e.g., "ایجوکیشن (Education)" -> "ایجوکیشن")
+          const cleanName = key.replace(/\s*\(.*?\)\s*/g, "").trim();
+          return {
+            id: key,
+            name: cleanName,
+          };
+        });
+      }
+    } catch {
+      // Ignore errors and fallback
+    }
+
+    // Fallback if not found in custom config
+    return getSubjectsFromConfig(syllabusConfig, className);
+  }, [syllabusConfig, className, syllabusId]);
   const chapterUnits = useMemo(
     () => (className && subjectName ? getChapterUnitsFromConfig(syllabusConfig, className, subjectName) : []),
     [syllabusConfig, className, subjectName],

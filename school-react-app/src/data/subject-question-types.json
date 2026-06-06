@@ -2975,6 +2975,1122 @@
           "label": "Long Questions (تفصیلاً سوالات)"
         }
       ]
+    },
+    "INTER-I": {
+      "Biology": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Chemistry": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Physics": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Mathematics": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Computer": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Statistics": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Economics": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Principles of Accounting": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Principles of Economics": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "English": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "tick_correct_synonyms",
+          "label": "Tick Correct Synonyms"
+        },
+        {
+          "id": "tick_correct_form_of_verb",
+          "label": "Tick Correct Form Of Verb"
+        },
+        {
+          "id": "question_answers",
+          "label": "Question Answers (سوالات جوابات)"
+        },
+        {
+          "id": "letters",
+          "label": "Letters (خطوط)"
+        },
+        {
+          "id": "applications",
+          "label": "Applications (درخواستیں)"
+        },
+        {
+          "id": "stories",
+          "label": "Stories (کہانیاں)"
+        },
+        {
+          "id": "pair_of_words",
+          "label": "Pair Of Words"
+        },
+        {
+          "id": "translate_into_urdu",
+          "label": "Translate Into Urdu Paragraphs"
+        },
+        {
+          "id": "punctuate",
+          "label": "Punctuate The Paragraph"
+        },
+        {
+          "id": "poems_stanzas",
+          "label": "Poems Stanzas"
+        }
+      ],
+      "Principles of Commerce": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Business Maths": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "اسلامیات لازمی": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        },
+        {
+          "id": "hadith",
+          "label": "Hadith (احادیث)"
+        }
+      ],
+      "اُردو لازمی": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "question_answers",
+          "label": "Question Answers (سوالات جوابات)"
+        },
+        {
+          "id": "applications",
+          "label": "Applications (درخواستیں)"
+        },
+        {
+          "id": "poetry_explanation",
+          "label": "اشعار کی تشریح"
+        },
+        {
+          "id": "receipt",
+          "label": "Receipt (رسید)"
+        },
+        {
+          "id": "newspapers",
+          "label": "Newspapers روزنامچہ"
+        },
+        {
+          "id": "summary_inter",
+          "label": "Summary (خلاصہ) Inter"
+        },
+        {
+          "id": "theme",
+          "label": "Theme (مرکزی خیال)"
+        },
+        {
+          "id": "dialogues",
+          "label": "Dialogues (مکالمے)"
+        },
+        {
+          "id": "history",
+          "label": "History (روداد)"
+        },
+        {
+          "id": "paragraph_explanation_inter",
+          "label": "Inter پیراگراف کی تشریح"
+        },
+        {
+          "id": "abridged_text",
+          "label": "Abridged Text (تلخیص عبات)"
+        }
+      ],
+      "ایجوکیشن": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "سوکس": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "پنجابی": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "question_answers",
+          "label": "Question Answers (سوالات جوابات)"
+        },
+        {
+          "id": "poetry_explanation",
+          "label": "اشعار کی تشریح"
+        },
+        {
+          "id": "essays",
+          "label": "Essays (مضامین)"
+        },
+        {
+          "id": "summary_inter",
+          "label": "Summary (خلاصہ) Inter"
+        },
+        {
+          "id": "vital",
+          "label": "حیاتی (Vital)"
+        },
+        {
+          "id": "paragraph_explanation_inter",
+          "label": "Inter پیراگراف کی تشریح"
+        }
+      ],
+      "اسلامیات اختیاری": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "فزیکل ایجوکیشن": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "سوشیالوجی": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "اخلاقیات": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "ترجمۃ القرآن المجید": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        },
+        {
+          "id": "verses",
+          "label": "Verses (آیات)"
+        },
+        {
+          "id": "word_meaning",
+          "label": "Word Meaning (الفاظ معنی)"
+        }
+      ],
+      "نفسیات": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "فارسی": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "letters",
+          "label": "Letters (خطوط)"
+        },
+        {
+          "id": "applications",
+          "label": "Applications (درخواستیں)"
+        },
+        {
+          "id": "poetry_explanation",
+          "label": "اشعار کی تشریح"
+        },
+        {
+          "id": "urdu_to_farsi_translation",
+          "label": "Urdu Se Farsi Mien Translation"
+        },
+        {
+          "id": "vital",
+          "label": "حیاتی (Vital)"
+        },
+        {
+          "id": "word_meaning",
+          "label": "Word Meaning (الفاظ معنی)"
+        },
+        {
+          "id": "singular_plural",
+          "label": "Singular Plural (واحد جمع)"
+        },
+        {
+          "id": "antonyms",
+          "label": "Antonyms (الفاظ متضاد)"
+        },
+        {
+          "id": "pointing",
+          "label": "Pointing (اعراب لگائیں)"
+        },
+        {
+          "id": "paragraph_explanation_inter",
+          "label": "Inter پیراگراف کی تشریح"
+        }
+      ],
+      "تاریخ اسلام": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "حدیقہ الادب": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "verses",
+          "label": "Verses (آیات)"
+        },
+        {
+          "id": "hadith",
+          "label": "Hadith (احادیث)"
+        },
+        {
+          "id": "short_questions_arabic_to_urdu",
+          "label": "Short Questions (عربی سے اُردو)"
+        },
+        {
+          "id": "words_into_sentences",
+          "label": "Words Into Sentences (الفاظ کو جملوں میں استعمال)"
+        },
+        {
+          "id": "singular_plural",
+          "label": "Singular Plural (واحد جمع)"
+        },
+        {
+          "id": "genders",
+          "label": "Genders (مذکر مؤنث)"
+        }
+      ],
+      "طبی جغرافیہ": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "لائبریری سائنس": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "ہوم اکنامکس": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "تاریخ پاکستان": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ]
+    },
+    "INTER-II": {
+      "Biology": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Chemistry": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Physics": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Mathematics": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Computer": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Statistics": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Economics": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Principles of Accounting": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Commercial Geography": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Business Statistics": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "Principles of Banking": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        },
+        {
+          "id": "question_answers",
+          "label": "Question Answers (سوالات جوابات)"
+        }
+      ],
+      "English": [
+        {
+          "id": "correct_meaning_underlined_word",
+          "label": "Correct Meaning Of Underlined Word"
+        },
+        {
+          "id": "correct_sentences",
+          "label": "Correct Sentences"
+        },
+        {
+          "id": "correct_prepositions",
+          "label": "Correct Prepositions"
+        },
+        {
+          "id": "question_answers",
+          "label": "Question Answers (سوالات جوابات)"
+        },
+        {
+          "id": "essays",
+          "label": "Essays (مضامین)"
+        },
+        {
+          "id": "idioms",
+          "label": "Idioms"
+        },
+        {
+          "id": "translate_into_english_paragraphs",
+          "label": "Translate Into English Paragraphs"
+        }
+      ],
+      "Pakistan Studies": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "اُردو لازمی": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "letters",
+          "label": "Letters (خطوط)"
+        },
+        {
+          "id": "poetry_explanation",
+          "label": "اشعار کی تشریح"
+        },
+        {
+          "id": "autobiography",
+          "label": "آپ بیتی"
+        },
+        {
+          "id": "essays",
+          "label": "Essays (مضامین)"
+        },
+        {
+          "id": "summary_inter",
+          "label": "Summary (خلاصہ) Inter"
+        },
+        {
+          "id": "theme",
+          "label": "Theme (مرکزی خیال)"
+        },
+        {
+          "id": "paragraph_explanation_inter",
+          "label": "Inter پیراگراف کی تشریح"
+        }
+      ],
+      "ایجوکیشن": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "سوکس": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "پنجابی": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "question_answers",
+          "label": "Question Answers (سوالات جوابات)"
+        },
+        {
+          "id": "poetry_explanation",
+          "label": "اشعار کی تشریح"
+        },
+        {
+          "id": "summary_inter",
+          "label": "Summary (خلاصہ) Inter"
+        },
+        {
+          "id": "vital",
+          "label": "حیاتی (Vital)"
+        },
+        {
+          "id": "paragraph_explanation_inter",
+          "label": "Inter پیراگراف کی تشریح"
+        }
+      ],
+      "اسلامیات اختیاری": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "فزیکل ایجوکیشن": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "سوشیالوجی": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "اخلاقیات": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "ترجمۃ القرآن المجید": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        },
+        {
+          "id": "verses",
+          "label": "Verses (آیات)"
+        },
+        {
+          "id": "word_meaning",
+          "label": "Word Meaning (الفاظ معنی)"
+        }
+      ],
+      "نفسیات": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "فارسی": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "poetry_explanation",
+          "label": "اشعار کی تشریح"
+        },
+        {
+          "id": "urdu_to_farsi_translation",
+          "label": "Urdu Se Farsi Mien Translation"
+        },
+        {
+          "id": "essays",
+          "label": "Essays (مضامین)"
+        },
+        {
+          "id": "vital",
+          "label": "حیاتی (Vital)"
+        },
+        {
+          "id": "words_into_sentences",
+          "label": "Words Into Sentences (الفاظ کو جملوں میں استعمال)"
+        },
+        {
+          "id": "word_meaning",
+          "label": "Word Meaning (الفاظ معنی)"
+        },
+        {
+          "id": "singular_plural",
+          "label": "Singular Plural (واحد جمع)"
+        },
+        {
+          "id": "antonyms",
+          "label": "Antonyms (الفاظ متضاد)"
+        },
+        {
+          "id": "synonyms",
+          "label": "Synonyms (الفاظ مترادف)"
+        },
+        {
+          "id": "pointing",
+          "label": "Pointing (اعراب لگائیں)"
+        },
+        {
+          "id": "paragraph_explanation_inter",
+          "label": "Inter پیرا گراف کی تشریح"
+        }
+      ],
+      "تاریخ اسلام": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "حدیقہ الادب": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "verses",
+          "label": "Verses (آیات)"
+        },
+        {
+          "id": "short_questions_arabic_to_urdu",
+          "label": "Short Questions (عربی سے اُردو)"
+        },
+        {
+          "id": "sentence_correction",
+          "label": "جملوں کی درستگی"
+        },
+        {
+          "id": "words_into_sentences",
+          "label": "Words Into Sentences (الفاظ کو جملوں میں استعمال)"
+        },
+        {
+          "id": "singular_plural",
+          "label": "Singular Plural (واحد جمع)"
+        },
+        {
+          "id": "genders",
+          "label": "Genders (مذکر مؤنث)"
+        }
+      ],
+      "انسانی جغرافیہ": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "لائبریری سائنس": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "ہوم اکنامکس": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ],
+      "تاریخ پاکستان": [
+        {
+          "id": "mcq",
+          "label": "Multiple Options (چار ممکنہ جوابات)"
+        },
+        {
+          "id": "short_questions",
+          "label": "Short Questions (مختصر سوالات)"
+        },
+        {
+          "id": "long_questions",
+          "label": "Long Questions (تفصیلاً سوالات)"
+        }
+      ]
     }
   }
 }
