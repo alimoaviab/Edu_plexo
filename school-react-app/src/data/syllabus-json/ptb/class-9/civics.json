@@ -1,0 +1,67 @@
+[
+  {
+    "id": "bab-1",
+    "title": "باب نمبر: 1 علم شہریت کا تعارف",
+    "type": "unit",
+    "chapters": [
+      {
+        "id": "1.1",
+        "code": "1",
+        "title": "علم شہریت کا تعارف",
+        "type": "unit"
+      }
+    ]
+  },
+  {
+    "id": "bab-2",
+    "title": "باب نمبر: 2 افراد کے روابط",
+    "type": "unit",
+    "chapters": [
+      {
+        "id": "2.1",
+        "code": "2",
+        "title": "افراد کے روابط",
+        "type": "unit"
+      }
+    ]
+  },
+  {
+    "id": "bab-3",
+    "title": "باب نمبر: 3 ریاست",
+    "type": "unit",
+    "chapters": [
+      {
+        "id": "3.1",
+        "code": "3",
+        "title": "ریاست",
+        "type": "unit"
+      }
+    ]
+  },
+  {
+    "id": "bab-4",
+    "title": "باب نمبر: 4 حکومت",
+    "type": "unit",
+    "chapters": [
+      {
+        "id": "4.1",
+        "code": "4",
+        "title": "حکومت",
+        "type": "unit"
+      }
+    ]
+  },
+  {
+    "id": "bab-5",
+    "title": "باب نمبر: 5 شہری اور ریاست",
+    "type": "unit",
+    "chapters": [
+      {
+        "id": "5.1",
+        "code": "5",
+        "title": "شہری اور ریاست",
+        "type": "unit"
+      }
+    ]
+  }
+]
