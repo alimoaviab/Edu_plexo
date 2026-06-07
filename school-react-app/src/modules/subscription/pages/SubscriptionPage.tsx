@@ -368,7 +368,10 @@ function planDisplayName(name: string): string {
     custom: "Custom Plan",
   };
   if (map[cleanName]) return map[cleanName];
-  return "Custom Plan";
+  if (cleanName.includes(",")) {
+    return "Custom Plan";
+  }
+  return name;
 }
 
 export { SubscriptionPage as AdminSubscriptionPage };
