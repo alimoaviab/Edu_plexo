@@ -23,7 +23,11 @@ func TestCompositeDashboard_FullIntegration(t *testing.T) {
 
 	// Cleanup before and after
 	cleanupTestData(t, pool)
-	t.Cleanup(func() { cleanupTestData(t, pool) })
+	_, _ = rdb.Del(ctx, fmt.Sprintf("dash:%s:%s", testSchoolID, testYearID))
+	t.Cleanup(func() {
+		cleanupTestData(t, pool)
+		_, _ = rdb.Del(ctx, fmt.Sprintf("dash:%s:%s", testSchoolID, testYearID))
+	})
 
 	// ─── Setup test data ───────────────────────────────────────────────
 	createTestSchool(t, pool)
@@ -63,6 +67,11 @@ func TestCompositeDashboard_FullIntegration(t *testing.T) {
 
 	// For this integration test, we test the PG dashboard handler directly
 	pgHandler := dashboard.NewPG(pool, rdb, s)
+
+	// Refresh materialized views so they reflect the newly inserted test data
+	if err := dashboard.RefreshMaterializedViews(ctx, pool); err != nil {
+		t.Fatalf("refresh materialized views: %v", err)
+	}
 
 	// ─── Test: First call (cache miss) ─────────────────────────────────
 	start := time.Now()

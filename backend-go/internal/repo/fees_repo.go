@@ -343,7 +343,7 @@ func (r *FeeRepo) GenerateFees(ctx context.Context, job FeeGenJob, progressFn fu
 				                  due_at, status, paid_amount, adjustment_amount,
 				                  generated_at, generated_by, created_at, updated_at)
 				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
-				ON CONFLICT (school_id, student_id, month, year) WHERE academic_year_id IS NOT NULL
+				ON CONFLICT (school_id, student_id, academic_year_id, month, year) WHERE month <> ''
 				DO NOTHING
 			`, feeID, job.SchoolID, stu.ID, stu.ClassID, job.AcademicYearID,
 				invoiceNo, job.Month+" Fee", totalAmount, "INR", job.Month, job.Year,

@@ -360,12 +360,15 @@ function SubscriptionSkeleton() {
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
 function planDisplayName(name: string): string {
+  if (!name) return "No Active Plan";
+  const cleanName = name.trim().toLowerCase();
   const map: Record<string, string> = {
     starter: "Starter School",
     growth: "Growth Plan",
     custom: "Custom Plan",
   };
-  return map[name] || name;
+  if (map[cleanName]) return map[cleanName];
+  return "Custom Plan";
 }
 
 export { SubscriptionPage as AdminSubscriptionPage };

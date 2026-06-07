@@ -128,27 +128,13 @@ export function getSyllabusOptions(): SelectOption[] {
 }
 
 export function getClassesFromConfig(syllabus?: SyllabusConfig | null): CurriculumClass[] {
-  const classes = syllabus?.classes || [];
-  const seen = new Set<string>();
-  return classes.filter((cls) => {
-    const key = normalizeText(cls.name);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return syllabus?.classes || [];
 }
 
 export function getSubjectsFromConfig(syllabus: SyllabusConfig | null | undefined, className: string): CurriculumSubject[] {
   const target = normalizeText(className);
   const cls = getClassesFromConfig(syllabus).find((item) => normalizeText(item.name) === target || item.id === target);
-  const subjects = cls?.subjects || [];
-  const seen = new Set<string>();
-  return subjects.filter((subject) => {
-    const key = normalizeText(subject.name);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+  return cls?.subjects || [];
 }
 
 export function getSubjectFromConfig(

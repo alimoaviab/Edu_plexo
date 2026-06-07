@@ -43,7 +43,7 @@ export function TeacherTimetablePage() {
   const { state: classesState, run: runClasses } = useSafeAsync<TeacherClass[]>();
 
   useEffect(() => {
-    if (!user?.profileId) return;
+    if (!user) return;
     void runClasses(async () => {
       const result = await serviceRequest<any>(`/api/classes`);
       if (!result.ok) throw new Error(result.error?.message || "Failed to load classes");
@@ -56,43 +56,20 @@ export function TeacherTimetablePage() {
         studentCount: c.student_count ?? c.enrolled_students ?? 0,
       }));
     });
-  }, [user?.profileId, runClasses]);
+  }, [user, runClasses]);
 
   // Build timetable query - fetch for all assigned classes or selected class
   const timetableQuery = useMemo(() => {
-    if (!classesState.data || classesState.data.length === 0) return undefined;
-    
     // If a specific class is selected, fetch only that class's timetable
     if (selectedClassId !== "all") {
       return { class_id: selectedClassId };
     }
     
-    // Otherwise, we'll fetch all classes' timetables
+    // Otherwise, we fetch all classes' timetables
     return undefined;
-  }, [classesState.data, selectedClassId]);
+  }, [selectedClassId]);
 
   const { state: timetableState, refresh } = useTimetable(timetableQuery);
-
-  // Fetch all class timetables if no specific class selected
-  const { state: allTimetablesState, run: runAllTimetables } = useSafeAsync<TimetableRecord[]>();
-
-  const fetchAllTimetables = useCallback(async () => {
-    if (!classesState.data) return [];
-    const allRecords: TimetableRecord[] = [];
-    for (const cls of classesState.data) {
-      const result = await serviceRequest<TimetableRecord[]>(`/api/timetable?class_id=${cls.id}`);
-      if (result.ok && result.data) {
-        allRecords.push(...(Array.isArray(result.data) ? result.data : []));
-      }
-    }
-    return allRecords;
-  }, [classesState.data]);
-
-  useEffect(() => {
-    if (selectedClassId !== "all" || !classesState.data || classesState.data.length === 0) return;
-    
-    void runAllTimetables(fetchAllTimetables);
-  }, [selectedClassId, classesState.data, runAllTimetables, fetchAllTimetables]);
 
   // Fetch Academic Years
   useEffect(() => {
@@ -123,8 +100,8 @@ export function TeacherTimetablePage() {
   }, []);
 
   // Determine which timetable data to use
-  const timetableData = selectedClassId !== "all" ? timetableState.data : allTimetablesState.data;
-  const isLoading = selectedClassId !== "all" ? timetableState.status === "loading" : allTimetablesState.status === "loading";
+  const timetableData = timetableState.data;
+  const isLoading = timetableState.status === "loading";
 
   // Timetable Calculations
   const processedData = useMemo(() => {
@@ -267,13 +244,7 @@ export function TeacherTimetablePage() {
               {viewMode === "today" && <TodayView data={processedData} />}
             </motion.div>
           ) : (
-            <EmptyScheduleState onRefresh={() => {
-              if (selectedClassId !== "all") {
-                refresh();
-              } else {
-                void runAllTimetables(fetchAllTimetables);
-              }
-            }} />
+            <EmptyScheduleState onRefresh={refresh} />
           )}
         </AnimatePresence>
       </div>
@@ -386,7 +357,7 @@ function WeeklyGridView({ data }: { data: TimetableRecord[] }) {
 
 function PeriodCard({ item }: { item: TimetableRecord }) {
   const getSubjectStyles = (name: string) => {
-    const n = name.toLowerCase();
+    const n = (name || "").toLowerCase();
     if (n.includes("math")) return "bg-blue-500/5 border-blue-500/20 text-blue-700";
     if (n.includes("sci") || n.includes("phy") || n.includes("che") || n.includes("bio")) return "bg-emerald-500/5 border-emerald-500/20 text-emerald-700";
     if (n.includes("eng")) return "bg-amber-500/5 border-amber-500/20 text-amber-700";
@@ -408,7 +379,7 @@ function PeriodCard({ item }: { item: TimetableRecord }) {
       <div>
         <div className="flex items-center justify-between mb-1">
           <span className="text-[8px] font-black tracking-tighter opacity-70">
-            {item.start_time}
+            {item.start_time}–{item.end_time}
           </span>
           <AppIcon name="MoreVertical" size={10} className="opacity-0 group-hover:opacity-100 transition-all" />
         </div>

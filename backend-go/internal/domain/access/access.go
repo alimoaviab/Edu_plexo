@@ -70,6 +70,12 @@ func TeacherClassIDsLocked(s *store.MemStore, ctx *api.RequestContext) map[strin
 				break
 			}
 		}
+		for _, sub := range c.Subjects {
+			if sub.TeacherID == t.ID {
+				out[c.ID] = true
+				break
+			}
+		}
 	}
 	for _, tt := range s.Timetables {
 		if tt.SchoolID != ctx.SchoolID {

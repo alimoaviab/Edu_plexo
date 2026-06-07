@@ -143,24 +143,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Build a set of class IDs the teacher is assigned to.
-		teacherClassIDs := map[string]bool{}
+		var teacherClassIDs map[string]bool
 		if teacherProfile != nil {
-			// From teacher.ClassIDs (junction table)
-			for _, cid := range teacherProfile.ClassIDs {
-				teacherClassIDs[cid] = true
-			}
-			// From timetable sessions where this teacher has periods
-			for _, tt := range h.Store.Timetables {
-				if tt.SchoolID != ctx.SchoolID {
-					continue
-				}
-				for _, sess := range tt.Sessions {
-					if sess.TeacherID == teacherProfile.ID {
-						teacherClassIDs[tt.ClassID] = true
-						break
-					}
-				}
-			}
+			teacherClassIDs = access.TeacherClassIDsLocked(h.Store, ctx)
 		}
 
 		for _, c := range h.Store.Classes {
@@ -172,8 +157,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			}
 			// Teacher scoping: only show assigned classes.
 			if teacherProfile != nil {
-				isAssigned := teacherClassIDs[c.ID] || c.ClassTeacherID == teacherProfile.ID
-				if !isAssigned {
+				if !teacherClassIDs[c.ID] {
 					continue
 				}
 			}
@@ -640,6 +624,16 @@ func (h *Handler) enrichClass(c *store.Class) {
 		c.FeeStatus = (totalPaid / totalDue) * 100
 	} else {
 		c.FeeStatus = 0
+	}
+
+	// 6. Hydrate AcademicYear year label
+	if c.AcademicYearID != "" {
+		for _, ay := range h.Store.AcademicYears {
+			if ay.ID == c.AcademicYearID {
+				c.AcademicYear = ay.Year
+				break
+			}
+		}
 	}
 }
 

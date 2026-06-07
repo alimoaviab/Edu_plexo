@@ -124,6 +124,8 @@ function PeriodCardImpl({
       {/* Teacher + class */}
       <p className={`text-[10px] font-medium leading-tight truncate ${tone.meta}`}>
         {slot.teacher_name || "No teacher"}
+        {slot.class_name && ` • ${slot.class_name}`}
+        {slot.section && ` (${slot.section})`}
       </p>
 
       {/* Bottom row: time + room */}

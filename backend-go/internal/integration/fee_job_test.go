@@ -81,8 +81,16 @@ func TestFeeGeneration_WorkerProcesses(t *testing.T) {
 	studentIDs := createTestStudents(t, pool, 5)
 	_ = studentIDs
 
-	// Insert class fees (fee components for the class)
+	// Insert fee type first to satisfy class_fees constraint
 	_, err := pool.Exec(ctx, `
+		INSERT INTO fee_types (id, school_id, name, description, is_recurring, category, status, created_at, updated_at)
+		VALUES ('ft_tuition', $1, 'Tuition', 'Monthly tuition fee', true, 'academic', 'active', NOW(), NOW())
+		ON CONFLICT (id) DO NOTHING
+	`, testSchoolID)
+	require.NoError(t, err)
+
+	// Insert class fees (fee components for the class)
+	_, err = pool.Exec(ctx, `
 		INSERT INTO class_fees (id, school_id, class_id, academic_year_id, fee_type_id, amount, type, recurring_cycle, status, created_at, updated_at)
 		VALUES ($1, $2, 'test_cls_integ', $3, 'ft_tuition', 5000, 'recurring', 'monthly', 'active', NOW(), NOW())
 		ON CONFLICT DO NOTHING

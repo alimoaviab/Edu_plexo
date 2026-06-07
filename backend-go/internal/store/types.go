@@ -126,6 +126,7 @@ type Class struct {
 	ClassTeacher         *ClassTeacherRef `json:"class_teacher,omitempty"`
 	TeacherNames         []string       `json:"teacher_names,omitempty"`
 	EnrolledStudents     int            `json:"enrolled_students"`
+	AcademicYear         string         `json:"academic_year"`
 }
 
 // ClassTeacherRef is the hydrated teacher reference sent to the frontend.

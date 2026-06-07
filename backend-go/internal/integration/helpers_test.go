@@ -81,6 +81,20 @@ func createTestSchool(t *testing.T, pool *pgxpool.Pool) {
 		ON CONFLICT (id) DO NOTHING
 	`, testYearID, testSchoolID)
 	require.NoError(t, err)
+
+	_, err = pool.Exec(ctx, `
+		INSERT INTO users (id, school_id, email, password_hash, role, status, created_at, updated_at)
+		VALUES ('test_user', $1, 'test_user@test.com', 'hash', 'admin', 'active', NOW(), NOW())
+		ON CONFLICT (id) DO NOTHING
+	`, testSchoolID)
+	require.NoError(t, err)
+
+	_, err = pool.Exec(ctx, `
+		INSERT INTO users (id, school_id, email, password_hash, role, status, created_at, updated_at)
+		VALUES ('test', $1, 'test@test.com', 'hash', 'admin', 'active', NOW(), NOW())
+		ON CONFLICT (id) DO NOTHING
+	`, testSchoolID)
+	require.NoError(t, err)
 }
 
 func createTestStudents(t *testing.T, pool *pgxpool.Pool, n int) []string {
@@ -154,8 +168,8 @@ func cleanupTestData(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	ctx := context.Background()
 	tables := []string{
-		"fee_payments", "fees", "attendance", "leaves", "audit_logs",
-		"students", "teachers", "classes", "academic_years", "schools",
+		"fee_payments", "fees", "class_fees", "fee_types", "attendance", "leaves", "audit_logs",
+		"students", "teachers", "users", "classes", "academic_years", "schools",
 	}
 	for _, table := range tables {
 		_, _ = pool.Exec(ctx, fmt.Sprintf("DELETE FROM %s WHERE school_id = $1", table), testSchoolID)

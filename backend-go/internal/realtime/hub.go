@@ -97,7 +97,6 @@ func (h *Hub) Shutdown() {
 	h.mu.Lock()
 	for _, school := range h.conns {
 		for _, c := range school {
-			close(c.send)
 			_ = c.ws.Close()
 		}
 	}
