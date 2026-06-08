@@ -209,6 +209,29 @@ async function main() {
     };
     await apiCall("POST", "/api/super-admin/subscriptions/assign", assignBody, superAdminToken);
     console.log("✓ Premium custom subscription assigned.");
+
+    // Enable ALL packages for the school so seeding doesn't hit 403s
+    console.log("→ Enabling all feature packages for seeding school...");
+    try {
+      // Login as school admin first to update packages
+      const schoolLoginData = await apiCall("POST", "/api/auth/login", {
+        email: schoolAdminEmail,
+        password: schoolAdminPass,
+        role: "admin",
+      });
+      const schoolToken = schoolLoginData.token;
+      const allPackages = [
+        "academic", "learning", "administration", "finance", "communication",
+        "premium", "academic-analytics", "announcements", "attendance", "behavior",
+        "certificates", "conversations", "exams", "fee", "homework", "leave",
+        "live-classes", "question-bank", "question-papers", "results", "schedule",
+        "students", "subjects", "teachers", "tests", "timetable"
+      ];
+      await apiCall("POST", "/api/subscription/packages", { selected_packages: allPackages }, schoolToken);
+      console.log("✓ All feature packages enabled.");
+    } catch (pkgErr) {
+      console.log(`⚠ Package enable warning (non-fatal): ${pkgErr.message}`);
+    }
   } catch (err) {
     console.error(`Fatal Super Admin approval or subscription assign failed: ${err.message}`);
     process.exit(1);
@@ -281,8 +304,10 @@ async function main() {
   // 7. Create 25 Teachers (Teacher 1 is test@teacher.com)
   console.log("→ Creating 25 teachers...");
   const teachers = [];
+  // Use a unique suffix based on school ID to avoid global email conflicts
+  const teacherSchoolSuffix = tenantSchoolID ? tenantSchoolID.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 6) : String(Date.now()).slice(-5);
   for (let i = 1; i <= 25; i++) {
-    let email = `teacher${i}@gmail.com`;
+    let email = `t${i}_${teacherSchoolSuffix}@eduplexo.test`;
     let first = pickRandom(firstNames);
     let last = pickRandom(lastNames);
     if (i === 1) {
