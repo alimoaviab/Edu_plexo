@@ -1,0 +1,1356 @@
+[
+  {
+    "QuestionsList": [
+      {
+        "QuestionID": 207352,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>ہمیں صبح&nbsp;...... اٹھنا چاہیے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 137821,
+            "QuestionID": 207352,
+            "UmOption": "<p>جلدی</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 137822,
+            "QuestionID": 207352,
+            "UmOption": "<p>دیر سے</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137823,
+            "QuestionID": 207352,
+            "UmOption": "<p>یہ تمام</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137824,
+            "QuestionID": 207352,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207353,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>کوڑے کو&nbsp;...... ڈالنا چاہیے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 137825,
+            "QuestionID": 207353,
+            "UmOption": "<p>سڑک پر</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137826,
+            "QuestionID": 207353,
+            "UmOption": "<p>کوڑے دان میں</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 137827,
+            "QuestionID": 207353,
+            "UmOption": "<p>یہ تمام</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137828,
+            "QuestionID": 207353,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207354,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>بات کرتے وقت اپنی&nbsp;...... کا انتظار کرنا چاہیے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 137829,
+            "QuestionID": 207354,
+            "UmOption": "<p>مرضی</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137830,
+            "QuestionID": 207354,
+            "UmOption": "<p>باری</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 137831,
+            "QuestionID": 207354,
+            "UmOption": "<p>یہ تمام</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137832,
+            "QuestionID": 207354,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207356,
+        "SubjectID": 91,
+        "TopicID": 7263,
+        "TopicRef": "2.1",
+        "TopicName": "2.1 میرا جسم",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>شام کے وقت چیزیں کیسی نظر آتی ہیں؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 137833,
+            "QuestionID": 207356,
+            "UmOption": "<p>روشن</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137834,
+            "QuestionID": 207356,
+            "UmOption": "<p>مدھم</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 137835,
+            "QuestionID": 207356,
+            "UmOption": "<p>یہ تمام</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137836,
+            "QuestionID": 207356,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207357,
+        "SubjectID": 91,
+        "TopicID": 7263,
+        "TopicRef": "2.1",
+        "TopicName": "2.1 میرا جسم",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>دن کے وقت آسمان کیسا نظر آتا ہے؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 137837,
+            "QuestionID": 207357,
+            "UmOption": "<p>نیلا</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 137838,
+            "QuestionID": 207357,
+            "UmOption": "<p>کالا</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137839,
+            "QuestionID": 207357,
+            "UmOption": "<p>یہ تمام</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137840,
+            "QuestionID": 207357,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207358,
+        "SubjectID": 91,
+        "TopicID": 7263,
+        "TopicRef": "2.1",
+        "TopicName": "2.1 میرا جسم",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>ٹیلی وژن تیز آواز میں سننا کیسا لگتا ہے؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 263141,
+            "QuestionID": 207358,
+            "UmOption": "<p>اچھا</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 263142,
+            "QuestionID": 207358,
+            "UmOption": "<p>بُرا</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 263143,
+            "QuestionID": 207358,
+            "UmOption": "<p>یہ تمام</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 263144,
+            "QuestionID": 207358,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207359,
+        "SubjectID": 91,
+        "TopicID": 7263,
+        "TopicRef": "2.1",
+        "TopicName": "2.1 میرا جسم",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میز چھونے میں کیسا لگتا ہے؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 137841,
+            "QuestionID": 207359,
+            "UmOption": "<p>سخت</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 137842,
+            "QuestionID": 207359,
+            "UmOption": "<p>نرم</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137843,
+            "QuestionID": 207359,
+            "UmOption": "<p>یہ تمام</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137844,
+            "QuestionID": 207359,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207360,
+        "SubjectID": 91,
+        "TopicID": 7263,
+        "TopicRef": "2.1",
+        "TopicName": "2.1 میرا جسم",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>چینی کا ذائقہ کیسا لگتا ہے؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 137845,
+            "QuestionID": 207360,
+            "UmOption": "<p>میٹھا</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 137846,
+            "QuestionID": 207360,
+            "UmOption": "<p>کھٹا</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137847,
+            "QuestionID": 207360,
+            "UmOption": "<p>یہ تمام</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137848,
+            "QuestionID": 207360,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207386,
+        "SubjectID": 91,
+        "TopicID": 7271,
+        "TopicRef": "10.1",
+        "TopicName": "10.1 ذرائع آمدرفت",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>سب سے تیز رفتار سواری کون سی ہے؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 243853,
+            "QuestionID": 207386,
+            "UmOption": "<p><img src=\"/Equations/1st/wa-u010-1.png\" style=\"zoom:20%;\" /></p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 243854,
+            "QuestionID": 207386,
+            "UmOption": "<p><img src=\"/Equations/1st/wa-u010-2.png\" style=\"zoom:20%;\" />​​​​​​​</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 243855,
+            "QuestionID": 207386,
+            "UmOption": "<p><img src=\"/Equations/1st/wa-u010-3.png\" style=\"zoom:20%;\" />​​​​​​​</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 243856,
+            "QuestionID": 207386,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207387,
+        "SubjectID": 91,
+        "TopicID": 7271,
+        "TopicRef": "10.1",
+        "TopicName": "10.1 ذرائع آمدرفت",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>سب سے آہستہ چلنے والی سواری کون سی ہے؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 243857,
+            "QuestionID": 207387,
+            "UmOption": "<p><img src=\"/Equations/1st/wa-u010-4.png\" style=\"zoom:20%;\" /></p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 243858,
+            "QuestionID": 207387,
+            "UmOption": "<p><img src=\"/Equations/1st/wa-u010-5.png\" style=\"zoom:20%;\" /></p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 243859,
+            "QuestionID": 207387,
+            "UmOption": "<p><img src=\"/Equations/1st/wa-u010-6.png\" style=\"zoom:20%;\" /></p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 243860,
+            "QuestionID": 207387,
+            "UmOption": "<p>یہ تمام</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207388,
+        "SubjectID": 91,
+        "TopicID": 7271,
+        "TopicRef": "10.1",
+        "TopicName": "10.1 ذرائع آمدرفت",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>ہوائی جہاز کہاں سے پرواز کرتے ہیں؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 243861,
+            "QuestionID": 207388,
+            "UmOption": "<p><img src=\"/Equations/1st/wa-u010-7.png\" style=\"zoom:20%;\" /></p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 243862,
+            "QuestionID": 207388,
+            "UmOption": "<p><img src=\"/Equations/1st/wa-u010-8.png\" style=\"zoom:20%;\" /></p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 243863,
+            "QuestionID": 207388,
+            "UmOption": "<p><img src=\"/Equations/1st/wa-u010-9.png\" style=\"zoom:20%;\" /></p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 243864,
+            "QuestionID": 207388,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207393,
+        "SubjectID": 91,
+        "TopicID": 7275,
+        "TopicRef": "14.1",
+        "TopicName": "14.1 زمین اور آسمان",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>زمین کا زیادہ تر حصہ اس پر مشتمل ہے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 137849,
+            "QuestionID": 207393,
+            "UmOption": "<p>خشکی</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137850,
+            "QuestionID": 207393,
+            "UmOption": "<p>پانی</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 137851,
+            "QuestionID": 207393,
+            "UmOption": "<p>یہ دونوں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137852,
+            "QuestionID": 207393,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207394,
+        "SubjectID": 91,
+        "TopicID": 7275,
+        "TopicRef": "14.1",
+        "TopicName": "14.1 زمین اور آسمان",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>یہ ہمیں دن کے وقت حرارت فراہم کرتا ہے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 137853,
+            "QuestionID": 207394,
+            "UmOption": "<p>چاند</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137854,
+            "QuestionID": 207394,
+            "UmOption": "<p>سورج</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 137855,
+            "QuestionID": 207394,
+            "UmOption": "<p>یہ دونوں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137856,
+            "QuestionID": 207394,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207395,
+        "SubjectID": 91,
+        "TopicID": 7275,
+        "TopicRef": "14.1",
+        "TopicName": "14.1 زمین اور آسمان",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>یہ رات کے وقت آسمان پر چمکتا ہے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 137857,
+            "QuestionID": 207395,
+            "UmOption": "<p>سورج</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137858,
+            "QuestionID": 207395,
+            "UmOption": "<p>ستارہ</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 137859,
+            "QuestionID": 207395,
+            "UmOption": "<p>یہ دونوں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137860,
+            "QuestionID": 207395,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207396,
+        "SubjectID": 91,
+        "TopicID": 7275,
+        "TopicRef": "14.1",
+        "TopicName": "14.1 زمین اور آسمان",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>انسان زمین کے اس حصے پر رہتے ہیں۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 137861,
+            "QuestionID": 207396,
+            "UmOption": "<p>خشکی</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 137862,
+            "QuestionID": 207396,
+            "UmOption": "<p>پانی</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137863,
+            "QuestionID": 207396,
+            "UmOption": "<p>یہ دونوں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137864,
+            "QuestionID": 207396,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      },
+      {
+        "QuestionID": 207397,
+        "SubjectID": 91,
+        "TopicID": 7275,
+        "TopicRef": "14.1",
+        "TopicName": "14.1 زمین اور آسمان",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>زمین کیا ہے؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": [
+          {
+            "OptionID": 137865,
+            "QuestionID": 207397,
+            "UmOption": "<p>ستارا</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137866,
+            "QuestionID": 207397,
+            "UmOption": "<p>سیارہ</p>\r\n",
+            "EmOption": null,
+            "Answer": true
+          },
+          {
+            "OptionID": 137867,
+            "QuestionID": 207397,
+            "UmOption": "<p>یہ دونوں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          },
+          {
+            "OptionID": 137868,
+            "QuestionID": 207397,
+            "UmOption": "<p>ان میں سے کوئی نہیں</p>\r\n",
+            "EmOption": null,
+            "Answer": false
+          }
+        ]
+      }
+    ],
+    "QuestionSubType": {
+      "QuestionSubTypeID": 1,
+      "QuestionTypeID": 1,
+      "QuestionSubTypeName": "Multiple Options (چارممکنہ جوابات)",
+      "UmHeading": "چار ممکنہ جوابات میں سے درست پر دائرہ لگائیں۔",
+      "EmHeading": "Choose the correct answer.",
+      "IsActive": true
+    },
+    "_questionType": 1
+  },
+  {
+    "QuestionsList": [
+      {
+        "QuestionID": 207343,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میرا نام .................. ہے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207344,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میری عمر ..................​​​​​​​ سال ہے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207345,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میں ..................​​​​​​​ جماعت میں ہوں۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207346,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میرے والد کا نام .................. ہے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207347,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میری امی مجھ سے&nbsp;.................. کرتی ہیں۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207348,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میرے&nbsp;.................. بہن بھائی ہیں۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207349,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میرا پسندیدہ کھیل&nbsp;.................. ہے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207350,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>مجھے کھانے میں&nbsp;..................​​​​​​​ اور&nbsp;.................. پسند ہیں۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207351,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میری خواہش ہے کہ میں بڑے ہو کر&nbsp;.................. بنوں۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207371,
+        "SubjectID": 91,
+        "TopicID": 7268,
+        "TopicRef": "7.1",
+        "TopicName": "7.1 عبادت گاہیں",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>ہندو عبادت کےلیے .................. جاتے ہیں۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": "مندر",
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207372,
+        "SubjectID": 91,
+        "TopicID": 7268,
+        "TopicRef": "7.1",
+        "TopicName": "7.1 عبادت گاہیں",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>سکھوں کی عبادت گاہ کو .................. کہتے ہیں۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": "گردوارہ",
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207373,
+        "SubjectID": 91,
+        "TopicID": 7268,
+        "TopicRef": "7.1",
+        "TopicName": "7.1 عبادت گاہیں",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>مسلمان نماز کےلیے .................. جاتے ہیں۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": "مسجد",
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207374,
+        "SubjectID": 91,
+        "TopicID": 7268,
+        "TopicRef": "7.1",
+        "TopicName": "7.1 عبادت گاہیں",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>مسیحی عبادت کےلیے .................. میں جاتے ہیں۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": "گرجا گھر",
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207375,
+        "SubjectID": 91,
+        "TopicID": 7268,
+        "TopicRef": "7.1",
+        "TopicName": "7.1 عبادت گاہیں",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>ہمیں تمام مذاہب کے لوگوں اور ان کی عبادت گاہوں کا .................. کرنا چاہیے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": "لحاظ",
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207380,
+        "SubjectID": 91,
+        "TopicID": 7270,
+        "TopicRef": "9.1",
+        "TopicName": "9.1 میرا سکول",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میرے سکول کا نام ..................ہے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207381,
+        "SubjectID": 91,
+        "TopicID": 7270,
+        "TopicRef": "9.1",
+        "TopicName": "9.1 میرا سکول",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میرا سکول .................. میں ہے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207382,
+        "SubjectID": 91,
+        "TopicID": 7270,
+        "TopicRef": "9.1",
+        "TopicName": "9.1 میرا سکول",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میرے کلاس ٹیچر کا نام .................. ہے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207383,
+        "SubjectID": 91,
+        "TopicID": 7270,
+        "TopicRef": "9.1",
+        "TopicName": "9.1 میرا سکول",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>میرے سکول کے ہیڈ ماسٹر / کی ہیڈ مسٹریس کا نام .................. ہے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      }
+    ],
+    "QuestionSubType": {
+      "QuestionSubTypeID": 7,
+      "QuestionTypeID": 2,
+      "QuestionSubTypeName": "Fill In The Blanks (خالی جگہ)",
+      "UmHeading": "مندرجہ ذیل خالی جگہ پر کریں۔",
+      "EmHeading": "Fill in the blanks.",
+      "IsActive": true
+    },
+    "_questionType": 7
+  },
+  {
+    "QuestionsList": [
+      {
+        "QuestionID": 207366,
+        "SubjectID": 91,
+        "TopicID": 7267,
+        "TopicRef": "6.1",
+        "TopicName": "6.1 ہمارا علاقہ",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>گھر کا کوڑا&nbsp;کوڑے دان میں ڈالنا چاہیے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207367,
+        "SubjectID": 91,
+        "TopicID": 7267,
+        "TopicRef": "6.1",
+        "TopicName": "6.1 ہمارا علاقہ",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>گلی کی دیوار پر لکھنا چاہیے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207368,
+        "SubjectID": 91,
+        "TopicID": 7267,
+        "TopicRef": "6.1",
+        "TopicName": "6.1 ہمارا علاقہ",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>اپنے گھر اور محلے کو صاف رکھنا چاہیے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207369,
+        "SubjectID": 91,
+        "TopicID": 7267,
+        "TopicRef": "6.1",
+        "TopicName": "6.1 ہمارا علاقہ",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>گندا پانی باہر گلی میں جمع ہونا چاہیے۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      }
+    ],
+    "QuestionSubType": {
+      "QuestionSubTypeID": 10,
+      "QuestionTypeID": 3,
+      "QuestionSubTypeName": "True False Statements (درست غلط جملے)",
+      "UmHeading": "مندرجہ ذیل میں سے درست اور غلط کی نشان دہی کریں۔",
+      "EmHeading": "Tick for correct and cross for false statement.",
+      "IsActive": true
+    },
+    "_questionType": 10
+  },
+  {
+    "QuestionsList": [
+      {
+        "QuestionID": 207355,
+        "SubjectID": 91,
+        "TopicID": 7262,
+        "TopicRef": "1.1",
+        "TopicName": "1.1 میرا تعارف",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<table align=\"center\" border=\"1\" cellpadding=\"1\" cellspacing=\"1\" dir=\"rtl\" style=\"width:500px;margin-left:auto;margin-right:auto;width:500px;\">\r\n\t<tbody>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><strong>خصوصیات</strong></td>\r\n\t\t\t<td style=\"text-align: center;\"><strong>میرا پسندیدہ</strong></td>\r\n\t\t\t<td style=\"text-align: center;\"><strong>دوست کا پسندیدہ</strong></td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">رنگ</td>\r\n\t\t\t<td style=\"text-align: center;\">&nbsp;</td>\r\n\t\t\t<td style=\"text-align: center;\">&nbsp;</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">موسم</td>\r\n\t\t\t<td style=\"text-align: center;\">&nbsp;</td>\r\n\t\t\t<td style=\"text-align: center;\">&nbsp;</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">پھل</td>\r\n\t\t\t<td style=\"text-align: center;\">&nbsp;</td>\r\n\t\t\t<td style=\"text-align: center;\">&nbsp;</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">لباس</td>\r\n\t\t\t<td style=\"text-align: center;\">&nbsp;</td>\r\n\t\t\t<td style=\"text-align: center;\">&nbsp;</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">جانور</td>\r\n\t\t\t<td style=\"text-align: center;\">&nbsp;</td>\r\n\t\t\t<td style=\"text-align: center;\">&nbsp;</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">کھیل</td>\r\n\t\t\t<td style=\"text-align: center;\">&nbsp;</td>\r\n\t\t\t<td style=\"text-align: center;\">&nbsp;</td>\r\n\t\t</tr>\r\n\t</tbody>\r\n</table>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207361,
+        "SubjectID": 91,
+        "TopicID": 7263,
+        "TopicRef": "2.1",
+        "TopicName": "2.1 میرا جسم",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<table align=\"center\" border=\"1\" cellpadding=\"1\" cellspacing=\"1\" dir=\"rtl\" style=\"margin-left:auto;margin-right:auto;width:500px;\">\r\n\t<tbody>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><strong>کالم(الف)</strong></td>\r\n\t\t\t<td style=\"text-align: center;\"><strong>کالم(ب)</strong></td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-u02-1.png\" style=\"zoom:20%;\" /></td>\r\n\t\t\t<td style=\"text-align: center;\">دیکھنا</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-u02-2.png\" style=\"zoom:20%;\" /></td>\r\n\t\t\t<td style=\"text-align: center;\">سونگھنا</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-u02-3.png\" style=\"zoom:20%;\" /></td>\r\n\t\t\t<td style=\"text-align: center;\">سننا</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-u02-4.png\" style=\"zoom:20%;\" /></td>\r\n\t\t\t<td style=\"text-align: center;\">چھونا</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-u02-5.png\" style=\"zoom:20%;\" /></td>\r\n\t\t\t<td style=\"text-align: center;\">چکھنا</td>\r\n\t\t</tr>\r\n\t</tbody>\r\n</table>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207364,
+        "SubjectID": 91,
+        "TopicID": 7265,
+        "TopicRef": "4.1",
+        "TopicName": "4.1 میرا خاندان اور میرے دوست",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<table align=\"center\" border=\"1\" cellpadding=\"1\" cellspacing=\"1\" dir=\"rtl\" style=\"margin-left:auto;margin-right:auto;width:500px;\">\r\n\t<tbody>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><strong>کالم(الف)</strong></td>\r\n\t\t\t<td style=\"text-align: center;\"><strong>کالم (ب)</strong></td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">ابو کے ابو</td>\r\n\t\t\t<td style=\"text-align: center;\">نانا</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">ابو کی امی</td>\r\n\t\t\t<td style=\"text-align: center;\">نانی</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">ابو بہن</td>\r\n\t\t\t<td style=\"text-align: center;\">چچا</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">ابو کے بڑے بھائی</td>\r\n\t\t\t<td style=\"text-align: center;\">پھوپھی</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">ابو کے چھوٹے بھائی</td>\r\n\t\t\t<td style=\"text-align: center;\">خالہ</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">امی کی امی</td>\r\n\t\t\t<td style=\"text-align: center;\">ماموں</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">امی کے ابو</td>\r\n\t\t\t<td style=\"text-align: center;\">تایا</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">امی کی بہن</td>\r\n\t\t\t<td style=\"text-align: center;\">دادا</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">امی کے بھائی</td>\r\n\t\t\t<td style=\"text-align: center;\">دادی</td>\r\n\t\t</tr>\r\n\t</tbody>\r\n</table>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207370,
+        "SubjectID": 91,
+        "TopicID": 7267,
+        "TopicRef": "6.1",
+        "TopicName": "6.1 ہمارا علاقہ",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<table align=\"center\" border=\"1\" cellpadding=\"1\" cellspacing=\"1\" dir=\"rtl\" style=\"width:500px;margin-left:auto;margin-right:auto;width:500px;\">\r\n\t<tbody>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><strong>کالم (الف)</strong></td>\r\n\t\t\t<td style=\"text-align: center;\"><strong>کالم (ب)</strong></td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">کچا گھر</td>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-u06-1.png\" style=\"zoom:20%;\" /></td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">فلیٹ</td>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-u06-2.png\" style=\"zoom:20%;\" /></td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">جھونپڑی</td>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-u06-3.png\" style=\"zoom:20%;\" /></td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">پختہ گھر</td>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-u06-4.png\" style=\"zoom:20%;\" /></td>\r\n\t\t</tr>\r\n\t</tbody>\r\n</table>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207379,
+        "SubjectID": 91,
+        "TopicID": 7269,
+        "TopicRef": "8.1",
+        "TopicName": "8.1 ہمارا پیارا وطن پاکستان",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<table align=\"center\" border=\"1\" cellpadding=\"1\" cellspacing=\"1\" dir=\"rtl\" style=\"width:500px;margin-left:auto;margin-right:auto;width:500px;\">\r\n\t<tbody>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><strong>پرچم میں رنگ اور علامت</strong></td>\r\n\t\t\t<td style=\"text-align: center;\"><strong>مطلب</strong></td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">سبزرنگ</td>\r\n\t\t\t<td style=\"text-align: center;\">دیگر مذاہب کےپاکستانی</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">سفید رنگ</td>\r\n\t\t\t<td style=\"text-align: center;\">ترقی</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">چاند</td>\r\n\t\t\t<td style=\"text-align: center;\">روشنی اور علم</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\">ستارا</td>\r\n\t\t\t<td style=\"text-align: center;\">مسلمان آبادی</td>\r\n\t\t</tr>\r\n\t</tbody>\r\n</table>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207390,
+        "SubjectID": 91,
+        "TopicID": 7272,
+        "TopicRef": "11.1",
+        "TopicName": "11.1 ٹریفک قوانین",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<table align=\"center\" border=\"1\" cellpadding=\"1\" cellspacing=\"1\" dir=\"rtl\" style=\"width:500px;margin-left:auto;margin-right:auto;width:500px;\">\r\n\t<tbody>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><strong>کالم (الف)</strong></td>\r\n\t\t\t<td style=\"text-align: center;\"><strong>کالم (ب)</strong></td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-011-1.png\" style=\"zoom:20%;\" /></td>\r\n\t\t\t<td style=\"text-align: center;\">یہاں گاڑی کھڑی کرنا منع ہے</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-011-2.png\" style=\"zoom:20%;\" /></td>\r\n\t\t\t<td style=\"text-align: center;\">پیدل سڑک پار کرنے کی جگہ</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-011-3.png\" style=\"zoom:20%;\" /></td>\r\n\t\t\t<td style=\"text-align: center;\">رفتار کی حد 60 کلو میٹر فی گھنٹا</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-011-4.png\" style=\"zoom:20%;\" /></td>\r\n\t\t\t<td style=\"text-align: center;\">رک جائیے</td>\r\n\t\t</tr>\r\n\t\t<tr>\r\n\t\t\t<td style=\"text-align: center;\"><img src=\"/Equations/1st/wa-011-5.png\" style=\"zoom:20%;\" /></td>\r\n\t\t\t<td style=\"text-align: center;\">اب آپ جاسکتے ہیں</td>\r\n\t\t</tr>\r\n\t</tbody>\r\n</table>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      }
+    ],
+    "QuestionSubType": {
+      "QuestionSubTypeID": 11,
+      "QuestionTypeID": 4,
+      "QuestionSubTypeName": "Match Columns (کالم ملائیں)",
+      "UmHeading": "کالم (الف) کو کالم (ب) سے ملائیں۔",
+      "EmHeading": "Match column (A) with column (B).",
+      "IsActive": true
+    },
+    "_questionType": 11
+  },
+  {
+    "QuestionsList": [
+      {
+        "QuestionID": 207362,
+        "SubjectID": 91,
+        "TopicID": 7264,
+        "TopicRef": "3.1",
+        "TopicName": "3.1 صحت و صفائی",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>آپ خود کو کیسے صاف رکھ سکتے ہیں؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207363,
+        "SubjectID": 91,
+        "TopicID": 7264,
+        "TopicRef": "3.1",
+        "TopicName": "3.1 صحت و صفائی",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>اپنے دوستوں کو بتائیں کہ صاف ستھرا نہ رہنے کا نتیجہ کیا ہوسکتا ہے؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207365,
+        "SubjectID": 91,
+        "TopicID": 7266,
+        "TopicRef": "5.1",
+        "TopicName": "5.1 کھیل اور قوانین",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>آپ کا پسندیدہ کھیل کون سا ہے؟ اس کھیل کے کوئی تین قوانین بتائیں۔</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207376,
+        "SubjectID": 91,
+        "TopicID": 7268,
+        "TopicRef": "7.1",
+        "TopicName": "7.1 عبادت گاہیں",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>کیا آپ کسی دوسرے مذہب سے تعلق رکھنے والے فرد کو جانتے ہیں؟ان کا لحاظ کیوں ضروری ہے؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207377,
+        "SubjectID": 91,
+        "TopicID": 7269,
+        "TopicRef": "8.1",
+        "TopicName": "8.1 ہمارا پیارا وطن پاکستان",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>ہمارے ملک کا پورا نام کیا ہے؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207378,
+        "SubjectID": 91,
+        "TopicID": 7269,
+        "TopicRef": "8.1",
+        "TopicName": "8.1 ہمارا پیارا وطن پاکستان",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>ہم کس تاریخ کو جشن آزادی مناتے ہیں؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207384,
+        "SubjectID": 91,
+        "TopicID": 7270,
+        "TopicRef": "9.1",
+        "TopicName": "9.1 میرا سکول",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>آپ اور آپ کے سکول کے دوست گھر میں کون سی زبان بولتے ہیں؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207385,
+        "SubjectID": 91,
+        "TopicID": 7270,
+        "TopicRef": "9.1",
+        "TopicName": "9.1 میرا سکول",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>آپ سکول اور کمرۂ جماعت کو صاف رکھنے کےلیے دوسروں کی مدد کیسے کرتے ہیں؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207389,
+        "SubjectID": 91,
+        "TopicID": 7272,
+        "TopicRef": "11.1",
+        "TopicName": "11.1 ٹریفک قوانین",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>اگر ہم ٹریفک کے قوانین پر عمل نہ کریں تو ہمیں کس قسم کی مشکلات کا سامنا کرنا پڑ سکتا ہے؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207391,
+        "SubjectID": 91,
+        "TopicID": 7273,
+        "TopicRef": "12.1",
+        "TopicName": "12.1 اچھے اخلاق و عادات",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>آپ کا پسندیدہ دوست کون سا ہے؟ اس میں کون سی اچھی عادات موجود ہیں؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      },
+      {
+        "QuestionID": 207392,
+        "SubjectID": 91,
+        "TopicID": 7273,
+        "TopicRef": "12.1",
+        "TopicName": "12.1 اچھے اخلاق و عادات",
+        "QuestionPeriority": "Exercise",
+        "UrduQuestionDetails": "<p>غیر صحت مند خوراک کھانے سے کیا نقصان ہو سکتا ہے؟</p>\r\n",
+        "EnglishQuestionDetails": null,
+        "UrduFillAnswer": null,
+        "EnglishFillAnswer": null,
+        "TrueFalseAnswer": false,
+        "IsSameMcq": false,
+        "MultipleOptions": []
+      }
+    ],
+    "QuestionSubType": {
+      "QuestionSubTypeID": 14,
+      "QuestionTypeID": 5,
+      "QuestionSubTypeName": "Question Answers (سوالات جوابات)",
+      "UmHeading": "مندرجہ ذیل سوالات کے جوابات تحریر کریں۔",
+      "EmHeading": "Write answers on the following questions.",
+      "IsActive": true
+    },
+    "_questionType": 14
+  }
+]

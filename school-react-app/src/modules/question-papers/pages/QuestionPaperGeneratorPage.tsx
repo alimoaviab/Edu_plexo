@@ -231,34 +231,71 @@ export function QuestionPaperGeneratorPage() {
       return;
     }
 
+    const slugify = (val: string) =>
+      String(val)
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/&/g, " and ")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "item";
+
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        syllabus: syllabusId,
-        class: className,
-        subject: subjectName,
-        status: "active",
-      });
-      if (selectedQuestionType) {
-        params.set("type", selectedQuestionType);
-        params.set("question_type", selectedQuestionType);
+      // 1. Try static JSON load first
+      const staticFile = `/data/questions/${syllabusId}-${slugify(className)}-${slugify(subjectName)}.json`;
+      let rows: QuestionRow[] = [];
+      let loadedStatically = false;
+
+      try {
+        const staticResponse = await fetch(staticFile, { headers: { Accept: "application/json" } });
+        if (staticResponse.ok) {
+          const staticData = await staticResponse.json();
+          if (Array.isArray(staticData)) {
+            rows = staticData as QuestionRow[];
+            loadedStatically = true;
+            console.log(`Loaded ${rows.length} questions statically from ${staticFile}`);
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load static questions, falling back to API:", err);
       }
 
-      const response = await serviceRequest<unknown>(`/api/questions?${params.toString()}`);
-      const raw = response.ok ? response.data : [];
-      const rows = Array.isArray(raw)
-        ? raw
-        : Array.isArray((raw as { data?: unknown[] })?.data)
-          ? (raw as { data: QuestionRow[] }).data
-          : Array.isArray((raw as { items?: unknown[] })?.items)
-            ? (raw as { items: QuestionRow[] }).items
-            : [];
-      setQuestions(rows as QuestionRow[]);
+      // 2. Fallback to API if static load was skipped or failed
+      if (!loadedStatically) {
+        const params = new URLSearchParams({
+          syllabus: syllabusId,
+          class: className,
+          subject: subjectName,
+          status: "active",
+        });
+        if (selectedQuestionType) {
+          params.set("type", selectedQuestionType);
+          params.set("question_type", selectedQuestionType);
+        }
+
+        const response = await serviceRequest<unknown>(`/api/questions?${params.toString()}`);
+        const raw = response.ok ? response.data : [];
+        rows = (Array.isArray(raw)
+          ? raw
+          : Array.isArray((raw as { data?: unknown[] })?.data)
+            ? (raw as { data: QuestionRow[] }).data
+            : Array.isArray((raw as { items?: unknown[] })?.items)
+              ? (raw as { items: QuestionRow[] }).items
+              : []) as QuestionRow[];
+      }
+
+      setQuestions(rows);
       setGenerated(true);
       if (rows.length === 0) {
         showToast("No matching questions found.", "error");
       } else {
-        showToast(`Loaded questions successfully!`, "success");
+        showToast(
+          loadedStatically
+            ? `Loaded ${rows.length} questions statically!`
+            : `Loaded questions successfully!`,
+          "success"
+        );
       }
     } finally {
       setLoading(false);
