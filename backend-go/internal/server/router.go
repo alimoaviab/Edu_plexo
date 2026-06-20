@@ -11,7 +11,6 @@ import (
 	"github.com/eduplexo/backend-go/internal/cache"
 	"github.com/eduplexo/backend-go/internal/config"
 	"github.com/eduplexo/backend-go/internal/domain/academicyear"
-	"github.com/eduplexo/backend-go/internal/realtime"
 	"github.com/eduplexo/backend-go/internal/domain/analytics"
 	"github.com/eduplexo/backend-go/internal/domain/announcements"
 	"github.com/eduplexo/backend-go/internal/domain/attendance"
@@ -45,6 +44,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/metrics"
 	"github.com/eduplexo/backend-go/internal/middleware"
 	"github.com/eduplexo/backend-go/internal/persistence"
+	"github.com/eduplexo/backend-go/internal/realtime"
 	rt "github.com/eduplexo/backend-go/internal/realtime"
 	"github.com/eduplexo/backend-go/internal/store"
 	"github.com/eduplexo/backend-go/internal/stubs"
@@ -116,6 +116,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 	r.Route("/api", func(r chi.Router) {
 		// ─── Public auth endpoints ───────────────────────────────────────
 		r.Post("/auth/login", authH.Login)
+		r.Post("/auth/logout", authH.Logout)
 		r.Post("/auth/signup", authH.Signup)
 		r.Get("/auth/session", authH.Session)
 		r.Post("/auth/_log", authH.Log)

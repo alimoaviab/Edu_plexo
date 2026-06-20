@@ -654,10 +654,51 @@ func (h *Handler) SwitchAcademicYear(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Session implements GET /api/auth/session — the original endpoint returns
-// `null` so probes during boot don't 404. We do the same.
-func (h *Handler) Session(w http.ResponseWriter, _ *http.Request) {
-	api.WriteJSON(w, http.StatusOK, nil)
+// Session implements GET /api/auth/session. Without a valid cookie it keeps
+// the old non-error `null` response; with a valid HttpOnly session cookie it
+// returns non-secret user context so browser apps do not need localStorage tokens.
+func (h *Handler) Session(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session")
+	if err != nil || strings.TrimSpace(cookie.Value) == "" {
+		api.WriteJSON(w, http.StatusOK, nil)
+		return
+	}
+
+	claims, err := authpkg.VerifyToken(h.Cfg.JWTSecret, h.Cfg.AppName, cookie.Value)
+	if err != nil {
+		h.clearSessionCookie(w)
+		api.WriteJSON(w, http.StatusOK, nil)
+		return
+	}
+
+	email := claims.ActorEmail
+	if email == "" && h.Store != nil {
+		h.Store.RLock()
+		for _, user := range h.Store.Users {
+			if user.ID == claims.Subject {
+				email = user.Email
+				break
+			}
+		}
+		h.Store.RUnlock()
+	}
+
+	api.WriteJSON(w, http.StatusOK, map[string]any{
+		"ok": true,
+		"data": map[string]any{
+			"role":                    claims.Role,
+			"user_id":                 claims.Subject,
+			"email":                   email,
+			"school_id":               claims.SchoolID,
+			"active_academic_year_id": claims.ActiveAcademicYearID,
+		},
+	})
+}
+
+// Logout clears the HttpOnly session cookie.
+func (h *Handler) Logout(w http.ResponseWriter, _ *http.Request) {
+	h.clearSessionCookie(w)
+	api.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
 // Log implements POST /api/auth/_log — the original is a noop logger.
@@ -747,6 +788,22 @@ func (h *Handler) setSessionCookie(w http.ResponseWriter, token string) {
 		SameSite: sameSite,
 		Path:     "/",
 		MaxAge:   60 * 60 * 8,
+	})
+}
+
+func (h *Handler) clearSessionCookie(w http.ResponseWriter) {
+	sameSite := http.SameSiteLaxMode
+	if h.Cfg.CookieSecure {
+		sameSite = http.SameSiteNoneMode
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session",
+		Value:    "",
+		HttpOnly: true,
+		Secure:   h.Cfg.CookieSecure,
+		SameSite: sameSite,
+		Path:     "/",
+		MaxAge:   -1,
 	})
 }
 

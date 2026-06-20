@@ -1,7 +1,7 @@
 import { AppIcon } from "shared/ui/AppIcon";
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiRequest } from '@/lib/api'
+import { apiRequest, clearStoredSession } from '@/lib/api'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -12,8 +12,9 @@ export function LoginPage() {
 
   // If already logged in, redirect to dashboard
   useEffect(() => {
-    const token = localStorage.getItem('sa_token')
-    if (token) navigate('/dashboard', { replace: true })
+    apiRequest<{ role: string }>('/api/auth/session').then((res) => {
+      if (res.ok && res.data?.role === 'super_admin') navigate('/dashboard', { replace: true })
+    })
   }, [navigate])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,15 +43,14 @@ export function LoginPage() {
 
     const data = res.data
 
-    // Verify role - only super_admin can access this panel
-    if (data.role !== 'super_admin' && data.role !== 'admin') {
+    // Verify role - only platform super_admin can access this panel
+    if (data.role !== 'super_admin') {
       setError('Access denied. This panel is only for platform administrators.')
       return
     }
 
-    // Store credentials
-    localStorage.setItem('sa_token', data.token)
-    localStorage.setItem('sa_user', JSON.stringify({
+    clearStoredSession()
+    sessionStorage.setItem('sa_user', JSON.stringify({
       id: data.user_id,
       email: data.email,
       role: data.role,

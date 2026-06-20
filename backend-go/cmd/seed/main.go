@@ -4,7 +4,8 @@
 // classes, fees, etc.
 //
 // Usage:
-//   go run ./cmd/seed
+//
+//	go run ./cmd/seed
 //
 // All data is sent via the running HTTP server's normal API. Make sure the
 // backend is running on :8080 before invoking this command.
@@ -1187,11 +1188,9 @@ func main() {
 	log.Println("    ✓ SEED COMPLETE!")
 	log.Println("═══════════════════════════════════════════════════════════")
 	log.Println("")
-	log.Println("LOGIN CREDENTIALS:")
-	log.Println("  School Admin: school@gmail.com / Test@123")
-	log.Println("  Super Admin:  eduplexo@gmail.com / Test@123  (or super@gmail.com)")
-	log.Println("  Teachers:     teacher1@gmail.com ... teacher22@gmail.com / Test@123")
-	log.Println("  Students:     student1@gmail.com ... student390@gmail.com / Test@123")
+	log.Println("SEEDED ACCOUNT GROUPS:")
+	log.Println("  School admin, super admin, teachers, and students were created.")
+	log.Println("  Use the configured seed password from your local secret source; it is never printed.")
 	log.Println("")
 	os.Exit(0)
 }
