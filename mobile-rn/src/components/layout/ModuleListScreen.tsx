@@ -1,11 +1,11 @@
 /**
  * Reusable module-list screen used by the secondary tabs (Academics, People,
  * Settings, etc.). Each entry routes to a deep module screen — those
- * dedicated screens are added in subsequent passes; for now tapping logs to
- * the console so the navigation never appears broken.
+ * dedicated screens are driven by the module metadata in src/modules/admin.
  */
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { Header } from '@/components/layout/Header';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
@@ -18,6 +18,7 @@ export interface ModuleListItem {
   description?: string;
   icon: IconName;
   accent: 'primary' | 'success' | 'warning' | 'error' | 'neutral';
+  href?: string;
   onPress?: () => void;
 }
 
@@ -37,6 +38,8 @@ const tintMap = {
 } as const;
 
 export function ModuleListScreen({ greeting, title, subtitle, items }: ModuleListScreenProps) {
+  const router = useRouter();
+
   return (
     <ScreenContainer scroll>
       <Header greeting={greeting} title={title} subtitle={subtitle} />
@@ -47,7 +50,7 @@ export function ModuleListScreen({ greeting, title, subtitle, items }: ModuleLis
           return (
             <Pressable
               key={item.key}
-              onPress={item.onPress}
+              onPress={item.onPress ?? (item.href ? () => router.push(item.href as never) : undefined)}
               style={({ pressed }) => [styles.row, shadows.card, pressed && styles.pressed]}
               android_ripple={{ color: colors.gray100 }}
             >

@@ -42,6 +42,7 @@ export default function AdminLayout() {
       <Tabs.Screen name="academics" options={{ title: 'Academics' }} />
       <Tabs.Screen name="people" options={{ title: 'People' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+      <Tabs.Screen name="module/[module]" options={{ href: null, title: 'Module' }} />
     </Tabs>
   );
 }

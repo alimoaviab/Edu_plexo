@@ -1,52 +1,66 @@
 /**
- * Student / Parent Dashboard.
- *
- * Per the spec, parents and students live in the same portal. When a parent's
- * email is linked to multiple children, the linked profiles surface here so
- * the parent can switch between them (the linked-children switcher lands
- * once we wire `/parents/me/children`).
+ * Student Dashboard — wired to GET /api/parent/dashboard/stats (the backend
+ * resolves the active student from the JWT, so the same payload powers the
+ * student portal). Surfaces attendance, pending work, current grade, fee dues,
+ * upcoming exams, recent results and a navigable module grid.
  */
 
-import { useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 
 import { Card } from '@/components/ui/Card';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { Header } from '@/components/layout/Header';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { StatTile } from '@/components/ui/StatTile';
+import {
+  ListCard,
+  ModuleGrid,
+  ProgressBar,
+  QuickActions,
+  SectionHeader,
+  type ListRow,
+  type ModuleGridItem,
+} from '@/components/dashboard/widgets';
+import { fetchParentStats } from '@/modules/dashboard/api';
+import type { ParentChildOverview, ParentDashboardStats } from '@/modules/dashboard/types';
 import { useAuthStore } from '@/store/auth-store';
-import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
+import { compactNumber, formatCurrency, formatDate } from '@/utils/format';
+import { colors, spacing, typography } from '@/theme/tokens';
 
-interface ModuleEntry {
-  key: string;
-  label: string;
-  icon: IconName;
-  accent: 'primary' | 'success' | 'warning' | 'error';
-  description: string;
-}
+const MODULES: ModuleGridItem[] = [
+  { key: 'timetable', label: 'Timetable', description: 'Class schedule', icon: 'calendar', accent: 'success', href: '/(student)/module/timetable' },
+  { key: 'attendance', label: 'Attendance', description: 'My record', icon: 'check-circle', accent: 'success', href: '/(student)/module/attendance' },
+  { key: 'homework', label: 'Homework', description: 'Assignments', icon: 'book', accent: 'primary', href: '/(student)/module/homework' },
+  { key: 'exams', label: 'Exams', description: 'Upcoming exams', icon: 'clipboard', accent: 'warning', href: '/(student)/module/exams' },
+  { key: 'results', label: 'Results', description: 'My grades', icon: 'star', accent: 'success', href: '/(student)/module/results' },
+  { key: 'live-classes', label: 'Live Classes', description: 'Online sessions', icon: 'video', accent: 'primary', href: '/(student)/module/live-classes' },
+  { key: 'fees', label: 'Fees', description: 'Dues & payments', icon: 'wallet', accent: 'success', href: '/(student)/module/fees' },
+  { key: 'behavior', label: 'Behavior', description: 'Conduct notes', icon: 'shield', accent: 'warning', href: '/(student)/module/behavior' },
+  { key: 'announcements', label: 'Announcements', description: 'Notices', icon: 'megaphone', accent: 'primary', href: '/(student)/module/announcements' },
+  { key: 'events', label: 'Events', description: 'School calendar', icon: 'megaphone', accent: 'primary', href: '/(student)/module/events' },
+  { key: 'leave', label: 'Leave', description: 'Apply / track', icon: 'clock', accent: 'warning', href: '/(student)/module/leave' },
+  { key: 'messages', label: 'Messages', description: 'Contact teachers', icon: 'mail', accent: 'primary', href: '/(student)/module/messages' },
+];
 
-const MODULES: ModuleEntry[] = [
-  { key: 'timetable',    label: 'Timetable',    icon: 'calendar',     accent: 'success', description: 'Class schedule' },
-  { key: 'attendance',   label: 'Attendance',   icon: 'check-circle', accent: 'success', description: 'My attendance' },
-  { key: 'homework',     label: 'Homework',     icon: 'book',         accent: 'primary', description: 'Assignments' },
-  { key: 'exams',        label: 'Exams',        icon: 'clipboard',    accent: 'warning', description: 'Upcoming exams' },
-  { key: 'results',      label: 'Results',      icon: 'star',         accent: 'success', description: 'My grades' },
-  { key: 'live-classes', label: 'Live Classes', icon: 'video',        accent: 'primary', description: 'Online sessions' },
-  { key: 'fees',         label: 'Fee Charges',  icon: 'wallet',       accent: 'success', description: 'Pay or view dues' },
-  { key: 'events',       label: 'Events',       icon: 'megaphone',    accent: 'primary', description: 'School calendar' },
+const QUICK_ACTIONS: { key: string; label: string; icon: IconName; href: string }[] = [
+  { key: 'homework', label: 'Homework', icon: 'book', href: '/(student)/module/homework' },
+  { key: 'results', label: 'Results', icon: 'star', href: '/(student)/module/results' },
+  { key: 'timetable', label: 'Timetable', icon: 'calendar', href: '/(student)/module/timetable' },
+  { key: 'fees', label: 'Fees', icon: 'wallet', href: '/(student)/module/fees' },
 ];
 
 export default function StudentDashboard() {
   const user = useAuthStore((s) => s.user);
-  const [refreshing, setRefreshing] = useState(false);
+  const studentId = user?.studentId;
 
-  function onRefresh() {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
-  }
+  const statsQuery = useQuery({
+    queryKey: ['student-stats', studentId ?? 'self'],
+    queryFn: () => fetchParentStats(studentId),
+  });
 
-  const isParent = user?.role === 'parent';
+  const overview = pickOverview(statsQuery.data);
+  const studentName = overview?.name || (user?.email ?? 'Student Portal');
 
   return (
     <ScreenContainer flush>
@@ -55,8 +69,8 @@ export default function StudentDashboard() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
+            refreshing={statsQuery.isRefetching}
+            onRefresh={() => statsQuery.refetch()}
             tintColor={colors.primary}
             colors={[colors.primary]}
           />
@@ -64,138 +78,131 @@ export default function StudentDashboard() {
       >
         <View style={styles.padded}>
           <Header
-            greeting={isParent ? 'Welcome' : 'Hi there'}
-            title={isParent ? 'Parent Portal' : 'Student Portal'}
-            subtitle={user?.email ?? ''}
+            greeting="Hi there"
+            title={studentName}
+            subtitle={overview?.class ? `Class ${overview.class}` : 'Student Portal'}
           />
 
-          {isParent ? (
-            <Card style={styles.childCard}>
-              <View style={styles.childRow}>
-                <View style={styles.childAvatar}>
-                  <Icon name="family" size={22} color={colors.primary} />
-                </View>
-                <View style={styles.childText}>
-                  <Text style={styles.childTitle}>Linked Children</Text>
-                  <Text style={styles.childSubtitle}>
-                    Children linked to your email will appear here once the parent
-                    profile sync runs.
-                  </Text>
-                </View>
-              </View>
+          {statsQuery.isError ? (
+            <Card style={styles.errorCard}>
+              <Text style={styles.errorText}>{(statsQuery.error as Error).message}</Text>
+              <Text style={styles.retryText} onPress={() => statsQuery.refetch()}>Tap to retry</Text>
             </Card>
           ) : null}
 
           <View style={styles.statsRow}>
             <StatTile
               label="Attendance"
-              value="—"
+              value={overview ? `${Math.round(overview.attendance_percentage ?? 0)}%` : '—'}
               accent="success"
               icon={<Icon name="check-circle" size={20} color={colors.success} />}
             />
             <StatTile
               label="Homework Due"
-              value="—"
+              value={overview ? compactNumber(overview.pending_assignments ?? 0) : '—'}
               accent="warning"
               icon={<Icon name="book" size={20} color={colors.warning} />}
             />
           </View>
-
-          <SectionTitle title="Modules" />
-          <View style={styles.grid}>
-            {MODULES.map((m) => (
-              <ModuleCard key={m.key} entry={m} />
-            ))}
+          <View style={styles.statsRow}>
+            <StatTile
+              label="Current Grade"
+              value={overview?.current_grade ?? '—'}
+              accent="success"
+              icon={<Icon name="star" size={20} color={colors.success} />}
+            />
+            <StatTile
+              label="Pending Fees"
+              value={overview ? formatCurrency(overview.pending_fees ?? 0) : '—'}
+              accent="primary"
+              icon={<Icon name="wallet" size={20} color={colors.primary} />}
+            />
           </View>
+
+          <AttendanceCard stats={statsQuery.data} />
+
+          <SectionHeader title="Quick Actions" />
+          <QuickActions actions={QUICK_ACTIONS} />
+
+          <SectionHeader title="Upcoming Exams" />
+          <ListCard rows={toExamRows(statsQuery.data)} emptyText="No upcoming exams." />
+
+          <SectionHeader title="Recent Results" />
+          <ListCard rows={toResultRows(statsQuery.data)} emptyText="No results yet." />
+
+          <SectionHeader title="Modules" subtitle="Tap to open" />
+          <ModuleGrid items={MODULES} />
         </View>
       </ScrollView>
     </ScreenContainer>
   );
 }
 
-function SectionTitle({ title }: { title: string }) {
+function AttendanceCard({ stats }: { stats?: ParentDashboardStats }) {
+  const a = stats?.attendance;
+  const percent = a?.percentage ?? 0;
   return (
-    <View style={styles.sectionTitle}>
-      <Text style={styles.sectionTitleText}>{title}</Text>
-    </View>
+    <Card style={styles.wideCard}>
+      <View style={styles.cardHeaderRow}>
+        <Text style={styles.cardTitle}>Attendance</Text>
+        <Text style={styles.cardPercent}>{a ? `${Math.round(percent)}%` : '—'}</Text>
+      </View>
+      <ProgressBar value={percent} accent={percent >= 75 ? 'success' : percent >= 50 ? 'warning' : 'error'} />
+      <Text style={styles.cardFootnote}>
+        {a ? `${a.present ?? 0} of ${a.total ?? 0} days present` : 'No attendance recorded yet.'}
+      </Text>
+    </Card>
   );
 }
 
-function ModuleCard({ entry }: { entry: ModuleEntry }) {
-  const tint =
-    entry.accent === 'primary'
-      ? colors.primaryLight
-      : entry.accent === 'success'
-        ? colors.successLight
-        : entry.accent === 'warning'
-          ? colors.warningLight
-          : colors.errorLight;
-  const stroke =
-    entry.accent === 'primary'
-      ? colors.primary
-      : entry.accent === 'success'
-        ? colors.success
-        : entry.accent === 'warning'
-          ? colors.warning
-          : colors.error;
+function pickOverview(stats?: ParentDashboardStats): ParentChildOverview | undefined {
+  const overview = stats?.dashboard?.children_overview?.[0];
+  if (overview && overview.name) return overview;
+  if (stats) {
+    return {
+      student_id: '',
+      name: '',
+      class: '',
+      current_grade: '—',
+      attendance_percentage: stats.attendance?.percentage ?? 0,
+      pending_fees: stats.feeDue?.amount ?? 0,
+      pending_assignments: 0,
+    };
+  }
+  return undefined;
+}
 
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.moduleCard, shadows.card, pressed && styles.pressed]}
-      android_ripple={{ color: colors.gray100 }}
-    >
-      <View style={[styles.moduleIcon, { backgroundColor: tint }]}>
-        <Icon name={entry.icon} size={22} color={stroke} />
-      </View>
-      <Text style={styles.moduleLabel} numberOfLines={1}>
-        {entry.label}
-      </Text>
-      <Text style={styles.moduleDescription} numberOfLines={1}>
-        {entry.description}
-      </Text>
-    </Pressable>
-  );
+function toExamRows(stats?: ParentDashboardStats): ListRow[] {
+  return (stats?.upcomingExams ?? []).slice(0, 5).map((exam, index) => ({
+    key: exam._id ?? String(index),
+    title: exam.title ?? 'Exam',
+    subtitle: exam.subject,
+    meta: exam.starts_at ? formatDate(exam.starts_at) : undefined,
+    icon: 'clipboard',
+    accent: 'warning',
+  }));
+}
+
+function toResultRows(stats?: ParentDashboardStats): ListRow[] {
+  return (stats?.recentResults ?? []).slice(0, 5).map((result, index) => ({
+    key: result._id ?? String(index),
+    title: `Marks: ${compactNumber(result.obtained_marks ?? 0)}`,
+    subtitle: result.exam_id ? `Exam ${result.exam_id}` : undefined,
+    icon: 'star',
+    accent: 'success',
+  }));
 }
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xl3 },
   padded: { paddingHorizontal: spacing.base },
-
-  childCard: { marginBottom: spacing.md },
-  childRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  childAvatar: {
-    width: 48, height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  childText: { flex: 1 },
-  childTitle: { ...typography.h4, color: colors.gray900 },
-  childSubtitle: { ...typography.bodySm, color: colors.gray500, marginTop: 2 },
-
   statsRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
-
-  sectionTitle: { marginTop: spacing.sm, marginBottom: spacing.md },
-  sectionTitleText: { ...typography.h4, color: colors.gray900 },
-
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  moduleCard: {
-    flexBasis: '47%',
-    flexGrow: 1,
-    padding: 14,
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    gap: 10,
-  },
-  moduleIcon: {
-    width: 44, height: 44,
-    borderRadius: radius.md,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  moduleLabel: { ...typography.bodyMd, fontWeight: '700', color: colors.gray900 },
-  moduleDescription: { ...typography.bodySm, color: colors.gray500 },
-
-  pressed: { transform: [{ scale: 0.98 }], opacity: 0.92 },
+  wideCard: { marginTop: spacing.md, gap: spacing.sm },
+  cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  cardTitle: { ...typography.h4, color: colors.gray900 },
+  cardPercent: { ...typography.h4, color: colors.primary },
+  cardFootnote: { ...typography.bodySm, color: colors.gray500 },
+  errorCard: { marginBottom: spacing.md, gap: 4, backgroundColor: colors.errorLight, borderColor: colors.errorLight },
+  errorText: { ...typography.bodySm, color: colors.error, fontWeight: '600' },
+  retryText: { ...typography.bodySm, color: colors.error, fontWeight: '800' },
 });
