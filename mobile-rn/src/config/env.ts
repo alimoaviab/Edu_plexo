@@ -17,7 +17,7 @@ const extra = (Constants.expoConfig?.extra ?? {}) as AppExtra;
 const stripTrailing = (value: string) => value.replace(/\/$/, '');
 
 export const env = {
-  apiBaseUrl: stripTrailing(extra.apiBaseUrl ?? 'https://app.eduplexo.com/api'),
+  apiBaseUrl: stripTrailing(extra.apiBaseUrl ?? 'https://api.eduplexo.com/api'),
   appName: extra.appName ?? 'EduPlexo',
 } as const;
 
