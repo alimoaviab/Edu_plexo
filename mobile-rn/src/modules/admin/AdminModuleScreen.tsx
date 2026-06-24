@@ -57,15 +57,17 @@ export function AdminModuleScreen({
     );
   }
 
-  return <AdminModuleContent definition={definition} scope={scope} />;
+  return <AdminModuleContent definition={definition} scope={scope} registry={registry} />;
 }
 
 function AdminModuleContent({
   definition,
   scope,
+  registry,
 }: {
   definition: AdminModuleDefinition;
   scope?: Record<string, string | undefined>;
+  registry: ModuleRegistry;
 }) {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
@@ -303,6 +305,7 @@ function AdminModuleContent({
         state={formState}
         saving={saveMutation.isPending}
         onClose={() => setFormState(null)}
+        registry={registry}
         onSubmit={(payload) => {
           if (!formState) return;
           const enriched = applyScopeToPayload(definition, payload, scope);
@@ -335,11 +338,13 @@ function RecordCard({
       <View style={styles.recordBody}>
         <Text style={styles.recordTitle} numberOfLines={1}>{title}</Text>
         <View style={styles.recordMeta}>
-          {fields.map((field) => (
-            <Text key={field} style={styles.metaText} numberOfLines={1}>
-              {labelize(field)}: {formatValue(readPath(record, field))}
-            </Text>
-          ))}
+          {fields
+            .filter((field) => !shouldHideField(field, readPath(record, field)))
+            .map((field) => (
+              <Text key={field} style={styles.metaText} numberOfLines={1}>
+                {getFieldLabel(field, definition)}: {formatValue(readPath(record, field), field)}
+              </Text>
+            ))}
         </View>
       </View>
       <Icon name="chevron-right" size={18} color={colors.gray400} />
@@ -375,12 +380,14 @@ function DetailModal({
 
         {record ? (
           <Card style={styles.detailCard}>
-            {definition.detailFields.map((field) => (
-              <View key={field} style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{labelize(field)}</Text>
-                <Text style={styles.detailValue}>{formatValue(readPath(record, field))}</Text>
-              </View>
-            ))}
+            {definition.detailFields
+              .filter((field) => !shouldHideField(field, readPath(record, field)))
+              .map((field) => (
+                <View key={field} style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{getFieldLabel(field, definition)}</Text>
+                  <Text style={styles.detailValue}>{formatValue(readPath(record, field), field)}</Text>
+                </View>
+              ))}
           </Card>
         ) : null}
 
@@ -408,12 +415,14 @@ function AdminFormModal({
   state,
   saving,
   onClose,
+  registry,
   onSubmit,
 }: {
   definition: AdminModuleDefinition;
   state: { mode: FormMode; record?: AdminRecord } | null;
   saving: boolean;
   onClose: () => void;
+  registry: ModuleRegistry;
   onSubmit: (payload: AdminRecord) => void;
 }) {
   const fields = useMemo(
@@ -471,6 +480,7 @@ function AdminFormModal({
                 field={field}
                 value={values[field.key]}
                 onChange={(value) => setField(field.key, value)}
+                registry={registry}
               />
             ))}
           </View>
@@ -489,12 +499,26 @@ function FieldControl({
   field,
   value,
   onChange,
+  registry,
 }: {
   field: AdminFormField;
   value: string | boolean | undefined;
   onChange: (value: string | boolean) => void;
+  registry: ModuleRegistry;
 }) {
   const type = field.type ?? 'text';
+
+  const relationModuleKey = getRelationModuleKey(field.key);
+  if (relationModuleKey) {
+    return (
+      <RelationSelector
+        field={field}
+        value={value}
+        onChange={onChange as (value: string) => void}
+        registry={registry}
+      />
+    );
+  }
 
   if (type === 'boolean') {
     return (
@@ -705,12 +729,29 @@ function firstValue(record: AdminRecord, fields: string[]): string {
   return '';
 }
 
-function formatValue(value: unknown): string {
+function formatValue(value: unknown, key?: string): string {
   if (value === null || value === undefined || value === '') return '-';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+
+  // Format ISO timestamps to human readable dates if it represents dates
+  if (typeof value === 'string' && (key?.toLowerCase().endsWith('_at') || key?.toLowerCase().endsWith('_date') || /^\d{4}-\d{2}-\d{2}/.test(value))) {
+    try {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      }
+    } catch {}
+  }
+
   if (Array.isArray(value)) {
     if (value.length === 0) return '-';
-    return value.map(formatValue).join(', ');
+    return value.map((val) => formatValue(val, key)).join(', ');
   }
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
@@ -722,6 +763,259 @@ function labelize(path: string): string {
     .pop()!
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function shouldHideField(key: string, value: unknown): boolean {
+  const keyLower = key.toLowerCase();
+  
+  if (keyLower === '_id' || keyLower === 'id' || keyLower === 'password' || keyLower === 'password_hash') {
+    return true;
+  }
+  
+  if (keyLower.endsWith('_id') || keyLower.endsWith('_ids')) {
+    return true;
+  }
+  
+  if (typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value)) {
+    return true;
+  }
+  
+  return false;
+}
+
+function getFieldLabel(fieldKey: string, definition: AdminModuleDefinition): string {
+  const found = definition.fields?.find((f) => f.key === fieldKey);
+  if (found?.label) return found.label;
+
+  const overrides: Record<string, string> = {
+    _id: 'ID',
+    id: 'ID',
+    user_id: 'User',
+    teacher_id: 'Teacher',
+    student_id: 'Student',
+    institution_id: 'Institution',
+    class_id: 'Class',
+    created_at: 'Created At',
+    updated_at: 'Updated At',
+    class_ids: 'Classes',
+    teacher_ids: 'Teachers',
+    subject_ids: 'Subjects',
+    admission_no: 'Admission No',
+  };
+
+  const keyLower = fieldKey.toLowerCase();
+  if (overrides[keyLower]) return overrides[keyLower];
+
+  const lastPart = fieldKey.split('.').pop() || '';
+  const lastPartLower = lastPart.toLowerCase();
+  if (overrides[lastPartLower]) return overrides[lastPartLower];
+
+  return labelize(fieldKey);
+}
+
+function getRelationModuleKey(key: string): string | null {
+  if (key === 'class_id' || key === 'class_ids') return 'classes';
+  if (key === 'student_id' || key === 'student_ids') return 'students';
+  if (key === 'exam_id') return 'exams';
+  if (key === 'subject_id' || key === 'subject_ids') return 'subjects';
+  if (key === 'teacher_id' || key === 'teacher_ids') return 'teachers';
+  if (key === 'template_id') return 'certificate-templates';
+  if (key === 'fee_id') return 'fees';
+  if (key === 'requester_id') return 'teachers';
+  if (key === 'recipient_id' || key === 'recipient_ids') return 'teachers';
+  if (key === 'academic_year_id') return 'academic-years';
+  if (key === 'class_teacher_id') return 'teachers';
+  if (key === 'host_teacher_id') return 'teachers';
+  if (key === 'target_student_id') return 'students';
+  if (key === 'chapter_id' || key === 'chapter_ids') return 'chapters';
+  if (key === 'fee_type_id') return 'fee-types';
+  return null;
+}
+
+function RelationSelector({
+  field,
+  value,
+  onChange,
+  registry,
+}: {
+  field: AdminFormField;
+  value: string | boolean | undefined;
+  onChange: (value: string) => void;
+  registry: ModuleRegistry;
+}) {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [records, setRecords] = useState<AdminRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  const targetModuleKey = getRelationModuleKey(field.key);
+  const targetDefinition = targetModuleKey
+    ? registry[targetModuleKey] || ADMIN_MODULE_BY_KEY[targetModuleKey]
+    : undefined;
+
+  useEffect(() => {
+    if (!modalVisible || !targetDefinition) return;
+    
+    async function loadOptions() {
+      setLoading(true);
+      try {
+        const result = await listAdminRecords(targetDefinition!, {
+          page: 1,
+          search: searchQuery,
+        });
+        setRecords(result.items || []);
+      } catch (err) {
+        console.error('Failed to load relation records:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadOptions();
+  }, [modalVisible, targetDefinition, searchQuery]);
+
+  if (!targetDefinition) {
+    return (
+      <View style={styles.inputWrap}>
+        <Input
+          label={`${field.label}${field.required ? ' *' : ''}`}
+          value={String(value ?? '')}
+          placeholder={field.placeholder}
+          onChangeText={onChange}
+        />
+        {field.helper ? <Text style={styles.helper}>{field.helper}</Text> : null}
+      </View>
+    );
+  }
+
+  const getRecordLabel = (record: AdminRecord) => {
+    if (targetModuleKey === 'classes') {
+      return record.section ? `${record.name} (${record.section})` : String(record.name);
+    }
+    if (targetModuleKey === 'students' || targetModuleKey === 'teachers') {
+      return `${record.first_name || ''} ${record.last_name || ''}`.trim() || String(record.email || getRecordId(record));
+    }
+    if (targetModuleKey === 'exams') {
+      return String(record.title);
+    }
+    if (targetModuleKey === 'subjects') {
+      return String(record.name);
+    }
+    if (targetModuleKey === 'certificate-templates') {
+      return String(record.name);
+    }
+    if (targetModuleKey === 'fees') {
+      return record.invoice_no ? `${record.invoice_no} (${record.student_name || ''})` : getRecordId(record);
+    }
+    if (targetModuleKey === 'academic-years') {
+      return String(record.year);
+    }
+    if (targetModuleKey === 'chapters') {
+      return record.chapter_number ? `Ch ${record.chapter_number}: ${record.title}` : String(record.title);
+    }
+    if (targetModuleKey === 'fee-types') {
+      return String(record.name);
+    }
+    return String(record.name ?? record.title ?? getRecordId(record));
+  };
+
+  const isMultiSelect = field.key.endsWith('_ids') || (field.type === 'csv' && getRelationModuleKey(field.key) !== null);
+
+  const displayValue = (() => {
+    if (!value) return '';
+    const ids = String(value).split(',').map((s) => s.trim()).filter(Boolean);
+    const labels = ids.map((id) => {
+      const found = records.find((r) => getRecordId(r) === id);
+      return found ? getRecordLabel(found) : id;
+    });
+    return labels.join(', ');
+  })();
+
+  const handleItemPress = (id: string) => {
+    if (isMultiSelect) {
+      const ids = String(value || '').split(',').map((s) => s.trim()).filter(Boolean);
+      let nextIds: string[];
+      if (ids.includes(id)) {
+        nextIds = ids.filter((x) => x !== id);
+      } else {
+        nextIds = [...ids, id];
+      }
+      onChange(nextIds.join(', '));
+    } else {
+      onChange(id);
+      setModalVisible(false);
+    }
+  };
+
+  const isSelected = (id: string) => {
+    if (isMultiSelect) {
+      return String(value || '').split(',').map((s) => s.trim()).filter(Boolean).includes(id);
+    }
+    return String(value) === id;
+  };
+
+  return (
+    <View style={styles.inputWrap}>
+      <Text style={styles.fieldLabel}>{field.label}{field.required ? ' *' : ''}</Text>
+      <Pressable onPress={() => setModalVisible(true)} style={styles.selectorPressable}>
+        <Text style={[styles.selectorText, !value && styles.selectorPlaceholder]} numberOfLines={1}>
+          {displayValue || `Select ${field.label}`}
+        </Text>
+        <View style={{ transform: [{ rotate: '90deg' }] }}>
+          <Icon name="chevron-right" size={18} color={colors.gray500} />
+        </View>
+      </Pressable>
+      {field.helper ? <Text style={styles.helper}>{field.helper}</Text> : null}
+
+      <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
+        <ScreenContainer scroll>
+          <Header
+            greeting="Select Relation"
+            title={targetDefinition.title}
+            subtitle={`Choose ${isMultiSelect ? 'one or more' : 'a'} ${field.label}`}
+          />
+          <View style={styles.selectorSearchWrap}>
+            <Input
+              label="Search"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder={`Search ${targetDefinition.title}...`}
+            />
+          </View>
+          {loading ? (
+            <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: spacing.lg }} />
+          ) : (
+            <View style={styles.selectorList}>
+              {records.map((record) => {
+                const id = getRecordId(record);
+                const label = getRecordLabel(record);
+                const active = isSelected(id);
+                return (
+                  <Pressable
+                    key={id}
+                    onPress={() => handleItemPress(id)}
+                    style={[styles.selectorItem, active && styles.selectorItemActive]}
+                  >
+                    <Text style={[styles.selectorItemText, active && styles.selectorItemTextActive]}>
+                      {label}
+                    </Text>
+                    {active && <Icon name="check-circle" size={18} color={colors.primary} />}
+                  </Pressable>
+                );
+              })}
+              {records.length === 0 && (
+                <Text style={styles.selectorEmptyText}>No records found.</Text>
+              )}
+            </View>
+          )}
+          <View style={styles.actions}>
+            <Button label="Cancel" variant="secondary" onPress={() => setModalVisible(false)} />
+            {isMultiSelect && <Button label="Done" onPress={() => setModalVisible(false)} />}
+          </View>
+        </ScreenContainer>
+      </Modal>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -824,4 +1118,60 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
   },
   switchText: { flex: 1, paddingRight: spacing.md },
+  selectorPressable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    backgroundColor: colors.white,
+    height: 48,
+  },
+  selectorText: {
+    ...typography.bodyMd,
+    color: colors.gray900,
+    fontWeight: '500',
+    flex: 1,
+  },
+  selectorPlaceholder: {
+    color: colors.gray400,
+  },
+  selectorSearchWrap: {
+    marginBottom: spacing.md,
+  },
+  selectorList: {
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  selectorItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.gray100,
+    backgroundColor: colors.gray50,
+  },
+  selectorItemActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  selectorItemText: {
+    ...typography.bodyMd,
+    color: colors.gray800,
+  },
+  selectorItemTextActive: {
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  selectorEmptyText: {
+    ...typography.bodySm,
+    color: colors.gray400,
+    textAlign: 'center',
+    marginVertical: spacing.md,
+  },
 });

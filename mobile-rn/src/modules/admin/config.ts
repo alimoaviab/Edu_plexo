@@ -30,8 +30,7 @@ const requiredId = (key: string, label: string): AdminFormField => ({
   key,
   label,
   required: true,
-  placeholder: `${label} ID`,
-  helper: 'Use the backend record ID from the related module.',
+  placeholder: `Select ${label}`,
 });
 
 const statusFilter = (...values: string[]) => ({
@@ -84,7 +83,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
       { key: 'last_name', label: 'Last Name', required: true },
       requiredId('class_id', 'Class'),
       { key: 'section', label: 'Section', required: true },
-      { key: 'subjects', label: 'Subject IDs', type: 'csv', helper: 'Comma-separated subject IDs.' },
+      { key: 'subjects', label: 'Subjects', type: 'csv' },
       { key: 'guardian.name', label: 'Guardian Name', required: true },
       { key: 'guardian.phone', label: 'Guardian Phone', required: true },
       { key: 'guardian.email', label: 'Guardian Email', type: 'email' },
@@ -132,9 +131,9 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
       { key: 'password', label: 'Password', type: 'password', createOnly: true },
       { key: 'phone', label: 'Phone', required: true },
       { key: 'qualification', label: 'Qualification' },
-      { key: 'subjects', label: 'Subjects', type: 'csv', helper: 'Comma-separated subject names.' },
-      { key: 'subject_ids', label: 'Subject IDs', type: 'csv' },
-      { key: 'class_ids', label: 'Class IDs', type: 'csv' },
+      { key: 'subjects', label: 'Subjects', type: 'csv' },
+      { key: 'subject_ids', label: 'Subjects', type: 'csv' },
+      { key: 'class_ids', label: 'Classes', type: 'csv' },
       {
         key: 'status',
         label: 'Status',
@@ -180,10 +179,10 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
       { key: 'section', label: 'Section' },
       { key: 'capacity', label: 'Capacity', type: 'number' },
       { key: 'passing_percentage', label: 'Passing Percentage', type: 'number', defaultValue: 40 },
-      { key: 'academic_year_id', label: 'Academic Year ID' },
-      { key: 'class_teacher_id', label: 'Class Teacher ID' },
-      { key: 'teacher_ids', label: 'Teacher IDs', type: 'csv' },
-      { key: 'subject_ids', label: 'Subject IDs', type: 'csv' },
+      requiredId('academic_year_id', 'Academic Year'),
+      requiredId('class_teacher_id', 'Class Teacher'),
+      { key: 'teacher_ids', label: 'Teachers', type: 'csv' },
+      { key: 'subject_ids', label: 'Subjects', type: 'csv' },
       { key: 'room_number', label: 'Room Number' },
       { key: 'description', label: 'Description', type: 'textarea' },
       {
@@ -215,7 +214,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
       { key: 'name', label: 'Subject Name', required: true },
       { key: 'code', label: 'Code' },
       { key: 'description', label: 'Description', type: 'textarea' },
-      { key: 'teacher_id', label: 'Teacher ID' },
+      requiredId('teacher_id', 'Teacher'),
       { key: 'total_marks', label: 'Total Marks', type: 'number' },
       { key: 'passing_marks', label: 'Passing Marks', type: 'number' },
       {
@@ -411,8 +410,8 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
     fields: [
       requiredId('class_id', 'Class'),
       { key: 'section', label: 'Section' },
-      { key: 'teacher_id', label: 'Teacher ID' },
-      { key: 'subject_id', label: 'Subject ID or Name' },
+      requiredId('teacher_id', 'Teacher'),
+      requiredId('subject_id', 'Subject'),
       { key: 'title', label: 'Title', required: true },
       { key: 'instructions', label: 'Instructions', type: 'textarea' },
       { key: 'due_at', label: 'Due Date', type: 'date', required: true, defaultValue: today() },
@@ -670,9 +669,9 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
       { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'starts_at', label: 'Starts At', type: 'date', required: true, defaultValue: today() },
       { key: 'ends_at', label: 'Ends At', type: 'date', required: true, defaultValue: today() },
-      { key: 'host_teacher_id', label: 'Host Teacher ID' },
+      requiredId('host_teacher_id', 'Host Teacher'),
       { key: 'audience_type', label: 'Audience Type', type: 'select', defaultValue: 'CLASS', options: statusOptions('CLASS', 'STUDENT') },
-      { key: 'target_student_id', label: 'Target Student ID' },
+      requiredId('target_student_id', 'Target Student'),
       {
         key: 'status',
         label: 'Status',
@@ -733,7 +732,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
     detailFields: ['_id', 'student_id', 'student_name', 'class_id', 'class_name', 'type', 'issue_date', 'verification_code', 'status'],
     fields: [
       requiredId('template_id', 'Template'),
-      { key: 'student_ids', label: 'Student IDs', type: 'csv', required: true, helper: 'Comma-separated student IDs.' },
+      { key: 'student_ids', label: 'Students', type: 'csv', required: true },
       { key: 'issue_date', label: 'Issue Date', type: 'date', defaultValue: today() },
     ],
     rowActions: [
@@ -768,9 +767,9 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
     fields: [
       requiredId('class_id', 'Class'),
       { key: 'class_name', label: 'Class Name' },
-      { key: 'subject_id', label: 'Subject ID' },
+      requiredId('subject_id', 'Subject'),
       { key: 'subject_name', label: 'Subject Name' },
-      { key: 'chapter_id', label: 'Chapter ID' },
+      requiredId('chapter_id', 'Chapter'),
       { key: 'chapter_name', label: 'Chapter Name' },
       { key: 'type', label: 'Type', defaultValue: 'question_answers' },
       { key: 'difficulty', label: 'Difficulty', type: 'select', defaultValue: 'medium', options: statusOptions('easy', 'medium', 'hard') },
@@ -818,10 +817,10 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
       { key: 'title', label: 'Title', required: true },
       requiredId('class_id', 'Class'),
       { key: 'class_name', label: 'Class Name' },
-      { key: 'subject_id', label: 'Subject ID' },
+      requiredId('subject_id', 'Subject'),
       { key: 'subject_name', label: 'Subject Name' },
-      { key: 'chapter_ids', label: 'Chapter IDs', type: 'csv' },
-      { key: 'teacher_id', label: 'Teacher ID' },
+      { key: 'chapter_ids', label: 'Chapters', type: 'csv' },
+      requiredId('teacher_id', 'Teacher'),
       { key: 'date', label: 'Date', type: 'date', defaultValue: today() },
       { key: 'questions', label: 'Questions JSON', type: 'json', defaultValue: [] },
     ],
@@ -843,7 +842,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
     detailFields: ['_id', 'class_id', 'class_name', 'subject_id', 'subject_name', 'chapter_number', 'title', 'status'],
     fields: [
       requiredId('class_id', 'Class'),
-      { key: 'subject_id', label: 'Subject ID' },
+      requiredId('subject_id', 'Subject'),
       { key: 'title', label: 'Title', required: true },
       { key: 'chapter_number', label: 'Chapter Number', type: 'number' },
     ],
@@ -873,7 +872,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
     detailFields: ['_id', 'class_id', 'fee_type_id', 'fee_type', 'amount', 'type', 'recurring_cycle', 'due_month', 'due_year', 'notes', 'status'],
     fields: [
       requiredId('class_id', 'Class'),
-      { key: 'fee_type_id', label: 'Fee Type ID' },
+      requiredId('fee_type_id', 'Fee Type'),
       { key: 'name', label: 'Fee Type Name', helper: 'Used when Fee Type ID is empty.' },
       { key: 'amount', label: 'Amount', type: 'number', required: true },
       { key: 'type', label: 'Type', type: 'select', defaultValue: 'recurring', options: statusOptions('recurring', 'onetime') },
@@ -936,7 +935,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
       requiredId('class_id', 'Class'),
       { key: 'month', label: 'Month', type: 'select', required: true, options: monthOptions },
       { key: 'year', label: 'Year', type: 'number', required: true, defaultValue: currentYear() },
-      { key: 'student_ids', label: 'Student IDs', type: 'csv', helper: 'Optional comma-separated subset.' },
+      { key: 'student_ids', label: 'Students', type: 'csv' },
     ],
   },
   {
@@ -1050,7 +1049,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
     detailFields: ['_id', 'student_id', 'fee_id', 'type', 'value', 'apply_mode', 'month', 'year', 'notes'],
     fields: [
       requiredId('student_id', 'Student'),
-      { key: 'fee_id', label: 'Fee ID' },
+      requiredId('fee_id', 'Fee Invoice'),
       { key: 'type', label: 'Type', type: 'select', required: true, defaultValue: 'percentage', options: statusOptions('percentage', 'fixed') },
       { key: 'value', label: 'Value', type: 'number', required: true },
       { key: 'apply_mode', label: 'Apply Mode', type: 'select', required: true, defaultValue: 'this_month', options: statusOptions('this_month', 'recurring') },
@@ -1210,7 +1209,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
       { key: 'target_group', label: 'Target Group', type: 'select', required: true, defaultValue: 'all', options: statusOptions('all', 'all_teachers', 'all_students', 'selected') },
       { key: 'type', label: 'Type', type: 'select', defaultValue: 'notice', options: statusOptions('text', 'notice', 'emergency') },
       { key: 'message', label: 'Message', type: 'textarea', required: true },
-      { key: 'recipient_ids', label: 'Recipient IDs', type: 'csv', helper: 'Required only for selected target group.' },
+      { key: 'recipient_ids', label: 'Recipients', type: 'csv' },
     ],
   },
   {

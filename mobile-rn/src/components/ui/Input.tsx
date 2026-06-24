@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray50,
     borderRadius: radius.lg,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: colors.gray200,
   },
   fieldFocused: {
     backgroundColor: colors.white,
