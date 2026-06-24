@@ -573,14 +573,23 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		if body.Password != "" {
 			hash, _ := auth.HashPassword(body.Password)
 			userID = store.NewID("usr")
-			h.Store.Users = append(h.Store.Users, &store.User{
+			userRecord := &store.User{
 				ID: userID, SchoolID: ctx.SchoolID, Email: body.Email, PasswordHash: hash, Role: "teacher", 
 				Permissions: []string{"teacher:basic"},
 				Status: "active",
 				Profile: store.UserProfile{FirstName: body.FirstName, LastName: body.LastName, Phone: body.Phone},
 				CreatedAt: now, UpdatedAt: now,
-			})
-			h.Persist("users", h.Store.Users[len(h.Store.Users)-1])
+			}
+			h.Store.Users = append(h.Store.Users, userRecord)
+			h.Persist("users", userRecord)
+			
+			if h.Pool != nil {
+				_, _ = h.Pool.Exec(r.Context(), `
+					INSERT INTO users (id, school_id, email, password_hash, role, permissions, status, profile_first, profile_last, profile_phone, created_at, updated_at)
+					VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+					ON CONFLICT DO NOTHING
+				`, userRecord.ID, userRecord.SchoolID, userRecord.Email, userRecord.PasswordHash, userRecord.Role, userRecord.Permissions, userRecord.Status, userRecord.Profile.FirstName, userRecord.Profile.LastName, userRecord.Profile.Phone, userRecord.CreatedAt, userRecord.UpdatedAt)
+			}
 		}
 		count := 0
 		for _, t := range h.Store.Teachers {

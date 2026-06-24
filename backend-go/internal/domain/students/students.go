@@ -543,6 +543,20 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				UpdatedAt: now,
 			}
 			h.Store.Parents = append(h.Store.Parents, newParent)
+
+			if h.Pool != nil {
+				_, _ = h.Pool.Exec(r.Context(), `
+					INSERT INTO users (id, school_id, email, password_hash, role, status, profile_first, profile_last, profile_phone, created_at, updated_at)
+					VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+					ON CONFLICT DO NOTHING
+				`, parentUser.ID, parentUser.SchoolID, parentUser.Email, parentUser.PasswordHash, parentUser.Role, parentUser.Status, parentUser.Profile.FirstName, parentUser.Profile.LastName, parentUser.Profile.Phone, parentUser.CreatedAt, parentUser.UpdatedAt)
+				
+				_, _ = h.Pool.Exec(r.Context(), `
+					INSERT INTO parents (id, school_id, user_id, name, phone, email, created_at, updated_at)
+					VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+					ON CONFLICT DO NOTHING
+				`, newParent.ID, newParent.SchoolID, newParent.UserID, newParent.Name, newParent.Phone, newParent.Email, newParent.CreatedAt, newParent.UpdatedAt)
+			}
 		}
 
 		var parentLink *store.StudentParent
