@@ -4,10 +4,10 @@
  * Eduplexo Custom Dummy Data Seeding Script (JS/Node version)
  *
  * Seeds:
- *  - 1 School registration: dummydata@gmail.com / test@1122
+ *  - 1 School registration: School@gmial.com using the configured seed password
  *  - 10 Classes (Grade 1-A to Grade 10-A)
- *  - 50 Teachers (teacher@gmail.com / Test@123 as Class-1 incharge)
- *  - 1000 Students (100 per class, student@gmail.com / Test@123 in Class-1)
+ *  - 50 Teachers (teacher@gmail.com as Class-1 incharge)
+ *  - 1000 Students (100 per class, student@gmail.com in Class-1)
  *  - 15 Pending leave requests for Class-1 students (managed by teacher@gmail.com)
  *
  * Running:
@@ -17,8 +17,8 @@
 const baseURL = process.env.BASE_URL || "http://localhost:8080";
 const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || "super@gmail.com";
 const superAdminPass = process.env.SUPER_ADMIN_PASS || "Test@123";
-const schoolAdminEmail = "dummydata@gmail.com";
-const schoolAdminPass = "test@1122";
+const schoolAdminEmail = "School@gmial.com";
+const schoolAdminPass = "Test@123";
 const defaultPass = "Test@123";
 
 const subjectsList = [
@@ -184,7 +184,7 @@ async function main() {
     await seedFees(classes);
     await seedCertificates(class1Students);
     await seedAnnouncements();
-    await seedChatMessages("dummydata@gmail.com", "teacher@gmail.com");
+    await seedChatMessages("School@gmial.com", "teacher@gmail.com");
     await seedSchedules("teacher@gmail.com");
     await seedChaptersAndPapers(classes, teachers, subjects);
   } catch (err) {
@@ -194,10 +194,11 @@ async function main() {
   console.log("=========================================================");
   console.log("    ✓ SEEDING COMPLETED SUCCESSFULLY!");
   console.log("=========================================================");
-  console.log("LOGIN CREDENTIALS FOR VERIFICATION:");
-  console.log(`  School Admin:      ${schoolAdminEmail} / ${schoolAdminPass}`);
-  console.log(`  Teacher Incharge:  teacher@gmail.com / ${defaultPass}`);
-  console.log(`  Student/Parent:    student@gmail.com / ${defaultPass}`);
+  console.log("SEEDED ACCOUNT GROUPS:");
+  console.log(`  School Admin:      ${schoolAdminEmail}`);
+  console.log("  Teacher Incharge:  teacher@gmail.com");
+  console.log("  Student/Parent:    student@gmail.com");
+  console.log("  Use the configured seed password from your local secret source; it is never printed.");
   console.log("=========================================================");
 }
 
@@ -1288,7 +1289,7 @@ async function seedSettings() {
   const settingsBody = {
     profile: {
       schoolName: "Dummy Data School",
-      email: "dummydata@gmail.com",
+      email: "School@gmial.com",
       phone: "03001234567",
       address: "123 Main Education Boulevard, Lahore, Pakistan",
       principalName: "Dr. Muhammad Ali",

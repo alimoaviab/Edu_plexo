@@ -77,6 +77,8 @@ export const adminRoutes: RouteObject[] = [
 
   // Attendance
   { path: "/admin/attendance", element: lazyPage(() => import("@/pages/role/admin/attendance"), "AdminAttendancePage") },
+  { path: "/admin/attendance/teachers", element: lazyPage(() => import("@/pages/role/admin/attendance/TeacherAttendanceReport"), "AdminTeacherAttendanceReport") },
+  { path: "/admin/attendance/teachers/analytics", element: lazyPage(() => import("@/pages/role/admin/attendance/TeacherAttendanceAnalytics"), "AdminTeacherAttendanceAnalytics") },
   { path: "/admin/attendance/create", element: lazyPage(() => import("@/pages/role/admin/attendance/create"), "AdminAttendanceCreatePage") },
 
   // Behavior — admin reviews; teachers create. The /admin/behavior/create
@@ -185,6 +187,7 @@ export const adminRoutes: RouteObject[] = [
   // Subscription
   { path: "/admin/subscription", element: lazyPage(() => import("@/pages/role/admin/subscription"), "AdminSubscriptionPage") },
   { path: "/admin/subscription/payment", element: lazyPage(() => import("@/modules/subscription/pages/PaymentPage"), "PaymentPage") },
+  { path: "/admin/subscription/custom", element: lazyPage(() => import("@/modules/subscription/pages/CustomPlanBuilder"), "CustomPlanBuilder") },
 
   // Students
   { path: "/admin/students", element: lazyPage(() => import("@/pages/role/admin/students"), "AdminStudentsPage") },
@@ -216,6 +219,7 @@ export const adminRoutes: RouteObject[] = [
 export const teacherRoutes: RouteObject[] = [
   { path: "/teacher", element: lazyPage(() => import("@/pages/role/teacher"), "TeacherPortalIndexPage") },
   { path: "/teacher/dashboard", element: lazyPage(() => import("@/pages/role/teacher/dashboard"), "TeacherDashboardPage") },
+  { path: "/teacher/my-attendance", element: lazyPage(() => import("@/pages/role/teacher/my-attendance"), "TeacherMyAttendancePage") },
   { path: "/teacher/announcements", element: lazyPage(() => import("@/pages/role/teacher/announcements"), "TeacherAnnouncementsPage") },
   { path: "/teacher/announcements/create", element: lazyPage(() => import("@/pages/role/teacher/announcements/create"), "TeacherAnnouncementCreatePage") },
   { path: "/teacher/attendance", element: lazyPage(() => import("@/pages/role/teacher/attendance"), "TeacherAttendancePage") },

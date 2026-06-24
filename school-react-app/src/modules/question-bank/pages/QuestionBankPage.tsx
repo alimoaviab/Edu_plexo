@@ -14,6 +14,7 @@ import { Skeleton, DataState } from "@/components/ui";
 import { Drawer } from "@/components/ui/Drawer";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import { serviceRequest } from "@/services/service-client";
+import { sanitizedInnerHtml } from "@/utils/sanitizeHtml";
 import { useQuestionBank } from "../hooks/useQuestionBank";
 import * as service from "../services/questionBank.service";
 import { showToast } from "@/utils/toast";
@@ -576,7 +577,7 @@ function QuestionCard({
         <div className="flex-1 min-w-0">
           <div
             className="text-sm text-slate-800 font-medium leading-relaxed line-clamp-3"
-            dangerouslySetInnerHTML={{ __html: q.question_html }}
+            dangerouslySetInnerHTML={sanitizedInnerHtml(q.question_html)}
           />
           {q.type === "mcq" && opts.length > 0 && (
             <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1">

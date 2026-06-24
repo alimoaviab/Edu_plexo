@@ -14,6 +14,7 @@ import { AppIcon } from "shared/ui/AppIcon";
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { apiRequest } from '@/lib/api'
+import { sanitizedInnerHtml } from '@/utils/sanitizeHtml'
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -607,7 +608,7 @@ function QuestionsTab({
 
             <div className="flex-1 min-w-0">
               {/* Question HTML */}
-              <div className="text-xs text-slate-800 font-semibold leading-relaxed" dangerouslySetInnerHTML={{ __html: q.question_html }} />
+              <div className="text-xs text-slate-800 font-semibold leading-relaxed" dangerouslySetInnerHTML={sanitizedInnerHtml(q.question_html)} />
 
               {/* MCQ Options */}
               {q.type === 'mcq' && q.options && (() => {

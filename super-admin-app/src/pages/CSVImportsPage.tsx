@@ -226,13 +226,10 @@ export function CSVImportsPage() {
     if (selectedSubjectName) queryParams.set('subject', selectedSubjectName)
     if (selectedChapterName) queryParams.set('chapter', selectedChapterName)
 
-    const token = localStorage.getItem('sa_token')
     try {
       const res = await fetch(`/api/super-admin/global-bank/import/validate?${queryParams}`, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
+        credentials: 'include',
         body: formData
       })
       const data = await res.json()
@@ -281,12 +278,9 @@ export function CSVImportsPage() {
 
   // --- Download Failed Rows ---
   const handleDownloadFailed = async (logId: string, fileName: string) => {
-    const token = localStorage.getItem('sa_token')
     try {
       const response = await fetch(`/api/super-admin/global-bank/import-logs/${logId}/download-failed`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        }
+        credentials: 'include'
       })
       if (!response.ok) {
         toast('Could not download failed rows CSV')

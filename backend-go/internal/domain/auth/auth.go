@@ -9,13 +9,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/eduplexo/backend-go/internal/api"
 	authpkg "github.com/eduplexo/backend-go/internal/auth"
 	"github.com/eduplexo/backend-go/internal/config"
-	"github.com/eduplexo/backend-go/internal/domain/subscription"
 	"github.com/eduplexo/backend-go/internal/domain/superadmin"
 	"github.com/eduplexo/backend-go/internal/store"
 )
@@ -49,9 +49,10 @@ func NewWithPersist(cfg config.Config, s *store.MemStore, save func(string, any)
 // loginRequest mirrors the body the original /api/auth/login endpoint
 // accepts. The frontend sends `{email, password, role?}`.
 type loginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Role     string `json:"role,omitempty"`
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	Role       string `json:"role,omitempty"`
+	RememberMe bool   `json:"rememberMe,omitempty"`
 }
 
 type loginResponseData struct {
@@ -114,6 +115,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 			"ok":      false,
 			"message": "Invalid email or password",
+		})
+		return
+	}
+
+	if user.Status == "locked" || user.Status == "suspended" {
+		api.WriteJSON(w, http.StatusForbidden, map[string]any{
+			"ok":      false,
+			"message": "Your account has been locked. Please contact support.",
 		})
 		return
 	}
@@ -254,7 +263,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	user.LastLoginAt = &now
 	user.UpdatedAt = now
 
-	h.setSessionCookie(w, token)
+	h.setSessionCookie(w, token, body.RememberMe)
 
 	// Resolve profile_id for role-specific portals.
 	// Teachers need their teacher._id, students need student._id + class_id.
@@ -350,8 +359,17 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("School code is required"))
 		return
 	}
-	if len(password) < 6 {
-		api.WriteJSON(w, http.StatusBadRequest, signupErr("Password must be at least 6 characters"))
+	emailRegex := regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
+	if !emailRegex.MatchString(email) {
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Invalid email format"))
+		return
+	}
+	hasUpper := strings.ContainsAny(password, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	hasLower := strings.ContainsAny(password, "abcdefghijklmnopqrstuvwxyz")
+	hasNumber := strings.ContainsAny(password, "0123456789")
+	hasSpecial := strings.ContainsAny(password, "@$!%*?&")
+	if len(password) < 8 || !hasUpper || !hasLower || !hasNumber || !hasSpecial {
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Password must be at least 8 characters long, and include an uppercase letter, a lowercase letter, a number, and a special character."))
 		return
 	}
 
@@ -459,18 +477,12 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		h.Store.SchoolSettings = append(h.Store.SchoolSettings, newSettings)
 
 		// ─── Auto 14-day free trial subscription ─────────────────────────
-		selected := body.SelectedPackages
-		if len(selected) == 0 {
-			selected = []string{"academic"}
-		} else {
-			selected = subscription.NormalizePackages(selected)
-		}
-
+		// By default, grant the "trial" plan which unlocks all features.
 		trialSub := &store.Subscription{
 			ID:               store.NewID("sub"),
 			SchoolID:         schoolID,
-			PackageID:        subscription.EncodeSelectedPackages(selected),
-			SelectedPackages: selected,
+			PackageID:        "trial",
+			SelectedPackages: []string{},
 			Status:           "trial",
 			AutoRenew:        false,
 			NextRenewal:      now.AddDate(0, 0, 14),
@@ -492,12 +504,26 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		h.Persist("school_settings", newSettings)
 		h.Persist("subscriptions", trialSub)
 
-		// Bypassing Super Admin approval for now: status is "active", token is still omitted (user goes to /auth/login)
 		var message string
 		if settings.AutoApproveSchools {
-			message = "Your school account is active. Please log in."
+			message = "Your school account is active. Redirecting to dashboard..."
 		} else {
-			message = "Your school registration is pending approval. You will be notified once approved."
+			message = "Your school registration is pending approval. You will have limited access until approved."
+		}
+
+		claims := authpkg.Claims{
+			SchoolID:             schoolID,
+			Role:                 "admin",
+			Permissions:          newUser.Permissions,
+			ActiveAcademicYearID: yearID,
+			SessionID:            "sess_" + randomID(),
+			App:                  h.Cfg.AppName,
+			ActorEmail:           email,
+		}
+		claims.Subject = newUser.ID
+		token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8*time.Hour)
+		if err == nil {
+			h.setSessionCookie(w, token, true)
 		}
 
 		api.WriteJSON(w, http.StatusCreated, map[string]any{
@@ -505,8 +531,11 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			"success": true,
 			"message": message,
 			"data": map[string]any{
-				"status":    schoolStatus,
-				"school_id": schoolID,
+				"status":                  schoolStatus,
+				"school_id":               schoolID,
+				"token":                   token,
+				"role":                    "admin",
+				"active_academic_year_id": yearID,
 			},
 		})
 		return
@@ -571,7 +600,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.setSessionCookie(w, token)
+	h.setSessionCookie(w, token, true)
 
 	api.WriteJSON(w, http.StatusCreated, map[string]any{
 		"ok":      true,
@@ -641,7 +670,7 @@ func (h *Handler) SwitchAcademicYear(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.setSessionCookie(w, token)
+	h.setSessionCookie(w, token, true)
 
 	api.WriteJSON(w, http.StatusOK, map[string]any{
 		"ok": true,
@@ -654,10 +683,51 @@ func (h *Handler) SwitchAcademicYear(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Session implements GET /api/auth/session — the original endpoint returns
-// `null` so probes during boot don't 404. We do the same.
-func (h *Handler) Session(w http.ResponseWriter, _ *http.Request) {
-	api.WriteJSON(w, http.StatusOK, nil)
+// Session implements GET /api/auth/session. Without a valid cookie it keeps
+// the old non-error `null` response; with a valid HttpOnly session cookie it
+// returns non-secret user context so browser apps do not need localStorage tokens.
+func (h *Handler) Session(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session")
+	if err != nil || strings.TrimSpace(cookie.Value) == "" {
+		api.WriteJSON(w, http.StatusOK, nil)
+		return
+	}
+
+	claims, err := authpkg.VerifyToken(h.Cfg.JWTSecret, h.Cfg.AppName, cookie.Value)
+	if err != nil {
+		h.clearSessionCookie(w)
+		api.WriteJSON(w, http.StatusOK, nil)
+		return
+	}
+
+	email := claims.ActorEmail
+	if email == "" && h.Store != nil {
+		h.Store.RLock()
+		for _, user := range h.Store.Users {
+			if user.ID == claims.Subject {
+				email = user.Email
+				break
+			}
+		}
+		h.Store.RUnlock()
+	}
+
+	api.WriteJSON(w, http.StatusOK, map[string]any{
+		"ok": true,
+		"data": map[string]any{
+			"role":                    claims.Role,
+			"user_id":                 claims.Subject,
+			"email":                   email,
+			"school_id":               claims.SchoolID,
+			"active_academic_year_id": claims.ActiveAcademicYearID,
+		},
+	})
+}
+
+// Logout clears the HttpOnly session cookie.
+func (h *Handler) Logout(w http.ResponseWriter, _ *http.Request) {
+	h.clearSessionCookie(w)
+	api.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
 // Log implements POST /api/auth/_log — the original is a noop logger.
@@ -731,7 +801,7 @@ func (h *Handler) uniqueSchoolCode(name string) string {
 	return "SCH" + strings.ToUpper(randomID()[:7])
 }
 
-func (h *Handler) setSessionCookie(w http.ResponseWriter, token string) {
+func (h *Handler) setSessionCookie(w http.ResponseWriter, token string, rememberMe bool) {
 	// Cross-site cookie support: when CookieSecure is true (production with HTTPS),
 	// use SameSite=None so the cookie is sent on cross-origin requests from the
 	// frontend (e.g. Vercel) to the backend on a different domain.
@@ -739,6 +809,12 @@ func (h *Handler) setSessionCookie(w http.ResponseWriter, token string) {
 	if h.Cfg.CookieSecure {
 		sameSite = http.SameSiteNoneMode
 	}
+	
+	maxAge := 60 * 60 * 8 // 8 hours default
+	if rememberMe {
+		maxAge = 60 * 60 * 24 * 30 // 30 days
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
 		Value:    token,
@@ -746,7 +822,23 @@ func (h *Handler) setSessionCookie(w http.ResponseWriter, token string) {
 		Secure:   h.Cfg.CookieSecure,
 		SameSite: sameSite,
 		Path:     "/",
-		MaxAge:   60 * 60 * 8,
+		MaxAge:   maxAge,
+	})
+}
+
+func (h *Handler) clearSessionCookie(w http.ResponseWriter) {
+	sameSite := http.SameSiteLaxMode
+	if h.Cfg.CookieSecure {
+		sameSite = http.SameSiteNoneMode
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session",
+		Value:    "",
+		HttpOnly: true,
+		Secure:   h.Cfg.CookieSecure,
+		SameSite: sameSite,
+		Path:     "/",
+		MaxAge:   -1,
 	})
 }
 

@@ -23,6 +23,22 @@ type Attendance struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
+// TeacherAttendance mirrors a new teacher attendance table.
+type TeacherAttendance struct {
+	ID             string    `json:"_id"`
+	SchoolID       string    `json:"school_id"`
+	AcademicYearID string    `json:"academic_year_id,omitempty"`
+	TeacherID      string    `json:"teacher_id"`
+	Date           time.Time `json:"date"`
+	Status         string    `json:"status"` // present | absent | late | excused
+	CheckInTime    string    `json:"check_in_time,omitempty"`
+	CheckOutTime   string    `json:"check_out_time,omitempty"`
+	WorkingHours   float64   `json:"working_hours,omitempty"`
+	MarkedBy       string    `json:"marked_by"`
+	Note           string    `json:"note,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
 // ExamSubject is one subject inside a multi-subject exam. The exam row
 // owns an ordered slice of these. SubjectID prefers the actual subject
 // document _id; older callers may pass the name as id (it is treated as

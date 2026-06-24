@@ -7,6 +7,8 @@
 
 import { ClassRow } from "../types/class.types";
 import { EntityCard, EntityCardAction } from "@/components/ui";
+import { ClassViewModal } from "./ClassViewModal";
+import { useState } from "react";
 
 interface ClassCardProps {
   classItem: ClassRow;
@@ -16,6 +18,7 @@ interface ClassCardProps {
 }
 
 export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps) {
+  const [viewModalOpen, setViewModalOpen] = useState(false);
   const isActive = classItem.status === "active";
   const studentCount = classItem.enrolled_students || classItem.student_count || 0;
 
@@ -44,6 +47,7 @@ export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps
   ];
 
   return (
+    <>
     <EntityCard
       icon="door_front"
       accent={isActive ? "blue" : "slate"}
@@ -56,9 +60,7 @@ export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps
         {
           label: "View details",
           icon: "visibility",
-          onClick: () => {
-            alert(`Class: ${classItem.name}\nSection: ${classItem.section || "General"}\nIncharge: ${classItem.class_teacher?.name || "None"}\nStudents: ${classItem.student_count || 0}`);
-          },
+          onClick: () => setViewModalOpen(true),
           accent: "blue",
         },
         {
@@ -112,5 +114,11 @@ export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps
       }}
       actions={actions}
     />
+    <ClassViewModal 
+        classItem={classItem} 
+        open={viewModalOpen} 
+        onClose={() => setViewModalOpen(false)} 
+    />
+    </>
   );
 }
