@@ -260,7 +260,7 @@ services:
 networks:
   frontend:
     name: eduplexo_frontend
-    driver: bridge
+    external: true
   backend:
     name: eduplexo_backend
     driver: bridge
