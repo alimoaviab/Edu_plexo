@@ -16,22 +16,18 @@
 #   edubot     — Plexa AI chatbot (internal :8001)
 
 services:
-  # ─── Nginx Reverse Proxy + SSL ────────────────────────────────────────
+  # ─── Nginx Reverse Proxy (HTTP-only, no SSL) ──────────────────────────
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped
     ports:
       - "80:80"
-      - "443:443"
     volumes:
-      - ./nginx.vps.conf:/etc/nginx/nginx.conf:ro
-      - ./certbot/conf:/etc/letsencrypt:ro
-      - ./certbot/www:/var/www/certbot:ro
+      - ./nginx-simple-http.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       backend-go:
-        condition: service_started  # Changed from service_healthy to service_started
+        condition: service_started
     networks:
-      - frontend
       - backend
     deploy:
       resources:
@@ -39,7 +35,7 @@ services:
           memory: 128M
           cpus: "0.5"
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/nginx-health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -254,9 +250,6 @@ services:
         max-file: "2"
 
 networks:
-  frontend:
-    name: eduplexo_frontend
-    external: true
   backend:
     name: eduplexo_backend
     driver: bridge
