@@ -643,7 +643,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 					employee_no, first_name, last_name, phone, qualification,
 					status, joined_at,
 					created_at, updated_at)
-				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
 				ON CONFLICT (id) DO NOTHING
 			`, newTeacher.ID, newTeacher.SchoolID, nullableString(newTeacher.AcademicYearID),
 				nullableString(newTeacher.UserID), newTeacher.Email,
