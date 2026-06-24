@@ -21,7 +21,6 @@ services:
   # ─── Nginx Reverse Proxy ──────────────────────────────────────────────
   nginx:
     image: nginx:1.27-alpine
-    container_name: eduplexo_nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -64,7 +63,6 @@ services:
     build:
       context: ./backend-go
       dockerfile: Dockerfile
-    container_name: eduplexo_backend_1
     restart: unless-stopped
     depends_on:
       migrate:
@@ -101,7 +99,6 @@ services:
     build:
       context: ./backend-go
       dockerfile: Dockerfile
-    container_name: eduplexo_backend_2
     restart: unless-stopped
     depends_on:
       migrate:
@@ -143,7 +140,6 @@ services:
     build:
       context: ./backend-go
       dockerfile: Dockerfile
-    container_name: eduplexo_worker
     restart: unless-stopped
     depends_on:
       migrate:
@@ -175,7 +171,6 @@ services:
   # ─── PostgreSQL ──────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
-    container_name: eduplexo_postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -230,7 +225,6 @@ services:
   # ─── Redis ───────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: eduplexo_redis
     restart: unless-stopped
     command: >
       redis-server
@@ -270,7 +264,6 @@ services:
   # ─── Database Migrations ─────────────────────────────────────────────
   migrate:
     image: migrate/migrate:v4.18.1
-    container_name: eduplexo_migrate
     depends_on:
       postgres:
         condition: service_healthy
@@ -294,7 +287,6 @@ services:
     build:
       context: ./super-admin-app
       dockerfile: Dockerfile
-    container_name: eduplexo_super_admin_build
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -313,7 +305,6 @@ services:
     build:
       context: ./edubot-service
       dockerfile: Dockerfile
-    container_name: eduplexo_edubot
     restart: unless-stopped
     depends_on:
       redis:
