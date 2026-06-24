@@ -4,7 +4,7 @@
 # Final image: ~12MB distroless, non-root, no shell access
 
 # Stage 1: Build
-FROM golang:1.23-alpine AS builder
+FROM golang:alpine AS builder
 
 RUN apk add --no-cache ca-certificates tzdata
 
