@@ -26,6 +26,7 @@ export default function TeacherLayout() {
       <Tabs.Screen name="classes" options={{ title: 'Classes' }} />
       <Tabs.Screen name="actions" options={{ title: 'Actions' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen name="module/[module]" options={{ href: null, title: 'Module' }} />
     </Tabs>
   );
 }

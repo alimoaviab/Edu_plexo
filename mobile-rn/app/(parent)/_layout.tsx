@@ -3,7 +3,7 @@ import { Tabs } from 'expo-router';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { colors, typography } from '@/theme/tokens';
 
-export default function StudentLayout() {
+export default function ParentLayout() {
   return (
     <Tabs
       screenOptions={({ route }) => ({

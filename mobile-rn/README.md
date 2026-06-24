@@ -1,7 +1,7 @@
 # EduPlexo Mobile (React Native + Expo)
 
 Production-grade Android wrapper for the EduPlexo school management platform.
-Talks to the same Go backend the web app uses (`https://app.eduplexo.com/api`),
+Talks to the same Go backend the web app uses (`https://api.eduplexo.com/api`),
 using the same JWT auth, the same role matrix, and the same response shapes.
 
 This is **Phase 1**: foundation, auth, and three role-aware dashboards
@@ -148,7 +148,7 @@ ESCAPE_KEY_PASSWORD=...
 ## Environment
 
 The API base URL lives in `app.json` -> `expo.extra.apiBaseUrl`. Defaults to
-`https://app.eduplexo.com/api`. Override per build with EAS env vars or by
+`https://api.eduplexo.com/api`. Override per build with EAS env vars or by
 editing `app.json` before `expo prebuild`.
 
 ---

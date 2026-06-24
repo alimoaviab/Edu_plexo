@@ -34,7 +34,7 @@ const ROLE_HOME: Record<string, string> = {
   admin: '/(admin)',
   super_admin: '/(admin)',
   teacher: '/(teacher)',
-  parent: '/(student)',
+  parent: '/(parent)',
   student: '/(student)',
 };
 

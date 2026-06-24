@@ -54,7 +54,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiBaseUrl": "https://app.eduplexo.com/api",
+      "apiBaseUrl": "https://api.eduplexo.com/api",
       "appName": "EduPlexo"
     }
   }
