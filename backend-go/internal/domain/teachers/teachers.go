@@ -611,8 +611,8 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 					created_at, updated_at)
 				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
 				ON CONFLICT (id) DO NOTHING
-			`, newTeacher.ID, newTeacher.SchoolID, newTeacher.AcademicYearID,
-				newTeacher.UserID, newTeacher.Email,
+			`, newTeacher.ID, newTeacher.SchoolID, nullableString(newTeacher.AcademicYearID),
+				nullableString(newTeacher.UserID), newTeacher.Email,
 				newTeacher.EmployeeNo, newTeacher.FirstName, newTeacher.LastName,
 				newTeacher.Phone, newTeacher.Qualification,
 				newTeacher.SubjectIDs, newTeacher.Subjects, newTeacher.ClassIDs,
@@ -745,7 +745,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 						       qualification=$7, status=$8, user_id=$9, updated_at=$10
 						WHERE id=$1 AND school_id=$2
 					`, t.ID, t.SchoolID, t.FirstName, t.LastName, t.Email, t.Phone,
-						t.Qualification, t.Status, t.UserID, t.UpdatedAt)
+						t.Qualification, t.Status, nullableString(t.UserID), t.UpdatedAt)
 
 					// Direct update of junction tables
 					_, _ = h.Pool.Exec(r.Context(), `DELETE FROM teacher_subjects WHERE teacher_id=$1`, t.ID)
@@ -820,4 +820,11 @@ func padLeft(n, width int) string {
 func orEmpty(in []string) []string {
 	if in == nil { return []string{} }
 	return in
+}
+
+func nullableString(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }
