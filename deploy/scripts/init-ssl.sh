@@ -35,6 +35,9 @@ echo "════════════════════════�
 mkdir -p "$DEPLOY_DIR/certbot/conf"
 mkdir -p "$DEPLOY_DIR/certbot/www"
 
+# Create frontend network if not exists
+docker network create eduplexo_frontend 2>/dev/null || true
+
 # Create a temporary nginx config without SSL for initial cert request
 cat > "$DEPLOY_DIR/nginx/conf.d/api.conf.tmp" <<EOF
 server {
@@ -64,7 +67,7 @@ mv "$DEPLOY_DIR/nginx/conf.d/api.conf.tmp" "$DEPLOY_DIR/nginx/conf.d/api.conf"
 # Start nginx only (without backend dependency)
 docker compose -f "$DEPLOY_DIR/docker-compose.vps.yml" \
     --env-file "$DEPLOY_DIR/.env.production" \
-    up -d nginx 2>/dev/null || true
+    up --no-deps -d nginx 2>/dev/null || true
 
 # Wait for nginx to be ready
 sleep 5
