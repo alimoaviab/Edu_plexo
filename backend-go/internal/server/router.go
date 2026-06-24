@@ -11,7 +11,10 @@ import (
 	"github.com/eduplexo/backend-go/internal/cache"
 	"github.com/eduplexo/backend-go/internal/config"
 	"github.com/eduplexo/backend-go/internal/domain/academicyear"
+<<<<<<< Updated upstream
 	"github.com/eduplexo/backend-go/internal/realtime"
+=======
+>>>>>>> Stashed changes
 	"github.com/eduplexo/backend-go/internal/domain/analytics"
 	"github.com/eduplexo/backend-go/internal/domain/announcements"
 	"github.com/eduplexo/backend-go/internal/domain/attendance"

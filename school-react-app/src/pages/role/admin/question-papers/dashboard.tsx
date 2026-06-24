@@ -22,6 +22,7 @@ const cards: DashboardCard[] = [
   {
     id: "generate-1",
     title: "Generate Paper",
+<<<<<<< Updated upstream
     subtitle: "Unified syllabus, class, chapter & type filters",
     icon: "Sparkles",
     href: "/admin/question-papers/generator",
@@ -33,6 +34,11 @@ const cards: DashboardCard[] = [
     icon: "Crown",
     href: "/admin/question-papers/premium-generator",
     badge: "Premium",
+=======
+    subtitle: "Select syllabus, class & generate",
+    icon: "Sparkles",
+    href: "/admin/question-papers/generate/syllabus",
+>>>>>>> Stashed changes
   },
   {
     id: "smart-generator",

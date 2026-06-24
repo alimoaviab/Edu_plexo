@@ -45,6 +45,7 @@ export function CertificateViewPage() {
 
   const cert = state.data!;
   const typeLabel = CERTIFICATE_TYPE_LABELS[cert.certificate_type as keyof typeof CERTIFICATE_TYPE_LABELS] || cert.certificate_type;
+<<<<<<< Updated upstream
   
   const metadata = cert.metadata || {};
   let styles = {
@@ -76,6 +77,9 @@ export function CertificateViewPage() {
   const rawBodyText = cert.body_text || `This is to certify that ${cert.student_name} of Class ${cert.class_name} has been a student of ${resolvedSchoolName}. This certificate is issued on ${new Date(cert.issue_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}.`;
   const studentSpan = `<span style="font-family: '${styles.recipientFont}', cursive; font-size: 1.5em; color: ${styles.titleColor}; display: inline-block; font-weight: normal; line-height: 1; vertical-align: middle;">${cert.student_name}</span>`;
   const formattedBodyText = rawBodyText.replace(new RegExp(cert.student_name, "g"), studentSpan);
+=======
+  const bodyText = cert.body_text || `This is to certify that ${cert.student_name} of Class ${cert.class_name} has been a student of ${resolvedSchoolName}. This certificate is issued on ${new Date(cert.issue_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}.`;
+>>>>>>> Stashed changes
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
@@ -135,11 +139,15 @@ export function CertificateViewPage() {
 
           <div className="flex-1 relative z-10 flex items-center justify-center">
             <div className="text-center max-w-lg">
+<<<<<<< Updated upstream
               <p 
                 className="text-sm leading-relaxed whitespace-pre-line"
                 style={{ color: styles.bodyColor, fontFamily: `'${styles.bodyFont}', sans-serif` }}
                 dangerouslySetInnerHTML={{ __html: formattedBodyText }}
               />
+=======
+              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{bodyText}</p>
+>>>>>>> Stashed changes
             </div>
           </div>
 

@@ -485,7 +485,10 @@ func (h *Handler) certificateMetadata(c *store.GeneratedCertificate) (map[string
 	body := ""
 	if template != nil {
 		body = template.BodyText
+<<<<<<< Updated upstream
 		meta["border_style"] = template.BorderStyle
+=======
+>>>>>>> Stashed changes
 	}
 	if strings.TrimSpace(body) == "" {
 		body = "This is to certify that {{student_name}} of Class {{class}} has been a student of {{school_name}}. This certificate is issued on {{issue_date}}."

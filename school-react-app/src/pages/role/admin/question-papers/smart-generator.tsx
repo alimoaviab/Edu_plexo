@@ -1,6 +1,9 @@
 import { useState, useMemo } from "react";
 import { AppIcon } from "shared/ui/AppIcon";
+<<<<<<< Updated upstream
 import { QUESTION_TYPES as QUESTION_TYPE_CONFIGS } from "@/data/question-types";
+=======
+>>>>>>> Stashed changes
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface MCQPreview {
@@ -10,7 +13,28 @@ interface MCQPreview {
   type: string;
 }
 
+<<<<<<< Updated upstream
 const QUESTION_TYPE_LABELS = QUESTION_TYPE_CONFIGS.map((type) => type.label);
+=======
+const QUESTION_TYPES = [
+  "Multiple Choice Questions",
+  "Fill in the blanks",
+  "True False",
+  "Match the columns",
+  "Short Questions",
+  "Long Questions",
+  "Grammar",
+  "Essays",
+  "Applications",
+  "Stories",
+  "Translation",
+  "Missing Letters",
+  "Correct Spelling",
+  "Word Meaning",
+  "Singular Plural",
+  "Genders",
+];
+>>>>>>> Stashed changes
 
 const DIFFICULTY_LEVELS = ["Easy", "Medium", "Hard", "Mixed"];
 const MEDIUMS = ["English", "Urdu", "Both"];
@@ -39,7 +63,11 @@ const SAMPLE_MCQS: MCQPreview[] = [
 // ─── Main Component ─────────────────────────────────────────────────────────
 export function SmartPaperGenerator() {
   const [selectedChapters, setSelectedChapters] = useState<string[]>([]);
+<<<<<<< Updated upstream
   const [questionType, setQuestionType] = useState(QUESTION_TYPE_LABELS[0] || "");
+=======
+  const [questionType, setQuestionType] = useState(QUESTION_TYPES[0]);
+>>>>>>> Stashed changes
   const [difficulty, setDifficulty] = useState("Mixed");
   const [medium, setMedium] = useState("English");
   const [paperPattern, setPaperPattern] = useState("Board Pattern");
@@ -220,7 +248,11 @@ export function SmartPaperGenerator() {
                 Smart Filters
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+<<<<<<< Updated upstream
                 <SelectField label="Question Type" value={questionType} onChange={setQuestionType} options={QUESTION_TYPE_LABELS} />
+=======
+                <SelectField label="Question Type" value={questionType} onChange={setQuestionType} options={QUESTION_TYPES} />
+>>>>>>> Stashed changes
                 <SelectField label="Difficulty" value={difficulty} onChange={setDifficulty} options={DIFFICULTY_LEVELS} />
                 <SelectField label="Medium" value={medium} onChange={setMedium} options={MEDIUMS} />
                 <SelectField label="Paper Pattern" value={paperPattern} onChange={setPaperPattern} options={PAPER_PATTERNS} />

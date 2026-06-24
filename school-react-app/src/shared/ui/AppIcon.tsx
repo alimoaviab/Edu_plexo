@@ -565,8 +565,13 @@ const normalizeIconName = (value: string): string =>
   value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
 
 const normalizedLucideIconMap = Object.fromEntries(
+<<<<<<< Updated upstream
   Object.keys(iconRegistry).map((iconName) => [normalizeIconName(iconName), iconName])
 ) as Record<string, keyof typeof iconRegistry>;
+=======
+  Object.keys(Icons).map((iconName) => [normalizeIconName(iconName), iconName])
+) as Record<string, keyof typeof Icons>;
+>>>>>>> Stashed changes
 
 const normalizedMaterialToLucideMap = Object.fromEntries(
   Object.entries(materialToLucideMap).map(([key, value]) => [normalizeIconName(key), value])
@@ -580,15 +585,24 @@ const snakeToPascal = (str: string): string => {
     .join("");
 };
 
+<<<<<<< Updated upstream
 export const resolveAppIconName = (name: string): keyof typeof iconRegistry | undefined => {
+=======
+export const resolveAppIconName = (name: string): keyof typeof Icons | undefined => {
+>>>>>>> Stashed changes
   const trimmedName = name.trim();
 
   if (!trimmedName) {
     return undefined;
   }
 
+<<<<<<< Updated upstream
   if (trimmedName in iconRegistry) {
     return trimmedName as keyof typeof iconRegistry;
+=======
+  if (trimmedName in Icons) {
+    return trimmedName as keyof typeof Icons;
+>>>>>>> Stashed changes
   }
 
   const normalizedName = normalizeIconName(trimmedName);
@@ -600,7 +614,11 @@ export const resolveAppIconName = (name: string): keyof typeof iconRegistry | un
   const mappedName = normalizedMaterialToLucideMap[normalizedName];
   if (mappedName) {
     const normalizedMappedName = normalizedLucideIconMap[normalizeIconName(mappedName)];
+<<<<<<< Updated upstream
     return normalizedMappedName ?? (mappedName as keyof typeof iconRegistry);
+=======
+    return normalizedMappedName ?? (mappedName as keyof typeof Icons);
+>>>>>>> Stashed changes
   }
 
   const pascalName = snakeToPascal(trimmedName);
@@ -624,7 +642,11 @@ export function AppIcon({
   }
 
   const resolvedName = resolveAppIconName(name);
+<<<<<<< Updated upstream
   const Icon = resolvedName ? iconRegistry[resolvedName] : undefined;
+=======
+  const Icon = resolvedName ? (Icons[resolvedName] as any) : undefined;
+>>>>>>> Stashed changes
 
   if (!Icon) {
     console.warn("Missing icon mapping or Lucide icon:", name);

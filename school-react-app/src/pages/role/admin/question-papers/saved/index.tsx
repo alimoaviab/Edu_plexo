@@ -6,7 +6,10 @@ import { Skeleton, ConfirmModal } from "@/components/ui";
 import { useQuestionPapers } from "@/modules/question-papers/hooks/useQuestionPapers";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import type { QuestionPaper, PaperQuestion } from "@/modules/question-papers/types/questionPaper.types";
+<<<<<<< Updated upstream
 import { getQuestionTypeLabel, QUESTION_TYPES } from "@/data/question-types";
+=======
+>>>>>>> Stashed changes
 
 /**
  * Saved Papers Page
@@ -86,7 +89,11 @@ export function SavedPapersPage() {
             </div>
             <button
               type="button"
+<<<<<<< Updated upstream
               onClick={() => navigate("/admin/question-papers/generator")}
+=======
+              onClick={() => navigate("/admin/question-papers/generate/syllabus")}
+>>>>>>> Stashed changes
               className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-blue-600 text-white text-[12px] font-bold shadow-sm hover:bg-blue-700 transition-colors active:scale-[0.98]"
             >
               <AppIcon name="Plus" size={14} />
@@ -118,7 +125,11 @@ export function SavedPapersPage() {
             </p>
             {!search && (
               <Link
+<<<<<<< Updated upstream
                 to="/admin/question-papers/generator"
+=======
+                to="/admin/question-papers/generate/syllabus"
+>>>>>>> Stashed changes
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-[12px] font-bold hover:bg-blue-700 transition-colors shadow-sm"
               >
                 <AppIcon name="Sparkles" size={14} />
@@ -252,6 +263,7 @@ function printPaper(paper: QuestionPaper, schoolName: string) {
     } catch {/* ignore */}
   }
 
+<<<<<<< Updated upstream
   const totalMarks = questions.reduce((s, q) => s + (q.marks || 0), 0);
   const knownTypes = new Set(QUESTION_TYPES.map((type) => type.id));
   const grouped = [
@@ -262,6 +274,12 @@ function printPaper(paper: QuestionPaper, schoolName: string) {
       questions: questions.filter((q) => q.type === type),
     })),
   ].filter((group) => group.questions.length > 0);
+=======
+  const mcqs = questions.filter((q) => q.type === "mcq");
+  const shorts = questions.filter((q) => q.type === "short");
+  const longs = questions.filter((q) => q.type === "long");
+  const totalMarks = questions.reduce((s, q) => s + (q.marks || 0), 0);
+>>>>>>> Stashed changes
 
   const section = (title: string, list: PaperQuestion[], startIdx: number, includeOptions: boolean) => {
     if (list.length === 0) return "";
@@ -303,10 +321,16 @@ function printPaper(paper: QuestionPaper, schoolName: string) {
     </div>
     <div class="meta"><span>Total Marks: ${totalMarks}</span><span>Total Questions: ${questions.length}</span></div>
   </div>
+<<<<<<< Updated upstream
   ${grouped.map((group) => {
     const startIdx = grouped.slice(0, grouped.indexOf(group)).reduce((sum, item) => sum + item.questions.length, 0);
     return section(group.title, group.questions, startIdx, group.id === "mcq");
   }).join("")}
+=======
+  ${section("Section A — Multiple Choice", mcqs, 0, true)}
+  ${section("Section B — Short Questions", shorts, mcqs.length, false)}
+  ${section("Section C — Long Questions", longs, mcqs.length + shorts.length, false)}
+>>>>>>> Stashed changes
 </body></html>`;
 
   const w = window.open("", "_blank", "width=900,height=1100");

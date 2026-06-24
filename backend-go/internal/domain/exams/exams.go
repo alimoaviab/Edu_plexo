@@ -387,7 +387,10 @@ type createInput struct {
 	StartsAt    string `json:"starts_at"`
 	Status      string `json:"status,omitempty"`
 	Description string `json:"description,omitempty"`
+<<<<<<< Updated upstream
 	Term        string `json:"term,omitempty"`
+=======
+>>>>>>> Stashed changes
 
 	// New shape — preferred.
 	Subjects []subjectInput `json:"subjects,omitempty"`

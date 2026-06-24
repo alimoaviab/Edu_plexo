@@ -137,8 +137,11 @@ func extractSchoolID(doc any) string {
 		return v.SchoolID
 	case *store.ScheduleReminder:
 		return v.SchoolID
+<<<<<<< Updated upstream
 	case *store.ImportLog:
 		return v.SchoolID
+=======
+>>>>>>> Stashed changes
 	default:
 		return ""
 	}
@@ -257,7 +260,11 @@ func (p *Persister) drainQueue() []write {
 // tableOrder defines the FK-safe insertion order. Parent tables first,
 // child tables after. This prevents FK violations during flush.
 var tableOrder = []string{
+<<<<<<< Updated upstream
 	"schools", "boards", "packages", "subscriptions", "users", "academic_years", "subjects",
+=======
+	"schools", "packages", "subscriptions", "users", "academic_years", "subjects",
+>>>>>>> Stashed changes
 	"teachers", "classes",
 	"students", "parents", "student_parents",
 	"attendance", "exams", "results", "homework", "announcements",

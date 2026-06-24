@@ -276,11 +276,16 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 				if !access.CanAccessClassLocked(h.Store, ctx, c.ID) {
 					return nil, api.NewControlledError("FORBIDDEN", "You can only access assigned classes.", 403, nil)
 				}
+<<<<<<< Updated upstream
 				
 				// Deep copy to prevent race conditions during enrichment
 				copyC := *c
 				h.enrichClass(&copyC)
 				return &copyC, nil
+=======
+				h.enrichClass(c)
+				return c, nil
+>>>>>>> Stashed changes
 			}
 		}
 		return nil, api.NewControlledError("NOT_FOUND", "Class not found.", 404, nil)

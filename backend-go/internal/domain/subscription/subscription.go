@@ -682,10 +682,29 @@ func (h *Handler) activeSubscriptionFromStore(schoolID string) *Subscription {
 	if latest == nil {
 		return nil
 	}
+<<<<<<< Updated upstream
 	selected := ParseSelectedPackages(latest.PackageID, latest.SelectedPackages)
 	planName := EncodeSelectedPackages(selected)
 	studentLimit := h.countActiveStudents(latest.SchoolID)
 	price := MonthlyEstimate(studentLimit, selected, superadmin.GetPlatformSettings().PackageRates)
+=======
+	planName := latest.PackageID
+	if planName == "" || planName == "trial" {
+		planName = "growth"
+	}
+	studentLimit := 500
+	price := 0
+	switch planName {
+	case "starter":
+		studentLimit = 200
+		price = 4000
+	case "growth":
+		studentLimit = 500
+		price = 9000
+	case "custom", "enterprise":
+		studentLimit = 800
+	}
+>>>>>>> Stashed changes
 	start := latest.CreatedAt
 	if start.IsZero() {
 		start = time.Now()
@@ -694,11 +713,19 @@ func (h *Handler) activeSubscriptionFromStore(schoolID string) *Subscription {
 	if end.IsZero() {
 		end = start.AddDate(0, 0, 14)
 	}
+<<<<<<< Updated upstream
 	isTrial := latest.Status == "trial"
+=======
+	isTrial := latest.PackageID == "trial" || latest.Status == "trial"
+>>>>>>> Stashed changes
 	var trialStart, trialEnd *time.Time
 	if isTrial {
 		trialStart = &start
 		trialEnd = &end
+<<<<<<< Updated upstream
+=======
+		price = 0
+>>>>>>> Stashed changes
 	}
 	return &Subscription{
 		ID:             latest.ID,

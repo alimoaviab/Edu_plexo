@@ -839,7 +839,11 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
             <div className="hidden sm:flex items-center gap-2 rounded-md border border-slate-100 bg-white px-2 py-1">
               <AppIcon name="Calendar" size={14} className="text-slate-400" />
               <select
+<<<<<<< Updated upstream
                 value={selectedAcademicYearId}
+=======
+                value={selectedAcademyYearId}
+>>>>>>> Stashed changes
                 onChange={async (event) => {
                   const nextId = event.target.value;
                   setSelectedAcademicYearIdState(nextId);

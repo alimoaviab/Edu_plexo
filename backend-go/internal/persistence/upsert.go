@@ -986,6 +986,7 @@ func upsertStoreSubscription(ctx context.Context, tx pgx.Tx, v *store.Subscripti
 		planName = "growth"
 	}
 	status := defaultStr(v.Status, "active")
+<<<<<<< Updated upstream
 	studentLimit := v.StudentLimit
 	price := v.Price
 	if studentLimit <= 0 {
@@ -1006,6 +1007,20 @@ func upsertStoreSubscription(ctx context.Context, tx pgx.Tx, v *store.Subscripti
 		case "growth":
 			price = 9000
 		}
+=======
+	studentLimit := 500
+	price := 0
+	switch planName {
+	case "starter":
+		studentLimit = 200
+		price = 4000
+	case "growth":
+		studentLimit = 500
+		price = 9000
+	case "custom", "enterprise":
+		studentLimit = 800
+		price = 0
+>>>>>>> Stashed changes
 	}
 	isTrial := strings.EqualFold(v.PackageID, "trial") || strings.EqualFold(status, "trial")
 	trialStart := (*time.Time)(nil)
