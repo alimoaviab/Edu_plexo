@@ -1,6 +1,6 @@
 import { AppIcon } from "shared/ui/AppIcon";
 import { useEffect } from "react";
-import { Badge, Skeleton, DataState, Modal } from "@/components/ui";
+import { Badge, Skeleton, DataState, DetailsPanel } from "@/components/ui";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import { getTeacher } from "../services/teacher.service";
 import { TeacherRow } from "../types/teacher.types";
@@ -35,35 +35,13 @@ export function TeacherDetailsModal({ isOpen, teacherId, onClose }: TeacherDetai
     : "?";
 
   return (
-    <Modal
+    <DetailsPanel
       isOpen={isOpen}
       onClose={onClose}
-      size="lg"
-      className="!p-0 overflow-hidden"
+      title="Faculty Member Details"
+      subtitle="Academic Profile"
     >
-      {/* Header */}
-      <div className="bg-slate-900 px-6 py-5 flex items-center justify-between text-white relative">
-        <div className="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none" />
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-blue-600/20">
-            <AppIcon name="Badge" size={20} />
-          </div>
-          <div>
-            <h3 className="text-md font-bold leading-tight">Faculty Member Details</h3>
-            <p className="text-[10px] font-bold text-slate-400 normal-case tracking-wider mt-0.5">Academic Profile</p>
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          className="h-8 w-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all z-10"
-          aria-label="Close"
-        >
-          <AppIcon name="X" size={20} />
-        </button>
-      </div>
-
-      {/* Content */}
-      <div className="p-6 max-h-[75vh] overflow-y-auto space-y-6">
+      <div className="space-y-6">
         {state.status === "loading" || state.status === "idle" ? (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
@@ -124,7 +102,7 @@ export function TeacherDetailsModal({ isOpen, teacherId, onClose }: TeacherDetai
             </div>
 
             {/* Contact Information & Subjects */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="premium-card p-4 border border-slate-200/60 bg-white shadow-sm rounded-xl space-y-3">
                 <h5 className="text-[10px] font-black uppercase tracking-wider text-slate-400">Contact Details</h5>
                 <div className="space-y-2.5">
@@ -162,7 +140,7 @@ export function TeacherDetailsModal({ isOpen, teacherId, onClose }: TeacherDetai
             <div className="space-y-2">
               <h5 className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-1">Assigned Classes</h5>
               {classes.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   {classes.map((c) => (
                     <div
                       key={c.id}
@@ -240,6 +218,6 @@ export function TeacherDetailsModal({ isOpen, teacherId, onClose }: TeacherDetai
           </>
         )}
       </div>
-    </Modal>
+    </DetailsPanel>
   );
 }

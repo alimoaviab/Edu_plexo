@@ -45,3 +45,5 @@ export type {
 } from "./EntityCard";
 export { EntityGrid, EntityGridSkeleton, EntityGridEmpty } from "./EntityGrid";
 export { Modal } from "./Modal";
+export { DetailsPanel } from "./DetailsPanel";
+
