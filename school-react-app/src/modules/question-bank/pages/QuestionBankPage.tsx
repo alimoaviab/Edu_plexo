@@ -14,9 +14,11 @@ import { Skeleton, DataState } from "@/components/ui";
 import { Drawer } from "@/components/ui/Drawer";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import { serviceRequest } from "@/services/service-client";
+import { sanitizedInnerHtml } from "@/utils/sanitizeHtml";
 import { useQuestionBank } from "../hooks/useQuestionBank";
 import * as service from "../services/questionBank.service";
 import { showToast } from "@/utils/toast";
+import { useDialog } from "@/components/ui/DialogContext";
 import { getQuestionTypeLabel, QUESTION_TYPES } from "@/data/question-types";
 import type {
   QuestionFilters,
@@ -36,6 +38,7 @@ interface ChapterRow { _id: string; id?: string; title: string; class_id?: strin
 
 export function QuestionBankPage({ defaultTab = "all" }: { defaultTab?: TabView }) {
   const navigate = useNavigate();
+  const { confirm } = useDialog();
   const location = useLocation();
   const rolePrefix = location.pathname.startsWith("/teacher") ? "/teacher" : "/admin";
   const [tab, setTab] = useState<TabView>(defaultTab);
@@ -243,7 +246,7 @@ export function QuestionBankPage({ defaultTab = "all" }: { defaultTab?: TabView 
   async function bulkDelete() {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    if (!confirm(`Delete ${ids.length} question(s)? This cannot be undone.`)) return;
+    if (!(await confirm("Delete Questions", `Delete ${ids.length} question(s)? This cannot be undone.`))) return;
     const r = await service.bulkDelete(ids);
     if (r.ok) {
       showToast(`${r.data?.deleted ?? ids.length} questions deleted.`, "success");
@@ -576,7 +579,7 @@ function QuestionCard({
         <div className="flex-1 min-w-0">
           <div
             className="text-sm text-slate-800 font-medium leading-relaxed line-clamp-3"
-            dangerouslySetInnerHTML={{ __html: q.question_html }}
+            dangerouslySetInnerHTML={sanitizedInnerHtml(q.question_html)}
           />
           {q.type === "mcq" && opts.length > 0 && (
             <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1">

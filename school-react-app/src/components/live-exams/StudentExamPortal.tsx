@@ -1,7 +1,10 @@
+import { showToast } from "@/utils/toast";
 import { AppIcon } from "shared/ui/AppIcon";
 import { useState, useEffect } from "react";
+import { useDialog } from "@/components/ui/DialogContext";
 
 export function StudentExamPortal({ examId }: { examId: string }) {
+  const { confirm } = useDialog();
   const [exam, setExam] = useState<any>(null);
   const [submission, setSubmission] = useState<any>(null);
   const [remainingTime, setRemainingTime] = useState(0);
@@ -96,7 +99,7 @@ export function StudentExamPortal({ examId }: { examId: string }) {
   };
 
   const handleSubmit = async () => {
-    if (!confirm("Are you sure you want to submit your exam?")) return;
+    if (!(await confirm("Submit Exam", "Are you sure you want to submit your exam?"))) return;
     try {
        const res = await fetch(`/api/live-exams/submissions/${submission._id}/submit`, {
            method: "POST",
@@ -128,7 +131,7 @@ export function StudentExamPortal({ examId }: { examId: string }) {
                 details: "Student switched tabs or minimized window."
             })
          });
-         alert("Warning: Tab switching is recorded as an exam violation.");
+         showToast("Warning: Tab switching is recorded as an exam violation.", "info");
       }
     };
 
@@ -144,7 +147,7 @@ export function StudentExamPortal({ examId }: { examId: string }) {
                   details: "Student exited fullscreen mode."
               })
            });
-           alert("Warning: Exiting fullscreen is recorded as an exam violation.");
+           showToast("Warning: Exiting fullscreen is recorded as an exam violation.", "info");
         }
     }
 

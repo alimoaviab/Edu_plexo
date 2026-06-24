@@ -40,6 +40,30 @@ import (
 // quickly. Same value used across phase-8 list caches.
 const studentsListCacheTTL = 60 * time.Second
 
+type removableByID interface {
+	*store.Student | *store.User | *store.Parent | *store.StudentParent
+}
+
+func removeByID[T removableByID](items []T, id string) []T {
+	for i, item := range items {
+		var itemID string
+		switch v := any(item).(type) {
+		case *store.Student:
+			itemID = v.ID
+		case *store.User:
+			itemID = v.ID
+		case *store.Parent:
+			itemID = v.ID
+		case *store.StudentParent:
+			itemID = v.ID
+		}
+		if itemID == id {
+			return append(items[:i], items[i+1:]...)
+		}
+	}
+	return items
+}
+
 // Handler serves the /api/students/* routes.
 type Handler struct {
 	Store            *store.MemStore
@@ -454,7 +478,11 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			ClassID:        body.ClassID,
 			Section:        body.Section,
 			Subjects:       body.Subjects,
-			Guardian:       body.Guardian,
+			Guardian: store.Guardian{
+				Name:  body.Guardian.Name,
+				Phone: body.Guardian.Phone,
+				Email: defaultStr(body.Guardian.Email, body.Email),
+			},
 			Status:         defaultStr(body.Status, "active"),
 			RollNo:         body.RollNo,
 			DateOfBirth:    body.DateOfBirth,
@@ -471,6 +499,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		// write lock so the linked-children list is consistent with the
 		// student row we just inserted.
 		var parentUserID string
+		var newParentUser *store.User
 		var newParent *store.Parent
 		if linkedParentUser != nil {
 			// Case (1)/(2) — link to existing parent user.
@@ -500,7 +529,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				UpdatedAt: now,
 			}
 			h.Store.Users = append(h.Store.Users, parentUser)
-			h.Persist("users", parentUser)
+			newParentUser = parentUser
 
 			parentID := store.NewID("par")
 			newParent = &store.Parent{
@@ -514,6 +543,20 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				UpdatedAt: now,
 			}
 			h.Store.Parents = append(h.Store.Parents, newParent)
+
+			if h.Pool != nil {
+				_, _ = h.Pool.Exec(r.Context(), `
+					INSERT INTO users (id, school_id, email, password_hash, role, status, profile_first, profile_last, profile_phone, created_at, updated_at)
+					VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+					ON CONFLICT DO NOTHING
+				`, parentUser.ID, parentUser.SchoolID, parentUser.Email, parentUser.PasswordHash, parentUser.Role, parentUser.Status, parentUser.Profile.FirstName, parentUser.Profile.LastName, parentUser.Profile.Phone, parentUser.CreatedAt, parentUser.UpdatedAt)
+				
+				_, _ = h.Pool.Exec(r.Context(), `
+					INSERT INTO parents (id, school_id, user_id, name, phone, email, created_at, updated_at)
+					VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+					ON CONFLICT DO NOTHING
+				`, newParent.ID, newParent.SchoolID, newParent.UserID, newParent.Name, newParent.Phone, newParent.Email, newParent.CreatedAt, newParent.UpdatedAt)
+			}
 		}
 
 		var parentLink *store.StudentParent
@@ -531,32 +574,49 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 		h.Store.Unlock()
 
-		h.Persist("students", newStudent)
-		if newParent != nil {
-			h.Persist("parents", newParent)
-		}
-		if parentLink != nil {
-			h.Persist("student_parents", parentLink)
-		}
-
 		// Direct PG write so the immediate frontend refetch (which
 		// hits the PG paginated path) sees the new row without waiting
-		// for the 1-second flush queue. The Persist call above is kept
+		// for the 1-second flush queue. The Persist call below is kept
 		// as a belt-and-suspenders backup — the upsert is idempotent.
 		if h.Pool != nil {
-			_, _ = h.Pool.Exec(r.Context(), `
+			if _, err := h.Pool.Exec(r.Context(), `
 				INSERT INTO students (id, school_id, academic_year_id, user_id, class_id,
 					admission_no, first_name, last_name, section, roll_no, date_of_birth, gender,
 					guardian_name, guardian_phone, guardian_email, status, enrolled_at,
 					created_at, updated_at)
-				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+				VALUES ($1,$2,$3,nullif($4,''),$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
 				ON CONFLICT (id) DO NOTHING
 			`, newStudent.ID, newStudent.SchoolID, newStudent.AcademicYearID,
 				newStudent.UserID, newStudent.ClassID,
 				newStudent.AdmissionNo, newStudent.FirstName, newStudent.LastName,
 				newStudent.Section, newStudent.RollNo, newStudent.DateOfBirth, newStudent.Gender,
 				newStudent.Guardian.Name, newStudent.Guardian.Phone, newStudent.Guardian.Email,
-				newStudent.Status, newStudent.EnrolledAt, newStudent.CreatedAt, newStudent.UpdatedAt)
+				newStudent.Status, newStudent.EnrolledAt, newStudent.CreatedAt, newStudent.UpdatedAt); err != nil {
+				h.Store.Lock()
+				h.Store.Students = removeByID(h.Store.Students, newStudent.ID)
+				if newParentUser != nil {
+					h.Store.Users = removeByID(h.Store.Users, newParentUser.ID)
+				}
+				if newParent != nil {
+					h.Store.Parents = removeByID(h.Store.Parents, newParent.ID)
+				}
+				if parentLink != nil {
+					h.Store.StudentParents = removeByID(h.Store.StudentParents, parentLink.ID)
+				}
+				h.Store.Unlock()
+				return nil, api.NewControlledError("PERSISTENCE_FAILED", "Student could not be written to the database.", 500, err)
+			}
+		}
+
+		if newParentUser != nil {
+			h.Persist("users", newParentUser)
+		}
+		h.Persist("students", newStudent)
+		if newParent != nil {
+			h.Persist("parents", newParent)
+		}
+		if parentLink != nil {
+			h.Persist("student_parents", parentLink)
 		}
 
 		if h.Cache != nil && h.Cache.Available() {

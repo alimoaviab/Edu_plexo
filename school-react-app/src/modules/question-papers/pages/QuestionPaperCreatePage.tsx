@@ -19,6 +19,7 @@ import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { useQuestionPapers } from "../hooks/useQuestionPapers";
 import type { PaperQuestion, QuestionType, Difficulty } from "../types/questionPaper.types";
 import { showToast } from "@/utils/toast";
+import { sanitizedInnerHtml } from "@/utils/sanitizeHtml";
 import { autoGeneratePaper } from "@/modules/question-bank/services/questionBank.service";
 import type { BankQuestion } from "@/modules/question-bank/types/questionBank.types";
 import { getQuestionTypeLabel, QUESTION_TYPES } from "@/data/question-types";
@@ -937,7 +938,7 @@ function AddQuestionDrawer({
                       <div className="flex-1 min-w-0">
                         <div
                           className="text-xs font-medium text-slate-800 line-clamp-2"
-                          dangerouslySetInnerHTML={{ __html: q.question_html }}
+                          dangerouslySetInnerHTML={sanitizedInnerHtml(q.question_html)}
                         />
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">{getQuestionTypeLabel(q.type)}</span>
@@ -1398,7 +1399,7 @@ function QuestionBankBrowseDrawer({
                     className="mt-1 rounded border-slate-300 text-violet-600 focus:ring-violet-500 disabled:opacity-50"
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-slate-800 leading-relaxed line-clamp-2" dangerouslySetInnerHTML={{ __html: q.question_html }} />
+                    <div className="text-xs font-medium text-slate-800 leading-relaxed line-clamp-2" dangerouslySetInnerHTML={sanitizedInnerHtml(q.question_html)} />
                     {q.type === "mcq" && opts.length > 0 && (
                       <div className="mt-1.5 grid grid-cols-2 gap-1">
                         {opts.map((opt: any, i: number) => (

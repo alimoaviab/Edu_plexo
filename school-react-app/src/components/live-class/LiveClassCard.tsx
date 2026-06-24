@@ -1,4 +1,6 @@
+import { showToast } from "@/utils/toast";
 import { useState, useEffect } from 'react';
+import { useDialog } from "@/components/ui/DialogContext";
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat('en-US', {
@@ -48,6 +50,7 @@ interface LiveClassCardProps {
 
 export default function LiveClassCard({ liveClass, onDelete }: LiveClassCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const { confirm } = useDialog();
 
   // Debug logging
   useEffect(() => {
@@ -78,7 +81,7 @@ export default function LiveClassCard({ liveClass, onDelete }: LiveClassCardProp
 
   // Handle delete
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this live class?')) {
+    if (!(await confirm("Delete Class", 'Are you sure you want to delete this live class?'))) {
       return;
     }
 
@@ -95,7 +98,7 @@ export default function LiveClassCard({ liveClass, onDelete }: LiveClassCardProp
       onDelete?.(liveClass._id);
     } catch (error) {
       console.error('Error deleting class:', error);
-      alert('Failed to delete class. Please try again.');
+      showToast('Failed to delete class. Please try again.', "info");
     } finally {
       setIsDeleting(false);
     }
@@ -203,7 +206,7 @@ export default function LiveClassCard({ liveClass, onDelete }: LiveClassCardProp
             <button
               onClick={() => {
                 navigator.clipboard.writeText(liveClass.meetingLink!);
-                alert('Link copied to clipboard!');
+                showToast('Link copied to clipboard!', "info");
               }}
               className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
               title="Copy link"

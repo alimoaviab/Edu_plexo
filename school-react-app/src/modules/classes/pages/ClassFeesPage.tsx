@@ -1,10 +1,13 @@
+import { showToast } from "@/utils/toast";
 import { AppIcon } from "shared/ui/AppIcon";
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DataState, Skeleton, Badge, Button } from "@/components/ui";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import { serviceRequest } from "@/services/service-client";
+import { bindRefresh } from "@/services/data-bus";
 import { useClasses } from "@/modules/classes/hooks/useClasses";
+import { useDialog } from "@/components/ui/DialogContext";
 
 type FeeComponent = {
     id: string;
@@ -37,6 +40,7 @@ type FeeType = {
 export function ClassFeesPage() {
     const params = useParams();
     const navigate = useNavigate();
+    const { confirm } = useDialog();
     const classId = params.id as string;
 
     const [data, setData] = useState<ClassFeeData | null>(null);
@@ -62,6 +66,9 @@ export function ClassFeesPage() {
 
     useEffect(() => {
         loadData();
+        return bindRefresh("fees", () => {
+            loadData();
+        });
     }, [classId]);
 
     async function loadData() {
@@ -87,7 +94,7 @@ export function ClassFeesPage() {
     });
 
     async function handleGenerate() {
-        if (!window.confirm(`Generate invoices for all active students in this class for ${genDate.month.toUpperCase()} ${genDate.year}?`)) return;
+        if (!(await confirm("Generate Invoices", `Generate invoices for all active students in this class for ${genDate.month.toUpperCase()} ${genDate.year}?`))) return;
         
         setSaving(true);
         try {
@@ -100,10 +107,10 @@ export function ClassFeesPage() {
                 })
             });
             if (res.ok) {
-                alert(`Generated successfully!`);
+                showToast(`Generated successfully!`, "info");
                 navigate("/admin/fee"); // Jump to ledger to see results
             } else {
-                alert(res.message || "Generation failed");
+                showToast(res.message || "Generation failed", "info");
             }
         } catch (err) {
             console.error(err);
@@ -114,7 +121,7 @@ export function ClassFeesPage() {
 
     async function handleSave() {
         if (!formData.name || !formData.amount) {
-            alert("Please fill required fields");
+            showToast("Please fill required fields", "info");
             return;
         }
 

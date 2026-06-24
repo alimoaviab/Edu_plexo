@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { apiRequest } from '@/lib/api'
+import { sanitizedInnerHtml } from '@/utils/sanitizeHtml'
 
 type ApprovalTab = 'pending' | 'approved' | 'rejected'
 
@@ -129,7 +130,7 @@ export function ModerationPage() {
                   {/* Question text */}
                   <div
                     className="text-sm text-slate-800 font-medium leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: q.question_html }}
+                    dangerouslySetInnerHTML={sanitizedInnerHtml(q.question_html)}
                   />
 
                   {/* MCQ options */}

@@ -562,25 +562,64 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 		yearID := tenant.ResolveAcademicYearID(h.Store, ctx, "")
 		h.Store.Lock()
+		
+		// Check if user with this email already exists
+		var existingUser *store.User
 		for _, u := range h.Store.Users {
-			if strings.EqualFold(u.Email, body.Email) {
-				h.Store.Unlock()
-				return nil, api.NewControlledError("DUPLICATE", "This email is already registered in the system.", 400, nil)
+			if strings.EqualFold(u.Email, body.Email) && u.SchoolID == ctx.SchoolID {
+				existingUser = u
+				break
 			}
 		}
+		
+		// If user exists, check if they're already a teacher
+		if existingUser != nil {
+			for _, t := range h.Store.Teachers {
+				if t.SchoolID == ctx.SchoolID && strings.EqualFold(t.Email, body.Email) {
+					h.Store.Unlock()
+					return nil, api.NewControlledError("DUPLICATE", "This email is already registered as a teacher.", 400, nil)
+				}
+			}
+		}
+		
 		now := time.Now()
 		var userID string
-		if body.Password != "" {
+		
+		// If user exists, reuse the existing user account
+		if existingUser != nil {
+			userID = existingUser.ID
+		} else if body.Password != "" {
+			// Create new user account
 			hash, _ := auth.HashPassword(body.Password)
 			userID = store.NewID("usr")
-			h.Store.Users = append(h.Store.Users, &store.User{
+			userRecord := &store.User{
 				ID: userID, SchoolID: ctx.SchoolID, Email: body.Email, PasswordHash: hash, Role: "teacher", 
 				Permissions: []string{"teacher:basic"},
 				Status: "active",
 				Profile: store.UserProfile{FirstName: body.FirstName, LastName: body.LastName, Phone: body.Phone},
 				CreatedAt: now, UpdatedAt: now,
-			})
-			h.Persist("users", h.Store.Users[len(h.Store.Users)-1])
+			}
+			h.Store.Users = append(h.Store.Users, userRecord)
+			h.Persist("users", userRecord)
+			
+			if h.Pool != nil {
+				result, err := h.Pool.Exec(r.Context(), `
+					INSERT INTO users (id, school_id, email, password_hash, role, permissions, status, profile_first, profile_last, profile_phone, created_at, updated_at)
+					VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+					ON CONFLICT (school_id, email) DO NOTHING
+				`, userRecord.ID, userRecord.SchoolID, userRecord.Email, userRecord.PasswordHash, userRecord.Role, userRecord.Permissions, userRecord.Status, userRecord.Profile.FirstName, userRecord.Profile.LastName, userRecord.Profile.Phone, userRecord.CreatedAt, userRecord.UpdatedAt)
+				
+				if err != nil {
+					h.Store.Unlock()
+					return nil, api.NewControlledError("DB_ERROR", "Failed to create user account: "+err.Error(), 500, nil)
+				}
+				
+				// Check if insert actually happened (rowsAffected > 0)
+				if result.RowsAffected() == 0 {
+					h.Store.Unlock()
+					return nil, api.NewControlledError("DUPLICATE", "This email is already registered in the system.", 400, nil)
+				}
+			}
 		}
 		count := 0
 		for _, t := range h.Store.Teachers {
@@ -590,24 +629,19 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 		newTeacher := &store.Teacher{
 			ID: store.NewID("tch"), SchoolID: ctx.SchoolID, AcademicYearID: yearID, UserID: userID, Email: body.Email,
-			EmployeeNo: "TCH-" + padLeft(count+1, 4), FirstName: body.FirstName, LastName: body.LastName, Phone: body.Phone,
+			EmployeeNo: "TCH-" + store.NewID("")[1:6] + "-" + padLeft(count+1, 3), FirstName: body.FirstName, LastName: body.LastName, Phone: body.Phone,
 			Qualification: body.Qualification, SubjectIDs: orEmpty(body.SubjectIDs), Subjects: orEmpty(body.Subjects),
 			ClassIDs: orEmpty(body.ClassIDs), Status: "active", JoinedAt: now, CreatedAt: now, UpdatedAt: now,
 		}
-		h.Store.Teachers = append(h.Store.Teachers, newTeacher)
-		h.Store.Unlock()
-		h.Persist("teachers", newTeacher)
-		audit.Write(h.Store, ctx, audit.Input{Action: "create", EntityType: "teacher", EntityID: newTeacher.ID, After: newTeacher})
 
 		// Direct PG write so the immediate frontend refetch (which
 		// hits the PG paginated path) sees the new row without waiting
-		// for the background flush queue. The Persist call above is kept
-		// as belt-and-suspenders — the upsert is idempotent.
+		// for the background flush queue.
 		if h.Pool != nil {
-			_, _ = h.Pool.Exec(r.Context(), `
+			_, err := h.Pool.Exec(r.Context(), `
 				INSERT INTO teachers (id, school_id, academic_year_id, user_id, email,
 					employee_no, first_name, last_name, phone, qualification,
-					subject_ids, subjects, class_ids, status, joined_at,
+					status, joined_at,
 					created_at, updated_at)
 				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
 				ON CONFLICT (id) DO NOTHING
@@ -615,9 +649,18 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				nullableString(newTeacher.UserID), newTeacher.Email,
 				newTeacher.EmployeeNo, newTeacher.FirstName, newTeacher.LastName,
 				newTeacher.Phone, newTeacher.Qualification,
-				newTeacher.SubjectIDs, newTeacher.Subjects, newTeacher.ClassIDs,
 				newTeacher.Status, newTeacher.JoinedAt, newTeacher.CreatedAt, newTeacher.UpdatedAt)
+			
+			if err != nil {
+				h.Store.Unlock()
+				return nil, api.NewControlledError("DB_ERROR", "Database error: "+err.Error(), 500, nil)
+			}
 		}
+
+		h.Store.Teachers = append(h.Store.Teachers, newTeacher)
+		h.Store.Unlock()
+		h.Persist("teachers", newTeacher)
+		audit.Write(h.Store, ctx, audit.Input{Action: "create", EntityType: "teacher", EntityID: newTeacher.ID, After: newTeacher})
 
 		h.invalidateCaches(r.Context(), ctx.SchoolID, yearID)
 		return newTeacher, nil
@@ -742,7 +785,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 				if h.Pool != nil {
 					_, _ = h.Pool.Exec(r.Context(), `
 						UPDATE teachers SET first_name=$3, last_name=$4, email=$5, phone=$6,
-						       qualification=$7, status=$8, user_id=$9, updated_at=$10
+						       qualification=$7, status=$8, user_id=nullif($9,''), updated_at=$10
 						WHERE id=$1 AND school_id=$2
 					`, t.ID, t.SchoolID, t.FirstName, t.LastName, t.Email, t.Phone,
 						t.Qualification, t.Status, nullableString(t.UserID), t.UpdatedAt)

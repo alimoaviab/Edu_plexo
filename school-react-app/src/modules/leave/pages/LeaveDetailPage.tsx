@@ -21,10 +21,12 @@ import { useSafeAsync } from "@/hooks/useSafeAsync";
 import { showToast } from "@/utils/toast";
 import { LeaveRecordRow } from "../types/leave.types";
 import * as service from "../services/leave.service";
+import { useDialog } from "@/components/ui/DialogContext";
 
 export function LeaveDetailPage() {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { confirm } = useDialog();
 
   const { state, run } = useSafeAsync<LeaveRecordRow>();
   const [busy, setBusy] = useState(false);
@@ -77,7 +79,7 @@ export function LeaveDetailPage() {
   }
 
   async function destroy() {
-    if (!window.confirm("Delete this leave request? This action cannot be undone.")) return;
+    if (!(await confirm("Confirm Action", "Delete this leave request? This action cannot be undone."))) return;
     setBusy(true);
     try {
       const r = await service.deleteLeave(id);

@@ -8,10 +8,12 @@ import { useAttendance } from "../hooks/useAttendance";
 import { AttendanceRecordRow } from "../types/attendance.types";
 import { showToast } from "@/utils/toast";
 import { useQueryParams } from "@/hooks/useQueryParams";
+import { useDialog } from "@/components/ui/DialogContext";
 import { AttendanceBulkForm } from "../components/AttendanceBulkForm";
 
 export function AttendanceListPage({ filters: initialFilters }: { filters?: { class_id?: string; student_id?: string; date?: string } }) {
   const { currentParams, updateQuery, withQuery } = useQueryParams();
+  const { prompt } = useDialog();
   const [activeFilters, setActiveFilters] = React.useState({
     class_id: currentParams.get("class_id") || initialFilters?.class_id || "",
     date: currentParams.get("date") || initialFilters?.date || new Date().toISOString().split('T')[0],
@@ -141,7 +143,7 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
       icon: "edit",
       label: "Edit",
       onClick: async (row) => {
-        const status = window.prompt("Status (present/absent)", row.status)?.trim();
+        const status = (await prompt("Edit Status", "Status (present/absent)", row.status))?.trim();
         if (!status) return;
         await updateAttendance(row._id, { status: status as any });
       },

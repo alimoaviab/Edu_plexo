@@ -3,12 +3,14 @@
  * Allows teachers to connect their Google Calendar account
  */
 import { useState, useEffect } from 'react';
+import { useDialog } from "@/components/ui/DialogContext";
 
 interface GoogleCalendarConnectProps {
   onConnectionChange?: (isConnected: boolean) => void;
 }
 
 export default function GoogleCalendarConnect({ onConnectionChange }: GoogleCalendarConnectProps) {
+  const { confirm } = useDialog();
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export default function GoogleCalendarConnect({ onConnectionChange }: GoogleCale
 
   // Disconnect Google Calendar
   const handleDisconnect = async () => {
-    if (!confirm('Are you sure you want to disconnect Google Calendar? You will need to reconnect to schedule classes with Google Meet.')) {
+    if (!(await confirm("Disconnect Calendar", 'Are you sure you want to disconnect Google Calendar? You will need to reconnect to schedule classes with Google Meet.'))) {
       return;
     }
 

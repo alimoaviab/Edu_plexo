@@ -4,9 +4,11 @@ import { AcademicYearForm } from "../components/AcademicYearForm";
 import { AcademicYearTable } from "../components/AcademicYearTable";
 import { AcademicYearRow } from "../types/academicYear.types";
 import { useAcademicYears } from "../hooks/useAcademicYears";
+import { useDialog } from "@/components/ui/DialogContext";
 
 export function AcademicYearPage() {
     const { state, addAcademicYear, updateAcademicYear, deleteAcademicYear } = useAcademicYears();
+    const { confirm } = useDialog();
     const years = state.data?.data ?? [];
     const activeYear = years.find((year: AcademicYearRow) => year.is_active);
     const completedYears = years.filter((year: AcademicYearRow) => year.status === "completed").length;
@@ -17,14 +19,14 @@ export function AcademicYearPage() {
     };
 
     const handleDelete = async (row: AcademicYearRow) => {
-        if (confirm(`Are you sure you want to delete academic year ${row.year}?`)) {
+        if (await confirm("Delete Academic Year", `Are you sure you want to delete academic year ${row.year}?`)) {
             await deleteAcademicYear(row._id);
         }
     };
 
     const handleSetActive = async (row: AcademicYearRow) => {
         if (row.is_active) return;
-        if (confirm(`Set ${row.year} as the active academic year?`)) {
+        if (await confirm("Set Active", `Set ${row.year} as the active academic year?`)) {
             await updateAcademicYear(row._id, { is_active: true } as any);
         }
     };

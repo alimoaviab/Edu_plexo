@@ -44,3 +44,4 @@ export type {
   EntityCardAccent,
 } from "./EntityCard";
 export { EntityGrid, EntityGridSkeleton, EntityGridEmpty } from "./EntityGrid";
+export { Modal } from "./Modal";

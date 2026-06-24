@@ -11,7 +11,6 @@ import (
 	"github.com/eduplexo/backend-go/internal/cache"
 	"github.com/eduplexo/backend-go/internal/config"
 	"github.com/eduplexo/backend-go/internal/domain/academicyear"
-	"github.com/eduplexo/backend-go/internal/realtime"
 	"github.com/eduplexo/backend-go/internal/domain/analytics"
 	"github.com/eduplexo/backend-go/internal/domain/announcements"
 	"github.com/eduplexo/backend-go/internal/domain/attendance"
@@ -36,6 +35,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/schedule"
 	"github.com/eduplexo/backend-go/internal/domain/seo"
 	"github.com/eduplexo/backend-go/internal/domain/settings"
+	"github.com/eduplexo/backend-go/internal/domain/sections"
 	"github.com/eduplexo/backend-go/internal/domain/students"
 	"github.com/eduplexo/backend-go/internal/domain/subjects"
 	"github.com/eduplexo/backend-go/internal/domain/subscription"
@@ -45,6 +45,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/metrics"
 	"github.com/eduplexo/backend-go/internal/middleware"
 	"github.com/eduplexo/backend-go/internal/persistence"
+	"github.com/eduplexo/backend-go/internal/realtime"
 	rt "github.com/eduplexo/backend-go/internal/realtime"
 	"github.com/eduplexo/backend-go/internal/store"
 	"github.com/eduplexo/backend-go/internal/stubs"
@@ -115,8 +116,10 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 
 	r.Route("/api", func(r chi.Router) {
 		// ─── Public auth endpoints ───────────────────────────────────────
-		r.Post("/auth/login", authH.Login)
-		r.Post("/auth/signup", authH.Signup)
+		authRL := middleware.NewRateLimiter(10, time.Minute)
+		r.Post("/auth/login", authRL.Limit(authH.Login))
+		r.Post("/auth/logout", authH.Logout)
+		r.Post("/auth/signup", authRL.Limit(authH.Signup))
 		r.Get("/auth/session", authH.Session)
 		r.Post("/auth/_log", authH.Log)
 		r.Get("/auth/google/status", authH.GoogleStatus)
@@ -169,6 +172,12 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Put("/classes/{id}", clH.Update)
 			r.Delete("/classes/{id}", clH.Delete)
 
+			secH := sections.New(s, saveFn)
+			r.Get("/sections", secH.List)
+			r.Post("/sections", secH.Create)
+			r.Patch("/sections/{id}", secH.Update)
+			r.Delete("/sections/{id}", secH.Delete)
+
 			suH := subjects.NewWithCache(s, saveFn, rdb)
 			r.Get("/subjects", suH.List)
 			r.Post("/subjects", suH.Create)
@@ -196,6 +205,13 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Delete("/attendance/{id}", atH.Delete)
 			r.Post("/attendance/mark", atPG.MarkBulkPG) // Direct PG batch insert
 			r.Get("/attendance/sheet", atPG.Sheet)      // Direct PG JOIN query
+
+			tcAttH := attendance.NewTeacherAttendanceHandler(s, saveFn, pg.Pool(), rdb)
+			r.Post("/teachers/attendance/checkin", tcAttH.CheckIn)
+			r.Post("/teachers/attendance/checkout", tcAttH.CheckOut)
+			r.Get("/teachers/attendance/history", tcAttH.History)
+			r.Get("/admin/attendance/teachers", tcAttH.AdminList)
+			r.Get("/admin/attendance/teachers/analytics", tcAttH.Analytics)
 
 			exH := exams.NewWithCache(s, saveFn, rdb)
 			r.Get("/exams", exH.List)

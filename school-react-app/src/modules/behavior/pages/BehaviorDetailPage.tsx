@@ -10,6 +10,7 @@ import { AppIcon } from "shared/ui/AppIcon";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Badge, Button, DataState, Skeleton } from "@/components/ui";
+import { useDialog } from "@/components/ui/DialogContext";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import { serviceRequest } from "@/services/service-client";
 import { showToast } from "@/utils/toast";
@@ -23,6 +24,7 @@ interface Props {
 export function BehaviorDetailPage({ role = "admin" }: Props) {
   const { id = "" } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { confirm } = useDialog();
 
   const { state, run } = useSafeAsync<BehaviorRecordRow>();
   const [busy, setBusy] = useState(false);
@@ -52,7 +54,7 @@ export function BehaviorDetailPage({ role = "admin" }: Props) {
   }
 
   async function destroy() {
-    if (!window.confirm("Delete this behavior report? This cannot be undone.")) return;
+    if (!(await confirm("Delete Report", "Delete this behavior report? This cannot be undone."))) return;
     setBusy(true);
     try {
       const r = await service.deleteBehavior(id);
