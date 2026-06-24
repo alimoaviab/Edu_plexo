@@ -562,15 +562,34 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 		yearID := tenant.ResolveAcademicYearID(h.Store, ctx, "")
 		h.Store.Lock()
+		
+		// Check if user with this email already exists
+		var existingUser *store.User
 		for _, u := range h.Store.Users {
-			if strings.EqualFold(u.Email, body.Email) {
-				h.Store.Unlock()
-				return nil, api.NewControlledError("DUPLICATE", "This email is already registered in the system.", 400, nil)
+			if strings.EqualFold(u.Email, body.Email) && u.SchoolID == ctx.SchoolID {
+				existingUser = u
+				break
 			}
 		}
+		
+		// If user exists, check if they're already a teacher
+		if existingUser != nil {
+			for _, t := range h.Store.Teachers {
+				if t.SchoolID == ctx.SchoolID && strings.EqualFold(t.Email, body.Email) {
+					h.Store.Unlock()
+					return nil, api.NewControlledError("DUPLICATE", "This email is already registered as a teacher.", 400, nil)
+				}
+			}
+		}
+		
 		now := time.Now()
 		var userID string
-		if body.Password != "" {
+		
+		// If user exists, reuse the existing user account
+		if existingUser != nil {
+			userID = existingUser.ID
+		} else if body.Password != "" {
+			// Create new user account
 			hash, _ := auth.HashPassword(body.Password)
 			userID = store.NewID("usr")
 			userRecord := &store.User{
@@ -584,11 +603,22 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			h.Persist("users", userRecord)
 			
 			if h.Pool != nil {
-				_, _ = h.Pool.Exec(r.Context(), `
+				result, err := h.Pool.Exec(r.Context(), `
 					INSERT INTO users (id, school_id, email, password_hash, role, permissions, status, profile_first, profile_last, profile_phone, created_at, updated_at)
 					VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-					ON CONFLICT DO NOTHING
+					ON CONFLICT (school_id, email) DO NOTHING
 				`, userRecord.ID, userRecord.SchoolID, userRecord.Email, userRecord.PasswordHash, userRecord.Role, userRecord.Permissions, userRecord.Status, userRecord.Profile.FirstName, userRecord.Profile.LastName, userRecord.Profile.Phone, userRecord.CreatedAt, userRecord.UpdatedAt)
+				
+				if err != nil {
+					h.Store.Unlock()
+					return nil, api.NewControlledError("DB_ERROR", "Failed to create user account: "+err.Error(), 500, nil)
+				}
+				
+				// Check if insert actually happened (rowsAffected > 0)
+				if result.RowsAffected() == 0 {
+					h.Store.Unlock()
+					return nil, api.NewControlledError("DUPLICATE", "This email is already registered in the system.", 400, nil)
+				}
 			}
 		}
 		count := 0
