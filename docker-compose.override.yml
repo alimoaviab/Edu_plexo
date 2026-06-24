@@ -1,0 +1,31 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Docker Compose Override for Local Development
+# ═══════════════════════════════════════════════════════════════════════════
+# This file is automatically merged with docker-compose.yml in local environment.
+# NOT used in VPS (VPS uses docker-compose.prod.yml or docker-compose.vps.yml)
+#
+# Provides development-specific overrides like:
+#   - Hot reload volumes
+#   - Debug ports
+#   - Development environment variables
+
+version: '3.8'
+
+services:
+  backend-go:
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+
+  frontend:
+    environment:
+      NODE_ENV: development
+
+  super-admin:
+    environment:
+      NODE_ENV: development
+
+  edubot:
+    environment:
+      ENV: development
+      LOG_LEVEL: DEBUG

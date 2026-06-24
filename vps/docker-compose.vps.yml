@@ -3,8 +3,9 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # Backend-only infrastructure. Frontends are on Vercel.
 #
-# Deploy:
-#   docker compose -f docker-compose.vps.yml up -d --build
+# SIMPLE DEPLOY (No extra flags needed):
+#   git pull
+#   docker compose up --build -d
 #
 # Services:
 #   nginx      — Reverse proxy + SSL (ports 80/443)
