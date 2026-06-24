@@ -1,3 +1,4 @@
+import { showToast } from "@/utils/toast";
 import { AppIcon } from "shared/ui/AppIcon";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -53,12 +54,12 @@ export function ExamQuestionsPage() {
         body: JSON.stringify({ questions }),
       });
       if (res.ok) {
-        alert("Questions saved successfully");
+        showToast("Questions saved successfully", "info");
         navigate("/teacher/live-exam");
       }
     } catch (error) {
       console.error(error);
-      alert("Failed to save questions");
+      showToast("Failed to save questions", "info");
     } finally {
       setSaving(false);
     }

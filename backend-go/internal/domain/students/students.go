@@ -478,7 +478,11 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			ClassID:        body.ClassID,
 			Section:        body.Section,
 			Subjects:       body.Subjects,
-			Guardian:       body.Guardian,
+			Guardian: store.Guardian{
+				Name:  body.Guardian.Name,
+				Phone: body.Guardian.Phone,
+				Email: defaultStr(body.Guardian.Email, body.Email),
+			},
 			Status:         defaultStr(body.Status, "active"),
 			RollNo:         body.RollNo,
 			DateOfBirth:    body.DateOfBirth,
@@ -566,7 +570,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 					admission_no, first_name, last_name, section, roll_no, date_of_birth, gender,
 					guardian_name, guardian_phone, guardian_email, status, enrolled_at,
 					created_at, updated_at)
-				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+				VALUES ($1,$2,$3,nullif($4,''),$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
 				ON CONFLICT (id) DO NOTHING
 			`, newStudent.ID, newStudent.SchoolID, newStudent.AcademicYearID,
 				newStudent.UserID, newStudent.ClassID,

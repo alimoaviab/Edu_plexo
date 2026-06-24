@@ -1,3 +1,4 @@
+import { showToast } from "@/utils/toast";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppIcon } from "shared/ui/AppIcon";
@@ -179,10 +180,10 @@ export function CustomPlanBuilder() {
       if (payload?.ok) {
         navigate("/admin/dashboard");
       } else {
-        alert("Failed to save plan. Please try again.");
+        showToast("Failed to save plan. Please try again.", "info");
       }
     } catch {
-      alert("Failed to save plan. Please check your network.");
+      showToast("Failed to save plan. Please check your network.", "info");
     } finally {
       setSavingPlan(false);
     }

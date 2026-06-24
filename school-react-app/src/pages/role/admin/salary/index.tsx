@@ -1,3 +1,4 @@
+import { showToast } from "@/utils/toast";
 import { AppIcon } from "shared/ui/AppIcon";
 import { useMemo, useState } from "react";
 import { SchoolShell } from "@/layouts/SchoolShell";
@@ -97,13 +98,13 @@ export function SalaryPage() {
             label: "Disburse Now",
             variant: "primary",
             showIf: (row: SalaryRecord) => row.status === "pending",
-            onClick: (row: SalaryRecord) => alert(`Disbursing to ${row.staff_name}`),
+            onClick: (row: SalaryRecord) => showToast(`Disbursing to ${row.staff_name}`, "info"),
         },
         {
             icon: "description",
             label: "View Payslip",
             variant: "ghost",
-            onClick: (row: SalaryRecord) => alert(`Payslip for ${row.staff_name}`),
+            onClick: (row: SalaryRecord) => showToast(`Payslip for ${row.staff_name}`, "info"),
         },
     ], []);
 

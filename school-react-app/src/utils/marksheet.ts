@@ -1,7 +1,8 @@
+import { showToast } from "@/utils/toast";
 /**
  * Real marksheet export.
  *
- * Replaces the legacy `alert("Exam: ...")` placeholder on the results
+ * Replaces the legacy `showToast("Exam: ...", "info")` placeholder on the results
  * list. Uses the browser's print pipeline so the school can save a PDF
  * or print on letterhead with no third-party dependency.
  *

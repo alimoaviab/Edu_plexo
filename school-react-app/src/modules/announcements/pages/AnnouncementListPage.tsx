@@ -7,10 +7,12 @@ import { useAnnouncements } from "../hooks/useAnnouncements";
 import { AnnouncementRecordRow } from "../types/announcement.types";
 import { showToast } from "@/utils/toast";
 import { useQueryParams } from "@/hooks/useQueryParams";
+import { useDialog } from "@/components/ui/DialogContext";
 
 export function AnnouncementListPage() {
   const pathname = useLocation().pathname;
   const { currentParams, updateQuery, withQuery } = useQueryParams();
+  const { prompt } = useDialog();
   const { state, updateAnnouncement, deleteAnnouncement } = useAnnouncements();
   const [searchQuery, setSearchQuery] = useState(currentParams.get("search") || "");
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft" | "archived">((currentParams.get("status") as any) || "all");
@@ -106,7 +108,7 @@ export function AnnouncementListPage() {
       icon: "visibility",
       label: "View Broadcast",
       variant: "primary",
-      onClick: (row) => alert(`Notice: ${row.title}`),
+      onClick: (row) => showToast(`Notice: ${row.title}`, "info"),
     },
     {
       icon: "edit",
@@ -114,7 +116,7 @@ export function AnnouncementListPage() {
       variant: "ghost",
       onClick: async (row) => {
         if (!isValidObjectId(row._id)) return;
-        const status = window.prompt("Status (draft/published/archived)", row.status)?.trim();
+        const status = (await prompt("Update Status", "Status (draft/published/archived)", row.status))?.trim();
         if (status) await updateAnnouncement(row._id, { status: status as any });
       },
     },
@@ -268,7 +270,7 @@ export function AnnouncementListPage() {
                         </span>
                      </div>
                      <div className="flex items-center gap-1">
-                        <button onClick={() => alert(`Broadcast Details: ${row.title}`)} className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:text-blue-600 transition-all">
+                        <button onClick={() => showToast(`Broadcast Details: ${row.title}`, "info")} className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:text-blue-600 transition-all">
                            <AppIcon name="Eye" size={18} />
                         </button>
                         <button onClick={() => deleteAnnouncement(row._id)} className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:text-red-500 transition-all">

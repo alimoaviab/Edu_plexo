@@ -6,9 +6,11 @@ import { useSubjects } from "../hooks/useSubjects";
 import { SubjectEditSidebar } from "../components/SubjectEditSidebar";
 import { SubjectRow, SubjectFormInput } from "../types";
 import { showToast } from "@/utils/toast";
+import { useDialog } from "@/components/ui/DialogContext";
 
 export function SubjectListPage() {
   const { data, isLoading, error, createSubject, updateSubject, deleteSubject } = useSubjects();
+  const { confirm } = useDialog();
 
   const [editingSubject, setEditingSubject] = useState<SubjectRow | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -37,7 +39,7 @@ export function SubjectListPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("Are you sure you want to delete this subject?")) return;
+    if (!(await confirm("Delete Subject", "Are you sure you want to delete this subject?"))) return;
     try {
       await deleteSubject(id);
       showToast("Subject deleted successfully");

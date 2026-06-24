@@ -3,6 +3,7 @@ import { FormEvent, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button, Input, Select } from "@/components/ui";
 import { ClassFormInput, ClassSubject, ClassRow } from "../types/class.types";
+import { useDialog } from "@/components/ui/DialogContext";
 
 const defaultSubjects: ClassSubject[] = [
     { name: "Urdu", total_marks: 100, passing_marks: 33 },
@@ -56,6 +57,7 @@ export function ClassForm({
     initialData?: ClassRow;
     activeAcademicYearLabel?: string;
 }) {
+    const { prompt } = useDialog();
     const [form, setForm] = useState<ClassFormInput>(initialData ? {
         name: initialData.name,
         section: initialData.section || "A",
@@ -101,8 +103,8 @@ export function ClassForm({
         }
     }, [sectionOptions]);
 
-    const handleAddSection = () => {
-        const newSec = window.prompt("Enter new section name (e.g. B, C, Gold):");
+    const handleAddSection = async () => {
+        const newSec = await prompt("New Section", "Enter new section name (e.g. B, C, Gold):");
         if (newSec && newSec.trim()) {
             const trimmed = newSec.trim();
             if (!sectionsList.includes(trimmed)) {
@@ -315,7 +317,6 @@ export function ClassForm({
                                 <AppIcon name="Plus" size={14} />
                                 Add Subject
                             </Button>
-                            <Button type="button" variant="ghost" className="h-9 px-4 border border-slate-200 rounded-lg text-[11px] font-bold">Template</Button>
                         </div>
                     </div>
 

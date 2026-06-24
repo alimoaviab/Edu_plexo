@@ -1,3 +1,4 @@
+import { showToast } from "@/utils/toast";
 import { AppIcon } from "shared/ui/AppIcon";
 import React, { useState } from "react";
 
@@ -51,11 +52,11 @@ export const CreateLiveExamModal: React.FC<CreateLiveExamModalProps> = ({
         onSuccess();
         onClose();
       } else {
-        alert(`Error: ${result.error.message || "Failed to create exam"}`);
+        showToast(`Error: ${result.error.message || "Failed to create exam"}`, "info");
       }
     } catch (err) {
       console.error(err);
-      alert("An error occurred");
+      showToast("An error occurred", "info");
     } finally {
       setLoading(false);
     }

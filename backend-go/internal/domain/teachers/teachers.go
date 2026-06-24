@@ -602,14 +602,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			_, err := h.Pool.Exec(r.Context(), `
 				INSERT INTO teachers (id, school_id, academic_year_id, user_id, email,
 					employee_no, first_name, last_name, phone, qualification,
-					subject_ids, subjects, class_ids, status, joined_at,
+					status, joined_at,
 					created_at, updated_at)
-				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+				VALUES ($1,$2,nullif($3,''),nullif($4,''),$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
 			`, newTeacher.ID, newTeacher.SchoolID, newTeacher.AcademicYearID,
 				newTeacher.UserID, newTeacher.Email,
 				newTeacher.EmployeeNo, newTeacher.FirstName, newTeacher.LastName,
 				newTeacher.Phone, newTeacher.Qualification,
-				newTeacher.SubjectIDs, newTeacher.Subjects, newTeacher.ClassIDs,
 				newTeacher.Status, newTeacher.JoinedAt, newTeacher.CreatedAt, newTeacher.UpdatedAt)
 			
 			if err != nil {
@@ -746,7 +745,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 				if h.Pool != nil {
 					_, _ = h.Pool.Exec(r.Context(), `
 						UPDATE teachers SET first_name=$3, last_name=$4, email=$5, phone=$6,
-						       qualification=$7, status=$8, user_id=$9, updated_at=$10
+						       qualification=$7, status=$8, user_id=nullif($9,''), updated_at=$10
 						WHERE id=$1 AND school_id=$2
 					`, t.ID, t.SchoolID, t.FirstName, t.LastName, t.Email, t.Phone,
 						t.Qualification, t.Status, t.UserID, t.UpdatedAt)

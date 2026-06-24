@@ -1,3 +1,4 @@
+import { showToast } from "@/utils/toast";
 import { AppIcon } from "shared/ui/AppIcon";
 import React, { useState } from "react";
 
@@ -38,7 +39,7 @@ export const CreateLiveClassModal: React.FC<CreateLiveClassModalProps> = ({
     e.preventDefault();
 
     if (showTeacherField && !formData.teacherId) {
-      alert("Please select a teacher.");
+      showToast("Please select a teacher.", "info");
       return;
     }
 
@@ -54,11 +55,11 @@ export const CreateLiveClassModal: React.FC<CreateLiveClassModalProps> = ({
         onClose();
       } else {
         const error = await res.json();
-        alert(`Error: ${error.error}`);
+        showToast(`Error: ${error.error}`, "info");
       }
     } catch (err) {
       console.error(err);
-      alert("An error occurred");
+      showToast("An error occurred", "info");
     } finally {
       setLoading(false);
     }

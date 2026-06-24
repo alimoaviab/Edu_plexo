@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import { Badge, Button, Skeleton, DataState, Select } from "@/components/ui";
+import { useDialog } from "@/components/ui/DialogContext";
 import { serviceRequest } from "@/services/service-client";
 import { showToast } from "@/utils/toast";
 
@@ -59,6 +60,7 @@ function money(value: number) {
 export function ClassFeePage() {
   const { id } = useParams() as { id: string };
   const navigate = useNavigate();
+  const { confirm } = useDialog();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -177,7 +179,7 @@ export function ClassFeePage() {
   };
 
   const handleDelete = async (componentId: string) => {
-    if (!confirm("Remove this fee component?")) return;
+    if (!(await confirm("Delete Fee", "Remove this fee component?"))) return;
     setSaving(true);
     try {
       // 1. Call API

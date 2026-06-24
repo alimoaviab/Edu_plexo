@@ -2,6 +2,7 @@ import { AppIcon } from "shared/ui/AppIcon";
 import { useState } from "react";
 import { useSections } from "../hooks/useSections";
 import { Button, Input, Drawer, DataState } from "@/components/ui";
+import { useDialog } from "@/components/ui/DialogContext";
 
 interface SectionManagementProps {
     isOpen: boolean;
@@ -11,6 +12,7 @@ interface SectionManagementProps {
 
 export function SectionManagement({ isOpen, onClose, academicYearId }: SectionManagementProps) {
     const { state, addSection, updateSection, deleteSection } = useSections();
+    const { confirm } = useDialog();
     const [newSectionName, setNewSectionName] = useState("");
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState("");
@@ -42,7 +44,7 @@ export function SectionManagement({ isOpen, onClose, academicYearId }: SectionMa
     };
 
     const handleDelete = async (id: string) => {
-        if (confirm("Are you sure you want to delete this section? This action cannot be undone.")) {
+        if (await confirm("Delete Section", "Are you sure you want to delete this section? This action cannot be undone.")) {
             setIsSaving(true);
             await deleteSection(id);
             setIsSaving(false);

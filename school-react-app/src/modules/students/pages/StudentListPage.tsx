@@ -10,9 +10,11 @@ import { useSubjects } from "../../subjects/hooks/useSubjects";
 import { StudentRow } from "../types/student.types";
 import { showToast } from "@/utils/toast";
 import { serviceRequest } from "@/services/service-client";
+import { useDialog } from "@/components/ui/DialogContext";
 
 export function StudentListPage() {
   const navigate = useNavigate();
+  const { confirm } = useDialog();
   const { currentParams, updateQuery, withQuery } = useQueryParams();
   const classFilter = currentParams.get("class_id") || "";
 
@@ -416,7 +418,7 @@ export function StudentListPage() {
                         label: "Delete student",
                         icon: "delete",
                         onClick: async () => {
-                          if (window.confirm(`Are you sure you want to delete ${row.first_name}?`)) {
+                          if (await confirm("Delete Student", `Are you sure you want to delete ${row.first_name}?`)) {
                             await deleteStudent(row._id);
                           }
                         },

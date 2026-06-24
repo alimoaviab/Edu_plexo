@@ -2,6 +2,7 @@ import { AppIcon } from "shared/ui/AppIcon";
 import { useState, useMemo } from "react";
 import { ClassFormInput, ClassRow, GradeThreshold, ClassSubject } from "../types/class.types";
 import { Badge } from "@/components/ui";
+import { useDialog } from "@/components/ui/DialogContext";
 
 interface ClassFormWizardProps {
   initialData?: ClassRow;
@@ -26,6 +27,7 @@ export function ClassFormWizard({
   subjectOptions,
   isSaving = false,
 }: ClassFormWizardProps) {
+  const { confirm } = useDialog();
   const [step, setStep] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newSubject, setNewSubject] = useState({ name: "", code: "" });
@@ -147,7 +149,7 @@ export function ClassFormWizard({
   const handleDeleteSubject = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!onDeleteSubject) return;
-    if (confirm("Are you sure you want to remove this subject from the institutional curriculum?")) {
+    if (await confirm("Remove Subject", "Are you sure you want to remove this subject from the institutional curriculum?")) {
       await onDeleteSubject(id);
     }
   };

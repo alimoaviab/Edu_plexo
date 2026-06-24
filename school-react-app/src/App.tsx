@@ -6,6 +6,7 @@ import { NetworkStatus } from "@/components/ui/NetworkStatus";
 import { useAuth } from "@/hooks/useAuth";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { useRealtimeAttendanceSync } from "@/hooks/useRealtimeAttendanceSync";
+import { DialogProvider } from "@/components/ui/DialogContext";
 
 /**
  * Top-level app shell. Identical responsibility to old-app/school-app/app/layout.tsx:
@@ -39,7 +40,9 @@ export function App() {
 
   return (
     <QueryProvider>
-      <AppContent />
+      <DialogProvider>
+        <AppContent />
+      </DialogProvider>
     </QueryProvider>
   );
 }

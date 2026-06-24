@@ -1,3 +1,4 @@
+import { showToast } from "@/utils/toast";
 import { AppIcon } from "shared/ui/AppIcon";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -25,7 +26,7 @@ export function PaymentPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file && !smsText) {
-      alert("Please upload a screenshot or paste the SMS text.");
+      showToast("Please upload a screenshot or paste the SMS text.", "info");
       return;
     }
 
@@ -40,13 +41,13 @@ export function PaymentPage() {
       });
 
       if (res.ok) {
-        alert("Payment proof submitted successfully! Super Admin will verify it shortly.");
+        showToast("Payment proof submitted successfully! Super Admin will verify it shortly.", "info");
         navigate("/admin/subscription");
       } else {
-        alert(res.error?.message || "Failed to submit payment proof.");
+        showToast(res.error?.message || "Failed to submit payment proof.", "info");
       }
     } catch (err) {
-      alert("An error occurred while submitting payment proof.");
+      showToast("An error occurred while submitting payment proof.", "info");
     } finally {
       setIsSubmitting(false);
     }
