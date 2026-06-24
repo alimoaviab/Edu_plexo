@@ -7,9 +7,11 @@ import { useAcademicYears } from "../../academicYear/hooks/useAcademicYears";
 import { useTeachers } from "../../teachers/hooks/useTeachers";
 import { useSubjects } from "../../subjects/hooks/useSubjects";
 import { useClasses } from "../hooks/useClasses";
+import { useSections } from "../hooks/useSections";
 import { ClassFormInput } from "../types/class.types";
 import { showToast } from "@/utils/toast";
 import { ClassForm } from "../components/ClassForm";
+import { getSelectedAcademicYearId } from "@/services/academic-year-context";
 
 export function ClassCreatePage() {
   const navigate = useNavigate();
@@ -22,6 +24,7 @@ export function ClassCreatePage() {
     error: subjectsError,
     refresh: refreshSubjects,
   } = useSubjects();
+  const { state: sectionsState } = useSections();
 
   const isDependencyLoading =
     academicYearState.status === "idle" ||
@@ -45,6 +48,15 @@ export function ClassCreatePage() {
   const subjectOptions = (subjects ?? [])
     .filter((item) => item.status === "active")
     .map((item) => ({ id: item._id, label: item.name }));
+
+  const sectionOptions = (sectionsState.data?.data ?? []).map((item: any) => ({
+    id: item._id,
+    label: item.name,
+  }));
+
+  const activeAcademicYearId = getSelectedAcademicYearId();
+  const activeAcademicYear = (academicYearState.data?.data ?? []).find(ay => ay._id === activeAcademicYearId) || (academicYearState.data?.data ?? []).find(ay => ay.is_active);
+  const activeAcademicYearLabel = activeAcademicYear?.year || "Unknown Session";
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -116,8 +128,10 @@ export function ClassCreatePage() {
             academicYearOptions={academicYearOptions}
             teacherOptions={teacherOptions}
             subjectOptions={subjectOptions}
-            onCreateAcademicYear={() => navigate("/admin/academic-years")}
+            sectionOptions={sectionOptions}
             onCreateTeacher={() => navigate("/admin/teachers/create")}
+            autoSelectAcademicYear={activeAcademicYear?._id}
+            activeAcademicYearLabel={activeAcademicYearLabel}
           />
         </div>
       )}

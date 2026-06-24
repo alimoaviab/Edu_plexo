@@ -29,9 +29,6 @@ export function SubscriptionPage() {
   } = useSubscription();
 
   const navigate = useNavigate();
-  const [showContactModal, setShowContactModal] = useState(false);
-
-
   if (isLoading) {
     return <SubscriptionSkeleton />;
   }
@@ -145,7 +142,7 @@ export function SubscriptionPage() {
         {/* Pricing Cards */}
         <div>
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Available Plans</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {plans.map((plan) => (
               <PricingCard
                 key={plan.name}
@@ -154,7 +151,7 @@ export function SubscriptionPage() {
                 canTrial={current?.can_trial ?? false}
                 onStartTrial={() => startTrial()}
                 onUpgrade={() => navigate("/admin/subscription/payment", { state: { plan } })}
-                onContactSales={() => setShowContactModal(true)}
+                onManualSubscribe={() => navigate("/admin/subscription/custom")}
                 isUpgrading={isUpgrading}
                 isStartingTrial={isStartingTrial}
               />
@@ -213,28 +210,6 @@ export function SubscriptionPage() {
           );
         })()}
 
-        {/* Contact Sales Modal */}
-        {showContactModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowContactModal(false)}>
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <h3 className="text-xl font-bold text-gray-900">Contact Sales</h3>
-              <p className="mt-3 text-gray-600">
-                For custom plans with 800+ students, dedicated support, and enterprise features, reach out to our sales team.
-              </p>
-              <div className="mt-6 space-y-3">
-                <a href="mailto:sales@eduplexo.com" className="block w-full text-center px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition">
-                  Email: sales@eduplexo.com
-                </a>
-                <a href="https://wa.me/923001234567" target="_blank" rel="noopener noreferrer" className="block w-full text-center px-4 py-3 border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition">
-                  WhatsApp: +92 300 1234567
-                </a>
-              </div>
-              <button onClick={() => setShowContactModal(false)} className="mt-4 w-full text-center text-sm text-gray-500 hover:text-gray-700">
-                Close
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </SchoolShell>
   );
@@ -248,12 +223,12 @@ interface PricingCardProps {
   canTrial: boolean;
   onStartTrial: () => void;
   onUpgrade: () => void;
-  onContactSales: () => void;
+  onManualSubscribe: () => void;
   isUpgrading: boolean;
   isStartingTrial: boolean;
 }
 
-function PricingCard({ plan, isCurrentPlan, canTrial, onStartTrial, onUpgrade, onContactSales, isUpgrading, isStartingTrial }: PricingCardProps) {
+function PricingCard({ plan, isCurrentPlan, canTrial, onStartTrial, onUpgrade, onManualSubscribe, isUpgrading, isStartingTrial }: PricingCardProps) {
   return (
     <div className={`relative bg-white rounded-2xl border-2 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${plan.popular ? "border-blue-500 shadow-md" : "border-gray-200"
       } ${isCurrentPlan ? "ring-2 ring-blue-200" : ""}`}>
@@ -279,7 +254,7 @@ function PricingCard({ plan, isCurrentPlan, canTrial, onStartTrial, onUpgrade, o
         <h3 className="text-lg font-bold text-gray-900">{plan.display_name}</h3>
         <div className="mt-4">
           {plan.is_custom ? (
-            <div className="text-3xl font-bold text-gray-900">Contact Us</div>
+            <div className="text-3xl font-bold text-gray-900">Custom Modules</div>
           ) : (
             <>
               <span className="text-4xl font-bold text-gray-900">
@@ -310,10 +285,10 @@ function PricingCard({ plan, isCurrentPlan, canTrial, onStartTrial, onUpgrade, o
       <div className="mt-8">
         {plan.is_custom ? (
           <button
-            onClick={onContactSales}
+            onClick={onManualSubscribe}
             className="w-full py-3 px-4 rounded-xl font-medium border-2 border-blue-600 text-blue-600 hover:bg-blue-50 transition"
           >
-            Contact Sales
+            Build Your Own Plan
           </button>
         ) : isCurrentPlan ? (
           <button disabled className="w-full py-3 px-4 rounded-xl font-medium bg-gray-100 text-gray-400 cursor-not-allowed">
@@ -367,14 +342,15 @@ function SubscriptionSkeleton() {
 
 function planDisplayName(name: string): string {
   const map: Record<string, string> = {
-    starter: "Starter School",
-    growth: "Growth Plan",
-    custom: "Custom Plan",
+    basic: "Basic Plan",
+    standard: "Standard Plan",
+    premium: "Premium Plan",
+    enterprise: "Enterprise Plan",
   };
   if (map[name]) return map[name];
   // If name is an encoded package string (comma-separated modules like "academic,learning,...")
   // show a friendly label instead of the raw string
-  if (name && name.includes(",")) return "Active Plan";
+  if (name && name.includes(",")) return "Custom Built Plan";
   if (name) return name.charAt(0).toUpperCase() + name.slice(1);
   return "—";
 }

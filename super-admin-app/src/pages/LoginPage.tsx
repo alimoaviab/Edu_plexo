@@ -88,7 +88,7 @@ export function LoginPage() {
               required
               autoComplete="email"
               className="w-full h-11 px-3.5 rounded-lg border border-slate-200 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-              placeholder="super@gmail.com"
+              placeholder="eduplexo@gmail.com"
             />
           </div>
 

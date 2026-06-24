@@ -217,3 +217,16 @@ type AuditLog struct {
 	Metadata   any       `json:"metadata,omitempty"`
 	CreatedAt  time.Time `json:"created_at"`
 }
+
+// Section represents a class section (A, B, C, D, etc.) scoped to a school
+// and academic year. Used by the section management feature.
+type Section struct {
+	ID             string    `json:"_id"`
+	SchoolID       string    `json:"school_id"`
+	AcademicYearID string    `json:"academic_year_id"`
+	Name           string    `json:"name"`
+	Status         string    `json:"status"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
