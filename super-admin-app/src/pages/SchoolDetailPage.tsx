@@ -16,6 +16,7 @@ interface SchoolDetail {
   website: string
   status: string
   owner_email: string
+  owner_password: string
   student_count: number
   teacher_count: number
   class_count: number

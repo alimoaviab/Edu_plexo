@@ -19,19 +19,4 @@ export default defineConfig({
       },
     },
   },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return undefined
-          const pkgPath = id.split('node_modules/').pop() || ''
-          if (/^(react|react-dom|scheduler)\//.test(pkgPath)) return 'vendor-react'
-          if (pkgPath.startsWith('react-router') || pkgPath.startsWith('@remix-run/')) return 'vendor-router'
-          if (pkgPath.startsWith('lucide-react/')) return 'vendor-icons'
-          if (pkgPath.startsWith('dompurify/')) return 'vendor-sanitize'
-          return 'vendor-misc'
-        },
-      },
-    },
-  },
 })

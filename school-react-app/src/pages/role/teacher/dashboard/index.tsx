@@ -142,18 +142,12 @@ export function TeacherDashboardPage() {
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-col items-end gap-1">
             <p className="text-[11px] font-bold text-slate-900 uppercase tracking-tight">{school?.name || ""}</p>
             <div className="flex items-center gap-2">
               <Badge variant="success" className="text-[9px] font-black uppercase py-0.5 px-1.5 bg-blue-50 text-blue-700 border-blue-100">{teacher?.status || "active"}</Badge>
               <span className="text-[10px] font-medium text-slate-400">Active Session</span>
             </div>
-            <Link to="/teacher/my-attendance">
-              <Button size="sm" variant="secondary" className="h-7 text-[10px] font-bold py-0 px-3 bg-white">
-                <AppIcon name="FactCheck" className="mr-1.5 h-3 w-3" />
-                My Attendance
-              </Button>
-            </Link>
           </div>
         </section>
 

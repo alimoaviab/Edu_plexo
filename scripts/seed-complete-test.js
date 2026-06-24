@@ -5,12 +5,12 @@
  * 
  * Seeds:
  *  - School resetting: Deletes 'test@school.com' if it exists.
- *  - 1 School registration: test@school.com using the configured seed password
+ *  - 1 School registration: test@school.com / Test@123
  *  - Super Admin approval & custom/premium subscription assignment
  *  - 2 Academic Years (2025-2026, 2026-2027)
- *  - 25 Teachers (test@teacher.com as teacher 1)
+ *  - 25 Teachers (test@teacher.com / Test@123 as teacher 1)
  *  - 20 Classes (Grade 1-A to Grade 10-A, Grade 1-B to Grade 10-B)
- *  - 500 Students (25 per class, test@student.com in Class 1)
+ *  - 500 Students (25 per class, test@student.com / Test@123 in Class 1)
  *  - Timetables for all 20 classes
  *  - Leaves: Approved, Rejected, Pending leaves for students and teachers
  *  - Behavior records
@@ -1207,11 +1207,10 @@ async function main() {
   console.log("=========================================================");
   console.log("    ✓ CUSTOM SEEDING COMPLETED SUCCESSFULLY!");
   console.log("=========================================================");
-  console.log("SEEDED ACCOUNT GROUPS:");
-  console.log(`  School Admin:      ${schoolAdminEmail}`);
-  console.log(`  Teacher Account:   ${testTeacherEmail}`);
-  console.log(`  Student Account:   ${testStudentEmail}`);
-  console.log("  Use the configured seed password from your local secret source; it is never printed.");
+  console.log("LOGIN CREDENTIALS FOR VERIFICATION:");
+  console.log(`  School Admin:      ${schoolAdminEmail} / ${schoolAdminPass}`);
+  console.log(`  Teacher Account:   ${testTeacherEmail} / ${defaultPass}`);
+  console.log(`  Student Account:   ${testStudentEmail} / ${defaultPass}`);
   console.log("=========================================================");
 }
 

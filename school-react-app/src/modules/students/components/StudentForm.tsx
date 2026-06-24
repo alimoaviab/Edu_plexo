@@ -43,10 +43,7 @@ interface LegacyStudentFormProps {
   classOptions: Array<{ id: string; label: string; section?: string }>;
 }
 
-function mapInitialValues(s: any): StudentFormInput {
-  const schol = s.scholarship || {};
-  const startYear = schol.start_date ? new Date(schol.start_date).getFullYear() : new Date().getFullYear();
-
+function mapInitialValues(s: StudentRow): StudentFormInput {
   return {
     admission_no: s.admission_no ?? "",
     first_name: s.first_name ?? "",
@@ -60,15 +57,6 @@ function mapInitialValues(s: any): StudentFormInput {
       phone: s.guardian?.phone ?? "",
       email: s.guardian?.email ?? "",
     },
-    // Map scholarship fields back to form input
-    scholarship_enabled: schol.enabled || false,
-    scholarship_type: schol.type || "percentage",
-    scholarship_value: schol.value || "",
-    scholarship_year: startYear,
-    scholarship_apply_monthly: schol.apply_monthly ?? true,
-    scholarship_apply_fine: schol.apply_fine ?? false,
-    scholarship_apply_onetime: schol.apply_onetime ?? false,
-    scholarship_notes: schol.notes || "",
   };
 }
 

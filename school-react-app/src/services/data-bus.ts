@@ -30,7 +30,6 @@ export type DataBusChannel =
   | "fees"
   | "live-classes"
   | "tests"
-  | "sections"
   | "announcements";
 
 type Listener = () => void;

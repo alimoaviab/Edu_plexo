@@ -1,14 +1,14 @@
 // Command server is the entrypoint for the Eduplexo Go backend.
 //
 // Boot sequence:
-//  1. Load env config.
-//  2. Build the in-memory MemStore with seed data.
-//  3. Connect to PostgreSQL (if DATABASE_URL is set), then either:
-//     - Hydrate the MemStore from PG (existing data), OR
-//     - Push the in-memory seed to PG (fresh database).
-//  4. Start the background flush + heartbeat goroutine.
-//  5. Listen on $PORT.
-//  6. On SIGINT/SIGTERM, drain the write queue and snapshot the store.
+//   1. Load env config.
+//   2. Build the in-memory MemStore with seed data.
+//   3. Connect to PostgreSQL (if DATABASE_URL is set), then either:
+//        - Hydrate the MemStore from PG (existing data), OR
+//        - Push the in-memory seed to PG (fresh database).
+//   4. Start the background flush + heartbeat goroutine.
+//   5. Listen on $PORT.
+//   6. On SIGINT/SIGTERM, drain the write queue and snapshot the store.
 package main
 
 import (
@@ -39,10 +39,7 @@ func main() {
 	_ = godotenv.Load(".env.local")
 	_ = godotenv.Load(".env")
 
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("[server] invalid configuration: %v", err)
-	}
+	cfg := config.Load()
 	s := store.New()
 
 	// Always ensure bootstrap users exist (even when running pure in-memory
@@ -165,17 +162,19 @@ func main() {
 		log.Printf("[server] listening on http://0.0.0.0%s (app=%s, allowed_origins=%v, db=%v)",
 			srv.Addr, cfg.AppName, cfg.AllowedOrigins, pg.Available())
 
-		// Log bootstrap account availability without exposing credential material.
+		// Print bootstrap credentials for easy login
 		s.RLock()
-		log.Println("[server] bootstrap accounts available")
+		log.Println("[server] ═══════════════════════════════════════════════════════════")
+		log.Println("[server] BOOTSTRAP CREDENTIALS (use to login)")
 		for _, u := range s.Users {
 			if u.Role == "super_admin" {
-				log.Printf("[server]   super_admin email=%s port=3001", u.Email)
+				log.Printf("[server]   Super Admin: %s / %s (port 3001)", u.Email, u.PasswordHash)
 			}
 			if u.Role == "admin" {
-				log.Printf("[server]   school_admin email=%s port=3000", u.Email)
+				log.Printf("[server]   School Admin: %s / %s (port 3000)", u.Email, u.PasswordHash)
 			}
 		}
+		log.Println("[server] ═══════════════════════════════════════════════════════════")
 		s.RUnlock()
 
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

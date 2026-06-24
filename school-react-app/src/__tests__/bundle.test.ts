@@ -3,8 +3,7 @@
  *
  * This test runs `vite build` and analyzes the output to ensure:
  * - Main bundle is under 250KB
- * - No regular chunk exceeds 200KB
- * - Heavy lazy export/designer vendors stay under explicit caps
+ * - No single chunk exceeds 200KB
  * - At least 10 lazy-loaded chunks exist (route splitting works)
  * - Dashboard and Students code are NOT in the main bundle
  *
@@ -36,21 +35,6 @@ import { join } from "path";
 
 // Skip in CI if dist doesn't exist (build step runs separately)
 const DIST_DIR = join(__dirname, "../../dist/assets");
-const KB = 1024;
-const MB = 1024 * KB;
-const DEFAULT_CHUNK_LIMIT = 200 * KB;
-const FULL_LAZY_GRAPH_LIMIT = 3.25 * MB;
-
-const FEATURE_VENDOR_LIMITS: Record<string, number> = {
-  "vendor-canvas-": 220 * KB,
-  "vendor-designer-": 320 * KB,
-  "vendor-pdf-": 360 * KB,
-};
-
-function limitForChunk(name: string): number {
-  const featureLimit = Object.entries(FEATURE_VENDOR_LIMITS).find(([prefix]) => name.startsWith(prefix));
-  return featureLimit?.[1] ?? DEFAULT_CHUNK_LIMIT;
-}
 
 function getDistFiles(): { name: string; size: number }[] {
   try {
@@ -76,16 +60,16 @@ describe("Bundle Analysis", () => {
       (f) => f.name.startsWith("index-") || f.name.includes("main")
     );
     expect(mainBundle).toBeDefined();
-    expect(mainBundle!.size).toBeLessThan(250 * KB);
+    expect(mainBundle!.size).toBeLessThan(250 * 1024);
   });
 
-  it.skipIf(!!skipReason)("no unexpected chunk exceeds its budget", () => {
-    const oversized = files.filter((f) => f.size > limitForChunk(f.name));
+  it.skipIf(!!skipReason)("no single chunk exceeds 200KB", () => {
+    const oversized = files.filter((f) => f.size > 200 * 1024);
     expect(oversized).toHaveLength(0);
     if (oversized.length > 0) {
       console.warn(
         "Oversized chunks:",
-        oversized.map((f) => `${f.name} (${Math.round(f.size / KB)}KB > ${Math.round(limitForChunk(f.name) / KB)}KB)`)
+        oversized.map((f) => `${f.name} (${Math.round(f.size / 1024)}KB)`)
       );
     }
   });
@@ -109,17 +93,16 @@ describe("Bundle Analysis", () => {
     if (mainBundle) {
       // Main bundle under 250KB means dashboard is definitely not in it
       // (dashboard + all modules would be 500KB+)
-      expect(mainBundle.size).toBeLessThan(250 * KB);
+      expect(mainBundle.size).toBeLessThan(250 * 1024);
     }
   });
 
   it.skipIf(!!skipReason)("total bundle size is reasonable", () => {
     const totalSize = files.reduce((sum, f) => sum + f.size, 0);
-    const totalKB = Math.round(totalSize / KB);
+    const totalKB = Math.round(totalSize / 1024);
 
-    // Full lazy graph includes every route chunk for the ERP; initial load is
-    // covered by the main-bundle and per-chunk budgets above.
-    expect(totalSize).toBeLessThan(FULL_LAZY_GRAPH_LIMIT);
+    // Total of all chunks should be under 2MB (reasonable for a full ERP)
+    expect(totalSize).toBeLessThan(2 * 1024 * 1024);
 
     console.log(`Total JS bundle: ${totalKB}KB across ${files.length} files`);
     console.log(
@@ -127,7 +110,7 @@ describe("Bundle Analysis", () => {
       files
         .sort((a, b) => b.size - a.size)
         .slice(0, 5)
-        .map((f) => `${f.name} (${Math.round(f.size / KB)}KB)`)
+        .map((f) => `${f.name} (${Math.round(f.size / 1024)}KB)`)
     );
   });
 });

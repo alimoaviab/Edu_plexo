@@ -198,25 +198,6 @@ func makeReceiptNo() string {
 	return fmt.Sprintf("RCP-%s-%s", strings.ToUpper(fmt.Sprintf("%X", time.Now().Unix())), suffix)
 }
 
-func (h *Handler) makeUniqueReceiptNoLocked(schoolID string) string {
-	for attempt := 0; attempt < 10; attempt++ {
-		receiptNo := makeReceiptNo()
-		if !h.receiptNoExistsLocked(schoolID, receiptNo) {
-			return receiptNo
-		}
-	}
-	return fmt.Sprintf("RCP-%s-%s", strings.ToUpper(fmt.Sprintf("%X", time.Now().UnixNano())), store.NewID("rcp"))
-}
-
-func (h *Handler) receiptNoExistsLocked(schoolID, receiptNo string) bool {
-	for _, payment := range h.Store.FeePayments {
-		if payment.SchoolID == schoolID && payment.ReceiptNo == receiptNo {
-			return true
-		}
-	}
-	return false
-}
-
 func feeStatus(total, paid float64) string {
 	if paid <= 0 {
 		return "unpaid"
@@ -1225,7 +1206,7 @@ func (h *Handler) RecordPayment(w http.ResponseWriter, r *http.Request) {
 		pay := &store.FeePayment{
 			ID:             store.NewID("pay"),
 			SchoolID:       ctx.SchoolID,
-			ReceiptNo:      h.makeUniqueReceiptNoLocked(ctx.SchoolID),
+			ReceiptNo:      makeReceiptNo(),
 			StudentID:      fee.StudentID,
 			ClassID:        fee.ClassID,
 			AcademicYearID: fee.AcademicYearID,

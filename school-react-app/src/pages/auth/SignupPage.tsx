@@ -37,8 +37,7 @@ const COUNTRIES = [
 
 const currentYear = new Date().getFullYear();
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
 
 export function SignupPage() {
   const navigate = useNavigate();
@@ -96,9 +95,7 @@ export function SignupPage() {
       if (!formData.fullName.trim()) return "Full name is required";
       if (!formData.phone.trim()) return "Phone number is required";
       if (!formData.email.trim()) return "Email is required";
-      if (!EMAIL_REGEX.test(formData.email)) return "Please enter a valid email address";
       if (!formData.password) return "Password is required";
-      if (!PASSWORD_REGEX.test(formData.password)) return "Password must be 8+ chars, with upper, lower, number, and special char";
       if (formData.password !== formData.confirmPassword) return "Passwords do not match";
     }
     if (currentStep === 2) {
@@ -171,15 +168,9 @@ export function SignupPage() {
       });
 
       const result = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(result?.error?.message || result?.message || "Signup failed.");
+      if (!response.ok) throw new Error(result?.error?.message || "Signup failed.");
 
-      if (result?.data?.token) {
-        localStorage.setItem("token", result.data.token);
-        window.dispatchEvent(new Event("auth-changed"));
-        navigate("/admin/subscription", { replace: true });
-      } else {
-        navigate("/auth/login");
-      }
+      navigate("/auth/login");
     } catch (err: unknown) {
       setError((err as Error).message || "Signup failed.");
     } finally {
@@ -317,7 +308,7 @@ export function SignupPage() {
               {step < 3 ? (
                 <button type="button" onClick={nextStep} className="flex-[2] h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2">Next Step <AppIcon name="ArrowRight" size={20} /></button>
               ) : (
-                <button type="submit" disabled={loading} className="flex-[2] h-12 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">{loading ? "Processing..." : "Complete Setup"} {!loading && <AppIcon name="CheckCircle" size={20} />}</button>
+                <button type="submit" disabled={loading || !acceptTerms} className="flex-[2] h-12 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl shadow-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">{loading ? "Processing..." : "Complete Setup"} {!loading && <AppIcon name="CheckCircle" size={20} />}</button>
               )}
             </div>
           </form>

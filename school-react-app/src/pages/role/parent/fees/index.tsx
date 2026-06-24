@@ -25,7 +25,6 @@ import { useEffect, useState, useMemo } from "react";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import { DataState, Skeleton, StatCardCompact } from "@/components/ui";
 import { serviceRequest } from "@/services/service-client";
-import { bindRefresh } from "@/services/data-bus";
 import { useSelectedChild } from "@/contexts/SelectedChildContext";
 
 // ────────────────────────────────────────────────────────────────────────
@@ -154,12 +153,8 @@ export function ParentFeesPage() {
       }
     }
     void fetchData();
-    const unbind = bindRefresh("fees", () => {
-      if (!cancelled) void fetchData();
-    });
     return () => {
       cancelled = true;
-      unbind();
     };
   }, [selectedChild]);
 

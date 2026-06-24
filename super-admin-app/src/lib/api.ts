@@ -20,10 +20,8 @@ function resolveUrl(url: string): string {
   return `${API_BASE_URL}/${url}`
 }
 
-export function clearStoredSession() {
-  sessionStorage.removeItem('sa_user')
-  localStorage.removeItem('sa_token')
-  localStorage.removeItem('sa_user')
+function getToken(): string | null {
+  return localStorage.getItem('sa_token')
 }
 
 export async function apiRequest<T = any>(
@@ -31,11 +29,13 @@ export async function apiRequest<T = any>(
   options: RequestInit = {}
 ): Promise<{ ok: boolean; data?: T; message?: string; error?: any }> {
   try {
+    const token = getToken()
     const res = await fetch(resolveUrl(url), {
       ...options,
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(options.headers || {}),
       },
     })
@@ -53,7 +53,8 @@ export async function apiRequest<T = any>(
     if (res.status === 401) {
       const onLogin = window.location.pathname === '/login'
       if (!onLogin) {
-        clearStoredSession()
+        localStorage.removeItem('sa_token')
+        localStorage.removeItem('sa_user')
         window.location.replace('/login')
       }
       return {

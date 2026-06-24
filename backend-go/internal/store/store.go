@@ -37,7 +37,6 @@ type MemStore struct {
 	Parents        []*Parent
 	StudentParents []*StudentParent
 	AuditLogs      []*AuditLog
-	Sections       []*Section
 
 	// Phase 2.1 collections.
 	Attendance     []*Attendance
@@ -115,9 +114,6 @@ type MemStore struct {
 	// ─── Schedule & Reminders ───────────────────────────────────────────
 	Schedules         []*Schedule
 	ScheduleReminders []*ScheduleReminder
-
-	// ─── Teacher Attendance ─────────────────────────────────────────────
-	TeacherAttendance []*TeacherAttendance
 
 	// ─── Lookup indexes (perf phase 1) ──────────────────────────────────
 	//

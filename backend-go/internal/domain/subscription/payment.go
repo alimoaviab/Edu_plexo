@@ -138,41 +138,41 @@ func (h *Handler) AdminDeletePaymentMethod(w http.ResponseWriter, r *http.Reques
 // ═══════════════════════════════════════════════════════════════════════════
 
 type PaymentRequest struct {
-	ID               string     `json:"id"`
-	SchoolID         string     `json:"school_id"`
-	PlanID           string     `json:"plan_id"`
-	SelectedPackages []string   `json:"selected_packages,omitempty"`
-	PaymentMethodID  string     `json:"payment_method_id"`
-	PaymentMethod    string     `json:"payment_method,omitempty"`
-	ScreenshotURL    string     `json:"screenshot_url,omitempty"`
-	TransactionID    string     `json:"transaction_id"`
-	Amount           int        `json:"amount"`
-	Status           string     `json:"status"`
-	SubmittedAt      time.Time  `json:"submitted_at"`
-	PaymentDate      *time.Time `json:"payment_date,omitempty"`
-	VerifiedAt       *time.Time `json:"verified_at,omitempty"`
-	VerifiedBy       string     `json:"verified_by,omitempty"`
-	RejectionReason  string     `json:"rejection_reason,omitempty"`
-	Notes            string     `json:"notes,omitempty"`
+	ID              string     `json:"id"`
+	SchoolID        string     `json:"school_id"`
+	PlanID          string     `json:"plan_id"`
+	SelectedPackages []string  `json:"selected_packages,omitempty"`
+	PaymentMethodID string     `json:"payment_method_id"`
+	PaymentMethod   string     `json:"payment_method,omitempty"`
+	ScreenshotURL   string     `json:"screenshot_url,omitempty"`
+	TransactionID   string     `json:"transaction_id"`
+	Amount          int        `json:"amount"`
+	Status          string     `json:"status"`
+	SubmittedAt     time.Time  `json:"submitted_at"`
+	PaymentDate     *time.Time `json:"payment_date,omitempty"`
+	VerifiedAt      *time.Time `json:"verified_at,omitempty"`
+	VerifiedBy      string     `json:"verified_by,omitempty"`
+	RejectionReason string    `json:"rejection_reason,omitempty"`
+	Notes           string     `json:"notes,omitempty"`
 	// Joined fields
-	SchoolName   string `json:"school_name,omitempty"`
-	OwnerName    string `json:"owner_name,omitempty"`
-	Phone        string `json:"phone,omitempty"`
-	WhatsApp     string `json:"whatsapp,omitempty"`
-	StudentCount int    `json:"student_count,omitempty"`
-	PlanName     string `json:"plan_name,omitempty"`
+	SchoolName      string     `json:"school_name,omitempty"`
+	OwnerName       string     `json:"owner_name,omitempty"`
+	Phone           string     `json:"phone,omitempty"`
+	WhatsApp        string     `json:"whatsapp,omitempty"`
+	StudentCount    int        `json:"student_count,omitempty"`
+	PlanName        string     `json:"plan_name,omitempty"`
 }
 
 type uploadPaymentInput struct {
-	PlanID           string   `json:"plan_id"`
+	PlanID          string `json:"plan_id"`
 	SelectedPackages []string `json:"selected_packages"`
-	PaymentMethodID  string   `json:"payment_method_id"`
-	PaymentMethod    string   `json:"payment_method"`
-	ScreenshotURL    string   `json:"screenshot_url"`
-	TransactionID    string   `json:"transaction_id"`
-	Amount           int      `json:"amount"`
-	PaymentDate      string   `json:"payment_date"`
-	Notes            string   `json:"notes"`
+	PaymentMethodID string `json:"payment_method_id"`
+	PaymentMethod   string `json:"payment_method"`
+	ScreenshotURL   string `json:"screenshot_url"`
+	TransactionID   string `json:"transaction_id"`
+	Amount          int    `json:"amount"`
+	PaymentDate     string `json:"payment_date"`
+	Notes           string `json:"notes"`
 }
 
 func (h *Handler) UploadPayment(w http.ResponseWriter, r *http.Request) {
@@ -348,17 +348,11 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 		if h.Pool == nil {
 			return h.adminVerifyStorePayment(paymentID, ctx.UserID)
 		}
-		tx, err := h.Pool.Begin(r.Context())
-		if err != nil {
-			return nil, fmt.Errorf("begin verify payment transaction: %w", err)
-		}
-		defer tx.Rollback(r.Context())
-
 		// Get payment request
 		var schoolID, planID string
 		var amount int
-		err = tx.QueryRow(r.Context(), `
-			SELECT school_id, plan_id, amount FROM payment_requests WHERE id=$1 AND status='pending' FOR UPDATE
+		err := h.Pool.QueryRow(r.Context(), `
+			SELECT school_id, plan_id, amount FROM payment_requests WHERE id=$1 AND status='pending'
 		`, paymentID).Scan(&schoolID, &planID, &amount)
 		if err == pgx.ErrNoRows {
 			return nil, api.NewControlledError("NOT_FOUND", "Payment request not found or already processed.", 404, nil)
@@ -371,7 +365,7 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 		// package ids directly in plan_id, so there may be no subscription_plans row.
 		var planName string
 		var studentLimit, durationDays int
-		err = tx.QueryRow(r.Context(), `
+		err = h.Pool.QueryRow(r.Context(), `
 			SELECT name, student_limit, duration_days FROM subscription_plans WHERE id=$1
 		`, planID).Scan(&planName, &studentLimit, &durationDays)
 		if err == pgx.ErrNoRows {
@@ -386,45 +380,26 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 		now := time.Now()
 
 		// Mark payment as verified
-		tag, err := tx.Exec(r.Context(), `
+		_, _ = h.Pool.Exec(r.Context(), `
 			UPDATE payment_requests SET status='verified', verified_at=$2, verified_by=$3 WHERE id=$1
 		`, paymentID, now, ctx.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("verify payment request: %w", err)
-		}
-		if tag.RowsAffected() != 1 {
-			return nil, api.NewControlledError("NOT_FOUND", "Payment request not found or already processed.", 404, nil)
-		}
 
 		// Deactivate old subscription
-		if _, err := tx.Exec(r.Context(), `
+		_, _ = h.Pool.Exec(r.Context(), `
 			UPDATE subscriptions SET status='cancelled', updated_at=NOW()
 			WHERE school_id=$1 AND status IN ('active','trial')
-		`, schoolID); err != nil {
-			return nil, fmt.Errorf("cancel old subscription: %w", err)
-		}
+		`, schoolID)
 
 		// Create new active subscription
 		endDate := now.AddDate(0, 0, durationDays)
 		subID := store.NewID("sub")
-		if _, err := tx.Exec(r.Context(), `
+		_, _ = h.Pool.Exec(r.Context(), `
 			INSERT INTO subscriptions (id, school_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
 			VALUES ($1,$2,$3,$4,$5,'PKR',$6,$7,'active',false,true,NOW(),NOW())
-		`, subID, schoolID, planName, studentLimit, amount, now, endDate); err != nil {
-			return nil, fmt.Errorf("create subscription: %w", err)
-		}
+		`, subID, schoolID, planName, studentLimit, amount, now, endDate)
 
 		// Record history
-		if _, err := tx.Exec(r.Context(), `
-			INSERT INTO subscription_history (id, school_id, plan_name, student_limit, amount, payment_status, start_date, end_date, action, created_at)
-			VALUES ($1, $2, $3, $4, $5, 'paid', $6, $7, 'subscribe', NOW())
-		`, store.NewID("sh"), schoolID, planName, studentLimit, amount, now, endDate); err != nil {
-			return nil, fmt.Errorf("record subscription history: %w", err)
-		}
-
-		if err := tx.Commit(r.Context()); err != nil {
-			return nil, fmt.Errorf("commit verify payment transaction: %w", err)
-		}
+		h.recordHistory(r.Context(), schoolID, planName, studentLimit, amount, "paid", now, endDate, "subscribe")
 
 		if h.Store != nil {
 			h.Store.Lock()
@@ -443,13 +418,13 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 		}
 
 		return map[string]any{
-			"payment_id":      paymentID,
+			"payment_id":     paymentID,
 			"subscription_id": subID,
-			"school_id":       schoolID,
-			"plan":            planName,
-			"student_limit":   studentLimit,
-			"end_date":        endDate,
-			"verified":        true,
+			"school_id":      schoolID,
+			"plan":           planName,
+			"student_limit":  studentLimit,
+			"end_date":       endDate,
+			"verified":       true,
 		}, nil
 	}))
 }
@@ -520,18 +495,9 @@ func (h *Handler) AdminAssignPlan(w http.ResponseWriter, r *http.Request) {
 	var body assignInput
 	json.NewDecoder(r.Body).Decode(&body)
 	api.WriteResult(w, api.ServiceTry(func() (map[string]any, error) {
-		if h.Pool == nil {
-			return nil, api.NewControlledError("DATABASE_UNAVAILABLE", "Database is required to assign plans.", 503, nil)
-		}
 		if body.SchoolID == "" {
 			return nil, api.NewControlledError("VALIDATION_ERROR", "school_id required.", 400, nil)
 		}
-		tx, err := h.Pool.Begin(r.Context())
-		if err != nil {
-			return nil, fmt.Errorf("begin assign plan transaction: %w", err)
-		}
-		defer tx.Rollback(r.Context())
-
 		// Get plan info
 		planName := "custom"
 		studentLimit := body.StudentLimit
@@ -542,7 +508,7 @@ func (h *Handler) AdminAssignPlan(w http.ResponseWriter, r *http.Request) {
 		if body.PlanID != "" {
 			var name string
 			var limit, dur int
-			err := tx.QueryRow(r.Context(), "SELECT name, student_limit, duration_days FROM subscription_plans WHERE id=$1", body.PlanID).Scan(&name, &limit, &dur)
+			err := h.Pool.QueryRow(r.Context(), "SELECT name, student_limit, duration_days FROM subscription_plans WHERE id=$1", body.PlanID).Scan(&name, &limit, &dur)
 			if err == nil {
 				planName = name
 				if studentLimit == 0 {
@@ -551,8 +517,6 @@ func (h *Handler) AdminAssignPlan(w http.ResponseWriter, r *http.Request) {
 				if body.DurationDays == 0 {
 					duration = dur
 				}
-			} else if err != pgx.ErrNoRows {
-				return nil, fmt.Errorf("get plan: %w", err)
 			}
 		}
 		if studentLimit < 1 {
@@ -563,13 +527,11 @@ func (h *Handler) AdminAssignPlan(w http.ResponseWriter, r *http.Request) {
 		endDate := now.AddDate(0, 0, duration)
 
 		// Deactivate old
-		if _, err := tx.Exec(r.Context(), `UPDATE subscriptions SET status='cancelled', updated_at=NOW() WHERE school_id=$1 AND status IN ('active','trial')`, body.SchoolID); err != nil {
-			return nil, fmt.Errorf("cancel old subscription: %w", err)
-		}
+		_, _ = h.Pool.Exec(r.Context(), `UPDATE subscriptions SET status='cancelled', updated_at=NOW() WHERE school_id=$1 AND status IN ('active','trial')`, body.SchoolID)
 
 		// Create new
 		subID := store.NewID("sub")
-		_, err = tx.Exec(r.Context(), `
+		_, err := h.Pool.Exec(r.Context(), `
 			INSERT INTO subscriptions (id, school_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
 			VALUES ($1,$2,$3,$4,$5,'PKR',$6,$7,'active',false,true,NOW(),NOW())
 		`, subID, body.SchoolID, planName, studentLimit, body.Price, now, endDate)
@@ -577,16 +539,7 @@ func (h *Handler) AdminAssignPlan(w http.ResponseWriter, r *http.Request) {
 			return nil, fmt.Errorf("assign: %w", err)
 		}
 
-		if _, err := tx.Exec(r.Context(), `
-			INSERT INTO subscription_history (id, school_id, plan_name, student_limit, amount, payment_status, start_date, end_date, action, created_at)
-			VALUES ($1, $2, $3, $4, $5, 'paid', $6, $7, 'assign', NOW())
-		`, store.NewID("sh"), body.SchoolID, planName, studentLimit, body.Price, now, endDate); err != nil {
-			return nil, fmt.Errorf("record subscription history: %w", err)
-		}
-
-		if err := tx.Commit(r.Context()); err != nil {
-			return nil, fmt.Errorf("commit assign plan transaction: %w", err)
-		}
+		h.recordHistory(r.Context(), body.SchoolID, planName, studentLimit, body.Price, "paid", now, endDate, "assign")
 
 		return map[string]any{"subscription_id": subID, "school_id": body.SchoolID, "plan": planName, "student_limit": studentLimit, "end_date": endDate}, nil
 	}))
@@ -643,11 +596,11 @@ func (h *Handler) AdminAnalytics(w http.ResponseWriter, r *http.Request) {
 
 		return map[string]any{
 			"total_schools":    totalSchools,
-			"active_subs":      activeSubs,
-			"expired_subs":     expiredSubs,
+			"active_subs":     activeSubs,
+			"expired_subs":    expiredSubs,
 			"pending_payments": pendingPayments,
-			"trial_users":      trialUsers,
-			"monthly_revenue":  monthlyRevenue,
+			"trial_users":     trialUsers,
+			"monthly_revenue": monthlyRevenue,
 		}, nil
 	}))
 }
@@ -684,20 +637,20 @@ func (h *Handler) adminListStorePayments(status string, allStatuses bool) []Paym
 			payDate = &d
 		}
 		payments = append(payments, PaymentRequest{
-			ID:               t.ID,
-			SchoolID:         t.SchoolID,
-			PlanID:           t.PackageID,
+			ID:              t.ID,
+			SchoolID:        t.SchoolID,
+			PlanID:          t.PackageID,
 			SelectedPackages: t.SelectedPackages,
-			PaymentMethodID:  t.PaymentMethod,
-			PaymentMethod:    t.PaymentMethod,
-			ScreenshotURL:    t.ScreenshotURL,
-			TransactionID:    t.ReferenceNo,
-			Amount:           int(t.Amount),
-			Status:           t.Status,
-			SubmittedAt:      t.CreatedAt,
-			PaymentDate:      payDate,
-			Notes:            t.Notes,
-			StudentCount:     h.countActiveStudents(t.SchoolID),
+			PaymentMethodID: t.PaymentMethod,
+			PaymentMethod:   t.PaymentMethod,
+			ScreenshotURL:   t.ScreenshotURL,
+			TransactionID:   t.ReferenceNo,
+			Amount:          int(t.Amount),
+			Status:          t.Status,
+			SubmittedAt:     t.CreatedAt,
+			PaymentDate:     payDate,
+			Notes:           t.Notes,
+			StudentCount:    h.countActiveStudents(t.SchoolID),
 		})
 	}
 	return payments

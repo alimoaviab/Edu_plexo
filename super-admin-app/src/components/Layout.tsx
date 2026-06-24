@@ -1,7 +1,6 @@
 import { AppIcon } from "shared/ui/AppIcon";
 import { useEffect, useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
-import { apiRequest, clearStoredSession } from '@/lib/api'
 
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
@@ -31,47 +30,34 @@ export function Layout() {
   const [user, setUser] = useState<SAUser | null>(null)
 
   useEffect(() => {
-    const hydrate = async () => {
-      const userJson = sessionStorage.getItem('sa_user')
-      if (userJson) {
-        try {
-          const parsed = JSON.parse(userJson) as SAUser
-          if (parsed.role === 'super_admin') {
-            setUser(parsed)
-            return
-          }
-        } catch {
-          clearStoredSession()
-        }
-      }
+    const token = localStorage.getItem('sa_token')
+    const userJson = localStorage.getItem('sa_user')
 
-      const res = await apiRequest<{
-        user_id: string
-        email: string
-        role: string
-        school_id: string
-      }>('/api/auth/session')
-      if (!res.ok || res.data?.role !== 'super_admin') {
-        clearStoredSession()
+    if (!token || !userJson) {
+      navigate('/login', { replace: true })
+      return
+    }
+
+    try {
+      const parsed = JSON.parse(userJson) as SAUser
+      // Only allow super_admin or admin role
+      if (parsed.role !== 'super_admin' && parsed.role !== 'admin') {
+        localStorage.removeItem('sa_token')
+        localStorage.removeItem('sa_user')
         navigate('/login', { replace: true })
         return
       }
-
-      const sessionUser = {
-        id: res.data.user_id,
-        email: res.data.email,
-        role: res.data.role,
-        school_id: res.data.school_id,
-      }
-      sessionStorage.setItem('sa_user', JSON.stringify(sessionUser))
-      setUser(sessionUser)
+      setUser(parsed)
+    } catch {
+      localStorage.removeItem('sa_token')
+      localStorage.removeItem('sa_user')
+      navigate('/login', { replace: true })
     }
-    void hydrate()
   }, [navigate])
 
   const handleLogout = () => {
-    void apiRequest('/api/auth/logout', { method: 'POST' })
-    clearStoredSession()
+    localStorage.removeItem('sa_token')
+    localStorage.removeItem('sa_user')
     navigate('/login', { replace: true })
   }
 

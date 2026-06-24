@@ -4,7 +4,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { DataState, Skeleton, Badge, Button } from "@/components/ui";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import { serviceRequest } from "@/services/service-client";
-import { bindRefresh } from "@/services/data-bus";
 import { useClasses } from "@/modules/classes/hooks/useClasses";
 
 type FeeComponent = {
@@ -63,9 +62,6 @@ export function ClassFeesPage() {
 
     useEffect(() => {
         loadData();
-        return bindRefresh("fees", () => {
-            loadData();
-        });
     }, [classId]);
 
     async function loadData() {

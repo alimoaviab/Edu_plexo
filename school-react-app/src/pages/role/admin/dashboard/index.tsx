@@ -3,8 +3,6 @@ import { Skeleton } from "@/components/ui";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import { Link } from "react-router-dom";
 import { useCompositeDashboard } from "@/hooks/useCompositeDashboard";
-import { CompactBarChart } from "@/components/ui/charts/CompactBarChart";
-import { CompactLineChart } from "@/components/ui/charts/CompactLineChart";
 
 /**
  * Admin Dashboard — Production-Optimized
@@ -31,11 +29,15 @@ export function AdminDashboardPage() {
   const stats = [
     { title: "Students", value: overview?.totalStudents ?? "0", icon: "school", color: "text-blue-600 bg-blue-50" },
     { title: "Teachers", value: overview?.totalTeachers ?? "0", icon: "badge", color: "text-emerald-600 bg-emerald-50" },
+    { title: "Parents", value: overview?.totalParents ?? "0", icon: "people", color: "text-indigo-600 bg-indigo-50" },
     { title: "Classes", value: overview?.totalClasses ?? "0", icon: "class", color: "text-cyan-600 bg-cyan-50" },
     { title: "Subjects", value: overview?.totalSubjects ?? "0", icon: "menu_book", color: "text-violet-600 bg-violet-50" },
+    { title: "Attendance", value: `${overview?.attendanceToday ?? 0}%`, icon: "fact_check", color: "text-amber-600 bg-amber-50" },
+    { title: "Unmarked", value: overview?.unmarkedStudents ?? "0", icon: "pending", color: "text-orange-600 bg-orange-50" },
     { title: "Exams", value: overview?.activeExams ?? "0", icon: "quiz", color: "text-rose-600 bg-rose-50" },
     { title: "Homework", value: overview?.totalHomework ?? "0", icon: "assignment", color: "text-pink-600 bg-pink-50" },
     { title: "Live Classes", value: overview?.totalLiveClasses ?? "0", icon: "videocam", color: "text-red-600 bg-red-50" },
+    { title: "Fees %", value: `${overview?.feeCollection?.percentage ?? 0}%`, icon: "payments", color: "text-purple-600 bg-purple-50" },
     { title: "Pending Fees", value: `PKR ${(overview?.pendingFees ?? 0).toLocaleString()}`, icon: "account_balance_wallet", color: "text-slate-600 bg-slate-50" },
   ];
 
@@ -60,24 +62,6 @@ export function AdminDashboardPage() {
   const attendanceCompletionPercent = data
     ? Math.round(((classAttendance?.filter(c => c.has_attendance).length || 0) / (overview?.totalClasses || 1)) * 100)
     : 0;
-
-  // Transform data for charts
-  const teacherAttChartData = data?.teacherAttTrends?.map(t => ({
-    label: new Date(t.date).toLocaleDateString(undefined, { weekday: 'short' }),
-    value1: t.present,
-    value2: t.absent,
-  })) || [];
-
-  const studentAttChartData = data?.studentAttTrends?.map(t => ({
-    label: new Date(t.date).toLocaleDateString(undefined, { weekday: 'short' }),
-    value1: t.present,
-    value2: t.absent,
-  })) || [];
-
-  const feeTrendChartData = data?.feeTrends?.map(t => ({
-    label: new Date(t.date).toLocaleDateString(undefined, { weekday: 'short' }),
-    value: t.amount,
-  })) || [];
 
   return (
     <SchoolShell eyebrow="School Overview" title="Admin Dashboard">
@@ -123,98 +107,6 @@ export function AdminDashboardPage() {
         <Link to="/admin/attendance" className="text-[9px] font-bold text-blue-600 normal-case hover:underline">
           View Detail
         </Link>
-      </div>
-
-      {/* Row 2: Analytics Cards */}
-      <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Teacher Attendance Analytics */}
-        <div className="premium-card p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                <AppIcon name="badge" size={14} />
-              </div>
-              <h3 className="text-[11px] font-bold text-slate-800">Teacher Attendance</h3>
-            </div>
-            <Link to="/admin/attendance/teachers" className="text-[10px] font-bold text-blue-600 hover:underline">View Report</Link>
-          </div>
-          <div className="flex justify-between items-end mb-4">
-            <div>
-              <p className="text-[20px] font-bold leading-none text-slate-800">{overview?.presentToday ?? 0}</p>
-              <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Present Today</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[14px] font-bold leading-none text-rose-600">{(overview?.totalTeachers ?? 0) - (overview?.presentToday ?? 0)}</p>
-              <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Absent</p>
-            </div>
-          </div>
-          {loading ? (
-             <div className="h-[120px] w-full animate-pulse rounded-lg bg-slate-50" />
-          ) : (
-            <CompactBarChart data={teacherAttChartData} color1="#10b981" color2="#f43f5e" height={120} />
-          )}
-        </div>
-
-        {/* Student Attendance Analytics */}
-        <div className="premium-card p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                <AppIcon name="groups" size={14} />
-              </div>
-              <h3 className="text-[11px] font-bold text-slate-800">Student Attendance</h3>
-            </div>
-            <span className="text-[10px] font-bold text-slate-400">Last 7 Days</span>
-          </div>
-          <div className="flex justify-between items-end mb-4">
-            <div>
-              <p className="text-[20px] font-bold leading-none text-slate-800">{overview?.attendanceDetailed?.present ?? 0}</p>
-              <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Present Today</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[14px] font-bold leading-none text-rose-600">{overview?.attendanceDetailed?.absent ?? 0}</p>
-              <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Absent</p>
-            </div>
-          </div>
-          {loading ? (
-             <div className="h-[120px] w-full animate-pulse rounded-lg bg-slate-50" />
-          ) : (
-            <CompactBarChart data={studentAttChartData} color1="#3b82f6" color2="#f43f5e" height={120} />
-          )}
-        </div>
-
-        {/* Fee Collection Analytics */}
-        <div className="premium-card p-4">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
-                <AppIcon name="payments" size={14} />
-              </div>
-              <h3 className="text-[11px] font-bold text-slate-800">Fee Collection</h3>
-            </div>
-            <span className="text-[10px] font-bold text-slate-400">Last 7 Days</span>
-          </div>
-          <div className="flex justify-between items-end mb-4">
-            <div>
-              <p className="text-[20px] font-bold leading-none text-slate-800">
-                <span className="text-[11px] text-slate-400 mr-1">PKR</span>
-                {(overview?.collectedFees ?? 0).toLocaleString()}
-              </p>
-              <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Total Collected</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[14px] font-bold leading-none text-slate-600">
-                {overview?.feeCollection?.pending_count ?? 0}
-              </p>
-              <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Pending</p>
-            </div>
-          </div>
-          {loading ? (
-             <div className="h-[120px] w-full animate-pulse rounded-lg bg-slate-50" />
-          ) : (
-            <CompactLineChart data={feeTrendChartData} color="#8b5cf6" height={120} />
-          )}
-        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

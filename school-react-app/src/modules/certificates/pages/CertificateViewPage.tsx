@@ -8,13 +8,12 @@ import { Skeleton, DataState, Badge, Button } from "@/components/ui";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import { serviceRequest } from "@/services/service-client";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
-import { sanitizedCertificateLayoutInnerHtml, sanitizedInnerHtml } from "@/utils/sanitizeHtml";
 import { CERTIFICATE_TYPE_LABELS, type GeneratedCertificate } from "../types/certificate.types";
 
 import { getThemeLayoutHTML } from "../utils/themeHelper";
 
 function renderThemeLayout(layout: string, styles: { primaryColor: string, titleColor: string, bodyColor: string }) {
-  return <div dangerouslySetInnerHTML={sanitizedCertificateLayoutInnerHtml(getThemeLayoutHTML(layout, styles))} className="absolute inset-0 pointer-events-none" />;
+  return <div dangerouslySetInnerHTML={{ __html: getThemeLayoutHTML(layout, styles) }} className="absolute inset-0 pointer-events-none" />;
 }
 
 export function CertificateViewPage() {
@@ -139,7 +138,7 @@ export function CertificateViewPage() {
               <p 
                 className="text-sm leading-relaxed whitespace-pre-line"
                 style={{ color: styles.bodyColor, fontFamily: `'${styles.bodyFont}', sans-serif` }}
-                dangerouslySetInnerHTML={sanitizedInnerHtml(formattedBodyText)}
+                dangerouslySetInnerHTML={{ __html: formattedBodyText }}
               />
             </div>
           </div>

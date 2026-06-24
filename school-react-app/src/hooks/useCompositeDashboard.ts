@@ -81,17 +81,6 @@ interface ClassAttendanceItem {
   has_attendance: boolean;
 }
 
-interface AttendanceTrendData {
-  date: string;
-  present: number;
-  absent: number;
-}
-
-interface FeeTrendData {
-  date: string;
-  amount: number;
-}
-
 export interface CompositeDashboardData {
   overview: Overview;
   attendance: AttendanceSummary;
@@ -100,9 +89,6 @@ export interface CompositeDashboardData {
   activities: ActivityItem[];
   upcomingEvents: EventItem[];
   classAttendance: ClassAttendanceItem[];
-  teacherAttTrends: AttendanceTrendData[];
-  studentAttTrends: AttendanceTrendData[];
-  feeTrends: FeeTrendData[];
 }
 
 export function useCompositeDashboard() {
@@ -146,8 +132,5 @@ export function useCompositeDashboard() {
     activities: query.data?.activities ?? [],
     upcomingEvents: query.data?.upcomingEvents ?? [],
     classAttendance: query.data?.classAttendance ?? [],
-    teacherAttTrends: query.data?.teacherAttTrends ?? [],
-    studentAttTrends: query.data?.studentAttTrends ?? [],
-    feeTrends: query.data?.feeTrends ?? [],
   };
 }

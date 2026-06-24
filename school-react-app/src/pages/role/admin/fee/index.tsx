@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import { Badge, Skeleton, DataState, StatCardGrid, Pagination } from "@/components/ui";
 import { serviceRequest } from "@/services/service-client";
-import { bindRefresh } from "@/services/data-bus";
 import { showToast } from "@/utils/toast";
 import { useClasses } from "@/modules/classes/hooks/useClasses";
 import { useSettings } from "@/modules/settings/hooks/useSettings";
@@ -343,9 +342,6 @@ export function StudentFeeDashboard() {
 
     useEffect(() => {
         loadDashboard();
-        return bindRefresh("fees", () => {
-            loadDashboard();
-        });
     }, [filters.status, filters.class_id, filters.month, filters.year, filters.page]);
 
     // Handle search with debounce if needed, but for now simple

@@ -45,68 +45,52 @@ type Plan struct {
 
 var AvailablePlans = []Plan{
 	{
-		ID:           "plan_basic",
-		Name:         "basic",
-		DisplayName:  "Basic Plan",
+		ID:           "plan_starter",
+		Name:         "starter",
+		DisplayName:  "Starter School",
 		Price:        4000,
 		Currency:     "PKR",
 		StudentLimit: 200,
 		Features: []string{
-			"All Premium Modules Included",
-			"Unlimited Teacher Accounts",
-			"Parent & Student Portals",
-			"Complete Academic Suite",
+			"Student & Staff Directory",
+			"Basic Attendance Tracking",
+			"Fee Collection",
+			"Parent Portal App",
 			"Standard Support",
 		},
 		IsCustom: false,
 		Popular:  false,
 	},
 	{
-		ID:           "plan_standard",
-		Name:         "standard",
-		DisplayName:  "Standard Plan",
+		ID:           "plan_growth",
+		Name:         "growth",
+		DisplayName:  "Growth Plan",
 		Price:        9000,
 		Currency:     "PKR",
 		StudentLimit: 500,
 		Features: []string{
-			"All Premium Modules Included",
-			"Unlimited Teacher Accounts",
-			"Parent & Student Portals",
-			"Complete Academic Suite",
+			"Everything in Starter",
+			"Advanced Reporting",
+			"SMS Notifications",
+			"Analytics Dashboard",
 			"Priority Support",
 		},
 		IsCustom: false,
 		Popular:  true,
 	},
 	{
-		ID:           "plan_premium",
-		Name:         "premium",
-		DisplayName:  "Premium Plan",
-		Price:        15000,
-		Currency:     "PKR",
-		StudentLimit: 1000,
-		Features: []string{
-			"All Premium Modules Included",
-			"Unlimited Teacher Accounts",
-			"Parent & Student Portals",
-			"Complete Academic Suite",
-			"Dedicated Support",
-		},
-		IsCustom: false,
-		Popular:  false,
-	},
-	{
-		ID:           "plan_enterprise",
-		Name:         "enterprise",
-		DisplayName:  "Enterprise Plan",
+		ID:           "plan_custom",
+		Name:         "custom",
+		DisplayName:  "Custom Plan",
 		Price:        0,
 		Currency:     "PKR",
-		StudentLimit: 2000,
+		StudentLimit: 800,
 		Features: []string{
-			"Custom Integrations",
+			"Everything in Growth",
+			"Dedicated Support",
 			"Enterprise Features",
+			"Custom Integrations",
 			"Custom Student Limit",
-			"Priority Setup",
 		},
 		IsCustom: true,
 		Popular:  false,
@@ -186,7 +170,7 @@ func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 
 		studentsUsed := h.countActiveStudents(ctx.SchoolID)
 		rates := superadmin.GetPlatformSettings().PackageRates
-		selected := []string{}
+		selected := []string{PackageAcademic}
 		trialWarning := ""
 		builderRequired := false
 
@@ -216,7 +200,7 @@ func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 							trialWarning = "warning"
 						}
 					}
-					builderRequired = false // Removed automatic popup triggers
+					builderRequired = len(selected) == 1
 				}
 			} else {
 				// Auto-expire
@@ -268,19 +252,15 @@ func (h *Handler) GetPlans(w http.ResponseWriter, r *http.Request) {
 				if err := rows.Scan(&p.ID, &dbName, &p.StudentLimit, &p.Price, &p.Currency, &featuresJSON, &p.IsCustom, &displayOrder); err == nil {
 					_ = json.Unmarshal(featuresJSON, &p.Features)
 					p.DisplayName = dbName
-					if p.ID == "plan_basic" {
-						p.Name = "basic"
+					if p.ID == "plan_starter" {
+						p.Name = "starter"
 						p.Popular = false
-					} else if p.ID == "plan_standard" {
-						p.Name = "standard"
+					} else if p.ID == "plan_growth" {
+						p.Name = "growth"
 						p.Popular = true
-					} else if p.ID == "plan_premium" {
-						p.Name = "premium"
+					} else if p.ID == "plan_custom" {
+						p.Name = "custom"
 						p.Popular = false
-					} else if p.ID == "plan_enterprise" || p.ID == "plan_custom" {
-						p.Name = "enterprise"
-						p.Popular = false
-						p.IsCustom = true
 					} else {
 						p.Name = p.ID
 					}
@@ -323,11 +303,11 @@ func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 			WHERE school_id = $1 AND status IN ('active', 'trial')
 		`, ctx.SchoolID)
 
-		// Create trial subscription (0 packages selected by default)
+		// Create trial subscription (Academic package for 14 days)
 		now := time.Now()
 		trialEnd := now.Add(14 * 24 * time.Hour)
 		id := store.NewID("sub")
-		selected := []string{}
+		selected := []string{PackageAcademic}
 
 		sub := &Subscription{
 			ID:             id,

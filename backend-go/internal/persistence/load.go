@@ -45,12 +45,10 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 		{"subjects", p.loadSubjects},
 		{"teachers", p.loadTeachers},
 		{"classes", p.loadClasses},
-		{"sections", p.loadSections},
 		{"students", p.loadStudents},
 		{"parents", p.loadParents},
 		{"student_parents", p.loadStudentParents},
 		{"attendance", p.loadAttendance},
-		{"teacher_attendance", p.loadTeacherAttendance},
 		{"exams", p.loadExams},
 		{"results", p.loadResults},
 		{"homework", p.loadHomework},
@@ -101,12 +99,10 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 	s.Subjects = nil
 	s.Teachers = nil
 	s.Classes = nil
-	s.Sections = nil
 	s.Students = nil
 	s.Parents = nil
 	s.StudentParents = nil
 	s.Attendance = nil
-	s.TeacherAttendance = nil
 	s.Exams = nil
 	s.Results = nil
 	s.Homework = nil
@@ -423,26 +419,6 @@ func (p *Persister) loadClasses(ctx context.Context, s *store.MemStore) error {
 	return nil
 }
 
-func (p *Persister) loadSections(ctx context.Context, s *store.MemStore) error {
-	rows, err := p.pool.Query(ctx, `
-		SELECT _id, school_id, academic_year_id, name, status, created_at, updated_at
-		FROM sections`)
-	if err != nil {
-		// Table might not exist yet — graceful degradation
-		log.Printf("[persistence] loadSections: %v (table may not exist yet)", err)
-		return nil
-	}
-	defer rows.Close()
-	for rows.Next() {
-		v := &store.Section{}
-		if err := rows.Scan(&v.ID, &v.SchoolID, &v.AcademicYearID, &v.Name, &v.Status, &v.CreatedAt, &v.UpdatedAt); err != nil {
-			return err
-		}
-		s.Sections = append(s.Sections, v)
-	}
-	return rows.Err()
-}
-
 func (p *Persister) loadStudents(ctx context.Context, s *store.MemStore) error {
 	rows, err := p.pool.Query(ctx, `
 		SELECT id, school_id, academic_year_id, COALESCE(user_id,''), class_id,
@@ -539,30 +515,6 @@ func (p *Persister) loadAttendance(ctx context.Context, s *store.MemStore) error
 			return err
 		}
 		s.Attendance = append(s.Attendance, v)
-	}
-	return rows.Err()
-}
-
-func (p *Persister) loadTeacherAttendance(ctx context.Context, s *store.MemStore) error {
-	rows, err := p.pool.Query(ctx, `
-		SELECT id, school_id, COALESCE(academic_year_id,''), teacher_id,
-			date, status, COALESCE(check_in_time,''), COALESCE(check_out_time,''),
-			COALESCE(working_hours, 0), COALESCE(marked_by,''), COALESCE(note,''), created_at, updated_at
-		FROM teacher_attendance`)
-	if err != nil {
-		// Tolerate missing table on old DBs
-		log.Printf("[persistence] loadTeacherAttendance: %v (table may not exist yet)", err)
-		return nil
-	}
-	defer rows.Close()
-	for rows.Next() {
-		v := &store.TeacherAttendance{}
-		if err := rows.Scan(&v.ID, &v.SchoolID, &v.AcademicYearID, &v.TeacherID,
-			&v.Date, &v.Status, &v.CheckInTime, &v.CheckOutTime, &v.WorkingHours,
-			&v.MarkedBy, &v.Note, &v.CreatedAt, &v.UpdatedAt); err != nil {
-			return err
-		}
-		s.TeacherAttendance = append(s.TeacherAttendance, v)
 	}
 	return rows.Err()
 }

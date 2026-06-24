@@ -7,8 +7,6 @@ import { showToast } from "@/utils/toast";
 import { ClassForm } from "../components/ClassForm";
 import { ClassTable } from "../components/ClassTable";
 import { useClasses } from "../hooks/useClasses";
-import { useSections } from "../hooks/useSections";
-import { getSelectedAcademicYearId } from "@/services/academic-year-context";
 
 export function ClassPage() {
     const { state, addClass } = useClasses();
@@ -21,24 +19,17 @@ export function ClassPage() {
         createSubject,
         refresh: refreshSubjects
     } = useSubjects();
-    const { state: sectionsState } = useSections();
 
     const isDependencyLoading =
         academicYearState.status === "idle" ||
         academicYearState.status === "loading" ||
         teacherState.status === "idle" ||
         teacherState.status === "loading" ||
-        subjectsLoading ||
-        sectionsState.status === "idle" ||
-        sectionsState.status === "loading";
+        subjectsLoading;
 
     const hasAcademicYears = (academicYearState.data?.data ?? []).length > 0;
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
-
-    const activeAcademicYearId = getSelectedAcademicYearId();
-    const activeAcademicYear = (academicYearState.data?.data ?? []).find(ay => ay._id === activeAcademicYearId) || (academicYearState.data?.data ?? []).find(ay => ay.is_active);
-    const activeAcademicYearLabel = activeAcademicYear?.year || "Unknown Session";
 
     async function handleQuickAddSubject(name: string) {
         try {
@@ -122,12 +113,6 @@ export function ClassPage() {
                         subjectOptions={(subjects ?? [])
                             .filter((item) => item.status === "active")
                             .map((item) => ({ id: item._id, label: item.name }))}
-                        sectionOptions={(sectionsState.data?.data ?? []).map((item: any) => ({
-                            id: item._id,
-                            label: item.name
-                        }))}
-                        autoSelectAcademicYear={activeAcademicYear?._id}
-                        activeAcademicYearLabel={activeAcademicYearLabel}
                     />
                 </Card>
             ) : null}

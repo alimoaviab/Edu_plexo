@@ -16,7 +16,6 @@ import { normalizeQuestionTypeId, QUESTION_TYPES } from "@/data/question-types";
 import customQuestionTypesConfig from "@/data/subject-question-types.json";
 import { serviceRequest } from "@/services/service-client";
 import { showToast } from "@/utils/toast";
-import { sanitizedInnerHtml } from "@/utils/sanitizeHtml";
 import type { SyllabusConfig } from "@/data/syllabus";
 import type { BaseChapter, BaseUnit } from "@/components/syllabus/ChapterSelector";
 
@@ -519,7 +518,7 @@ function PrintView({ questions }: { questions: PreviewQuestion[] }) {
                   {index + 1}.
                 </div>
                 <div className="flex-1 min-w-0 pr-2">
-                  <div className="text-[13px] text-slate-800 leading-relaxed font-medium" dangerouslySetInnerHTML={sanitizedInnerHtml(q.text)} />
+                  <div className="text-[13px] text-slate-800 leading-relaxed font-medium" dangerouslySetInnerHTML={{ __html: q.text }} />
 
                   {q.options.length > 0 && (
                     <div className="mt-3 flex flex-wrap items-center gap-x-8 gap-y-2">

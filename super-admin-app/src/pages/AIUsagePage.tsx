@@ -6,6 +6,7 @@ interface AIUsage {
   school_id: string
   school_name: string
   admin_email: string
+  admin_password: string
   package_name: string
   chatbot_limit: number
   chatbot_used: number

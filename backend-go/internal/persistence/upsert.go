@@ -26,8 +26,6 @@ func upsertRow(ctx context.Context, tx pgx.Tx, table string, doc any) error {
 		return upsertSubject(ctx, tx, v)
 	case *store.Class:
 		return upsertClass(ctx, tx, v)
-	case *store.Section:
-		return upsertSection(ctx, tx, v)
 	case *store.Teacher:
 		return upsertTeacher(ctx, tx, v)
 	case *store.Student:
@@ -38,8 +36,6 @@ func upsertRow(ctx context.Context, tx pgx.Tx, table string, doc any) error {
 		return upsertStudentParent(ctx, tx, v)
 	case *store.Attendance:
 		return upsertAttendance(ctx, tx, v)
-	case *store.TeacherAttendance:
-		return upsertTeacherAttendance(ctx, tx, v)
 	case *store.Exam:
 		return upsertExam(ctx, tx, v)
 	case *store.Result:
@@ -412,23 +408,6 @@ func upsertAttendance(ctx context.Context, tx pgx.Tx, v *store.Attendance) error
 	`, v.ID, v.SchoolID, nullableString(v.AcademicYearID), v.StudentID, v.ClassID,
 		v.Date, v.Period, v.Status, v.MarkedBy, v.Source, v.Note,
 		v.CreatedAt, v.UpdatedAt)
-	return err
-}
-
-func upsertTeacherAttendance(ctx context.Context, tx pgx.Tx, v *store.TeacherAttendance) error {
-	_, err := tx.Exec(ctx, `
-		INSERT INTO teacher_attendance (id, school_id, academic_year_id, teacher_id,
-			date, status, check_in_time, check_out_time, working_hours, marked_by, note,
-			created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
-		ON CONFLICT (id) DO UPDATE SET
-			date=EXCLUDED.date, status=EXCLUDED.status,
-			check_in_time=EXCLUDED.check_in_time, check_out_time=EXCLUDED.check_out_time,
-			working_hours=EXCLUDED.working_hours, marked_by=EXCLUDED.marked_by, note=EXCLUDED.note,
-			updated_at=EXCLUDED.updated_at
-	`, v.ID, v.SchoolID, nullableString(v.AcademicYearID), v.TeacherID,
-		v.Date, v.Status, nullableString(v.CheckInTime), nullableString(v.CheckOutTime),
-		v.WorkingHours, v.MarkedBy, v.Note, v.CreatedAt, v.UpdatedAt)
 	return err
 }
 
@@ -1249,15 +1228,5 @@ func upsertImportLog(ctx context.Context, tx pgx.Tx, v *store.ImportLog) error {
 		ON CONFLICT (id) DO UPDATE SET
 			total_rows=EXCLUDED.total_rows, success_rows=EXCLUDED.success_rows, failed_rows=EXCLUDED.failed_rows, duplicates=EXCLUDED.duplicates, duration=EXCLUDED.duration, status=EXCLUDED.status, failed_rows_csv=EXCLUDED.failed_rows_csv, updated_at=EXCLUDED.updated_at
 	`, v.ID, nullableString(v.SchoolID), nullableString(v.UploadedBy), v.FileName, v.TotalRows, v.SuccessRows, v.FailedRows, v.Duplicates, v.Duration, v.Status, nullableString(v.FailedRowsCSV), v.CreatedAt, v.UpdatedAt)
-	return err
-}
-
-func upsertSection(ctx context.Context, tx pgx.Tx, v *store.Section) error {
-	_, err := tx.Exec(ctx, `
-		INSERT INTO sections (_id, school_id, academic_year_id, name, status, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (_id) DO UPDATE SET
-			name=EXCLUDED.name, academic_year_id=EXCLUDED.academic_year_id, status=EXCLUDED.status, updated_at=EXCLUDED.updated_at
-	`, v.ID, v.SchoolID, v.AcademicYearID, v.Name, v.Status, v.CreatedAt, v.UpdatedAt)
 	return err
 }

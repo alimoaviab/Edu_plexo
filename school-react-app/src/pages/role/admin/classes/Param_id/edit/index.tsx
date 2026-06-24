@@ -11,7 +11,6 @@ import { ClassFormInput, ClassRow } from "@/modules/classes/types/class.types";
 import { showToast } from "@/utils/toast";
 import { ClassForm } from "@/modules/classes/components/ClassForm";
 import * as service from "@/modules/classes/services/class.service";
-import { getSelectedAcademicYearId } from "@/services/academic-year-context";
 
 export function ClassEditPage() {
   const { id } = useParams() as { id: string };
@@ -60,10 +59,6 @@ export function ClassEditPage() {
   const subjectOptions = (subjects ?? [])
     .filter((item: any) => item.status === "active")
     .map((item: any) => ({ id: item._id, label: item.name }));
-
-  const activeAcademicYearId = getSelectedAcademicYearId();
-  const activeAcademicYear = (academicYearState.data?.data ?? []).find((ay: any) => ay._id === activeAcademicYearId) || (academicYearState.data?.data ?? []).find((ay: any) => ay.is_active);
-  const activeAcademicYearLabel = activeAcademicYear?.year || "Unknown Session";
 
   const isDependencyLoading =
     academicYearState.status === "loading" ||
@@ -121,9 +116,8 @@ export function ClassEditPage() {
               academicYearOptions={academicYearOptions}
               teacherOptions={teacherOptions}
               subjectOptions={subjectOptions}
+              onCreateAcademicYear={() => navigate("/admin/academic-years")}
               onCreateTeacher={() => navigate("/admin/teachers/create")}
-              autoSelectAcademicYear={activeAcademicYear?._id}
-              activeAcademicYearLabel={activeAcademicYearLabel}
             />
           </div>
         )}

@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.10",
-    "dompurify": "^3.4.11",
     "fabric": "^5.3.0",
     "framer-motion": "^12.38.0",
     "gsap": "^3.15.0",

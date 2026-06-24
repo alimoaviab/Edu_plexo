@@ -83,33 +83,6 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: "dist",
       sourcemap: true,
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (!id.includes("node_modules")) return undefined;
-            const pkgPath = id.split("node_modules/").pop() || "";
-            if (/^(react|react-dom|scheduler)\//.test(pkgPath)) return "vendor-react";
-            if (pkgPath.startsWith("react-router") || pkgPath.startsWith("@remix-run/")) return "vendor-router";
-            if (pkgPath.startsWith("@tanstack/")) return "vendor-query";
-            if (pkgPath.startsWith("lucide-react/")) return "vendor-icons";
-            if (pkgPath.startsWith("framer-motion/") || pkgPath.startsWith("motion-dom/") || pkgPath.startsWith("motion-utils/")) return "vendor-motion";
-            if (pkgPath.startsWith("dompurify/")) return "vendor-sanitize";
-            if (pkgPath.startsWith("jspdf/")) return "vendor-pdf";
-            if (pkgPath.startsWith("html2canvas/")) return "vendor-canvas";
-            if (pkgPath.startsWith("fabric/")) return "vendor-designer";
-            if (pkgPath.startsWith("pako/") || pkgPath.startsWith("fflate/")) return "vendor-compression";
-            if (
-              pkgPath.startsWith("canvg/") ||
-              pkgPath.startsWith("stackblur-canvas/") ||
-              pkgPath.startsWith("svg-pathdata/") ||
-              pkgPath.startsWith("iobuffer/") ||
-              pkgPath.startsWith("fast-png/") ||
-              pkgPath.startsWith("rgbcolor/")
-            ) return "vendor-svg";
-            return "vendor-misc";
-          },
-        },
-      },
     },
   };
 });

@@ -33,22 +33,8 @@ type CompositeResponse struct {
 	Fees            feeSummary       `json:"fees"`
 	PendingLeaves   int              `json:"pendingLeaves"`
 	Activities      []map[string]any `json:"activities"`
-	UpcomingEvents        []map[string]any       `json:"upcomingEvents"`
-	ClassAttendance       []map[string]any       `json:"classAttendance"`
-	TeacherAttTrends      []AttendanceTrendData  `json:"teacherAttTrends"`
-	StudentAttTrends      []AttendanceTrendData  `json:"studentAttTrends"`
-	FeeTrends             []FeeTrendData         `json:"feeTrends"`
-}
-
-type AttendanceTrendData struct {
-	Date    string `json:"date"`
-	Present int    `json:"present"`
-	Absent  int    `json:"absent"`
-}
-
-type FeeTrendData struct {
-	Date   string  `json:"date"`
-	Amount float64 `json:"amount"`
+	UpcomingEvents  []map[string]any `json:"upcomingEvents"`
+	ClassAttendance []map[string]any `json:"classAttendance"`
 }
 
 type compositeOverview struct {
@@ -171,21 +157,8 @@ func (h *CompositeHandler) compute(ctx *api.RequestContext, yearID string) Compo
 		}
 	}
 
-	// Attendance today & Trends
+	// Attendance today
 	todayStart, todayEnd := api.DayBounds(time.Now())
-	
-	// Pre-generate last 7 days buckets for trends
-	studentAttTrendMap := make(map[string]*AttendanceTrendData)
-	teacherAttTrendMap := make(map[string]*AttendanceTrendData)
-	feeTrendMap := make(map[string]*FeeTrendData)
-
-	for i := 6; i >= 0; i-- {
-		d := todayStart.AddDate(0, 0, -i).Format("2006-01-02")
-		studentAttTrendMap[d] = &AttendanceTrendData{Date: d}
-		teacherAttTrendMap[d] = &AttendanceTrendData{Date: d}
-		feeTrendMap[d] = &FeeTrendData{Date: d}
-	}
-
 	marked := make(map[string]bool)
 	var present, absent, late int
 	for _, a := range h.Store.Attendance {
@@ -207,46 +180,6 @@ func (h *CompositeHandler) compute(ctx *api.RequestContext, yearID string) Compo
 		case "late":
 			late++
 			present++
-		}
-		
-		// Fill trends
-		dStr := a.Date.Format("2006-01-02")
-		if trend, ok := studentAttTrendMap[dStr]; ok {
-			if a.Status == "present" || a.Status == "excused" || a.Status == "late" {
-				trend.Present++
-			} else if a.Status == "absent" {
-				trend.Absent++
-			}
-		}
-	}
-
-	// Teacher Attendance Trends & Today
-	var tPresent, tAbsent int
-	for _, ta := range h.Store.TeacherAttendance {
-		if ta.SchoolID != ctx.SchoolID {
-			continue
-		}
-		if yearID != "" && ta.AcademicYearID != "" && ta.AcademicYearID != yearID {
-			continue
-		}
-		
-		// Today's summary
-		if !ta.Date.Before(todayStart) && !ta.Date.After(todayEnd) {
-			if ta.Status == "present" || ta.Status == "excused" || ta.Status == "late" {
-				tPresent++
-			} else if ta.Status == "absent" {
-				tAbsent++
-			}
-		}
-
-		// Trends
-		dStr := ta.Date.Format("2006-01-02")
-		if trend, ok := teacherAttTrendMap[dStr]; ok {
-			if ta.Status == "present" || ta.Status == "excused" || ta.Status == "late" {
-				trend.Present++
-			} else if ta.Status == "absent" {
-				trend.Absent++
-			}
 		}
 	}
 	attPercent := 0
@@ -273,16 +206,6 @@ func (h *CompositeHandler) compute(ctx *api.RequestContext, yearID string) Compo
 			feePaid += f.PaidAmount
 			if f.PaidAmount < effective && f.Status != "void" {
 				feePending++
-			}
-		}
-	}
-
-	// Fee Payments Trends
-	for _, fp := range h.Store.FeePayments {
-		if fp.SchoolID == ctx.SchoolID && (yearID == "" || fp.AcademicYearID == yearID) && fp.Status == "completed" {
-			dStr := fp.PaymentDate.Format("2006-01-02")
-			if trend, ok := feeTrendMap[dStr]; ok {
-				trend.Amount += fp.Amount
 			}
 		}
 	}
@@ -383,17 +306,6 @@ func (h *CompositeHandler) compute(ctx *api.RequestContext, yearID string) Compo
 	_ = activeExams // used in overview
 	log.Printf("[composite] computed for school=%s year=%s", ctx.SchoolID, yearID)
 
-	// Finalize trend arrays
-	studentAttTrends := make([]AttendanceTrendData, 0, 7)
-	teacherAttTrends := make([]AttendanceTrendData, 0, 7)
-	feeTrends := make([]FeeTrendData, 0, 7)
-	for i := 6; i >= 0; i-- {
-		d := todayStart.AddDate(0, 0, -i).Format("2006-01-02")
-		studentAttTrends = append(studentAttTrends, *studentAttTrendMap[d])
-		teacherAttTrends = append(teacherAttTrends, *teacherAttTrendMap[d])
-		feeTrends = append(feeTrends, *feeTrendMap[d])
-	}
-
 	return CompositeResponse{
 		Overview: compositeOverview{
 			TotalStudents:      students,
@@ -402,39 +314,27 @@ func (h *CompositeHandler) compute(ctx *api.RequestContext, yearID string) Compo
 			TotalGuardians:     guardians,
 			TotalClasses:       classes,
 			TotalSubjects:      subjects,
-			AttendanceToday:    present + absent,
-			AttendanceDetailed: map[string]int{"present": present, "absent": absent, "late": late},
+			AttendanceToday:    attPercent,
+			AttendanceDetailed: map[string]int{"present": present, "absent": absent, "total": len(marked)},
 			ActiveExams:        activeExams,
 			PendingLeave:       pendingLeaves,
-			UnmarkedStudents:   students - (present + absent),
-			FeeCollection:      map[string]int{"paid": int(feePaid), "pending": feePending},
+			UnmarkedStudents:   students - len(marked),
+			FeeCollection:      map[string]int{"total": int(feeTotal), "paid": int(feePaid), "percentage": feePercent, "pending_count": feePending},
 			TotalHomework:      totalHomework,
 			TotalLiveClasses:   totalLiveClasses,
 			ActiveTeachers:     teachers,
-			PresentToday:       tPresent,
+			PresentToday:       present,
 			PendingFees:        feeTotal - feePaid,
 			CollectedFees:      feePaid,
 		},
 		Attendance: attendanceSummary{
-			Present:  present,
-			Absent:   absent,
-			Late:     late,
-			Total:    students,
-			Percent:  attPercent,
-			Unmarked: students - (present + absent),
+			Present: present, Absent: absent, Late: late,
+			Total: len(marked), Percent: attPercent, Unmarked: students - len(marked),
 		},
-		Fees: feeSummary{
-			TotalExpected: feeTotal,
-			TotalPaid:     feePaid,
-			Percentage:    feePercent,
-			PendingCount:  feePending,
-		},
-		PendingLeaves:    pendingLeaves,
-		Activities:       activities,
-		UpcomingEvents:   upcomingEvents,
-		ClassAttendance:  classAtt,
-		TeacherAttTrends: teacherAttTrends,
-		StudentAttTrends: studentAttTrends,
-		FeeTrends:        feeTrends,
+		Fees:            feeSummary{TotalExpected: feeTotal, TotalPaid: feePaid, Percentage: feePercent, PendingCount: feePending},
+		PendingLeaves:   pendingLeaves,
+		Activities:      activities,
+		UpcomingEvents:  upcomingEvents,
+		ClassAttendance: classAtt,
 	}
 }

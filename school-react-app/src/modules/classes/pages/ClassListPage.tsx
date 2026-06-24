@@ -13,7 +13,6 @@ import { ClassRow } from "../types/class.types";
 import { showToast } from "@/utils/toast";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ClassCard } from "../components/ClassCard";
-import { SectionManagement } from "../components/SectionManagement";
 
 export function ClassListPage() {
   const navigate = useNavigate();
@@ -33,7 +32,6 @@ export function ClassListPage() {
   const [searchQuery, setSearchQuery] = useState(currentParams.get("search") || "");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">((currentParams.get("status") as any) || "all");
   const [viewMode, setViewMode] = useState<"grid" | "list">((currentParams.get("view") as any) || "grid");
-  const [showSectionManager, setShowSectionManager] = useState(false);
 
   useEffect(() => {
     setSearchQuery(currentParams.get("search") || "");
@@ -175,13 +173,6 @@ export function ClassListPage() {
             </button>
           </div>
           <div className="h-6 w-px bg-slate-200" />
-          <button
-            onClick={() => setShowSectionManager(true)}
-            className="inline-flex h-8 items-center gap-2 px-3 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-all shadow-sm active:scale-95"
-          >
-            <AppIcon name="Layers" size={16} />
-            Manage Sections
-          </button>
           <Link
             to={withQuery("/admin/classes/create")}
             className="inline-flex h-8 items-center gap-2 px-4 text-[10px] font-bold text-white bg-blue-600 border border-slate-900/10 rounded-lg hover:bg-blue-700 transition-all shadow-sm active:scale-95"
@@ -307,24 +298,6 @@ export function ClassListPage() {
         isLoading={isDeleting}
       />
 
-      {feeClass && (
-        <ConfirmModal
-          isOpen={!!feeClass}
-          onCancel={() => setFeeClass(null)}
-          onConfirm={() => navigate(`/admin/classes/${feeClass._id}/fees`)}
-          title="Configure Fees"
-          message={`Would you like to setup fee structures for ${feeClass.name}?`}
-          confirmLabel="Yes, configure fees"
-          cancelLabel="Not now"
-          confirmVariant="primary"
-        />
-      )}
-
-      <SectionManagement
-        isOpen={showSectionManager}
-        onClose={() => setShowSectionManager(false)}
-        academicYearId={getSelectedAcademicYearId()}
-      />
     </div>
   );
 }

@@ -39,16 +39,7 @@ export function StudentEditPage() {
             if (!result.ok) {
                 throw new Error(result.error?.message || "Failed to load student record");
             }
-            const student = result.data!;
-            try {
-                const scholRes = await serviceRequest<any>(`/api/scholarships?student_id=${id}`);
-                if (scholRes.ok && scholRes.data) {
-                    (student as any).scholarship = scholRes.data;
-                }
-            } catch (err) {
-                console.error("Failed to fetch scholarship:", err);
-            }
-            return student;
+            return result.data!;
         });
     }, [id, runStudent]);
 
@@ -72,24 +63,6 @@ export function StudentEditPage() {
         if (!id) return;
         const result = await updateStudent(id, input);
         if (result && (result as any).success !== false) {
-            try {
-                await serviceRequest("/api/scholarships", {
-                    method: "POST",
-                    body: JSON.stringify({
-                        student_id: id,
-                        enabled: (input as any).scholarship_enabled || false,
-                        type: (input as any).scholarship_type || "percentage",
-                        value: Number((input as any).scholarship_value) || 0,
-                        apply_monthly: (input as any).scholarship_apply_monthly ?? true,
-                        apply_fine: (input as any).scholarship_apply_fine ?? false,
-                        apply_onetime: (input as any).scholarship_apply_onetime ?? false,
-                        year: Number((input as any).scholarship_year) || new Date().getFullYear(),
-                        notes: (input as any).scholarship_notes || ""
-                    })
-                });
-            } catch (err) {
-                console.error("Failed to save scholarship:", err);
-            }
             // Toast is already raised by useStudents on success.
             navigate("/admin/students");
         }
