@@ -122,9 +122,17 @@ async function request<TData, TBody = unknown>(
     signal: options.signal,
   };
 
+  const fullUrl = `${http.defaults.baseURL ?? ''}${config.url}`;
+  console.log(`[HTTP REQUEST] ${method} ${fullUrl}`);
+  if (options.body) {
+    console.log(`[HTTP REQUEST BODY]`, JSON.stringify(options.body, null, 2));
+  }
+
   try {
     const response = await http.request<unknown>(config);
     const payload = response.data;
+
+    console.log(`[HTTP SUCCESS] ${method} ${fullUrl} - Status: ${response.status}`);
 
     // If the server already returned a ServiceResult-shaped envelope, pass
     // it through unchanged.
@@ -144,8 +152,17 @@ async function request<TData, TBody = unknown>(
       errorCode?: string;
     }>;
 
+    console.error(`[HTTP ERROR] ${method} ${fullUrl} failed: ${error.message}`);
+    if (error.config) {
+      console.error(`[HTTP ERROR DETAILS] Headers:`, JSON.stringify(error.config.headers, null, 2));
+    }
+
     // Network / timeout / no response.
     if (!error.response) {
+      console.error(`[HTTP ERROR NO RESPONSE] The request was sent but no response was received. Check that:
+1. Your backend container is running (run 'docker ps' to check).
+2. If using ADB reverse, check if port forwarding is active ('adb reverse list').
+3. Verify your Mac's firewall/network settings or try running: 'adb reverse tcp:8080 tcp:8080'`);
       return {
         ok: false,
         success: false,
@@ -163,6 +180,9 @@ async function request<TData, TBody = unknown>(
     const errObj = data?.error;
     const message =
       errObj?.message ?? data?.message ?? fallbackForStatus(status);
+
+    console.error(`[HTTP ERROR RESPONSE] Status: ${status}`);
+    console.error(`[HTTP ERROR RESPONSE BODY]`, JSON.stringify(data, null, 2));
 
     return {
       ok: false,

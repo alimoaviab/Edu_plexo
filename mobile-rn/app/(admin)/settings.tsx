@@ -15,12 +15,10 @@ export default function Settings() {
   }
 
   const items: ModuleListItem[] = [
-    { key: 'profile', label: user?.email ?? 'Account', description: 'Profile & preferences', icon: 'shield', accent: 'primary' },
-    { key: 'academic-year', label: 'Academic Year', description: 'Switch active year', icon: 'calendar', accent: 'success' },
-    { key: 'school', label: 'School Profile', description: 'Branding & contact info', icon: 'graduation', accent: 'primary' },
-    { key: 'roles', label: 'Roles & Access', description: 'Permissions matrix', icon: 'users', accent: 'primary' },
-    { key: 'subscription', label: 'Subscription', description: 'Plan & billing', icon: 'wallet', accent: 'success' },
-    { key: 'notifications', label: 'Notifications', description: 'Email, SMS, push', icon: 'bell', accent: 'warning' },
+    { key: 'profile', label: user?.email ?? 'Account', description: 'Profile & preferences', icon: 'shield', accent: 'primary', href: '/(admin)/module/settings' },
+    { key: 'academic-year', label: 'Academic Year', description: 'Sessions and active year', icon: 'calendar', accent: 'success', href: '/(admin)/module/academic-years' },
+    { key: 'school', label: 'School Profile', description: 'Branding & contact info', icon: 'graduation', accent: 'primary', href: '/(admin)/module/settings' },
+    { key: 'subscription', label: 'Subscription', description: 'Plan & billing', icon: 'wallet', accent: 'success', href: '/(admin)/module/subscription' },
     { key: 'logout', label: 'Sign Out', description: 'End your session', icon: 'logout', accent: 'error', onPress: confirmLogout },
   ];
 
