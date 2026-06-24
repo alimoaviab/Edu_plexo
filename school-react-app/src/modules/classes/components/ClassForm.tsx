@@ -2,15 +2,7 @@ import { AppIcon } from "shared/ui/AppIcon";
 import { FormEvent, useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Button, Input, Select } from "@/components/ui";
-import { ClassFormInput, ClassSubject, GradeThreshold, ClassRow } from "../types/class.types";
-
-const defaultGrades: GradeThreshold[] = [
-    { grade: "A+", min_score: 90, max_score: 100, description: "Outstanding" },
-    { grade: "A", min_score: 80, max_score: 89, description: "Excellent" },
-    { grade: "B", min_score: 70, max_score: 79, description: "Very Good" },
-    { grade: "C", min_score: 60, max_score: 69, description: "Good" },
-    { grade: "D", min_score: 50, max_score: 59, description: "Satisfactory" },
-];
+import { ClassFormInput, ClassSubject, ClassRow } from "../types/class.types";
 
 const defaultSubjects: ClassSubject[] = [
     { name: "Urdu", total_marks: 100, passing_marks: 33 },
@@ -32,7 +24,7 @@ const initialForm: ClassFormInput = {
     class_teacher_id: "",
     teacher_ids: [],
     subjects: [...defaultSubjects],
-    grade_thresholds: [...defaultGrades],
+    grade_thresholds: [],
     room_number: "",
     description: ""
 };
@@ -42,25 +34,27 @@ export function ClassForm({
     academicYearOptions,
     teacherOptions,
     subjectOptions,
+    sectionOptions,
     onAddSubject,
-    onCreateAcademicYear,
     onCreateTeacher,
     autoSelectAcademicYear,
     autoSelectTeacher,
     onSelectionHandled,
-    initialData
+    initialData,
+    activeAcademicYearLabel
 }: {
     onCreate: (input: ClassFormInput) => Promise<unknown>;
     academicYearOptions: Array<{ id: string; label: string }>;
     teacherOptions: Array<{ id: string; label: string }>;
     subjectOptions: Array<{ id: string; label: string }>;
+    sectionOptions?: Array<{ id: string; label: string }>;
     onAddSubject?: (name: string) => Promise<void>;
-    onCreateAcademicYear?: () => void;
     onCreateTeacher?: () => void;
     autoSelectAcademicYear?: string | undefined;
     autoSelectTeacher?: string | undefined;
     onSelectionHandled?: () => void;
     initialData?: ClassRow;
+    activeAcademicYearLabel?: string;
 }) {
     const [form, setForm] = useState<ClassFormInput>(initialData ? {
         name: initialData.name,
@@ -72,7 +66,7 @@ export function ClassForm({
         class_teacher_id: initialData.class_teacher_id || "",
         teacher_ids: initialData.teacher_ids || [],
         subjects: initialData.subjects || [...defaultSubjects],
-        grade_thresholds: initialData.grade_thresholds || [...defaultGrades],
+        grade_thresholds: initialData.grade_thresholds || [],
         room_number: initialData.room_number || "",
         description: initialData.description || "",
         capacity: initialData.capacity || 40,
@@ -83,6 +77,10 @@ export function ClassForm({
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [teacherSearch, setTeacherSearch] = useState("");
     const [sectionsList, setSectionsList] = useState<string[]>(() => {
+        // If we have backend section options, use those
+        if (sectionOptions && sectionOptions.length > 0) {
+            return sectionOptions.map(s => s.label);
+        }
         const initial = initialData?.section || "A";
         if (initial && initial !== "A") {
             return ["A", initial];
@@ -90,6 +88,18 @@ export function ClassForm({
         return ["A"];
     });
     const [selectedSection, setSelectedSection] = useState<string>(initialData?.section || "A");
+
+    // Sync sections list when sectionOptions prop changes
+    useEffect(() => {
+        if (sectionOptions && sectionOptions.length > 0) {
+            const labels = sectionOptions.map(s => s.label);
+            setSectionsList(labels);
+            if (!labels.includes(selectedSection)) {
+                setSelectedSection(labels[0]);
+                setForm(f => ({ ...f, section: labels[0] }));
+            }
+        }
+    }, [sectionOptions]);
 
     const handleAddSection = () => {
         const newSec = window.prompt("Enter new section name (e.g. B, C, Gold):");
@@ -103,14 +113,6 @@ export function ClassForm({
         }
     };
 
-    // Auto-select logic for contextual creation
-    useEffect(() => {
-        if (autoSelectAcademicYear) {
-            setForm(prev => ({ ...prev, academic_year_id: autoSelectAcademicYear }));
-            onSelectionHandled?.();
-        }
-    }, [autoSelectAcademicYear, onSelectionHandled]);
-
     useEffect(() => {
         if (autoSelectTeacher) {
             setForm(prev => ({ 
@@ -123,13 +125,10 @@ export function ClassForm({
 
     // Summary data
     const subjectCount = form.subjects?.length || 0;
-    const gradeCount = form.grade_thresholds?.length || 0;
 
     function validate() {
         const newErrors: Record<string, string> = {};
         if (!form.name.trim()) newErrors.name = "Class name is required";
-        if (!form.code?.trim()) newErrors.code = "Grade is required";
-        if (!form.academic_year_id?.trim()) newErrors.academic_year_id = "Academic Year is required";
         if ((form.subjects?.length || 0) === 0) newErrors.subjects = "At least one subject is required";
         
         // Validate subjects
@@ -157,7 +156,7 @@ export function ClassForm({
             await onCreate({ ...form, section: selectedSection });
             setForm(initialForm);
             setSelectedSection("A");
-            setSectionsList(["A"]);
+            setSectionsList(sectionOptions?.map(s => s.label) || ["A"]);
         }
         setSaving(false);
     }
@@ -186,39 +185,6 @@ export function ClassForm({
 
     const subjectInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-    const applyPassPercentage = () => {
-        setForm(prev => ({
-            ...prev,
-            subjects: (prev.subjects || []).map(s => ({ ...s, passing_marks: Math.round((s.total_marks * (prev.passing_percentage || 33)) / 100) }))
-        }));
-    };
-
-    const addGrade = () => {
-        setForm(prev => ({
-            ...prev,
-            grade_thresholds: [...(prev.grade_thresholds || []), { grade: "", min_score: 0, max_score: 0, description: "" }]
-        }));
-    };
-
-    const removeGrade = (index: number) => {
-        setForm(prev => ({
-            ...prev,
-            grade_thresholds: (prev.grade_thresholds || []).filter((_, i) => i !== index)
-        }));
-    };
-
-    const updateGrade = (index: number, field: keyof GradeThreshold, value: any) => {
-        setForm(prev => {
-            const newGrades = [...(prev.grade_thresholds || [])];
-            newGrades[index] = { ...newGrades[index], [field]: value };
-            return { ...prev, grade_thresholds: newGrades };
-        });
-    };
-
-    const resetGrades = () => {
-        setForm(prev => ({ ...prev, grade_thresholds: [...defaultGrades] }));
-    };
-
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             {/* Actions Bar - Top */}
@@ -246,11 +212,7 @@ export function ClassForm({
                 </div>
                 <div className="w-px h-4 bg-slate-200" />
                 <div className="flex items-center gap-2">
-                    <span>Pass: {form.passing_percentage}%</span>
-                </div>
-                <div className="w-px h-4 bg-slate-200" />
-                <div className="flex items-center gap-2">
-                    <span>{gradeCount} grades</span>
+                    <span>Section: {selectedSection}</span>
                 </div>
             </div>
 
@@ -263,8 +225,22 @@ export function ClassForm({
             )}
 
             <div className="premium-card p-3 bg-white border border-slate-200 shadow-sm rounded-xl space-y-3">
+                {/* Academic Year Banner */}
+                <div className="bg-blue-50/50 border border-blue-100/50 rounded-lg p-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <AppIcon name="Event" size={16} className="text-blue-500" />
+                        <div>
+                            <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">Creating Class In Session</p>
+                            <p className="text-sm font-black text-blue-700">{activeAcademicYearLabel || "Selected Academic Year"}</p>
+                        </div>
+                    </div>
+                    <div className="text-[10px] text-blue-600/70 font-medium hidden sm:block">
+                        Change session from top navigation
+                    </div>
+                </div>
+
                 {/* Basic Info Section */}
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                         label="Class name *"
                         placeholder="Class 10"
@@ -275,7 +251,7 @@ export function ClassForm({
                     />
                     <div className="space-y-1">
                         <label className="text-[11px] font-bold text-slate-500">Sections *</label>
-                        <div className="flex items-center gap-1.5 h-10">
+                        <div className="flex items-center gap-1.5 h-10 flex-wrap">
                             {sectionsList.map((s) => (
                                 <button
                                     key={s}
@@ -303,81 +279,9 @@ export function ClassForm({
                             </button>
                         </div>
                     </div>
-                    <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-slate-500">Grade (1-12) *</label>
-                        <select
-                            value={form.code}
-                            onChange={(e) => setForm({ ...form, code: e.target.value })}
-                            className="w-full h-10 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-900 focus:border-blue-500 outline-none bg-white"
-                        >
-                            <option value="">Select Grade</option>
-                            <option value="nursery">Nursery</option>
-                            <option value="kg-1">KG-1</option>
-                            <option value="kg-2">KG-2</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                            <option value="10">10</option>
-                            <option value="11">11</option>
-                            <option value="12">12</option>
-                        </select>
-                        {errors.code && <p className="text-[10px] text-red-500 font-medium">{errors.code}</p>}
-                    </div>
-                    <Input
-                        label="Display order"
-                        type="number"
-                        value={form.display_order}
-                        onChange={(e) => setForm({ ...form, display_order: parseInt(e.target.value) || 0 })}
-                        className="font-bold"
-                    />
-                    <Input
-                        label="Passing %"
-                        type="number"
-                        value={form.passing_percentage}
-                        onChange={(e) => setForm({ ...form, passing_percentage: parseInt(e.target.value) || 0 })}
-                        className="font-bold"
-                    />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between min-h-[32px] px-0.5">
-                            <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Academic year *</label>
-                            {onCreateAcademicYear && (
-                                <button 
-                                    type="button"
-                                    onClick={onCreateAcademicYear}
-                                    className="h-7 px-3 rounded-lg border border-blue-100 bg-blue-50/50 text-[9px] font-black text-blue-600 uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all flex items-center gap-2 active:scale-95 group"
-                                >
-                                    <AppIcon name="PlusCircle" size={14} />
-                                    New Session
-                                </button>
-                            )}
-                        </div>
-                        <Select
-                            value={form.academic_year_id}
-                            onChange={(e) => setForm({ ...form, academic_year_id: e.target.value })}
-                            options={[
-                                { label: "Select Academic Cycle", value: "" },
-                                ...academicYearOptions.map((o: { id: string; label: string }) => ({ label: o.label, value: o.id }))
-                            ]}
-                            error={errors.academic_year_id}
-                            className="h-11 rounded-xl"
-                        />
-                        {academicYearOptions.length === 0 && (
-                            <p className="text-[10px] font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 flex items-center gap-2">
-                                <AppIcon name="AlertTriangle" size={14} />
-                                No academic year found.
-                            </p>
-                        )}
-                    </div>
-
                     <div className="space-y-2">
                         <div className="flex items-center min-h-[32px] px-0.5">
                             <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Academic Incharge (Head Teacher)</label>
@@ -444,6 +348,7 @@ export function ClassForm({
                                             ...teacherOptions.map((o) => ({ label: o.label, value: o.id }))
                                         ]}
                                         className="h-8 text-[10px] font-bold px-2 py-0 border-slate-200"
+                                        searchable={true}
                                     />
 
 

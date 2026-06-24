@@ -110,7 +110,7 @@ func PackageCatalog(rates map[string]int) []ModulePackage {
 			ID:        id,
 			Name:      packageNames[id],
 			Rate:      rates[id],
-			Mandatory: id == PackageAcademic,
+			Mandatory: false,
 			Modules:   append([]string(nil), packageModules[id]...),
 		})
 	}
@@ -187,13 +187,13 @@ func NormalizePackages(values []string) []string {
 	for _, id := range packageOrder {
 		known[id] = true
 	}
-	seen := map[string]bool{PackageAcademic: true}
-	out := []string{PackageAcademic}
+	seen := map[string]bool{}
+	out := []string{}
 	for _, raw := range values {
 		id := strings.ToLower(strings.TrimSpace(raw))
 		id = strings.TrimPrefix(id, "package_")
 		id = strings.TrimPrefix(id, "pkg_")
-		if id == "" || id == PackageAcademic || !known[id] || seen[id] {
+		if id == "" || !known[id] || seen[id] {
 			continue
 		}
 		seen[id] = true
@@ -206,13 +206,13 @@ func NormalizePackages(values []string) []string {
 }
 
 func NormalizePackagesAndModules(values []string) []string {
-	seen := map[string]bool{PackageAcademic: true}
-	out := []string{PackageAcademic}
+	seen := map[string]bool{}
+	out := []string{}
 	for _, raw := range values {
 		id := strings.ToLower(strings.TrimSpace(raw))
 		id = strings.TrimPrefix(id, "package_")
 		id = strings.TrimPrefix(id, "pkg_")
-		if id == "" || id == PackageAcademic || seen[id] {
+		if id == "" || seen[id] {
 			continue
 		}
 		if isKnownPackage(id) || isKnownModule(id) {
@@ -237,12 +237,10 @@ func ParseSelectedPackages(packageID string, selected []string) []string {
 	}
 	raw := strings.ToLower(strings.TrimSpace(packageID))
 	if raw == "" {
-		return []string{PackageAcademic}
+		return []string{}
 	}
 	switch raw {
-	case "trial":
-		return []string{PackageAcademic}
-	case "starter", "growth", "custom", "enterprise", "plan_starter", "plan_growth", "plan_custom":
+	case "trial", "starter", "growth", "custom", "enterprise", "plan_starter", "plan_growth", "plan_custom", "plan_basic", "plan_standard", "plan_premium", "plan_enterprise":
 		return append([]string(nil), packageOrder...)
 	}
 	parts := strings.FieldsFunc(raw, func(r rune) bool {

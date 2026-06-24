@@ -590,34 +590,38 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 		newTeacher := &store.Teacher{
 			ID: store.NewID("tch"), SchoolID: ctx.SchoolID, AcademicYearID: yearID, UserID: userID, Email: body.Email,
-			EmployeeNo: "TCH-" + padLeft(count+1, 4), FirstName: body.FirstName, LastName: body.LastName, Phone: body.Phone,
+			EmployeeNo: "TCH-" + store.NewID("")[1:6] + "-" + padLeft(count+1, 3), FirstName: body.FirstName, LastName: body.LastName, Phone: body.Phone,
 			Qualification: body.Qualification, SubjectIDs: orEmpty(body.SubjectIDs), Subjects: orEmpty(body.Subjects),
 			ClassIDs: orEmpty(body.ClassIDs), Status: "active", JoinedAt: now, CreatedAt: now, UpdatedAt: now,
 		}
-		h.Store.Teachers = append(h.Store.Teachers, newTeacher)
-		h.Store.Unlock()
-		h.Persist("teachers", newTeacher)
-		audit.Write(h.Store, ctx, audit.Input{Action: "create", EntityType: "teacher", EntityID: newTeacher.ID, After: newTeacher})
 
 		// Direct PG write so the immediate frontend refetch (which
 		// hits the PG paginated path) sees the new row without waiting
-		// for the background flush queue. The Persist call above is kept
-		// as belt-and-suspenders — the upsert is idempotent.
+		// for the background flush queue.
 		if h.Pool != nil {
-			_, _ = h.Pool.Exec(r.Context(), `
+			_, err := h.Pool.Exec(r.Context(), `
 				INSERT INTO teachers (id, school_id, academic_year_id, user_id, email,
 					employee_no, first_name, last_name, phone, qualification,
 					subject_ids, subjects, class_ids, status, joined_at,
 					created_at, updated_at)
 				VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
-				ON CONFLICT (id) DO NOTHING
 			`, newTeacher.ID, newTeacher.SchoolID, newTeacher.AcademicYearID,
 				newTeacher.UserID, newTeacher.Email,
 				newTeacher.EmployeeNo, newTeacher.FirstName, newTeacher.LastName,
 				newTeacher.Phone, newTeacher.Qualification,
 				newTeacher.SubjectIDs, newTeacher.Subjects, newTeacher.ClassIDs,
 				newTeacher.Status, newTeacher.JoinedAt, newTeacher.CreatedAt, newTeacher.UpdatedAt)
+			
+			if err != nil {
+				h.Store.Unlock()
+				return nil, api.NewControlledError("DB_ERROR", "Database error: "+err.Error(), 500, nil)
+			}
 		}
+
+		h.Store.Teachers = append(h.Store.Teachers, newTeacher)
+		h.Store.Unlock()
+		h.Persist("teachers", newTeacher)
+		audit.Write(h.Store, ctx, audit.Input{Action: "create", EntityType: "teacher", EntityID: newTeacher.ID, After: newTeacher})
 
 		h.invalidateCaches(r.Context(), ctx.SchoolID, yearID)
 		return newTeacher, nil

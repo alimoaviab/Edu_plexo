@@ -640,13 +640,10 @@ export function HierarchyPage() {
     if (activeClass) queryParams.set('class', activeClass.name)
     if (activeSubject) queryParams.set('subject', activeSubject.name)
 
-    const token = localStorage.getItem('sa_token')
     try {
       const res = await fetch(`/api/super-admin/global-bank/import/validate?${queryParams}`, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
+        credentials: 'include',
         body: formData
       })
       const data = await res.json()

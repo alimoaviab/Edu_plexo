@@ -4,12 +4,17 @@
 # Stage 2: serve through nginx with API requests proxied to the backend
 # container ("backend-go") on port 8080.
 
-FROM node:22-alpine AS builder
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
 # Cache npm install on its own layer.
-COPY package.json package-lock.json* ./
+COPY package.json ./
+ENV NPM_CONFIG_FETCH_RETRIES=5 \
+    NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 \
+    NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=120000 \
+    NPM_CONFIG_REGISTRY=https://registry.yarnpkg.com/ \
+    NODE_OPTIONS="--dns-result-order=ipv4first"
 RUN npm install --no-audit --no-fund
 
 COPY . .

@@ -23,6 +23,7 @@ import { SchoolShell } from "@/layouts/SchoolShell";
 import { useAuth } from "@/hooks/useAuth";
 import { useSafeAsync } from "@/hooks/useSafeAsync";
 import { serviceRequest } from "@/services/service-client";
+import { bindRefresh } from "@/services/data-bus";
 import {
   exportFeeReceipt,
   exportFeeStatement,
@@ -92,7 +93,7 @@ export function StudentFeesPage() {
     "Authorized Signatory";
 
   useEffect(() => {
-    void run(async () => {
+    const doRun = () => void run(async () => {
       const studentId = await resolveStudentId(user?.studentId);
       if (!studentId) throw new Error("No linked student found.");
       const result = await serviceRequest<FeesResponse>(
@@ -103,6 +104,8 @@ export function StudentFeesPage() {
     }).catch(() => {
       // useSafeAsync already captures the error
     });
+    doRun();
+    return bindRefresh("fees", doRun);
   }, [run, user?.studentId]);
 
   // ────────────────────────────────────────────────────────────────────

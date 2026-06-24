@@ -12,8 +12,8 @@ export function getThemeLayoutHTML(
   layout: string,
   colors: { primaryColor: string; titleColor: string; bodyColor: string }
 ): string {
-  const primary = colors.primaryColor || "#d4a853";
-  const title = colors.titleColor || "#1e40af";
+  const primary = safeCssColor(colors.primaryColor, "#d4a853");
+  const title = safeCssColor(colors.titleColor, "#1e40af");
 
   switch (layout) {
     case "vintage":
@@ -153,4 +153,11 @@ export function getThemeLayoutHTML(
         <div style="position:absolute; inset:20px; border:1px solid ${primary}80; border-radius:6px; pointer-events:none;"></div>
       `;
   }
+}
+
+function safeCssColor(value: string | undefined, fallback: string): string {
+  const color = (value || "").trim();
+  if (/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(color)) return color;
+  if (/^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/.test(color)) return color;
+  return fallback;
 }
