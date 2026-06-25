@@ -27,7 +27,7 @@ Niche diye gaye **3 variables** add karo:
 
 ### Variable 1: VITE_API_URL
 - **Name**: `VITE_API_URL`
-- **Value**: `http://api.eduplexo.com`
+- **Value**: `https://api.eduplexo.com`
 - **Environments**: ✅ **Production** (check karo)
 - Click **Save**
 
@@ -76,7 +76,7 @@ Vercel automatically detect karega aur deploy karega.
 3. **Build Logs** scroll karo aur check karo:
 ```
 ✓ building client + server...
-✓ VITE_API_URL is set to: http://api.eduplexo.com
+✓ VITE_API_URL is set to: https://api.eduplexo.com
 ```
 
 ### 5.2 Browser Mein Test Karo
@@ -87,14 +87,14 @@ Vercel automatically detect karega aur deploy karega.
 ```javascript
 console.log(import.meta.env.VITE_API_URL)
 ```
-Output hona chahiye: `http://api.eduplexo.com`
+Output hona chahiye: `https://api.eduplexo.com`
 
 ### 5.3 Network Tab Check Karo
 1. Browser **DevTools** → **Network** tab
 2. Login page pe jao: `https://app.eduplexo.com/auth/login`
 3. Login karo
 4. Network tab mein API calls dekho
-5. URL hona chahiye: `http://api.eduplexo.com/api/auth/login`
+5. URL hona chahiye: `https://api.eduplexo.com/api/auth/login`
 
 ---
 
@@ -102,7 +102,7 @@ Output hona chahiye: `http://api.eduplexo.com`
 
 **Kya add kiya:**
 ```
-VITE_API_URL = http://api.eduplexo.com
+VITE_API_URL = https://api.eduplexo.com
 VITE_ENABLE_MOCKS = false
 ```
 
@@ -115,7 +115,7 @@ VITE_ENABLE_MOCKS = false
 ```
 Frontend (https://app.eduplexo.com)
     ↓
-API Call: http://api.eduplexo.com/api/teachers
+API Call: https://api.eduplexo.com/api/teachers
     ↓
 Backend (206.189.94.7:80)
 ```
@@ -150,7 +150,7 @@ docker compose -f vps/docker-compose.vps.yml --env-file vps/.env.vps up -d
 ### Problem: API calls localhost pe ja rahe hain
 **Frontend env variable load nahi hua:**
 1. Vercel → Settings → Environment Variables
-2. Confirm `VITE_API_URL` is set to `http://api.eduplexo.com`
+2. Confirm `VITE_API_URL` is set to `https://api.eduplexo.com`
 3. Redeploy karo (manual ya git push)
 
 ---
@@ -160,10 +160,10 @@ docker compose -f vps/docker-compose.vps.yml --env-file vps/.env.vps up -d
 | Item | Value |
 |------|-------|
 | Frontend URL | https://app.eduplexo.com |
-| Backend API URL | http://api.eduplexo.com |
+| Backend API URL | https://api.eduplexo.com |
 | Backend Server IP | 206.189.94.7 |
 | Environment Variable | `VITE_API_URL` |
-| Value | `http://api.eduplexo.com` |
+| Value | `https://api.eduplexo.com` |
 
 ---
 
@@ -172,7 +172,7 @@ docker compose -f vps/docker-compose.vps.yml --env-file vps/.env.vps up -d
 Is order mein check karo:
 
 - [ ] VPS backend running: `curl http://api.eduplexo.com/health` ✅
-- [ ] Vercel env variables set: `VITE_API_URL` = `http://api.eduplexo.com` ✅
+- [ ] Vercel env variables set: `VITE_API_URL` = `https://api.eduplexo.com` ✅
 - [ ] Frontend redeployed on Vercel ✅
 - [ ] Browser console shows: API calls to `api.eduplexo.com` ✅
 - [ ] Login works (no 502) ✅
@@ -200,14 +200,9 @@ Sab set ho gaya toh:
 
 ## 📝 Important Notes
 
-1. **HTTP vs HTTPS**: Right now backend is HTTP-only
-   - Frontend: `https://` (Vercel has SSL)
-   - Backend: `http://` (VPS no SSL yet)
-   - This is OK for testing, but browsers may show mixed content warning
+1. **HTTP vs HTTPS**: Backend uses HTTPS (`https://api.eduplexo.com`) to match Vercel's HTTPS (`https://app.eduplexo.com`), preventing browser mixed content block.
 
-2. **SSL Later**: When you add SSL to VPS backend:
-   - Change `VITE_API_URL` to `https://api.eduplexo.com`
-   - Redeploy frontend
+2. **SSL Setup**: SSL is active and handled by the VPS host Nginx proxy.
 
 3. **DNS**: Already configured
    - `app.eduplexo.com` → Vercel

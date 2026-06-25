@@ -23,7 +23,7 @@ Vercel dashboard mein jao aur yeh environment variable add karo:
 ### Production Environment Variables
 
 ```
-VITE_API_URL = http://api.eduplexo.com
+VITE_API_URL = https://api.eduplexo.com
 VITE_APP_NAME = Eduplexo — School Workspace
 VITE_APP_DESCRIPTION = Multi-school SaaS school workspace
 VITE_ENABLE_MOCKS = false
@@ -37,7 +37,7 @@ VITE_ENABLE_MOCKS = false
 
 | Name | Value | Environment |
 |------|-------|-------------|
-| `VITE_API_URL` | `http://api.eduplexo.com` | Production |
+| `VITE_API_URL` | `https://api.eduplexo.com` | Production |
 | `VITE_APP_NAME` | `Eduplexo — School Workspace` | Production |
 | `VITE_ENABLE_MOCKS` | `false` | Production |
 
@@ -73,7 +73,7 @@ Vercel automatically redeploy karega.
 2. Latest deployment click karein
 3. **Build Logs** check karein for:
 ```
-✓ VITE_API_URL: http://api.eduplexo.com
+✓ VITE_API_URL: https://api.eduplexo.com
 ```
 
 ### Test in Browser
@@ -126,7 +126,7 @@ Agar aapka domain missing hai, toh add karo aur backend redeploy karo.
 - [ ] VPS backend deployed aur running (`http://api.eduplexo.com/health` working)
 - [ ] DNS: `api.eduplexo.com` → `206.189.94.7` (A record)
 - [ ] DNS: `app.eduplexo.com` → Vercel (CNAME or A record)
-- [ ] Vercel env variables set (`VITE_API_URL` = `http://api.eduplexo.com`)
+- [ ] Vercel env variables set (`VITE_API_URL` = `https://api.eduplexo.com`)
 - [ ] Frontend redeployed on Vercel
 - [ ] Test login: `https://app.eduplexo.com/auth/login`
 - [ ] Check browser console for API calls
@@ -190,12 +190,8 @@ curl -X POST http://api.eduplexo.com/api/auth/login \
 ### Problem 4: Mixed Content Warning (HTTP/HTTPS)
 Frontend HTTPS hai, backend HTTP hai:
 
-**Temporary Fix:** Use HTTP for now
-- Works: `http://api.eduplexo.com`
-
-**Permanent Fix:** Add SSL to backend
-- Later: Setup Let's Encrypt on VPS
-- Then change to: `https://api.eduplexo.com`
+**Fix:** Use HTTPS (SSL is already configured and working on the VPS host Nginx proxy)
+- Works: `https://api.eduplexo.com`
 
 ---
 
@@ -245,7 +241,7 @@ git push
 | Service | URL | Status Check |
 |---------|-----|--------------|
 | Frontend | https://app.eduplexo.com | Open in browser |
-| Backend API | http://api.eduplexo.com | `curl http://api.eduplexo.com/health` |
+| Backend API URL | https://api.eduplexo.com | `curl https://api.eduplexo.com/health` |
 | VPS Server | 206.189.94.7 | `ssh root@206.189.94.7` |
 
 ---
