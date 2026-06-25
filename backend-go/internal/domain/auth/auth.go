@@ -469,27 +469,22 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			Academic:  map[string]any{"institutionalLevel": "K-12"},
 			UpdatedAt: now,
 		}
+		newSub := &store.Subscription{
+			ID:          store.NewID("sub"),
+			SchoolID:    schoolID,
+			PackageID:   "inactive",
+			Status:      "pending",
+			NextRenewal: now,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
 
 		h.Store.Lock()
 		h.Store.Schools = append(h.Store.Schools, newSchool)
 		h.Store.AcademicYears = append(h.Store.AcademicYears, newYear)
 		h.Store.Users = append(h.Store.Users, newUser)
 		h.Store.SchoolSettings = append(h.Store.SchoolSettings, newSettings)
-
-		// ─── Auto 14-day free trial subscription ─────────────────────────
-		// By default, grant the "trial" plan which unlocks all features.
-		trialSub := &store.Subscription{
-			ID:               store.NewID("sub"),
-			SchoolID:         schoolID,
-			PackageID:        "trial",
-			SelectedPackages: []string{},
-			Status:           "trial",
-			AutoRenew:        false,
-			NextRenewal:      now.AddDate(0, 0, 14),
-			CreatedAt:        now,
-			UpdatedAt:        now,
-		}
-		h.Store.Subscriptions = append(h.Store.Subscriptions, trialSub)
+		h.Store.Subscriptions = append(h.Store.Subscriptions, newSub)
 		h.Store.Unlock()
 
 		// Push the freshly-minted school/year/user to PostgreSQL.
@@ -502,7 +497,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		h.Persist("academic_years", newYear)
 		h.Persist("users", newUser)
 		h.Persist("school_settings", newSettings)
-		h.Persist("subscriptions", trialSub)
+		h.Persist("subscriptions", newSub)
 
 		var message string
 		if settings.AutoApproveSchools {

@@ -1003,8 +1003,8 @@ func upsertStoreSubscription(ctx context.Context, tx pgx.Tx, v *store.Subscripti
 		updated = start
 	}
 	planName := strings.TrimPrefix(strings.ToLower(strings.TrimSpace(v.PackageID)), "plan_")
-	if planName == "" || planName == "trial" {
-		planName = "growth"
+	if planName == "" {
+		planName = "trial"
 	}
 	status := defaultStr(v.Status, "active")
 	studentLimit := v.StudentLimit
@@ -1013,6 +1013,8 @@ func upsertStoreSubscription(ctx context.Context, tx pgx.Tx, v *store.Subscripti
 		studentLimit = 500
 		switch planName {
 		case "starter":
+			studentLimit = 200
+		case "trial":
 			studentLimit = 200
 		case "growth":
 			studentLimit = 500

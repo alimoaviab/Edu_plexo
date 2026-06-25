@@ -8,10 +8,11 @@
  *   4. Subscription History
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import * as service from "../services/subscription.service";
+import { CurrentPlanCard } from "@/components/subscription/CurrentPlanCard";
 
 import { useSubscription } from "../hooks/useSubscription";
 import type { Plan } from "../services/subscription.service";
@@ -29,112 +30,67 @@ export function SubscriptionPage() {
   } = useSubscription();
 
   const navigate = useNavigate();
+
   if (isLoading) {
     return <SubscriptionSkeleton />;
   }
 
   const sub = current?.subscription;
   const studentsUsed = current?.students_used ?? 0;
-  const studentsLimit = current?.students_limit ?? 0;
-  const usagePercent = studentsLimit > 0 ? Math.round((studentsUsed / studentsLimit) * 100) : 0;
-  const isNearLimit = usagePercent >= 80;
-  const daysRemaining = current?.days_remaining ?? 0;
+
+  const defaultPlans: Plan[] = [
+    { id: "plan_basic", name: "basic", display_name: "Basic Plan", price: 4000, currency: "PKR", student_limit: 100, features: ["All Premium Modules Included", "Unlimited Teacher Accounts", "Parent & Student Portals", "Complete Academic Suite", "Standard Support"], is_custom: false, popular: false },
+    { id: "plan_standard", name: "standard", display_name: "Standard Plan", price: 8000, currency: "PKR", student_limit: 300, features: ["All Premium Modules Included", "Unlimited Teacher Accounts", "Parent & Student Portals", "Complete Academic Suite", "Priority Support"], is_custom: false, popular: true },
+    { id: "plan_premium", name: "premium", display_name: "Premium Plan", price: 15000, currency: "PKR", student_limit: 800, features: ["All Premium Modules Included", "Unlimited Teacher Accounts", "Parent & Student Portals", "Complete Academic Suite", "Dedicated Support"], is_custom: false, popular: false },
+    { id: "plan_enterprise", name: "enterprise", display_name: "Enterprise Plan", price: 30000, currency: "PKR", student_limit: 2000, features: ["Custom Integrations", "Enterprise Features", "Custom Student Limit", "Priority Setup"], is_custom: true, popular: false },
+  ];
+
+  const displayPlans = plans && plans.length > 0 ? plans : defaultPlans;
+
+  const seen = new Set<string>();
+  const deduped = history.filter((entry) => {
+    const key = `${entry.action}::${entry.plan_name}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   return (
-    <SchoolShell eyebrow="Subscription" title="Subscription & Billing">
-      <div className="space-y-8 p-6 max-w-7xl mx-auto">
+    <SchoolShell>
+      <div className="max-w-6xl mx-auto space-y-12">
 
-        {/* Page Header */}
+        {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Subscription & Billing</h1>
-          <p className="text-gray-500 mt-1">Manage your school's subscription plan and student limits</p>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Subscription & Billing</h1>
+          <p className="mt-2 text-gray-600">Manage your school's subscription plan and student limits</p>
         </div>
 
-        {/* Current Plan Card + Usage */}
+
+        {/* Current Plan & Usage */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Current Plan */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-3">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {sub ? planDisplayName(sub.plan_name) : "No Active Plan"}
-                  </h2>
-                  {sub && (
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${sub.status === "active" ? "bg-green-100 text-green-700" :
-                        sub.status === "trial" ? "bg-blue-100 text-blue-700" :
-                          "bg-red-100 text-red-700"
-                      }`}>
-                      {sub.status === "trial" ? "Free Trial" : sub.status === "active" ? "Active" : "Expired"}
-                    </span>
-                  )}
-                </div>
-                {sub && (
-                  <div className="mt-4 space-y-2 text-sm text-gray-600">
-                    <p>
-                      <span className="font-medium text-gray-700">Valid Until:</span>{" "}
-                      {new Date(sub.end_date).toLocaleDateString("en-PK", { day: "numeric", month: "long", year: "numeric" })}
-                    </p>
-                    <p>
-                      <span className="font-medium text-gray-700">Days Remaining:</span>{" "}
-                      <span className={daysRemaining <= 7 ? "text-red-600 font-semibold" : ""}>
-                        {daysRemaining} days
-                      </span>
-                    </p>
-                    {sub.is_trial && (
-                      <p className="text-blue-600 font-medium">
-                        🎉 14-Day Free Trial — Enjoy all Growth Plan features!
-                      </p>
-                    )}
-                    {sub.price > 0 && (
-                      <p>
-                        <span className="font-medium text-gray-700">Monthly Price:</span>{" "}
-                        PKR {sub.price.toLocaleString()}/month
-                      </p>
-                    )}
-                  </div>
-                )}
-                {!sub && (
-                  <p className="mt-3 text-gray-500">
-                    Subscribe to a plan to start managing your school.
-                  </p>
-                )}
-              </div>
-              <div className="hidden sm:block">
-                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center">
-                  <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
+          <div className="lg:col-span-2">
+            <CurrentPlanCard subscription={sub ?? null} studentsUsed={studentsUsed} />
           </div>
 
-          {/* Usage Card */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Student Usage</h3>
-            <div className="mt-4">
-              <div className="flex items-end justify-between">
-                <span className="text-3xl font-bold text-gray-900">{studentsUsed}</span>
-                <span className="text-gray-500 text-sm">/ {studentsLimit} students</span>
-              </div>
-              {/* Progress Bar */}
-              <div className="mt-4 w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${isNearLimit ? "bg-red-500" : "bg-blue-600"
-                    }`}
-                  style={{ width: `${Math.min(usagePercent, 100)}%` }}
-                />
-              </div>
-              <div className="mt-2 flex justify-between text-xs text-gray-500">
-                <span>{usagePercent}% used</span>
-                <span>{studentsLimit - studentsUsed} slots remaining</span>
-              </div>
-              {isNearLimit && (
-                <p className="mt-3 text-xs text-red-600 font-medium">
-                  ⚠️ Approaching student limit. Consider upgrading.
-                </p>
-              )}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col justify-center">
+            <h3 className="text-sm font-medium text-gray-500 mb-4">Student Usage</h3>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-3xl font-bold text-gray-900">{studentsUsed}</span>
+              <span className="text-gray-500">/ {sub?.student_limit || 0} students</span>
+            </div>
+            <div className="w-full bg-gray-100 rounded-full h-3 mb-2">
+              <div
+                className={`h-3 rounded-full transition-all duration-500 ${!sub ? "bg-gray-200" :
+                  studentsUsed >= sub.student_limit ? "bg-red-500" :
+                    studentsUsed >= sub.student_limit * 0.8 ? "bg-yellow-500" :
+                      "bg-green-500"
+                  }`}
+                style={{ width: `${Math.min(100, sub ? (studentsUsed / sub.student_limit) * 100 : 0)}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 font-medium">
+              <span>{sub ? Math.round((studentsUsed / sub.student_limit) * 100) : 0}% used</span>
+              <span>{sub ? Math.max(0, sub.student_limit - studentsUsed) : 0} slots remaining</span>
             </div>
           </div>
         </div>
@@ -143,40 +99,37 @@ export function SubscriptionPage() {
         <div>
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Available Plans</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {plans.map((plan) => (
+            {displayPlans.map((plan) => (
               <PricingCard
                 key={plan.name}
                 plan={plan}
                 isCurrentPlan={sub?.plan_name === plan.name}
                 canTrial={current?.can_trial ?? false}
-                onStartTrial={() => startTrial()}
+                onStartTrial={async () => {
+                  await startTrial(plan.name);
+                  navigate("/admin/dashboard");
+                }}
                 onUpgrade={() => navigate("/admin/subscription/payment", { state: { plan } })}
                 onManualSubscribe={() => navigate("/admin/subscription/custom")}
                 isUpgrading={isUpgrading}
                 isStartingTrial={isStartingTrial}
+                sub={sub}
               />
             ))}
           </div>
         </div>
 
-        {/* History — deduplicated: group same-action+same-plan consecutive entries */}
+        {/* History */}
         {history.length > 0 && (() => {
-          // Keep only the LATEST entry per unique (action + plan_name) combination.
-          // This removes the dozens of repeated "trial" rows caused by repeated seeder runs.
-          const seen = new Set<string>();
-          const deduped = history.filter((entry) => {
-            const key = `${entry.action}::${entry.plan_name}`;
-            if (seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          });
           return (
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Subscription History</h2>
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+              <div className="px-6 py-5 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Subscription History</h3>
+              </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 border-b border-gray-200 uppercase text-xs">
+                    <tr>
                       <th className="text-left py-3 px-2 text-gray-500 font-medium">Plan</th>
                       <th className="text-left py-3 px-2 text-gray-500 font-medium">Action</th>
                       <th className="text-left py-3 px-2 text-gray-500 font-medium">Amount</th>
@@ -209,7 +162,6 @@ export function SubscriptionPage() {
             </div>
           );
         })()}
-
       </div>
     </SchoolShell>
   );
@@ -226,9 +178,10 @@ interface PricingCardProps {
   onManualSubscribe: () => void;
   isUpgrading: boolean;
   isStartingTrial: boolean;
+  sub: any;
 }
 
-function PricingCard({ plan, isCurrentPlan, canTrial, onStartTrial, onUpgrade, onManualSubscribe, isUpgrading, isStartingTrial }: PricingCardProps) {
+function PricingCard({ plan, isCurrentPlan, canTrial, onStartTrial, onUpgrade, onManualSubscribe, isUpgrading, isStartingTrial, sub }: PricingCardProps) {
   return (
     <div className={`relative bg-white rounded-2xl border-2 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${plan.popular ? "border-blue-500 shadow-md" : "border-gray-200"
       } ${isCurrentPlan ? "ring-2 ring-blue-200" : ""}`}>
@@ -271,7 +224,7 @@ function PricingCard({ plan, isCurrentPlan, canTrial, onStartTrial, onUpgrade, o
 
       {/* Features */}
       <ul className="mt-6 space-y-3">
-        {plan.features.map((feature, i) => (
+        {(plan.features || []).map((feature, i) => (
           <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
             <svg className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -300,7 +253,7 @@ function PricingCard({ plan, isCurrentPlan, canTrial, onStartTrial, onUpgrade, o
             disabled={isStartingTrial}
             className="w-full py-3 px-4 rounded-xl font-medium bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50"
           >
-            {isStartingTrial ? "Starting..." : "Start 14-Day Free Trial"}
+            {isStartingTrial ? "Starting..." : "🎁 Start Free Trial"}
           </button>
         ) : (
           <button
@@ -311,7 +264,7 @@ function PricingCard({ plan, isCurrentPlan, canTrial, onStartTrial, onUpgrade, o
                 : "bg-gray-900 text-white hover:bg-gray-800"
               }`}
           >
-            {isUpgrading ? "Upgrading..." : "Upgrade Plan"}
+            {isUpgrading ? "Upgrading..." : (sub?.status === "expired" || sub?.status === "cancelled" ? "Renew Subscription" : "Upgrade Plan")}
           </button>
         )}
       </div>

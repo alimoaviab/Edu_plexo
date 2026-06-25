@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/eduplexo/backend-go/internal/api"
@@ -45,68 +46,52 @@ type Plan struct {
 
 var AvailablePlans = []Plan{
 	{
-		ID:           "plan_basic",
-		Name:         "basic",
-		DisplayName:  "Basic Plan",
+		ID:           "plan_starter",
+		Name:         "plan_starter",
+		DisplayName:  "Starter School",
 		Price:        4000,
 		Currency:     "PKR",
 		StudentLimit: 200,
 		Features: []string{
-			"All Premium Modules Included",
-			"Unlimited Teacher Accounts",
-			"Parent & Student Portals",
-			"Complete Academic Suite",
+			"Student & Staff Directory",
+			"Basic Attendance Tracking",
+			"Fee Collection",
+			"Parent Portal App",
 			"Standard Support",
 		},
 		IsCustom: false,
 		Popular:  false,
 	},
 	{
-		ID:           "plan_standard",
-		Name:         "standard",
-		DisplayName:  "Standard Plan",
-		Price:        9000,
+		ID:           "plan_growth",
+		Name:         "plan_growth",
+		DisplayName:  "Growth Plan",
+		Price:        8000,
 		Currency:     "PKR",
 		StudentLimit: 500,
 		Features: []string{
-			"All Premium Modules Included",
-			"Unlimited Teacher Accounts",
-			"Parent & Student Portals",
-			"Complete Academic Suite",
+			"Everything in Starter",
+			"Advanced Reporting",
+			"SMS Notifications",
+			"Analytics Dashboard",
 			"Priority Support",
 		},
 		IsCustom: false,
 		Popular:  true,
 	},
 	{
-		ID:           "plan_premium",
-		Name:         "premium",
-		DisplayName:  "Premium Plan",
-		Price:        15000,
-		Currency:     "PKR",
-		StudentLimit: 1000,
-		Features: []string{
-			"All Premium Modules Included",
-			"Unlimited Teacher Accounts",
-			"Parent & Student Portals",
-			"Complete Academic Suite",
-			"Dedicated Support",
-		},
-		IsCustom: false,
-		Popular:  false,
-	},
-	{
-		ID:           "plan_enterprise",
-		Name:         "enterprise",
-		DisplayName:  "Enterprise Plan",
+		ID:           "plan_custom",
+		Name:         "plan_custom",
+		DisplayName:  "Custom Plan",
 		Price:        0,
 		Currency:     "PKR",
-		StudentLimit: 2000,
+		StudentLimit: 800,
 		Features: []string{
-			"Custom Integrations",
+			"Everything in Growth",
+			"Dedicated Support",
 			"Enterprise Features",
+			"Custom Integrations",
 			"Custom Student Limit",
-			"Priority Setup",
 		},
 		IsCustom: true,
 		Popular:  false,
@@ -179,7 +164,7 @@ type CurrentResponse struct {
 func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
 	api.WriteResult(w, api.ServiceTry(func() (CurrentResponse, error) {
-		sub, err := h.getActiveSubscription(r.Context(), ctx.SchoolID)
+		sub, err := GetActiveSubscriptionHelper(r.Context(), h.Pool, h.Store, ctx.SchoolID)
 		if err != nil {
 			return CurrentResponse{}, err
 		}
@@ -190,12 +175,14 @@ func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 		trialWarning := ""
 		builderRequired := false
 
-		// Check if trial is available
-		canTrial := false
-		if sub == nil || (!sub.TrialUsed && sub.Status != "trial") {
-			canTrial = true
+		// Check if trial already used in DB or MemStore
+		canTrial, err := IsTrialAvailable(r.Context(), h.Pool, h.Store, ctx.SchoolID)
+		if err != nil {
+			return CurrentResponse{}, err
 		}
-		if sub != nil && sub.TrialUsed {
+
+		// canTrial is only true if they also don't have an active subscription
+		if sub != nil && (sub.Status == "active" || sub.Status == "trial") {
 			canTrial = false
 		}
 
@@ -207,16 +194,13 @@ func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 			if remaining > 0 {
 				daysRemaining = int(remaining.Hours() / 24)
 				isExpired = false
-				if sub.Status == "trial" || sub.Status == "active" {
-					if sub.Status == "trial" {
-						elapsedDays := int(time.Since(sub.StartDate).Hours() / 24)
-						if elapsedDays >= 13 {
-							trialWarning = "urgent"
-						} else if elapsedDays >= 10 {
-							trialWarning = "warning"
-						}
+				if sub.Status == "trial" {
+					elapsedDays := int(time.Since(sub.StartDate).Hours() / 24)
+					if elapsedDays >= 13 {
+						trialWarning = "urgent"
+					} else if elapsedDays >= 10 {
+						trialWarning = "warning"
 					}
-					builderRequired = false // Removed automatic popup triggers
 				}
 			} else {
 				// Auto-expire
@@ -255,7 +239,9 @@ func (h *Handler) GetPlans(w http.ResponseWriter, r *http.Request) {
 	if h.Pool != nil {
 		rows, err := h.Pool.Query(r.Context(), `
 			SELECT id, name, student_limit, price, COALESCE(currency,'PKR'), features, is_custom, display_order
-			FROM subscription_plans WHERE is_active = true ORDER BY display_order ASC, created_at ASC
+			FROM subscription_plans 
+			WHERE is_active = true AND id IN ('plan_starter', 'plan_growth', 'plan_custom')
+			ORDER BY display_order ASC, created_at ASC
 		`)
 		if err == nil {
 			defer rows.Close()
@@ -266,25 +252,17 @@ func (h *Handler) GetPlans(w http.ResponseWriter, r *http.Request) {
 				var featuresJSON []byte
 				var displayOrder int
 				if err := rows.Scan(&p.ID, &dbName, &p.StudentLimit, &p.Price, &p.Currency, &featuresJSON, &p.IsCustom, &displayOrder); err == nil {
-					_ = json.Unmarshal(featuresJSON, &p.Features)
+					p.Features = DecodeFeaturesJSON(featuresJSON)
 					p.DisplayName = dbName
-					if p.ID == "plan_basic" {
-						p.Name = "basic"
-						p.Popular = false
-					} else if p.ID == "plan_standard" {
-						p.Name = "standard"
+					p.Name = p.ID
+					if p.ID == "plan_growth" {
 						p.Popular = true
-					} else if p.ID == "plan_premium" {
-						p.Name = "premium"
-						p.Popular = false
-					} else if p.ID == "plan_enterprise" || p.ID == "plan_custom" {
-						p.Name = "enterprise"
-						p.Popular = false
-						p.IsCustom = true
 					} else {
-						p.Name = p.ID
+						p.Popular = false
 					}
 					plans = append(plans, p)
+				} else {
+					fmt.Println("Scan error in GetPlans:", err.Error())
 				}
 			}
 			if len(plans) > 0 {
@@ -301,6 +279,17 @@ func (h *Handler) GetPlans(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
 	api.WriteResult(w, api.ServiceTry(func() (*Subscription, error) {
+		var body struct {
+			PlanName string `json:"plan_name"`
+		}
+		// Decode request body if present
+		_ = json.NewDecoder(r.Body).Decode(&body)
+
+		planName := strings.TrimSpace(body.PlanName)
+		if planName == "" {
+			planName = "trial"
+		}
+
 		// Check if trial already used
 		var trialUsed bool
 		err := h.Pool.QueryRow(r.Context(), `
@@ -323,17 +312,30 @@ func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 			WHERE school_id = $1 AND status IN ('active', 'trial')
 		`, ctx.SchoolID)
 
-		// Create trial subscription (0 packages selected by default)
+		// Create trial subscription (all features included, student limit based on plan)
 		now := time.Now()
-		trialEnd := now.Add(14 * 24 * time.Hour)
+		trialDays := superadmin.GetPlatformSettings().TrialDays
+		if trialDays <= 0 {
+			trialDays = 14
+		}
+		trialEnd := now.Add(time.Duration(trialDays) * 24 * time.Hour)
 		id := store.NewID("sub")
-		selected := []string{}
+
+		studentLimit := 200
+		switch strings.ToLower(planName) {
+		case "plan_starter", "starter", "basic":
+			studentLimit = 200
+		case "plan_growth", "growth", "standard":
+			studentLimit = 500
+		case "plan_custom", "custom", "enterprise", "premium":
+			studentLimit = 800
+		}
 
 		sub := &Subscription{
 			ID:             id,
 			SchoolID:       ctx.SchoolID,
-			PlanName:       EncodeSelectedPackages(selected),
-			StudentLimit:   h.countActiveStudents(ctx.SchoolID),
+			PlanName:       planName,
+			StudentLimit:   studentLimit,
 			Price:          0,
 			Currency:       "PKR",
 			StartDate:      now,
@@ -359,6 +361,23 @@ func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 
 		// Record in history
 		h.recordHistory(r.Context(), ctx.SchoolID, sub.PlanName, sub.StudentLimit, 0, "paid", now, trialEnd, "trial")
+
+		// Also update the MemStore to keep it in sync during runtime without restart
+		if h.Store != nil {
+			h.Store.Lock()
+			h.Store.Subscriptions = append(h.Store.Subscriptions, &store.Subscription{
+				ID:               sub.ID,
+				SchoolID:         sub.SchoolID,
+				PackageID:        sub.PlanName,
+				SelectedPackages: append([]string(nil), packageOrder...),
+				Status:           sub.Status,
+				AutoRenew:        false,
+				NextRenewal:      sub.EndDate,
+				CreatedAt:        sub.CreatedAt,
+				UpdatedAt:        sub.UpdatedAt,
+			})
+			h.Store.Unlock()
+		}
 
 		return sub, nil
 	}))
@@ -458,7 +477,7 @@ func (h *Handler) UpdatePackages(w http.ResponseWriter, r *http.Request) {
 			h.Store.Unlock()
 		}
 
-		sub, err := h.getActiveSubscription(r.Context(), ctx.SchoolID)
+		sub, err := GetActiveSubscriptionHelper(r.Context(), h.Pool, h.Store, ctx.SchoolID)
 		if err != nil {
 			return CurrentResponse{}, err
 		}
@@ -570,6 +589,23 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 
 		h.recordHistory(r.Context(), ctx.SchoolID, plan.Name, studentLimit, price, "paid", now, endDate, "upgrade")
 
+		// Also update the MemStore to keep it in sync during runtime without restart
+		if h.Store != nil {
+			h.Store.Lock()
+			h.Store.Subscriptions = append(h.Store.Subscriptions, &store.Subscription{
+				ID:               sub.ID,
+				SchoolID:         sub.SchoolID,
+				PackageID:        sub.PlanName,
+				SelectedPackages: ParseSelectedPackages(plan.Name, nil),
+				Status:           sub.Status,
+				AutoRenew:        false,
+				NextRenewal:      sub.EndDate,
+				CreatedAt:        sub.CreatedAt,
+				UpdatedAt:        sub.UpdatedAt,
+			})
+			h.Store.Unlock()
+		}
+
 		return sub, nil
 	}))
 }
@@ -609,7 +645,7 @@ func (h *Handler) GetHistory(w http.ResponseWriter, r *http.Request) {
 // Returns nil if OK, or a ControlledError if limit is reached.
 // This is the CRITICAL enforcement point — called before every student creation.
 func (h *Handler) CheckStudentLimit(ctx context.Context, schoolID string) error {
-	sub, err := h.getActiveSubscription(ctx, schoolID)
+	sub, err := GetActiveSubscriptionHelper(ctx, h.Pool, h.Store, schoolID)
 	if err != nil {
 		// If we can't check, allow (don't block on DB errors)
 		log.Printf("[subscription] limit check error for %s: %v (allowing)", schoolID, err)
@@ -649,95 +685,7 @@ func (h *Handler) CheckStudentLimit(ctx context.Context, schoolID string) error 
 	return nil
 }
 
-// ─── Internal Helpers ────────────────────────────────────────────────────
 
-func (h *Handler) getActiveSubscription(ctx context.Context, schoolID string) (*Subscription, error) {
-	if h.Pool == nil {
-		return h.activeSubscriptionFromStore(schoolID), nil
-	}
-
-	var sub Subscription
-	var trialStart, trialEnd *time.Time
-	err := h.Pool.QueryRow(ctx, `
-		SELECT id, school_id, plan_name, student_limit, price, currency, start_date, end_date,
-		       status, is_trial, trial_used, trial_start_date, trial_end_date, created_at, updated_at
-		FROM subscriptions
-		WHERE school_id = $1 AND status IN ('active', 'trial')
-		ORDER BY created_at DESC
-		LIMIT 1
-	`, schoolID).Scan(
-		&sub.ID, &sub.SchoolID, &sub.PlanName, &sub.StudentLimit, &sub.Price, &sub.Currency,
-		&sub.StartDate, &sub.EndDate, &sub.Status, &sub.IsTrial, &sub.TrialUsed,
-		&trialStart, &trialEnd, &sub.CreatedAt, &sub.UpdatedAt,
-	)
-	if err == pgx.ErrNoRows {
-		return h.activeSubscriptionFromStore(schoolID), nil
-	}
-	if err != nil {
-		if sub := h.activeSubscriptionFromStore(schoolID); sub != nil {
-			return sub, nil
-		}
-		return nil, err
-	}
-	sub.TrialStartDate = trialStart
-	sub.TrialEndDate = trialEnd
-	return &sub, nil
-}
-
-func (h *Handler) activeSubscriptionFromStore(schoolID string) *Subscription {
-	if h.Store == nil {
-		return nil
-	}
-	h.Store.RLock()
-	defer h.Store.RUnlock()
-	var latest *store.Subscription
-	for _, s := range h.Store.Subscriptions {
-		if s.SchoolID != schoolID || (s.Status != "active" && s.Status != "trial") {
-			continue
-		}
-		if latest == nil || s.CreatedAt.After(latest.CreatedAt) {
-			latest = s
-		}
-	}
-	if latest == nil {
-		return nil
-	}
-	selected := ParseSelectedPackages(latest.PackageID, latest.SelectedPackages)
-	planName := EncodeSelectedPackages(selected)
-	studentLimit := h.countActiveStudents(latest.SchoolID)
-	price := MonthlyEstimate(studentLimit, selected, superadmin.GetPlatformSettings().PackageRates)
-	start := latest.CreatedAt
-	if start.IsZero() {
-		start = time.Now()
-	}
-	end := latest.NextRenewal
-	if end.IsZero() {
-		end = start.AddDate(0, 0, 14)
-	}
-	isTrial := latest.Status == "trial"
-	var trialStart, trialEnd *time.Time
-	if isTrial {
-		trialStart = &start
-		trialEnd = &end
-	}
-	return &Subscription{
-		ID:             latest.ID,
-		SchoolID:       latest.SchoolID,
-		PlanName:       planName,
-		StudentLimit:   studentLimit,
-		Price:          price,
-		Currency:       "PKR",
-		StartDate:      start,
-		EndDate:        end,
-		Status:         latest.Status,
-		IsTrial:        isTrial,
-		TrialUsed:      isTrial,
-		TrialStartDate: trialStart,
-		TrialEndDate:   trialEnd,
-		CreatedAt:      latest.CreatedAt,
-		UpdatedAt:      latest.UpdatedAt,
-	}
-}
 
 func (h *Handler) countActiveStudents(schoolID string) int {
 	// Try PG first

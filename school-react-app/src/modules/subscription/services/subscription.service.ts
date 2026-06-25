@@ -69,8 +69,11 @@ export function getPlans() {
   return serviceRequest<Plan[]>("/api/subscription/plans");
 }
 
-export function startTrial() {
-  return serviceRequest<Subscription>("/api/subscription/start-trial", { method: "POST" });
+export function startTrial(planName?: string) {
+  return serviceRequest<Subscription>("/api/subscription/start-trial", {
+    method: "POST",
+    body: planName ? JSON.stringify({ plan_name: planName }) : undefined,
+  });
 }
 
 export function updatePackages(selectedPackages: string[]) {

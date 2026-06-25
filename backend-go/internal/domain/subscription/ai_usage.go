@@ -148,7 +148,7 @@ func (h *Handler) fetchOrCreateAIUsage(ctx context.Context, schoolID string) (*A
 	if err == pgx.ErrNoRows {
 		// Get max from subscription
 		maxReqs := 10
-		sub, _ := h.getActiveSubscription(ctx, schoolID)
+		sub, _ := GetActiveSubscriptionHelper(ctx, h.Pool, h.Store, schoolID)
 		if sub != nil {
 			switch sub.PlanName {
 			case "starter":

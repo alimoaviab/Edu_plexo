@@ -39,23 +39,7 @@ export function AdminDashboardPage() {
     { title: "Pending Fees", value: `PKR ${(overview?.pendingFees ?? 0).toLocaleString()}`, icon: "account_balance_wallet", color: "text-slate-600 bg-slate-50" },
   ];
 
-  if (isError) {
-    return (
-      <SchoolShell eyebrow="Overview" title="Dashboard">
-        <div className="rounded-xl border border-red-100 bg-red-50 p-6 text-center">
-          <AppIcon name="AlertCircle" size={24} className="mb-2 text-red-500" />
-          <h2 className="text-sm font-bold text-red-900">Failed to load dashboard</h2>
-          <p className="text-[11px] text-red-600">{error?.message || "Unknown error"}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-3 rounded-lg bg-red-600 px-4 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-red-700"
-          >
-            Retry
-          </button>
-        </div>
-      </SchoolShell>
-    );
-  }
+
 
   const attendanceCompletionPercent = data
     ? Math.round(((classAttendance?.filter(c => c.has_attendance).length || 0) / (overview?.totalClasses || 1)) * 100)

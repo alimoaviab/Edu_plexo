@@ -1,0 +1,17 @@
+--- internal/domain/subscription/subscription.go
++++ internal/domain/subscription/subscription.go
+@@ -265,6 +265,8 @@
+ 				var featuresJSON []byte
+ 				var displayOrder int
+ 				if err := rows.Scan(&p.ID, &dbName, &p.StudentLimit, &p.Price, &p.Currency, &featuresJSON, &p.IsCustom, &displayOrder); err == nil {
+ 					_ = json.Unmarshal(featuresJSON, &p.Features)
+ 					p.DisplayName = dbName
+ 					if p.ID == "plan_basic" {
+@@ -285,6 +287,8 @@
+ 					}
+ 					plans = append(plans, p)
++				} else {
++					println("Scan error in GetPlans:", err.Error())
+ 				}
+ 			}
+ 			if len(plans) > 0 {

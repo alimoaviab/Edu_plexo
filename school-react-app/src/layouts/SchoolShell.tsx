@@ -28,6 +28,7 @@ import {
 import { useAuth, type Role } from "@/hooks/useAuth";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { ChildSwitcher } from "@/components/parent/ChildSwitcher";
+import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
 
 type NavItem = {
   label: string;
@@ -221,7 +222,7 @@ function navGroupsForRole(role: Role | undefined): NavGroup[] {
   return [];
 }
 
-function AdminActions({ allowedModules }: { allowedModules: Record<string, boolean> | null }) {
+function AdminActions({ allowedModules, subscription }: { allowedModules: Record<string, boolean> | null; subscription: any }) {
   const actions = [
     { label: "Student", icon: "person_add", href: "/admin/students?action=new", color: "text-blue-600 border-blue-200 hover:bg-blue-50", module: "students" },
     { label: "Attendance", icon: "how_to_reg", href: "/admin/attendance", color: "text-blue-600 border-blue-200 hover:bg-blue-50", module: "attendance" },
@@ -229,8 +230,15 @@ function AdminActions({ allowedModules }: { allowedModules: Record<string, boole
     { label: "Broadcast", icon: "campaign", href: "/admin/announcements?action=new", color: "text-blue-600 border-blue-200 hover:bg-blue-50", module: "announcements" },
   ];
 
+  const planName = subscription?.plan_name
+    ? subscription.plan_name.toLowerCase().replace(/^plan_/, "").trim()
+    : "";
+  const isCustom = planName === "custom" || planName === "enterprise";
+  const isSubscriptionActive = subscription?.status === "active" || subscription?.status === "trial";
+  const shouldFilter = isSubscriptionActive && isCustom;
+
   const filteredActions = actions.filter((action) => {
-    if (!allowedModules) return true;
+    if (!shouldFilter || !allowedModules) return true;
     return allowedModules[action.module] !== false;
   });
 
@@ -247,12 +255,12 @@ function AdminActions({ allowedModules }: { allowedModules: Record<string, boole
         </Link>
       ))}
       <div className="flex gap-1 ml-1">
-        {(!allowedModules || allowedModules["results"] !== false) && (
+        {(!shouldFilter || !allowedModules || allowedModules["results"] !== false) && (
           <Link to="/admin/results" className="p-1 rounded-full text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition-all" title="Results">
             <AppIcon name="Leaderboard" size={18} />
           </Link>
         )}
-        {(!allowedModules || allowedModules["timetable"] !== false) && (
+        {(!shouldFilter || !allowedModules || allowedModules["timetable"] !== false) && (
           <Link to="/admin/timetable" className="p-1 rounded-full text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition-all" title="Timetable">
             <AppIcon name="CalendarDays" size={18} />
           </Link>
@@ -414,11 +422,21 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
   const [allowedModules, setAllowedModules] = useState<Record<string, boolean> | null>(null);
   const [availablePackages, setAvailablePackages] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [subscription, setSubscription] = useState<any>(null);
 
   const navGroups = useMemo(() => navGroupsForRole(user?.role), [user]);
 
   const filteredNavGroups = useMemo(() => {
-    if (!allowedModules || user?.role === "super_admin") return navGroups;
+    if (user?.role === "super_admin") return navGroups;
+
+    const planName = subscription?.plan_name
+      ? subscription.plan_name.toLowerCase().replace(/^plan_/, "").trim()
+      : "";
+    const isCustom = planName === "custom" || planName === "enterprise";
+    const isSubscriptionActive = subscription?.status === "active" || subscription?.status === "trial";
+    const shouldFilter = isSubscriptionActive && isCustom;
+
+    if (!shouldFilter || !allowedModules) return navGroups;
 
     return navGroups
       .map((group) => {
@@ -432,7 +450,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
         return { ...group, items };
       })
       .filter((group) => group.items.length > 0);
-  }, [navGroups, allowedModules, user]);
+  }, [navGroups, allowedModules, user, subscription]);
 
   useEffect(() => {
     if (user && user.role !== "super_admin") {
@@ -445,6 +463,9 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
         .then((payload) => {
           if (payload?.ok && payload?.data) {
             const data = payload.data;
+            if (data.subscription) {
+              setSubscription(data.subscription);
+            }
             if (data.allowed_modules) {
               setAllowedModules(data.allowed_modules);
             }
@@ -498,13 +519,6 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
       if (path.startsWith("/admin")) {
         if (user.role !== "admin" && user.role !== "super_admin") {
           navigate(`/${user.role}/dashboard`, { replace: true });
-        } else if (
-          allowedModules !== null &&
-          Object.keys(allowedModules).length === 0 &&
-          !path.startsWith("/admin/subscription")
-        ) {
-          // If no packages are selected, block access to everything except subscription
-          navigate("/admin/subscription", { replace: true });
         }
       } else if (path.startsWith("/teacher") && user.role !== "teacher") {
         navigate(`/${user.role}/dashboard`, { replace: true });
@@ -514,7 +528,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
         navigate(`/${user.role}/dashboard`, { replace: true });
       }
     }
-  }, [authLoading, user, navigate, pathname, allowedModules]);
+  }, [authLoading, user, navigate, pathname]);
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -753,7 +767,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
             <div className="mx-0.5 hidden h-3 w-px bg-slate-200/40 sm:block" />
 
             <div className="flex items-center gap-2">
-              {user.role === "admin" && <AdminActions allowedModules={allowedModules} />}
+              {user.role === "admin" && <AdminActions allowedModules={allowedModules} subscription={subscription} />}
 
               <button className="relative flex h-8 w-8 items-center justify-center rounded-full border border-slate-100 bg-white text-slate-400 transition-all hover:border-blue-400 hover:text-blue-600 active:scale-95 shadow-sm">
                 <AppIcon name="Bell" size={19} />
@@ -771,7 +785,9 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
             title="This page ran into a problem"
             message="A part of this page failed to render. Try the action again, or refresh the page."
           >
-            {children}
+            <SubscriptionGuard>
+              {children}
+            </SubscriptionGuard>
           </ErrorBoundary>
         </div>
       </main>

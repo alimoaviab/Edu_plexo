@@ -1,6 +1,7 @@
 package subscription
 
 import (
+	"encoding/json"
 	"sort"
 	"strings"
 	"time"
@@ -240,7 +241,7 @@ func ParseSelectedPackages(packageID string, selected []string) []string {
 		return []string{}
 	}
 	switch raw {
-	case "trial", "starter", "growth", "custom", "enterprise", "plan_starter", "plan_growth", "plan_custom", "plan_basic", "plan_standard", "plan_premium", "plan_enterprise":
+	case "trial", "starter", "growth", "plan_starter", "plan_growth", "plan_basic", "plan_standard", "plan_premium", "basic", "standard", "premium":
 		return append([]string(nil), packageOrder...)
 	}
 	parts := strings.FieldsFunc(raw, func(r rune) bool {
@@ -512,3 +513,44 @@ func packageIndex(id string) int {
 	}
 	return len(packageOrder)
 }
+
+func DecodeFeaturesJSON(featuresJSON []byte) []string {
+	if len(featuresJSON) == 0 {
+		return []string{}
+	}
+	var featuresArr []string
+	if err := json.Unmarshal(featuresJSON, &featuresArr); err == nil {
+		if featuresArr == nil {
+			return []string{}
+		}
+		return featuresArr
+	}
+
+	// Try unmarshalling as map[string]bool
+	var featuresMap map[string]bool
+	if err := json.Unmarshal(featuresJSON, &featuresMap); err == nil {
+		keys := []string{"attendance", "exams", "homework", "live_classes", "ai_features", "parent_portal", "teacher_portal", "notifications", "analytics", "reports"}
+		niceNames := map[string]string{
+			"attendance":     "Attendance Tracking",
+			"exams":          "Exam Management",
+			"homework":       "Homework & Assignments",
+			"live_classes":   "Live Classes Integration",
+			"ai_features":    "AI Plexa Chatbot",
+			"parent_portal":  "Parent Portal App",
+			"teacher_portal": "Teacher Portal App",
+			"notifications":  "SMS Notifications",
+			"analytics":      "Analytics Dashboard",
+			"reports":        "Detailed Marksheets & Reports",
+		}
+		result := make([]string, 0)
+		for _, k := range keys {
+			if val, ok := featuresMap[k]; ok && val {
+				result = append(result, niceNames[k])
+			}
+		}
+		return result
+	}
+
+	return []string{}
+}
+

@@ -76,7 +76,7 @@ func (h *Handler) AdminListPlans(w http.ResponseWriter, r *http.Request) {
 				&p.DurationDays, &featuresJSON, &p.IsCustom, &p.IsActive, &p.DisplayOrder, &p.CreatedAt); err != nil {
 				continue
 			}
-			_ = json.Unmarshal(featuresJSON, &p.Features)
+			p.Features = DecodeFeaturesJSON(featuresJSON)
 			plans = append(plans, p)
 		}
 		return plans, nil
