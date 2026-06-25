@@ -533,6 +533,15 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			Academic:  map[string]any{"institutionalLevel": "K-12"},
 			UpdatedAt: now,
 		}
+		newSub := &store.Subscription{
+			ID:          store.NewID("sub"),
+			SchoolID:    schoolID,
+			PackageID:   "inactive",
+			Status:      "pending",
+			NextRenewal: now,
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
 
 		trialExpiry := now.AddDate(0, 0, 14)
 		newSub := &store.Subscription{

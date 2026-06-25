@@ -312,8 +312,8 @@ func activeSubscriptionFromStoreHelper(s *store.MemStore, schoolID string) *Subs
 		Currency:     "PKR",
 		StartDate:    start,
 		EndDate:      end,
-		Status:       "trial",
-		IsTrial:      true,
+		Status:       latest.Status,
+		IsTrial:      strings.EqualFold(latest.PackageID, "trial") || strings.EqualFold(latest.Status, "trial"),
 		CreatedAt:    latest.CreatedAt,
 		UpdatedAt:    latest.UpdatedAt,
 	}

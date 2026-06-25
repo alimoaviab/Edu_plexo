@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { AppIcon } from "shared/ui/AppIcon";
 import { useAuth } from "@/hooks/useAuth";
+<<<<<<< HEAD
 import type { CurrentSubscription } from "@/modules/subscription/services/subscription.service";
 
 interface SubscriptionRequiredProps {
@@ -10,6 +11,14 @@ interface SubscriptionRequiredProps {
 export function SubscriptionRequired({ current }: SubscriptionRequiredProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
+=======
+import { useSubscription } from "@/modules/subscription/hooks/useSubscription";
+
+export function SubscriptionRequired() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { current } = useSubscription();
+>>>>>>> 8a3469e (feat: implement subscription management system including usage guards, plan tiers, and UI components)
 
   const sub = current?.subscription;
   // If sub is null or has status pending, they never trialed. If status is expired/cancelled, they did.
@@ -45,12 +54,30 @@ export function SubscriptionRequired({ current }: SubscriptionRequiredProps) {
           {description}
         </p>
 
+<<<<<<< HEAD
         <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
           <p className="text-[12px] font-semibold text-slate-600 leading-normal flex items-center gap-1.5 justify-center">
             <AppIcon name="Lock" size={14} className="text-slate-400 shrink-0" />
             <span>School subscriptions are managed by the School Owner. Please contact your school owner to activate or renew plans.</span>
           </p>
         </div>
+=======
+        {isAdmin ? (
+          <button
+            onClick={() => navigate("/admin/subscription")}
+            className="w-full h-11 md:h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs md:text-sm tracking-wide shadow-lg shadow-blue-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>Choose Plan</span>
+            <AppIcon name="ChevronRight" size={16} />
+          </button>
+        ) : (
+          <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+            <p className="text-[11px] font-semibold text-slate-500 leading-normal">
+              🔒 Please contact your school administrator to activate or renew the subscription.
+            </p>
+          </div>
+        )}
+>>>>>>> 8a3469e (feat: implement subscription management system including usage guards, plan tiers, and UI components)
       </div>
     </div>
   );

@@ -231,6 +231,7 @@ export function PaymentPage() {
                 className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center gap-3 mb-4">
+<<<<<<< HEAD
                   <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
                     account.color === "blue" ? "bg-blue-50 text-blue-600" :
                     account.color === "emerald" ? "bg-emerald-50 text-emerald-600" :
