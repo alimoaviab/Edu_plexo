@@ -16,6 +16,7 @@ import { CurrentPlanCard } from "@/components/subscription/CurrentPlanCard";
 
 import { useSubscription } from "../hooks/useSubscription";
 import type { Plan } from "../services/subscription.service";
+import { AppIcon } from "shared/ui/AppIcon";
 
 export function SubscriptionPage() {
   const {
@@ -251,9 +252,10 @@ function PricingCard({ plan, isCurrentPlan, canTrial, onStartTrial, onUpgrade, o
           <button
             onClick={onStartTrial}
             disabled={isStartingTrial}
-            className="w-full py-3 px-4 rounded-xl font-medium bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50"
+            className="w-full py-3 px-4 rounded-xl font-medium bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isStartingTrial ? "Starting..." : "🎁 Start Free Trial"}
+            <AppIcon name="Gift" size={16} />
+            <span>{isStartingTrial ? "Starting..." : "Start Free Trial"}</span>
           </button>
         ) : (
           <button

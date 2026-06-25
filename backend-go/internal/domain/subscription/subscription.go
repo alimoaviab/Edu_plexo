@@ -80,15 +80,32 @@ var AvailablePlans = []Plan{
 		Popular:  true,
 	},
 	{
+		ID:           "plan_premium",
+		Name:         "plan_premium",
+		DisplayName:  "Premium Plan",
+		Price:        12000,
+		Currency:     "PKR",
+		StudentLimit: 800,
+		Features: []string{
+			"Everything in Growth",
+			"Complete Staff Suite",
+			"Advanced Customizations",
+			"Priority SMS Gateway",
+			"Dedicated Support",
+		},
+		IsCustom: false,
+		Popular:  false,
+	},
+	{
 		ID:           "plan_custom",
 		Name:         "plan_custom",
 		DisplayName:  "Custom Plan",
 		Price:        0,
 		Currency:     "PKR",
-		StudentLimit: 800,
+		StudentLimit: 1200,
 		Features: []string{
-			"Everything in Growth",
-			"Dedicated Support",
+			"Everything in Premium",
+			"Dedicated Account Manager",
 			"Enterprise Features",
 			"Custom Integrations",
 			"Custom Student Limit",
@@ -139,6 +156,26 @@ type Handler struct {
 }
 
 func New(pool *pgxpool.Pool, s *store.MemStore) *Handler {
+	if pool != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			for idx, p := range AvailablePlans {
+				featuresJSON, _ := json.Marshal(p.Features)
+				_, _ = pool.Exec(ctx, `
+					INSERT INTO subscription_plans (id, name, student_limit, price, currency, features, is_custom, is_active, display_order)
+					VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8)
+					ON CONFLICT (id) DO UPDATE SET 
+						name = EXCLUDED.name, 
+						student_limit = EXCLUDED.student_limit, 
+						price = EXCLUDED.price, 
+						features = EXCLUDED.features, 
+						is_custom = EXCLUDED.is_custom,
+						display_order = EXCLUDED.display_order
+				`, p.ID, p.DisplayName, p.StudentLimit, p.Price, p.Currency, featuresJSON, p.IsCustom, idx+1)
+			}
+		}()
+	}
 	return &Handler{Pool: pool, Store: s}
 }
 
@@ -240,7 +277,7 @@ func (h *Handler) GetPlans(w http.ResponseWriter, r *http.Request) {
 		rows, err := h.Pool.Query(r.Context(), `
 			SELECT id, name, student_limit, price, COALESCE(currency,'PKR'), features, is_custom, display_order
 			FROM subscription_plans 
-			WHERE is_active = true AND id IN ('plan_starter', 'plan_growth', 'plan_custom')
+			WHERE is_active = true AND id IN ('plan_starter', 'plan_growth', 'plan_premium', 'plan_custom')
 			ORDER BY display_order ASC, created_at ASC
 		`)
 		if err == nil {
@@ -327,8 +364,10 @@ func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 			studentLimit = 200
 		case "plan_growth", "growth", "standard":
 			studentLimit = 500
-		case "plan_custom", "custom", "enterprise", "premium":
+		case "plan_premium", "premium":
 			studentLimit = 800
+		case "plan_custom", "custom", "enterprise":
+			studentLimit = 1200
 		}
 
 		sub := &Subscription{

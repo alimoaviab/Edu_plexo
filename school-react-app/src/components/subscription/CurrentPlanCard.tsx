@@ -33,12 +33,13 @@ export function CurrentPlanCard({ subscription, studentsUsed }: CurrentPlanCardP
             <h2 className={`text-2xl font-black tracking-tight ${isTrial ? "text-white" : "text-gray-900"}`}>
               {isTrial ? "14-Day Free Trial" : getPlanDisplayName(planName)}
             </h2>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+            <span className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 ${
               subscription.status === "active" ? "bg-green-100 text-green-700" :
               isTrial ? "bg-white/20 text-white border border-white/30" :
               "bg-red-100 text-red-700"
             }`}>
-              {isTrial ? "🎉 Active Trial" : subscription.status.toUpperCase()}
+              {isTrial && <AppIcon name="PartyPopper" size={12} className="text-white" />}
+              <span>{isTrial ? "Active Trial" : subscription.status.toUpperCase()}</span>
             </span>
           </div>
 

@@ -52,8 +52,9 @@ export function SubscriptionRequired() {
           </button>
         ) : (
           <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-            <p className="text-[11px] font-semibold text-slate-500 leading-normal">
-              🔒 Please contact your school administrator to activate or renew the subscription.
+            <p className="text-[11px] font-semibold text-slate-500 leading-normal flex items-center gap-1.5 justify-center">
+              <AppIcon name="Lock" size={12} className="text-slate-400 shrink-0" />
+              <span>Please contact your school administrator to activate or renew the subscription.</span>
             </p>
           </div>
         )}

@@ -119,7 +119,7 @@ export function PaymentPage() {
 
       if (res.ok) {
         showToast(
-          "✅ Payment proof submitted! Our team will verify and activate your plan within 24 hours.",
+          "Payment proof submitted! Our team will verify and activate your plan within 24 hours.",
           "success"
         );
         navigate("/admin/subscription");
@@ -139,7 +139,7 @@ export function PaymentPage() {
       bank: "Bank Alfalah",
       type: "Bank Transfer",
       color: "blue",
-      icon: "🏦",
+      icon: "Building",
       rows: [
         { label: "Account Name", value: "Ali Moavia" },
         { label: "Account Number", value: "59705002080213", highlight: true },
@@ -150,7 +150,7 @@ export function PaymentPage() {
       bank: "Easypaisa",
       type: "Mobile Wallet",
       color: "emerald",
-      icon: "📱",
+      icon: "Smartphone",
       rows: [
         { label: "Account Name", value: "Ali Moavia" },
         { label: "Mobile Number", value: "0306-4944326", highlight: true },
@@ -161,7 +161,7 @@ export function PaymentPage() {
       bank: "Habib Metro Bank",
       type: "Bank Transfer",
       color: "purple",
-      icon: "🏛️",
+      icon: "Building2",
       rows: [
         { label: "Account Name", value: "Ali Moavia" },
         { label: "Account Number", value: "6984729308714105093", highlight: true },
@@ -231,7 +231,13 @@ export function PaymentPage() {
                 className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="text-2xl">{account.icon}</span>
+                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    account.color === "blue" ? "bg-blue-50 text-blue-600" :
+                    account.color === "emerald" ? "bg-emerald-50 text-emerald-600" :
+                    "bg-purple-50 text-purple-600"
+                  }`}>
+                    <AppIcon name={account.icon as any} size={20} />
+                  </div>
                   <div>
                     <h4 className="font-bold text-gray-900">{account.bank}</h4>
                     <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{account.type}</p>
