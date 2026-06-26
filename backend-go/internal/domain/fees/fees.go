@@ -1448,6 +1448,27 @@ func (h *Handler) resolveExpectedComponents(schoolID, classID, yearID, month str
 			out = append(out, cf)
 		}
 	}
+	// Fallback: if no components found for the strict academic year, retry
+	// without the year restriction. This handles the case where fees were
+	// created under a different academic year than what the ledger resolves
+	// to via the date-based lookup (IsActive year vs. date-range year).
+	if len(out) == 0 && yearID != "" {
+		for _, cf := range h.Store.ClassFees {
+			if cf.SchoolID != schoolID || cf.ClassID != classID || cf.Status != "active" {
+				continue
+			}
+			if cf.AcademicYearID == yearID {
+				continue // already searched above
+			}
+			if cf.Type == "recurring" && cf.RecurringCycle == "monthly" {
+				out = append(out, cf)
+				continue
+			}
+			if cf.Type == "onetime" && strings.EqualFold(cf.DueMonth, month) && cf.DueYear == year {
+				out = append(out, cf)
+			}
+		}
+	}
 	return out
 }
 
@@ -1548,12 +1569,22 @@ func (h *Handler) LedgerDashboard(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Bucket fees per student so we can compute carry-forward.
+		// IMPORTANT: always include invoices for the specifically requested
+		// month/year regardless of AcademicYearID. A fee invoice might have
+		// been created under a different academic year ID than what the
+		// date-based activeYearID lookup resolves to (e.g. after a school-year
+		// transition where the IsActive year differs from the year whose date
+		// range contains the target month). Filtering such invoices out causes
+		// the student card to show Monthly: Rs 0 even though the invoice exists.
 		feesByStudent := map[string][]*store.Fee{}
 		for _, f := range h.Store.Fees {
 			if f.SchoolID != ctx.SchoolID {
 				continue
 			}
-			if activeYearID != "" && f.AcademicYearID != "" && f.AcademicYearID != activeYearID {
+			// Always include the invoice for the specifically requested period.
+			isRequestedPeriod := monthQ != "" && strings.EqualFold(f.Month, monthQ) &&
+				(yearQ == "" || f.Year == yearNum)
+			if !isRequestedPeriod && activeYearID != "" && f.AcademicYearID != "" && f.AcademicYearID != activeYearID {
 				continue
 			}
 			feesByStudent[f.StudentID] = append(feesByStudent[f.StudentID], f)
@@ -1647,11 +1678,26 @@ func (h *Handler) LedgerDashboard(w http.ResponseWriter, r *http.Request) {
 					if cf.SchoolID != ctx.SchoolID || cf.ClassID != student.ClassID || cf.Status != "active" {
 						continue
 					}
+					// Strict academic year filter.
 					if activeYearID != "" && cf.AcademicYearID != activeYearID {
 						continue
 					}
 					if cf.Type == "recurring" && cf.RecurringCycle == "monthly" {
 						recurringAmount += cf.Amount
+					}
+				}
+				// Fallback: if no recurring fee found for strict year, search all years.
+				if recurringAmount == 0 && activeYearID != "" {
+					for _, cf := range h.Store.ClassFees {
+						if cf.SchoolID != ctx.SchoolID || cf.ClassID != student.ClassID || cf.Status != "active" {
+							continue
+						}
+						if cf.AcademicYearID == activeYearID {
+							continue // already tried
+						}
+						if cf.Type == "recurring" && cf.RecurringCycle == "monthly" {
+							recurringAmount += cf.Amount
+						}
 					}
 				}
 
