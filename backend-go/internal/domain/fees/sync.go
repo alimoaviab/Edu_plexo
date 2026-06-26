@@ -93,32 +93,18 @@ func (h *Handler) syncInvoicesForClassLocked(ctx *api.RequestContext, classID st
 			total += cf.Amount
 		}
 
-		// Arrears calculation
-		arrears := 0.0
-		for _, f := range h.Store.Fees {
-			if f.SchoolID == ctx.SchoolID && f.StudentID == stu.ID && f.Status != "void" {
-				mNum, _ := monthToNum(f.Month)
-				isPast := f.Year < year || (f.Year == year && mNum < int(now.Month()))
-				if isPast {
-					eff := f.Amount + f.AdjustmentAmount
-					unpaid := eff - f.PaidAmount
-					if unpaid > 0 {
-						arrears += unpaid
-					}
-				}
-			}
-		}
-
-		if arrears > 0 {
-			feeComps = append(feeComps, store.FeeComponent{
-				FeeType: "Previous Arrears",
-				Amount:  arrears,
-			})
-			total += arrears
-		}
+		// NOTE: arrears / carry-forward are computed dynamically in LedgerDashboard
+		// (fill-gaps logic). Do NOT add arrears to the invoice Amount here —
+		// doing so causes double-counting in the ledger and makes the stored
+		// amount inconsistent with what autoGenerateForMonth writes.
 
 		if existing != nil {
-			// Update existing invoice
+			// Update existing invoice if the fee config changed.
+			// Only update unpaid invoices — recalculating a paid/partial invoice
+			// would corrupt finance history (receipts, audit logs, parent statements).
+			if existing.PaidAmount > 0 {
+				continue
+			}
 			existing.Amount = total
 			existing.FeeComponents = feeComps
 			existing.UpdatedAt = now
@@ -181,12 +167,14 @@ func (h *Handler) autoGenerateForMonth(ctx *api.RequestContext, classFilter, mon
 	h.Store.Lock()
 
 	// Find all classes to process (or just the filtered one).
+	// NOTE: we intentionally do NOT filter by c.AcademicYearID here.
+	// Schools often reuse classes across academic years (the same ClassID
+	// persists). The fee-component filter below handles year scoping;
+	// filtering here would silently skip classes from previous years that
+	// still have active students and fee configurations.
 	classIDs := make([]string, 0)
 	for _, c := range h.Store.Classes {
 		if c.SchoolID != ctx.SchoolID {
-			continue
-		}
-		if c.AcademicYearID != "" && c.AcademicYearID != yearID {
 			continue
 		}
 		if classFilter != "" && c.ID != classFilter {
@@ -203,6 +191,7 @@ func (h *Handler) autoGenerateForMonth(ctx *api.RequestContext, classFilter, mon
 
 	for _, cid := range classIDs {
 		// Resolve active fee components for this class + month.
+		// Primary: strict match on academic year.
 		components := make([]*store.ClassFee, 0)
 		for _, cf := range h.Store.ClassFees {
 			if cf.SchoolID != ctx.SchoolID || cf.ClassID != cid || cf.Status != "active" {
@@ -217,6 +206,28 @@ func (h *Handler) autoGenerateForMonth(ctx *api.RequestContext, classFilter, mon
 			}
 			if cf.Type == "onetime" && strings.EqualFold(cf.DueMonth, month) && cf.DueYear == year {
 				components = append(components, cf)
+			}
+		}
+		// Fallback: if no components match the strict year, include fees from
+		// any other year. This covers the common scenario where a fee was
+		// configured under a different academic year than what the ledger's
+		// date-based lookup resolves to (e.g., fee created when IsActive year
+		// differs from the year whose date range contains the target month).
+		if len(components) == 0 {
+			for _, cf := range h.Store.ClassFees {
+				if cf.SchoolID != ctx.SchoolID || cf.ClassID != cid || cf.Status != "active" {
+					continue
+				}
+				if cf.AcademicYearID == yearID {
+					continue // already tried above
+				}
+				if cf.Type == "recurring" && cf.RecurringCycle == "monthly" {
+					components = append(components, cf)
+					continue
+				}
+				if cf.Type == "onetime" && strings.EqualFold(cf.DueMonth, month) && cf.DueYear == year {
+					components = append(components, cf)
+				}
 			}
 		}
 		if len(components) == 0 {
@@ -253,11 +264,14 @@ func (h *Handler) autoGenerateForMonth(ctx *api.RequestContext, classFilter, mon
 			}
 
 			if existing != nil {
-				// Update existing invoice if the fee config changed (e.g.
-				// admin added a new component after the invoice was first
-				// generated). Without this, old students keep showing the
-				// stale amount from the original generation run.
-				if existing.Amount != total+existing.AdjustmentAmount-existing.AdjustmentAmount {
+				// Never recalculate paid or partially-paid invoices —
+				// this would corrupt finance history (receipts, audit logs).
+				if existing.PaidAmount > 0 {
+					continue
+				}
+				// Update if the fee amount changed (e.g. admin added/changed a
+				// component after the invoice was first generated).
+				if existing.Amount != total {
 					existing.Amount = total
 					existing.FeeComponents = feeComps
 					existing.UpdatedAt = now
