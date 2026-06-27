@@ -29,12 +29,30 @@ const API_BASE_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 function resolveUrl(url: string): string {
   // Absolute URLs pass through.
-  if (/^https?:\/\//.test(url)) return url;
-  // No base URL configured → return relative path (dev/proxy/MSW mode).
-  if (!API_BASE_URL) return url;
-  // Prefix /api/* paths with the base URL.
-  if (url.startsWith("/")) return API_BASE_URL + url;
-  return `${API_BASE_URL}/${url}`;
+  let resolvedUrl = url;
+  if (/^https?:\/\//.test(url)) {
+    resolvedUrl = url;
+  } else if (!API_BASE_URL) {
+    // No base URL configured → return relative path (dev/proxy/MSW mode).
+    resolvedUrl = url;
+  } else if (url.startsWith("/")) {
+    // Prefix /api/* paths with the base URL.
+    resolvedUrl = API_BASE_URL + url;
+  } else {
+    resolvedUrl = `${API_BASE_URL}/${url}`;
+  }
+
+  // Prevent mixed-content errors: if frontend is HTTPS, force API to be HTTPS
+  if (
+    typeof window !== "undefined" && 
+    window.location.protocol === "https:" && 
+    resolvedUrl.startsWith("http://") && 
+    !resolvedUrl.startsWith("http://localhost")
+  ) {
+    resolvedUrl = resolvedUrl.replace(/^http:\/\//i, "https://");
+  }
+
+  return resolvedUrl;
 }
 
 function readToken(): string | undefined {
