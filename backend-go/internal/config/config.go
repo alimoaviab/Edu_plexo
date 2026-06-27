@@ -68,7 +68,7 @@ func Load() (Config, error) {
 		Port:            getenv("PORT", "8080"),
 		JWTSecret:       os.Getenv("JWT_SECRET"),
 		AppName:         getenv("APP_NAME", "school"),
-		AllowedOrigins:  splitCSV(getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:5173")),
+		AllowedOrigins:  append(splitCSV(getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003,http://localhost:5173")), "https://app.eduplexo.com", "https://www.eduplexo.com"),
 		CookieSecure:    os.Getenv("COOKIE_SECURE") == "true",
 		DatabaseURL:     os.Getenv("DATABASE_URL"),
 		RedisURL:        os.Getenv("REDIS_URL"),
