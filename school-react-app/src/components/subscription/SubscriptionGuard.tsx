@@ -13,7 +13,6 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const location = useLocation();
   const pathname = location.pathname;
 
-<<<<<<< HEAD
   // Exempt auth routes, owner executive routes, and subscription setup page routes
   const isExempt = 
     pathname.startsWith("/auth") || 
@@ -22,14 +21,6 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
 
   const isSuperAdmin = user?.role === "super_admin";
   const isOwner = user?.role === "owner";
-=======
-  // Exempt auth routes and subscription setup page routes
-  const isExempt = 
-    pathname.startsWith("/auth") || 
-    pathname.startsWith("/admin/subscription");
-
-  const isSuperAdmin = user?.role === "super_admin";
->>>>>>> 8a3469e (feat: implement subscription management system including usage guards, plan tiers, and UI components)
 
   if (isLoading && !isExempt && !isSuperAdmin) {
     return (
@@ -42,7 +33,6 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const sub = current?.subscription;
   const isActive = sub?.status === "active";
   const isTrial = sub?.status === "trial";
-<<<<<<< HEAD
   const isAdmin = user?.role === "admin";
 
   // Admins, Owners, SuperAdmins, and active/trial schools bypass the lock screen
@@ -50,13 +40,6 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
 
   if (showLockScreen) {
     return <SubscriptionRequired current={current} />;
-=======
-
-  const showLockScreen = !isSuperAdmin && !isExempt && !isActive && !isTrial;
-
-  if (showLockScreen) {
-    return <SubscriptionRequired />;
->>>>>>> 8a3469e (feat: implement subscription management system including usage guards, plan tiers, and UI components)
   }
 
   return <>{children}</>;
