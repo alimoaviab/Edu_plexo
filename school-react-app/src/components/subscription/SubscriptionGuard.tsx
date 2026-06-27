@@ -35,7 +35,7 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const showLockScreen = !isSuperAdmin && !isExempt && !isActive && !isTrial;
 
   if (showLockScreen) {
-    return <SubscriptionRequired />;
+    return <SubscriptionRequired current={current} />;
   }
 
   return <>{children}</>;

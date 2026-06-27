@@ -1,12 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import { AppIcon } from "shared/ui/AppIcon";
 import { useAuth } from "@/hooks/useAuth";
-import { useSubscription } from "@/modules/subscription/hooks/useSubscription";
+import type { CurrentSubscription } from "@/modules/subscription/services/subscription.service";
 
-export function SubscriptionRequired() {
+interface SubscriptionRequiredProps {
+  current?: CurrentSubscription | null;
+}
+
+export function SubscriptionRequired({ current }: SubscriptionRequiredProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { current } = useSubscription();
 
   const sub = current?.subscription;
   // If sub is null or has status pending, they never trialed. If status is expired/cancelled, they did.

@@ -250,7 +250,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	claims.Subject = user.ID
 
-	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8*time.Hour)
+	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
 	if err != nil {
 		api.WriteJSON(w, http.StatusInternalServerError, map[string]any{
 			"ok":      false,
@@ -516,7 +516,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			ActorEmail:           email,
 		}
 		claims.Subject = newUser.ID
-		token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8*time.Hour)
+		token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
 		if err == nil {
 			h.setSessionCookie(w, token, true)
 		}
@@ -589,7 +589,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		ActorEmail:           email,
 	}
 	claims.Subject = userID
-	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8*time.Hour)
+	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
 	if err != nil {
 		api.WriteJSON(w, http.StatusInternalServerError, signupErr("Signup failed. Please try again."))
 		return
@@ -659,7 +659,7 @@ func (h *Handler) SwitchAcademicYear(w http.ResponseWriter, r *http.Request) {
 	}
 	claims.Subject = ctx.UserID
 
-	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8*time.Hour)
+	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
 	if err != nil {
 		api.WriteJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "message": "Failed to issue session."})
 		return
@@ -805,9 +805,9 @@ func (h *Handler) setSessionCookie(w http.ResponseWriter, token string, remember
 		sameSite = http.SameSiteNoneMode
 	}
 	
-	maxAge := 60 * 60 * 8 // 8 hours default
+	maxAge := 60 * 60 * 24 * 365 // 1 year default
 	if rememberMe {
-		maxAge = 60 * 60 * 24 * 30 // 30 days
+		maxAge = 60 * 60 * 24 * 365 * 5 // 5 years
 	}
 
 	http.SetCookie(w, &http.Cookie{
