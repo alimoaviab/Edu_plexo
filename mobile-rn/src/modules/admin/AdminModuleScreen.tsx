@@ -51,7 +51,7 @@ export function AdminModuleScreen({
   if (!definition) {
     return (
       <ScreenContainer scroll>
-        <Header greeting="Module" title="Module not found" subtitle={moduleParam ?? 'Unknown module'} />
+        <Header showBack greeting="Module" title="Module not found" subtitle={moduleParam ?? 'Unknown module'} />
         <Button label="Back" variant="secondary" onPress={() => router.back()} />
       </ScreenContainer>
     );
@@ -171,7 +171,7 @@ function AdminModuleContent({
     <>
       <Stack.Screen options={{ title: definition.title }} />
       <ScreenContainer scroll>
-        <Header greeting="Admin Module" title={definition.title} subtitle={definition.subtitle} />
+        <Header showBack greeting="Admin Module" title={definition.title} subtitle={definition.subtitle} />
 
         <View style={styles.toolbar}>
           <View style={styles.searchBox}>
@@ -373,6 +373,8 @@ function DetailModal({
     <Modal visible={!!record} animationType="slide" onRequestClose={onClose}>
       <ScreenContainer scroll>
         <Header
+          showBack
+          onBack={onClose}
           greeting={definition.title}
           title={record ? firstValue(record, definition.displayFields) || getRecordId(record) || 'Details' : 'Details'}
           subtitle={loading ? 'Refreshing from API' : 'Live backend record'}
@@ -466,6 +468,8 @@ function AdminFormModal({
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalFlex}>
         <ScreenContainer scroll>
           <Header
+            showBack
+            onBack={onClose}
             greeting={state?.mode === 'edit' ? 'Edit Record' : 'Create Record'}
             title={definition.title}
             subtitle="Submits directly to the backend API"
@@ -970,6 +974,8 @@ function RelationSelector({
       <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
         <ScreenContainer scroll>
           <Header
+            showBack
+            onBack={() => setModalVisible(false)}
             greeting="Select Relation"
             title={targetDefinition.title}
             subtitle={`Choose ${isMultiSelect ? 'one or more' : 'a'} ${field.label}`}
