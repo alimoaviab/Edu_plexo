@@ -1,15 +1,3 @@
-/**
- * Admin portal layout — bottom-tab navigator.
- *
- * Modules listed in the original spec (Dashboard, AI Copilot, Academic Care,
- * Classes, Timetable, Attendance, Exams, Tests, Results, Live Classes,
- * Homework, Behavior, Teacher Leave, Events, Fees, Parent Connect, Settings)
- * are all reachable from the Dashboard's quick-actions and module grid.
- *
- * The tab bar surfaces only the four most-used destinations; secondary modules
- * live one tap deeper to keep the bar uncluttered on small phones.
- */
-
 import { Tabs } from 'expo-router';
 
 import { Icon, type IconName } from '@/components/ui/Icon';
@@ -38,10 +26,14 @@ export default function AdminLayout() {
         ),
       })}
     >
-      <Tabs.Screen name="index" options={{ title: 'Dashboard' }} />
-      <Tabs.Screen name="academics" options={{ title: 'Academics' }} />
-      <Tabs.Screen name="people" options={{ title: 'People' }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
+      <Tabs.Screen name="index" options={{ title: 'Home' }} />
+      <Tabs.Screen name="students" options={{ title: 'Students' }} />
+      <Tabs.Screen name="attendance" options={{ title: 'Attendance' }} />
+      <Tabs.Screen name="teachers" options={{ title: 'Teachers' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen name="academics" options={{ href: null, title: 'Academics' }} />
+      <Tabs.Screen name="people" options={{ href: null, title: 'People' }} />
+      <Tabs.Screen name="settings" options={{ href: null, title: 'Settings' }} />
       <Tabs.Screen name="module/[module]" options={{ href: null, title: 'Module' }} />
     </Tabs>
   );
@@ -51,12 +43,14 @@ function routeIcon(name: string): IconName {
   switch (name) {
     case 'index':
       return 'home';
-    case 'academics':
+    case 'students':
       return 'graduation';
-    case 'people':
+    case 'attendance':
+      return 'check-circle';
+    case 'teachers':
       return 'users';
-    case 'settings':
-      return 'settings';
+    case 'profile':
+      return 'shield';
     default:
       return 'home';
   }
