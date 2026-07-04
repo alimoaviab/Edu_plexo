@@ -36,7 +36,8 @@ export type IconName =
   | 'shield'
   | 'chart'
   | 'clock'
-  | 'star';
+  | 'star'
+  | 'menu';
 
 interface IconProps {
   name: IconName;
@@ -209,6 +210,8 @@ function renderPath(name: IconName, p: object): React.ReactNode {
       );
     case 'star':
       return <Path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 20.9l1.1-6.5L2.6 9.8l6.5-.9z" {...p} />;
+    case 'menu':
+      return <Path d="M3 12h18M3 6h18M3 18h18" {...p} />;
     default:
       return null;
   }

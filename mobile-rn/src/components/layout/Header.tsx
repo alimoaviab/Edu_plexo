@@ -11,9 +11,20 @@ interface HeaderProps {
   right?: React.ReactNode;
   showBack?: boolean;
   onBack?: () => void;
+  showMenu?: boolean;
+  onMenuPress?: () => void;
 }
 
-export function Header({ greeting, title, subtitle, right, showBack = false, onBack }: HeaderProps) {
+export function Header({
+  greeting,
+  title,
+  subtitle,
+  right,
+  showBack = false,
+  onBack,
+  showMenu = false,
+  onMenuPress,
+}: HeaderProps) {
   const router = useRouter();
 
   return (
@@ -27,6 +38,15 @@ export function Header({ greeting, title, subtitle, right, showBack = false, onB
           <View style={styles.backIcon}>
             <Icon name="chevron-right" size={20} color={colors.gray700} />
           </View>
+        </Pressable>
+      ) : null}
+      {showMenu ? (
+        <Pressable
+          onPress={onMenuPress}
+          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+          hitSlop={8}
+        >
+          <Icon name="menu" size={22} color={colors.gray700} />
         </Pressable>
       ) : null}
       <View style={styles.text}>
