@@ -29,6 +29,56 @@ import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 
 type FormMode = 'create' | 'edit';
 
+function friendlyPlaceholder(placeholder: string | undefined, label?: string): string | undefined {
+  if (!placeholder) {
+    if (label) {
+      return `Enter ${label.toLowerCase()}...`;
+    }
+    return undefined;
+  }
+
+  const clean = placeholder.trim();
+  const lower = clean.toLowerCase();
+
+  if (lower === 'server search') {
+    return 'Search here...';
+  }
+  if (lower === 'search loaded records') {
+    return 'Search loaded records...';
+  }
+
+  if (lower.includes('yyyy-mm-dd')) {
+    return 'Select Date (YYYY-MM-DD)';
+  }
+
+  if (lower === 'class_id' || lower === 'required class_id') {
+    return 'Enter Class ID...';
+  }
+  if (lower === 'student_id' || lower === 'required student_id') {
+    return 'Enter Student ID...';
+  }
+  if (lower === 'teacher_id' || lower === 'required teacher_id') {
+    return 'Enter Teacher ID...';
+  }
+  if (lower === 'subject_id' || lower === 'required subject_id') {
+    return 'Enter Subject ID...';
+  }
+  if (lower === 'exam_id' || lower === 'required exam_id') {
+    return 'Enter Exam ID...';
+  }
+
+  if (lower.endsWith('_id')) {
+    const term = lower.slice(0, -3).replace(/_/g, ' ');
+    return `Enter ${term.charAt(0).toUpperCase() + term.slice(1)} ID...`;
+  }
+
+  if (lower === 'type') {
+    return 'Enter type...';
+  }
+
+  return placeholder;
+}
+
 /**
  * Generic config-driven CRUD screen. Defaults to the admin module registry,
  * but any role (teacher / parent / student) can pass its own registry so the
@@ -182,7 +232,7 @@ function AdminModuleContent({
                 setPage(1);
                 setSearch(value);
               }}
-              placeholder={definition.searchable ? 'Server search' : 'Search loaded records'}
+              placeholder={definition.searchable ? 'Search here...' : 'Search loaded records...'}
             />
           </View>
           {definition.createPath ? (
@@ -222,7 +272,7 @@ function AdminModuleContent({
                   label={filter.label}
                   value={filters[filter.key] ?? ''}
                   onChangeText={(value) => updateFilter(filter.key, value)}
-                  placeholder={filter.placeholder}
+                  placeholder={friendlyPlaceholder(filter.placeholder, filter.label)}
                 />
               ),
             )}
@@ -564,7 +614,7 @@ function FieldControl({
       <Input
         label={`${field.label}${field.required ? ' *' : ''}`}
         value={typeof value === 'boolean' ? String(value) : value ?? ''}
-        placeholder={field.placeholder}
+        placeholder={friendlyPlaceholder(field.placeholder, field.label)}
         onChangeText={onChange}
         multiline={type === 'textarea' || type === 'json'}
         numberOfLines={type === 'textarea' || type === 'json' ? 4 : 1}
@@ -884,7 +934,7 @@ function RelationSelector({
         <Input
           label={`${field.label}${field.required ? ' *' : ''}`}
           value={String(value ?? '')}
-          placeholder={field.placeholder}
+          placeholder={friendlyPlaceholder(field.placeholder, field.label)}
           onChangeText={onChange}
         />
         {field.helper ? <Text style={styles.helper}>{field.helper}</Text> : null}

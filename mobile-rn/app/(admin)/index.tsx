@@ -124,76 +124,62 @@ export default function AdminHome() {
 
   const sections: ProfileSection[] = [
     {
-      title: 'Core Records',
-      items: [
-        { key: 'students', label: 'Student Records', description: 'Existing student CRUD', icon: 'graduation', accent: 'primary', href: '/(admin)/module/students' },
-        { key: 'teachers', label: 'Teacher Records', description: 'Existing teacher CRUD', icon: 'users', accent: 'primary', href: '/(admin)/module/teachers' },
-        { key: 'attendance', label: 'Attendance Records', description: 'Attendance CRUD and filters', icon: 'check-circle', accent: 'success', href: '/(admin)/module/attendance' },
-        { key: 'attendance-sheet', label: 'Attendance Sheet', description: 'Class attendance sheet', icon: 'clipboard', accent: 'success', href: '/(admin)/module/attendance-sheet' },
-      ],
-    },
-    {
       title: 'Academic Setup',
       items: [
+        { key: 'academic-years', label: 'Academic years', description: 'School sessions', icon: 'calendar', accent: 'success', href: '/(admin)/module/academic-years' },
         { key: 'classes', label: 'Classes', description: 'Sections and classroom setup', icon: 'graduation', accent: 'primary', href: '/(admin)/module/classes' },
-        { key: 'subjects', label: 'Subjects', description: 'Curriculum and subject owners', icon: 'book', accent: 'primary', href: '/(admin)/module/subjects' },
-        { key: 'academic-years', label: 'Academic Years', description: 'School sessions', icon: 'calendar', accent: 'success', href: '/(admin)/module/academic-years' },
-        { key: 'timetable', label: 'Timetable', description: 'Class and teacher schedules', icon: 'calendar', accent: 'success', href: '/(admin)/module/timetable' },
-        { key: 'chapters', label: 'Chapters', description: 'Syllabus chapter catalog', icon: 'book', accent: 'primary', href: '/(admin)/module/chapters' },
       ],
     },
     {
-      title: 'Learning & Exams',
+      title: 'Staff',
       items: [
+        { key: 'leave', label: 'Leave', description: 'Teacher leave applications', icon: 'clock', accent: 'warning', href: '/(admin)/module/leave' },
+      ],
+    },
+    {
+      title: 'Students',
+      items: [
+        { key: 'behavior', label: 'Behavior', description: 'Discipline and merit notes', icon: 'shield', accent: 'warning', href: '/(admin)/module/behavior' },
+      ],
+    },
+    {
+      title: 'Academics',
+      items: [
+        { key: 'timetable', label: 'Timetable', description: 'Class and teacher schedules', icon: 'calendar', accent: 'success', href: '/(admin)/module/timetable' },
+        { key: 'homework', label: 'Homework', description: 'Assignments and submissions', icon: 'book', accent: 'primary', href: '/(admin)/module/homework' },
         { key: 'exams', label: 'Exams', description: 'Term exams and schedules', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/exams' },
         { key: 'tests', label: 'Tests', description: 'Class tests and quizzes', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/tests' },
         { key: 'results', label: 'Results', description: 'Marks and transcripts', icon: 'star', accent: 'success', href: '/(admin)/module/results' },
-        { key: 'homework', label: 'Homework', description: 'Assignments and submissions', icon: 'book', accent: 'primary', href: '/(admin)/module/homework' },
-        { key: 'live-classes', label: 'Live Classes', description: 'Online sessions', icon: 'video', accent: 'primary', href: '/(admin)/module/live-classes' },
-        { key: 'question-bank', label: 'Question Bank', description: 'Question moderation', icon: 'book', accent: 'primary', href: '/(admin)/module/question-bank' },
-        { key: 'question-papers', label: 'Question Papers', description: 'Generated and saved papers', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/question-papers' },
-        { key: 'certificates', label: 'Certificates', description: 'Issued certificates', icon: 'star', accent: 'success', href: '/(admin)/module/certificates' },
-        { key: 'certificate-templates', label: 'Certificate Templates', description: 'Template designer', icon: 'star', accent: 'success', href: '/(admin)/module/certificate-templates' },
+        { key: 'question-papers', label: 'Question Papers', description: 'Generated question papers', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/question-papers' },
+        { key: 'live-classes', label: 'Live classes', description: 'Online sessions', icon: 'video', accent: 'primary', href: '/(admin)/module/live-classes' },
       ],
     },
     {
       title: 'Operations',
       items: [
-        { key: 'behavior', label: 'Student Behavior', description: 'Discipline and merit notes', icon: 'shield', accent: 'warning', href: '/(admin)/module/behavior' },
-        { key: 'leave', label: 'Teacher Leave', description: 'Leave applications and approvals', icon: 'clock', accent: 'warning', href: '/(admin)/module/leave' },
         { key: 'announcements', label: 'Announcements', description: 'School notices', icon: 'megaphone', accent: 'primary', href: '/(admin)/module/announcements' },
-        { key: 'events', label: 'Events', description: 'School calendar', icon: 'calendar', accent: 'success', href: '/(admin)/module/events' },
-        { key: 'messages', label: 'Messages', description: 'Conversations', icon: 'mail', accent: 'primary', href: '/(admin)/module/messages' },
-        { key: 'broadcasts', label: 'Broadcasts', description: 'Group communications', icon: 'megaphone', accent: 'primary', href: '/(admin)/module/broadcasts' },
-        { key: 'schedules', label: 'Schedules', description: 'Reminders and meetings', icon: 'calendar', accent: 'success', href: '/(admin)/module/schedules' },
-        { key: 'notifications', label: 'Notifications', description: 'System notifications', icon: 'bell', accent: 'primary', href: '/(admin)/module/notifications' },
+        { key: 'certificates', label: 'Certificates', description: 'Issued certificates', icon: 'star', accent: 'success', href: '/(admin)/module/certificates' },
+        { key: 'certificate-templates', label: 'Template Designer', description: 'Certificate layout designer', icon: 'sparkles', accent: 'success', href: '/(admin)/module/certificate-templates' },
       ],
     },
     {
       title: 'Finance',
       items: [
-        { key: 'fees', label: 'Fees', description: 'Vouchers and student fees', icon: 'wallet', accent: 'success', href: '/(admin)/module/fees' },
-        { key: 'fee-ledger', label: 'Fee Ledger', description: 'Collection state', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-ledger' },
-        { key: 'fee-dashboard', label: 'Fee Dashboard', description: 'Finance overview', icon: 'chart', accent: 'success', href: '/(admin)/module/fee-dashboard' },
-        { key: 'fee-classes-summary', label: 'Class Fee Summary', description: 'Class-wise fee state', icon: 'chart', accent: 'success', href: '/(admin)/module/fee-classes-summary' },
-        { key: 'class-fees', label: 'Class Fees', description: 'Class fee components', icon: 'wallet', accent: 'success', href: '/(admin)/module/class-fees' },
-        { key: 'fee-types', label: 'Fee Types', description: 'Fee category setup', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-types' },
-        { key: 'fee-payments', label: 'Fee Payments', description: 'Payments and receipts', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-payments' },
-        { key: 'fee-daily-collection', label: 'Daily Collection', description: 'Daily fee collection', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-daily-collection' },
-        { key: 'fee-adjustments', label: 'Fee Adjustments', description: 'Adjustments and corrections', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-adjustments' },
-        { key: 'fee-discounts', label: 'Fee Discounts', description: 'Discount rules', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-discounts' },
-        { key: 'scholarships', label: 'Scholarships', description: 'Scholarship setup', icon: 'star', accent: 'success', href: '/(admin)/module/scholarships' },
-        { key: 'wallet', label: 'Wallet', description: 'Wallet balance', icon: 'wallet', accent: 'success', href: '/(admin)/module/wallet' },
-        { key: 'wallet-transactions', label: 'Wallet Transactions', description: 'Wallet ledger', icon: 'wallet', accent: 'success', href: '/(admin)/module/wallet-transactions' },
-        { key: 'payment-methods', label: 'Payment Methods', description: 'Payment configuration', icon: 'wallet', accent: 'success', href: '/(admin)/module/payment-methods' },
+        { key: 'fees', label: 'Fee', description: 'Vouchers and student fees', icon: 'wallet', accent: 'success', href: '/(admin)/module/fees' },
       ],
     },
     {
-      title: 'Subscription & System',
+      title: 'Subscription',
       items: [
-        { key: 'subscription-plans', label: 'Subscription Plans', description: 'Available packages', icon: 'wallet', accent: 'primary', href: '/(admin)/module/subscription-plans' },
-        { key: 'subscription-history', label: 'Subscription History', description: 'Plan changes and invoices', icon: 'clock', accent: 'primary', href: '/(admin)/module/subscription-history' },
-        { key: 'domain-status', label: 'Domain Status', description: 'Domain and tenant status', icon: 'shield', accent: 'neutral', href: '/(admin)/module/domain-status' },
+        { key: 'subscription', label: 'Subscription', description: 'Plan limits and billing', icon: 'wallet', accent: 'primary', href: '/(admin)/module/subscription' },
+      ],
+    },
+    {
+      title: 'Settings',
+      items: [
+        { key: 'schedules', label: 'Schedule', description: 'Reminders and meetings', icon: 'calendar', accent: 'success', href: '/(admin)/module/schedules' },
+        { key: 'messages', label: 'Conversations', description: 'Conversations', icon: 'mail', accent: 'primary', href: '/(admin)/module/messages' },
+        { key: 'settings', label: 'Settings', description: 'System configuration', icon: 'settings', accent: 'neutral', href: '/(admin)/settings' },
       ],
     },
   ];
@@ -373,20 +359,21 @@ function CompactStats({ data, loading }: { data?: AdminComposite; loading: boole
   const dash = (value?: number) => (loading || !overview ? '-' : compactNumber(value ?? 0));
   const money = (value?: number) => (loading || !overview ? '-' : `Rs ${compactNumber(value ?? 0)}`);
   const percent = attendance ? `${attendance.percent ?? 0}%` : loading ? '-' : '0%';
+  const teacherAtt = overview
+    ? overview.totalTeachers > 0
+      ? `${Math.round((overview.presentToday / overview.totalTeachers) * 100)}%`
+      : '0%'
+    : loading
+    ? '-'
+    : '0%';
 
   const metrics: StatMetric[] = [
-    { key: 'students', label: 'Students', value: dash(overview?.totalStudents), icon: 'users', accent: colors.primary },
-    { key: 'teachers', label: 'Teachers', value: dash(overview?.totalTeachers), icon: 'graduation', accent: colors.success },
-    { key: 'classes', label: 'Classes', value: dash(overview?.totalClasses), icon: 'book', accent: colors.warning },
-    { key: 'subjects', label: 'Subjects', value: dash(overview?.totalSubjects), icon: 'clipboard', accent: colors.primary },
-    { key: 'att', label: "Today's %", value: percent, icon: 'chart', accent: colors.success },
-    { key: 'present', label: 'Present', value: compactNumber(attendance?.present ?? overview?.presentToday ?? 0), icon: 'check-circle', accent: colors.success },
-    { key: 'absent', label: 'Absent', value: compactNumber(attendance?.absent ?? 0), icon: 'clock', accent: colors.error },
-    { key: 'late', label: 'Late', value: compactNumber(attendance?.late ?? 0), icon: 'clock', accent: colors.warning },
-    { key: 'feesToday', label: 'Fee Collection', value: money(fees?.totalPaid ?? overview?.collectedFees), icon: 'wallet', accent: colors.success },
-    { key: 'pendingFees', label: 'Pending Fees', value: compactNumber(fees?.pendingCount ?? overview?.pendingFees ?? 0), icon: 'wallet', accent: colors.error },
-    { key: 'expectedFees', label: 'Expected Fees', value: money(fees?.totalExpected), icon: 'wallet', accent: colors.primary },
-    { key: 'unmarked', label: 'Unmarked', value: compactNumber(attendance?.unmarked ?? overview?.unmarkedStudents ?? 0), icon: 'clipboard', accent: colors.gray600 },
+    { key: 'students', label: 'Student', value: dash(overview?.totalStudents), icon: 'users', accent: colors.primary, href: '/(admin)/module/students' },
+    { key: 'teachers', label: 'Teacher', value: dash(overview?.totalTeachers), icon: 'graduation', accent: colors.success, href: '/(admin)/module/teachers' },
+    { key: 'feesToday', label: 'Fee', value: money(fees?.totalPaid ?? overview?.collectedFees), icon: 'wallet', accent: colors.success, href: '/(admin)/module/fees' },
+    { key: 'pendingFees', label: 'Pending Fee', value: compactNumber(fees?.pendingCount ?? overview?.pendingFees ?? 0), icon: 'wallet', accent: colors.error, href: '/(admin)/module/fees' },
+    { key: 'teacherAttendance', label: 'Teacher Attendance', value: teacherAtt, icon: 'check-circle', accent: colors.success, href: '/(admin)/teacher-attendance' },
+    { key: 'studentAttendance', label: 'Student Attendance', value: percent, icon: 'check-circle', accent: colors.primary, href: '/(admin)/attendance' },
   ];
 
   return (
@@ -404,11 +391,13 @@ interface StatMetric {
   value: string;
   icon: IconName;
   accent: string;
+  href?: string;
 }
 
 function MetricTile({ metric }: { metric: StatMetric }) {
-  return (
-    <View style={[styles.metric, shadows.card]}>
+  const router = useRouter();
+  const content = (
+    <>
       <View style={[styles.metricIcon, { backgroundColor: tint(metric.accent) }]}>
         <Icon name={metric.icon} size={15} color={metric.accent} />
       </View>
@@ -418,6 +407,24 @@ function MetricTile({ metric }: { metric: StatMetric }) {
       <Text style={styles.metricLabel} numberOfLines={1}>
         {metric.label}
       </Text>
+    </>
+  );
+
+  if (metric.href) {
+    return (
+      <Pressable
+        onPress={() => router.push(metric.href as never)}
+        style={({ pressed }) => [styles.metric, shadows.card, pressed && styles.pressed]}
+        android_ripple={{ color: colors.gray100 }}
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={[styles.metric, shadows.card]}>
+      {content}
     </View>
   );
 }
