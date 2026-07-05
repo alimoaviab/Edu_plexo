@@ -24,7 +24,6 @@ import {
   SectionHeader,
   type ListRow,
 } from '@/components/dashboard/widgets';
-import { TrialBanner } from '@/components/subscription/TrialBanner';
 import { fetchAdminComposite } from '@/modules/dashboard/api';
 import type { AdminComposite } from '@/modules/dashboard/types';
 import { listAdminRecords } from '@/modules/admin/api';
@@ -39,10 +38,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.78;
 
 const QUICK_ACTIONS: { key: string; label: string; icon: IconName; href: string }[] = [
-  { key: 'student', label: 'Add Student', icon: 'plus', href: '/(admin)/module/students' },
-  { key: 'attendance', label: 'Take Attendance', icon: 'check-circle', href: '/(admin)/attendance' },
-  { key: 'fees', label: 'Generate Fees', icon: 'wallet', href: '/(admin)/module/fees' },
-  { key: 'announce', label: 'Announcements', icon: 'megaphone', href: '/(admin)/module/announcements' },
+  { key: 'student', label: 'Add Student', icon: 'plus', href: '/(owner)/module/students' },
+  { key: 'attendance', label: 'Take Attendance', icon: 'check-circle', href: '/(owner)/attendance' },
+  { key: 'fees', label: 'Generate Fees', icon: 'wallet', href: '/(owner)/module/fees' },
+  { key: 'announce', label: 'Announcements', icon: 'megaphone', href: '/(owner)/module/announcements' },
 ];
 
 type Accent = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
@@ -124,62 +123,68 @@ export default function AdminHome() {
 
   const sections: ProfileSection[] = [
     {
+      title: 'Owner Portal',
+      items: [
+        { key: 'schools', label: 'My Schools', description: 'Portfolio and branch switcher', icon: 'building', accent: 'primary', href: '/(owner)/schools' },
+      ],
+    },
+    {
       title: 'Academic Setup',
       items: [
-        { key: 'academic-years', label: 'Academic years', description: 'School sessions', icon: 'calendar', accent: 'success', href: '/(admin)/module/academic-years' },
-        { key: 'classes', label: 'Classes', description: 'Sections and classroom setup', icon: 'graduation', accent: 'primary', href: '/(admin)/module/classes' },
+        { key: 'academic-years', label: 'Academic years', description: 'School sessions', icon: 'calendar', accent: 'success', href: '/(owner)/module/academic-years' },
+        { key: 'classes', label: 'Classes', description: 'Sections and classroom setup', icon: 'graduation', accent: 'primary', href: '/(owner)/module/classes' },
       ],
     },
     {
       title: 'Staff',
       items: [
-        { key: 'leave', label: 'Leave', description: 'Teacher leave applications', icon: 'clock', accent: 'warning', href: '/(admin)/module/leave' },
+        { key: 'leave', label: 'Leave', description: 'Teacher leave applications', icon: 'clock', accent: 'warning', href: '/(owner)/module/leave' },
       ],
     },
     {
       title: 'Students',
       items: [
-        { key: 'behavior', label: 'Behavior', description: 'Discipline and merit notes', icon: 'shield', accent: 'warning', href: '/(admin)/module/behavior' },
+        { key: 'behavior', label: 'Behavior', description: 'Discipline and merit notes', icon: 'shield', accent: 'warning', href: '/(owner)/module/behavior' },
       ],
     },
     {
       title: 'Academics',
       items: [
-        { key: 'timetable', label: 'Timetable', description: 'Class and teacher schedules', icon: 'calendar', accent: 'success', href: '/(admin)/module/timetable' },
-        { key: 'homework', label: 'Homework', description: 'Assignments and submissions', icon: 'book', accent: 'primary', href: '/(admin)/module/homework' },
-        { key: 'exams', label: 'Exams', description: 'Term exams and schedules', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/exams' },
-        { key: 'tests', label: 'Tests', description: 'Class tests and quizzes', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/tests' },
-        { key: 'results', label: 'Results', description: 'Marks and transcripts', icon: 'star', accent: 'success', href: '/(admin)/module/results' },
-        { key: 'question-papers', label: 'Question Papers', description: 'Generated question papers', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/question-papers' },
-        { key: 'live-classes', label: 'Live classes', description: 'Online sessions', icon: 'video', accent: 'primary', href: '/(admin)/module/live-classes' },
+        { key: 'timetable', label: 'Timetable', description: 'Class and teacher schedules', icon: 'calendar', accent: 'success', href: '/(owner)/module/timetable' },
+        { key: 'homework', label: 'Homework', description: 'Assignments and submissions', icon: 'book', accent: 'primary', href: '/(owner)/module/homework' },
+        { key: 'exams', label: 'Exams', description: 'Term exams and schedules', icon: 'clipboard', accent: 'warning', href: '/(owner)/module/exams' },
+        { key: 'tests', label: 'Tests', description: 'Class tests and quizzes', icon: 'clipboard', accent: 'warning', href: '/(owner)/module/tests' },
+        { key: 'results', label: 'Results', description: 'Marks and transcripts', icon: 'star', accent: 'success', href: '/(owner)/module/results' },
+        { key: 'question-papers', label: 'Question Papers', description: 'Generated question papers', icon: 'clipboard', accent: 'warning', href: '/(owner)/module/question-papers' },
+        { key: 'live-classes', label: 'Live classes', description: 'Online sessions', icon: 'video', accent: 'primary', href: '/(owner)/module/live-classes' },
       ],
     },
     {
       title: 'Operations',
       items: [
-        { key: 'announcements', label: 'Announcements', description: 'School notices', icon: 'megaphone', accent: 'primary', href: '/(admin)/module/announcements' },
-        { key: 'certificates', label: 'Certificates', description: 'Issued certificates', icon: 'star', accent: 'success', href: '/(admin)/module/certificates' },
-        { key: 'certificate-templates', label: 'Template Designer', description: 'Certificate layout designer', icon: 'sparkles', accent: 'success', href: '/(admin)/module/certificate-templates' },
+        { key: 'announcements', label: 'Announcements', description: 'School notices', icon: 'megaphone', accent: 'primary', href: '/(owner)/module/announcements' },
+        { key: 'certificates', label: 'Certificates', description: 'Issued certificates', icon: 'star', accent: 'success', href: '/(owner)/module/certificates' },
+        { key: 'certificate-templates', label: 'Template Designer', description: 'Certificate layout designer', icon: 'sparkles', accent: 'success', href: '/(owner)/module/certificate-templates' },
       ],
     },
     {
       title: 'Finance',
       items: [
-        { key: 'fees', label: 'Fee', description: 'Vouchers and student fees', icon: 'wallet', accent: 'success', href: '/(admin)/module/fees' },
+        { key: 'fees', label: 'Fee', description: 'Vouchers and student fees', icon: 'wallet', accent: 'success', href: '/(owner)/module/fees' },
       ],
     },
     {
       title: 'Subscription',
       items: [
-        { key: 'subscription', label: 'Subscription', description: 'Plan limits and billing', icon: 'wallet', accent: 'primary', href: '/(admin)/module/subscription' },
+        { key: 'subscription', label: 'Subscription', description: 'Plan limits and billing', icon: 'wallet', accent: 'primary', href: '/(owner)/module/subscription' },
       ],
     },
     {
       title: 'Settings',
       items: [
-        { key: 'schedules', label: 'Schedule', description: 'Reminders and meetings', icon: 'calendar', accent: 'success', href: '/(admin)/module/schedules' },
-        { key: 'messages', label: 'Conversations', description: 'Conversations', icon: 'mail', accent: 'primary', href: '/(admin)/module/messages' },
-        { key: 'settings', label: 'Settings', description: 'System configuration', icon: 'settings', accent: 'neutral', href: '/(admin)/settings' },
+        { key: 'schedules', label: 'Schedule', description: 'Reminders and meetings', icon: 'calendar', accent: 'success', href: '/(owner)/module/schedules' },
+        { key: 'messages', label: 'Conversations', description: 'Conversations', icon: 'mail', accent: 'primary', href: '/(owner)/module/messages' },
+        { key: 'settings', label: 'Settings', description: 'System configuration', icon: 'settings', accent: 'neutral', href: '/(owner)/settings' },
       ],
     },
     {
@@ -213,7 +218,9 @@ export default function AdminHome() {
       >
         <View style={styles.padded}>
           <Header
+            greeting="Owner Portal"
             title={schoolName}
+            subtitle="Executive Campus Dashboard"
             showMenu={true}
             onMenuPress={openSidebar}
             right={<NotificationBell />}
@@ -223,7 +230,6 @@ export default function AdminHome() {
             <ErrorBanner message={(dashboardQuery.error as Error).message} onRetry={() => dashboardQuery.refetch()} />
           ) : null}
 
-          <TrialBanner />
           <CompactStats data={dashboardQuery.data} loading={dashboardQuery.isLoading} />
 
           <SectionHeader title="Quick Actions" />
@@ -374,12 +380,12 @@ function CompactStats({ data, loading }: { data?: AdminComposite; loading: boole
     : '0%';
 
   const metrics: StatMetric[] = [
-    { key: 'students', label: 'Student', value: dash(overview?.totalStudents), icon: 'users', accent: colors.primary, href: '/(admin)/module/students' },
-    { key: 'teachers', label: 'Teacher', value: dash(overview?.totalTeachers), icon: 'graduation', accent: colors.success, href: '/(admin)/module/teachers' },
-    { key: 'feesToday', label: 'Fee', value: money(fees?.totalPaid ?? overview?.collectedFees), icon: 'wallet', accent: colors.success, href: '/(admin)/module/fees' },
-    { key: 'pendingFees', label: 'Pending Fee', value: compactNumber(fees?.pendingCount ?? overview?.pendingFees ?? 0), icon: 'wallet', accent: colors.error, href: '/(admin)/module/fees' },
-    { key: 'teacherAttendance', label: 'Teacher Attendance', value: teacherAtt, icon: 'check-circle', accent: colors.success, href: '/(admin)/teacher-attendance' },
-    { key: 'studentAttendance', label: 'Student Attendance', value: percent, icon: 'check-circle', accent: colors.primary, href: '/(admin)/attendance' },
+    { key: 'students', label: 'Student', value: dash(overview?.totalStudents), icon: 'users', accent: colors.primary, href: '/(owner)/module/students' },
+    { key: 'teachers', label: 'Teacher', value: dash(overview?.totalTeachers), icon: 'graduation', accent: colors.success, href: '/(owner)/module/teachers' },
+    { key: 'feesToday', label: 'Fee', value: money(fees?.totalPaid ?? overview?.collectedFees), icon: 'wallet', accent: colors.success, href: '/(owner)/module/fees' },
+    { key: 'pendingFees', label: 'Pending Fee', value: compactNumber(fees?.pendingCount ?? overview?.pendingFees ?? 0), icon: 'wallet', accent: colors.error, href: '/(owner)/module/fees' },
+    { key: 'teacherAttendance', label: 'Teacher Attendance', value: teacherAtt, icon: 'check-circle', accent: colors.success, href: '/(owner)/teacher-attendance' },
+    { key: 'studentAttendance', label: 'Student Attendance', value: percent, icon: 'check-circle', accent: colors.primary, href: '/(owner)/attendance' },
   ];
 
   return (
@@ -439,7 +445,7 @@ function NotificationBell() {
   const router = useRouter();
   return (
     <Pressable
-      onPress={() => router.push('/(admin)/module/notifications' as never)}
+      onPress={() => router.push('/(owner)/module/notifications' as never)}
       style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
     >
       <Icon name="bell" size={20} color={colors.gray700} />

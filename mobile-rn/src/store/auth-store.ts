@@ -43,6 +43,7 @@ async function enforceSchoolBoundary(currentSchoolId: string): Promise<void> {
       prefStorage.remove(StorageKeys.classId),
       prefStorage.remove(StorageKeys.studentId),
       prefStorage.remove(StorageKeys.academicYearId),
+      prefStorage.remove(StorageKeys.activeSchoolId),
     ]);
   }
   await prefStorage.set(StorageKeys.lastSchoolId, currentSchoolId);
@@ -106,6 +107,7 @@ async function buildUserFromToken(token: string): Promise<AuthUser | null> {
     profileId: profileId ?? undefined,
     classId: classId ?? undefined,
     studentId: studentId ?? undefined,
+    activeSchoolId: activeSchoolId ?? undefined,
   };
 }
 

@@ -39,6 +39,7 @@ export interface AuthUser {
   profileId?: string;
   classId?: string;
   studentId?: string;
+  activeSchoolId?: string;
 }
 
 export interface LoginRequest {

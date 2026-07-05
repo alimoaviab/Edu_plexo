@@ -18,6 +18,7 @@ interface RoleOption {
 }
 
 const ROLES: RoleOption[] = [
+  { value: 'owner', label: 'Owner', icon: 'building' },
   { value: 'admin', label: 'Admin', icon: 'shield' },
   { value: 'teacher', label: 'Teacher', icon: 'graduation' },
   { value: 'student', label: 'Parent Portal', icon: 'family' },
