@@ -45,7 +45,6 @@ type MemStore struct {
 
 	// Eduplexo Extension collections.
 	DummyDataBatches []*DummyDataBatch
-
 	// Phase 2.1 collections.
 	Attendance     []*Attendance
 	Exams          []*Exam

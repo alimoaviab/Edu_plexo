@@ -12,7 +12,11 @@ export default function OwnerDashboardPage() {
     async function load() {
       try {
         const res = await serviceRequest<any>("/api/owner/dashboard");
+<<<<<<< HEAD
         if (res.ok) {
+=======
+        if (res.success && res.data) {
+>>>>>>> 9415cd3 (create app)
           setStats(res.data);
         }
       } catch (err) {

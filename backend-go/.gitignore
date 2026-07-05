@@ -1,6 +1,6 @@
 bin/
 seed
-server
+/server
 .env
 *.test
 *.out

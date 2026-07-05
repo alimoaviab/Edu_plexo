@@ -140,7 +140,6 @@ func Authenticator(cfg config.Config, s *store.MemStore) func(http.Handler) http
 			if branch != "" && branch != "undefined" && branch != "all" {
 				ctx.CampusID = branch
 			}
-
 			r = r.WithContext(api.WithContext(r.Context(), ctx))
 			next.ServeHTTP(w, r)
 		})

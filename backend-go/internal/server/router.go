@@ -34,8 +34,6 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/parent"
 	"github.com/eduplexo/backend-go/internal/domain/questionpapers"
 	"github.com/eduplexo/backend-go/internal/domain/results"
-	"github.com/eduplexo/backend-go/internal/domain/schedule"
-	"github.com/eduplexo/backend-go/internal/domain/search"
 	"github.com/eduplexo/backend-go/internal/domain/sections"
 	"github.com/eduplexo/backend-go/internal/domain/seo"
 	"github.com/eduplexo/backend-go/internal/domain/settings"
@@ -181,7 +179,6 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Get("/eduplexo-extension/history/export.csv", edxH.ExportCSV)
 			r.Get("/eduplexo-extension/history/{id}", edxH.Detail)
 			r.Post("/eduplexo-extension/history/{id}/revert", edxH.Revert)
-
 			stH := students.NewPG(s, saveFn, pg.Pool(), rdb)
 			// Subscription limit checker is set after subH is created below
 			r.Get("/students", stH.List)

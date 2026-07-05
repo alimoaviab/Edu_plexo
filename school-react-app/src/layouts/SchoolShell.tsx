@@ -27,6 +27,7 @@ import {
 } from "@/services/academic-year-context";
 import { useAuth, type Role } from "@/hooks/useAuth";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
+import { ChildSwitcher } from "@/components/parent/ChildSwitcher";
 import { OwnerSchoolSwitcher } from "@/components/owner/OwnerSchoolSwitcher";
 import { GlobalSearch } from "shared/components/GlobalSearch";
 import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
