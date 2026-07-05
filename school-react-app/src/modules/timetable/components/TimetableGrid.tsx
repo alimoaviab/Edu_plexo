@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useDroppable } from "@dnd-kit/core";
 import {
   TimetableRecord,
   SHORT_DAY_BY_ISO,
@@ -220,14 +221,14 @@ function RowFragment({
   isCompact?: boolean;
   canManage?: boolean;
 }) {
-  const heightClass = isCompact ? "min-h-[64px]" : "min-h-[88px]";
-  const borderClass = isLast ? "" : "border-b border-slate-100";
-
-  return (
-    <>
-      <div
-        className={`sticky left-0 z-20 bg-white border-r border-slate-100 ${borderClass} ${heightClass} flex flex-col items-start justify-center px-3 py-2`}
-      >
+    const heightClass = isCompact ? "min-h-[64px]" : "min-h-[88px]";
+    const borderClass = isLast ? "" : "border-b border-slate-400";
+  
+    return (
+      <>
+        <div
+          className={`sticky left-0 z-20 bg-white border-r border-slate-300 ${borderClass} ${heightClass} flex flex-col items-start justify-center px-3 py-2`}
+        >
         <span className="text-[9px] font-bold text-slate-400 normal-case">
           P{row.period}
         </span>
@@ -242,37 +243,74 @@ function RowFragment({
         const cells = cellMap.get(`${d}_${row.period}`) ?? [];
         const isToday = d === today;
         return (
-          <div
+          <DroppableCell
             key={`c-${d}-${row.period}`}
-            className={`relative ${borderClass} ${heightClass} border-r border-slate-100 last:border-r-0 p-1.5 ${
-              isToday ? "bg-blue-50/20" : ""
-            }`}
-          >
-            {cells.length === 0 ? (
-              <FreeCellPlaceholder isToday={isToday} />
-            ) : (
-              <div className="flex flex-col gap-1 h-full">
-                {cells.map((rec) => {
-                  const status: PeriodStatus = periodStatus(rec, now);
-                  return (
-                    <PeriodCard
-                      key={rec._id}
-                      slot={rec}
-                      status={status}
-                      hasConflict={conflictedIds.has(rec._id)}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      isCompact={isCompact}
-                      canManage={canManage}
-                    />
-                  );
-                })}
-              </div>
-            )}
-          </div>
+            day={d}
+            row={row}
+            cells={cells}
+            isToday={isToday}
+            now={now}
+            conflictedIds={conflictedIds}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            isCompact={isCompact}
+            canManage={canManage}
+            borderClass={borderClass}
+            heightClass={heightClass}
+          />
         );
       })}
     </>
+  );
+}
+
+function DroppableCell({
+  day,
+  row,
+  cells,
+  isToday,
+  now,
+  conflictedIds,
+  onEdit,
+  onDelete,
+  isCompact,
+  canManage,
+  borderClass,
+  heightClass,
+}: any) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `drop_${day}_${row.period}_${row.start}_${row.end}`,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`relative ${borderClass} ${heightClass} border-r border-slate-300 last:border-r-0 p-1.5 transition-colors ${
+        isOver ? "bg-blue-100" : isToday ? "bg-blue-50/20" : ""
+      }`}
+    >
+      {cells.length === 0 ? (
+        <FreeCellPlaceholder isToday={isToday} />
+      ) : (
+        <div className="flex flex-col gap-1 h-full">
+          {cells.map((rec: TimetableRecord) => {
+            const status: PeriodStatus = periodStatus(rec, now);
+            return (
+              <PeriodCard
+                key={rec._id}
+                slot={rec}
+                status={status}
+                hasConflict={conflictedIds.has(rec._id)}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                isCompact={isCompact}
+                canManage={canManage}
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

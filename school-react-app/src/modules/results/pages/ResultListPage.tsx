@@ -32,6 +32,7 @@ import { useExams } from "../../exams/hooks/useExams";
 import { exportMarksheet, exportExamMarksheet } from "@/utils/marksheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 export function ResultListPage({
   filters,
@@ -45,6 +46,7 @@ export function ResultListPage({
   const { state: classState } = useClasses();
 
   const [searchQuery, setSearchQuery] = useState(currentParams.get("search") || "");
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [gradeFilter, setGradeFilter] = useState<string>(currentParams.get("grade") || "all");
   const [classFilter, setClassFilter] = useState<string>(
     currentParams.get("class_id") || "all"
@@ -88,7 +90,7 @@ export function ResultListPage({
   }, [state.data]);
 
   const filteredRows = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     return dedupedRows.filter((row) => {
       const subjectsConcat = (row.subjects || [])
         .map((s) => s.subject_name)
@@ -105,7 +107,7 @@ export function ResultListPage({
       const classMatch = classFilter === "all" ? true : row.class_id === classFilter;
       return queryMatch && gradeMatch && classMatch;
     });
-  }, [dedupedRows, searchQuery, gradeFilter, classFilter]);
+  }, [dedupedRows, debouncedSearch, gradeFilter, classFilter]);
 
   const stats = useMemo(() => {
     const passCount = filteredRows.filter((r) => r.grade !== "F").length;

@@ -20,7 +20,7 @@ import { Link } from "react-router-dom";
 import { Button, Input, Select } from "@/components/ui";
 import { ServiceResult } from "@/types/core";
 import { serviceRequest } from "@/services/service-client";
-import { ExamFormInput, ExamSubjectInput } from "../types/exam.types";
+import { ExamFormInput, ExamSubjectInput, ExamRow } from "../types/exam.types";
 
 interface SubjectOption {
   label: string;
@@ -32,25 +32,45 @@ const DEFAULT_MAX_MARKS = 100;
 export function ExamForm({
   classes,
   onCreate,
+  onUpdate,
+  initialData,
   showFooter = true,
 }: {
   classes: any[];
-  onCreate: (input: ExamFormInput) => Promise<ServiceResult<unknown>>;
+  onCreate?: (input: ExamFormInput) => Promise<ServiceResult<unknown>>;
+  onUpdate?: (id: string, input: Partial<ExamFormInput>) => Promise<ServiceResult<unknown>>;
+  initialData?: ExamRow;
   showFooter?: boolean;
 }) {
-  const [form, setForm] = useState<ExamFormInput>(() => ({
-    academic_year_id:
-      typeof window !== "undefined" ? window.localStorage.getItem("academic_year_id") || "" : "",
-    class_id: "",
-    teacher_id: "",
-    title: "",
-    type: "exam",
-    term: "",
-    starts_at: "",
-    status: "scheduled",
-    description: "",
-    subjects: [],
-  }));
+  const [form, setForm] = useState<ExamFormInput>(() => {
+    if (initialData) {
+      return {
+        academic_year_id: initialData.academic_year_id || "",
+        class_id: initialData.class_id || "",
+        teacher_id: initialData.teacher_id || "",
+        title: initialData.title || "",
+        type: initialData.type || "exam",
+        term: initialData.term || "",
+        starts_at: initialData.starts_at ? new Date(initialData.starts_at).toISOString().split('T')[0] : "",
+        status: initialData.status || "scheduled",
+        description: initialData.description || "",
+        subjects: initialData.subjects || [],
+      };
+    }
+    return {
+      academic_year_id:
+        typeof window !== "undefined" ? window.localStorage.getItem("academic_year_id") || "" : "",
+      class_id: "",
+      teacher_id: "",
+      title: "",
+      type: "exam",
+      term: "",
+      starts_at: "",
+      status: "scheduled",
+      description: "",
+      subjects: [],
+    };
+  });
 
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -180,24 +200,31 @@ export function ExamForm({
     if (!validate()) return;
     setSaving(true);
     try {
-      const result = await onCreate(form);
-      if (result.ok) {
-        // Reset to defaults so admin can chain another exam.
-        setForm({
-          academic_year_id:
-            typeof window !== "undefined"
-              ? window.localStorage.getItem("academic_year_id") || ""
-              : "",
-          class_id: "",
-          teacher_id: "",
-          title: "",
-          type: "exam",
-          term: "",
-          starts_at: "",
-          status: "scheduled",
-          description: "",
-          subjects: [],
-        });
+      if (initialData && onUpdate) {
+        const result = await onUpdate(initialData._id, form);
+        if (result.ok) {
+          // Stay on the form for edits
+        }
+      } else if (onCreate) {
+        const result = await onCreate(form);
+        if (result.ok) {
+          // Reset to defaults so admin can chain another exam.
+          setForm({
+            academic_year_id:
+              typeof window !== "undefined"
+                ? window.localStorage.getItem("academic_year_id") || ""
+                : "",
+            class_id: "",
+            teacher_id: "",
+            title: "",
+            type: "exam",
+            term: "",
+            starts_at: "",
+            status: "scheduled",
+            description: "",
+            subjects: [],
+          });
+        }
       }
     } finally {
       setSaving(false);
@@ -429,12 +456,14 @@ export function ExamForm({
             {saving ? (
               <>
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                Scheduling…
+                {initialData ? "Updating…" : "Scheduling…"}
               </>
             ) : (
               <>
                 <AppIcon name="CheckCircle2" size={16} />
-                {form.subjects.length > 1
+                {initialData
+                  ? "Update Exam"
+                  : form.subjects.length > 1
                   ? `Schedule exam · ${form.subjects.length} subjects`
                   : "Schedule exam"}
               </>

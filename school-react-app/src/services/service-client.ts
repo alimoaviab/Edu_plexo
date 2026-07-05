@@ -68,6 +68,11 @@ function readAcademicYearId(): string {
   return window.localStorage.getItem("academic_year_id") ?? "";
 }
 
+function readActiveSchoolId(): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem("active_school_id") ?? "";
+}
+
 function handleUnauthorized() {
   if (typeof window === "undefined") return;
   try {
@@ -101,6 +106,7 @@ export async function serviceRequest<T>(
         headers: {
           "content-type": "application/json",
           "x-academic-year-id": readAcademicYearId(),
+          "x-school-id": readActiveSchoolId(),
           ...(token ? { authorization: `Bearer ${token}` } : {}),
           ...(options.headers ?? {}),
         },

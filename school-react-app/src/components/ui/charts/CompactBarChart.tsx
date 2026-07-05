@@ -1,4 +1,5 @@
 import React from "react";
+import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 
 export interface CompactBarChartProps {
   data: Array<{
@@ -29,60 +30,28 @@ export function CompactBarChart({
     );
   }
 
-  const padding = { top: 10, right: 10, bottom: 20, left: 10 };
-  const chartHeight = height - padding.top - padding.bottom;
-  
-  const maxValue = Math.max(
-    1,
-    ...data.map((d) => (d.value2 ? d.value1 + d.value2 : d.value1))
-  );
-
   return (
     <div className={`relative w-full ${className}`} style={{ height }}>
-      <div className="absolute inset-0 flex items-end justify-between" style={{ padding: `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px` }}>
-        {/* Grid Lines */}
-        {showGrid && (
-          <div className="absolute inset-x-0 bottom-0 top-0 flex flex-col justify-between pointer-events-none opacity-20" style={{ paddingBottom: padding.bottom }}>
-            <div className="border-b border-gray-300 w-full" />
-            <div className="border-b border-gray-300 w-full" />
-            <div className="border-b border-gray-300 w-full" />
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+          <Tooltip 
+            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)', fontSize: '11px', fontWeight: 'bold' }}
+            itemStyle={{ color: '#0f172a' }}
+            cursor={{ fill: 'transparent' }}
+          />
+          <Bar dataKey="value1" stackId="a" fill={color1} radius={[data[0]?.value2 ? 0 : 4, data[0]?.value2 ? 0 : 4, 4, 4]} barSize={16} />
+          {data.some(d => d.value2 !== undefined) && (
+            <Bar dataKey="value2" stackId="a" fill={color2} radius={[4, 4, 0, 0]} barSize={16} />
+          )}
+          <XAxis dataKey="label" hide />
+        </BarChart>
+      </ResponsiveContainer>
+      <div className="absolute -bottom-5 left-0 right-0 flex justify-between text-[10px] text-gray-500 font-medium">
+        {data.map((item, index) => (
+          <div key={index} className="flex-1 text-center truncate px-1">
+            {item.label}
           </div>
-        )}
-
-        {/* Bars */}
-        {data.map((item, index) => {
-          const v1Height = (item.value1 / maxValue) * chartHeight;
-          const v2Height = item.value2 ? (item.value2 / maxValue) * chartHeight : 0;
-          
-          return (
-            <div key={index} className="relative flex flex-col items-center justify-end group flex-1 px-1 sm:px-2 z-10" style={{ height: chartHeight }}>
-              {/* Tooltip */}
-              <div className="absolute -top-10 bg-gray-900 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20 shadow-lg">
-                <div className="font-medium">{item.label}</div>
-                <div>{item.value1} {item.value2 !== undefined && ` / ${item.value2}`}</div>
-              </div>
-              
-              {/* Stacked Bar */}
-              <div className="w-full max-w-[24px] flex flex-col justify-end overflow-hidden rounded-t-sm" style={{ height: chartHeight }}>
-                {item.value2 !== undefined && (
-                  <div
-                    className="w-full transition-all duration-500 ease-in-out hover:brightness-110"
-                    style={{ height: `${v2Height}px`, backgroundColor: color2 }}
-                  />
-                )}
-                <div
-                  className="w-full transition-all duration-500 ease-in-out hover:brightness-110"
-                  style={{ height: `${v1Height}px`, backgroundColor: color1, borderTopLeftRadius: item.value2 ? 0 : 2, borderTopRightRadius: item.value2 ? 0 : 2 }}
-                />
-              </div>
-
-              {/* X-Axis Label */}
-              <div className="absolute -bottom-5 text-[10px] text-gray-500 truncate w-full text-center">
-                {item.label}
-              </div>
-            </div>
-          );
-        })}
+        ))}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { AppIcon } from "shared/ui/AppIcon";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useQueryParams } from "@/hooks/useQueryParams";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { DataTable, DataTableColumn, RowAction, Badge, DataState, ListToolbar, Skeleton, TableSkeleton, StatCardGrid, EntityCard, EntityGrid, Pagination } from "@/components/ui";
 import { useStudents } from "../hooks/useStudents";
 import { StudentDetailsModal } from "../components/StudentDetailsModal";
@@ -36,12 +37,13 @@ export function StudentListPage() {
     pages,
     setPage,
     setPerPage,
-    isFetching
+    isFetching,
+    setSearch,
+    setFilters
   } = useStudents(classFilter ? { class_id: classFilter } : undefined);
   const { state: classesState } = useClasses();
-  // subjects unused after sidebar removal but kept for ListToolbar parity
-  // (not currently consumed; left out intentionally).
   const [searchQuery, setSearchQuery] = useState(currentParams.get("search") || "");
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">((currentParams.get("status") as any) || "all");
   const [performanceFilter, setPerformanceFilter] = useState(currentParams.get("performance") || "all");
   const [viewMode, setViewMode] = useState<"grid" | "list">((currentParams.get("view") as any) || "grid");
@@ -53,6 +55,15 @@ export function StudentListPage() {
     setPerformanceFilter(currentParams.get("performance") || "all");
     setViewMode((currentParams.get("view") as any) || "grid");
   }, [currentParams.toString()]);
+
+  // Sync local debounced values and filters into the paginated hook
+  useEffect(() => {
+    setSearch(debouncedSearch);
+    const filters: Record<string, string> = {};
+    if (classFilter) filters.class_id = classFilter;
+    if (statusFilter && statusFilter !== "all") filters.status = statusFilter;
+    setFilters(filters);
+  }, [debouncedSearch, classFilter, statusFilter, setSearch, setFilters]);
 
   // Fetch analytics when performance filter is active
   useEffect(() => {

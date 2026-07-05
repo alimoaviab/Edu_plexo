@@ -26,7 +26,7 @@ func NewTeacherRepo(pool *pgxpool.Pool, c *cache.Client) *TeacherRepo {
 
 // List returns paginated teachers.
 func (r *TeacherRepo) List(ctx context.Context, schoolID, yearID string, opts ListOpts) ([]store.Teacher, int, error) {
-	cacheKey := fmt.Sprintf("teachers:%s:%s:p%d:s%s:q%s", schoolID, yearID, opts.Page, opts.Status, opts.Search)
+	cacheKey := fmt.Sprintf("teachers:%s:%s:p%d:l%d:s%s:q%s", schoolID, yearID, opts.Page, opts.PerPage, opts.Status, opts.Search)
 
 	if r.cache != nil && r.cache.Available() {
 		cached, _ := r.cache.Get(ctx, cacheKey)
@@ -56,8 +56,12 @@ func (r *TeacherRepo) List(ctx context.Context, schoolID, yearID string, opts Li
 		argIdx++
 	}
 	if opts.Search != "" {
-		where = append(where, fmt.Sprintf("LOWER(first_name || ' ' || COALESCE(last_name,'')) LIKE $%d", argIdx))
-		args = append(args, "%"+strings.ToLower(opts.Search)+"%")
+		term := "%" + strings.ToLower(opts.Search) + "%"
+		where = append(where, fmt.Sprintf(
+			"(LOWER(first_name || ' ' || COALESCE(last_name,'')) LIKE $%d OR LOWER(email) LIKE $%d OR LOWER(phone) LIKE $%d OR LOWER(employee_no) LIKE $%d)",
+			argIdx, argIdx, argIdx, argIdx,
+		))
+		args = append(args, term)
 		argIdx++
 	}
 

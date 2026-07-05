@@ -105,6 +105,7 @@ export const adminRoutes: RouteObject[] = [
   // Exams
   { path: "/admin/exams", element: lazyPage(() => import("@/pages/role/admin/exams"), "AdminExamsPage") },
   { path: "/admin/exams/create", element: lazyPage(() => import("@/pages/role/admin/exams/create"), "AdminExamCreatePage") },
+  { path: "/admin/exams/edit/:id", element: lazyPage(() => import("@/pages/role/admin/exams/edit/Param_id"), "AdminExamEditPage") },
   { path: "/admin/exams/marks", element: lazyPage(() => import("@/pages/role/admin/exams/marks"), "AdminExamMarksPage") },
 
   // Fees
@@ -186,6 +187,9 @@ export const adminRoutes: RouteObject[] = [
 
   // Subscription
   { path: "/admin/subscription", element: lazyPage(() => import("@/pages/role/admin/subscription"), "AdminSubscriptionPage") },
+
+  { path: "/admin/schedule", element: lazyPage(() => import("@/pages/role/admin/schedule"), "AdminSchedulePage") },
+  { path: "/admin/messages", element: lazyPage(() => import("@/pages/role/admin/messages"), "AdminMessagesPage") },
   { path: "/admin/subscription/payment", element: lazyPage(() => import("@/modules/subscription/pages/PaymentPage"), "PaymentPage") },
   { path: "/admin/subscription/custom", element: lazyPage(() => import("@/modules/subscription/pages/CustomPlanBuilder"), "CustomPlanBuilder") },
 
@@ -310,4 +314,10 @@ export const studentRoutes: RouteObject[] = [
 
   // ─── Messages ───────────────────────────────────────────────────────
   { path: "/student/messages", element: lazyPage(() => import("@/pages/role/shared/messages"), "MessagesPage") },
+];
+
+// ─── Owner Routes (lazy-loaded) ──────────────────────────────────────────
+export const ownerRoutes: RouteObject[] = [
+  { path: "/owner/dashboard", element: lazyPage(() => import("@/pages/role/owner/dashboard"), "OwnerDashboardPage") },
+  { path: "/owner/schools", element: lazyPage(() => import("@/pages/role/owner/schools"), "OwnerSchoolsPage") },
 ];

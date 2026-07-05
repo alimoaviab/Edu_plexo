@@ -8,21 +8,24 @@ import { motion } from "framer-motion";
 import { AppIcon } from "shared/ui/AppIcon";
 import { decodeJwtPayload } from "@/utils/jwt";
 
-type Role = "admin" | "teacher" | "student";
+type Role = "owner" | "admin" | "teacher" | "student";
 
 const ROLE_ICONS: Record<Role, React.ReactNode> = {
+  owner: <AppIcon name="Building" size={20} />,
   admin: <AppIcon name="ShieldCheck" size={20} />,
   teacher: <AppIcon name="BookOpen" size={20} />,
   student: <AppIcon name="GraduationCap" size={20} />,
 };
 
 const ROLES: { key: Role; label: string }[] = [
+  { key: "owner", label: "Owner" },
   { key: "admin", label: "Admin" },
   { key: "teacher", label: "Teacher" },
   { key: "student", label: "Student" },
 ];
 
 const ROLE_ROUTES: Record<string, string> = {
+  owner: "/owner/dashboard",
   admin: "/admin/dashboard",
   super_admin: "/admin/dashboard",
   teacher: "/teacher/dashboard",
@@ -38,6 +41,7 @@ function resolveRoleRoute(role?: string): string {
 // Tab → roles allowed on that tab. Mirrors the backend mapping in
 // auth.go's allowedRolesForTab — keep them in sync.
 const TAB_TO_ROLES: Record<Role, string[]> = {
+  owner: ["owner"],
   admin: ["admin", "super_admin"],
   teacher: ["teacher"],
   student: ["student", "parent"],
@@ -60,6 +64,8 @@ function labelForTab(tab: Role): string {
 
 function prettyRoleLabel(role: string): string {
   switch (role.toLowerCase()) {
+    case "owner":
+      return "a School Owner";
     case "super_admin":
       return "a Super Admin";
     case "admin":
@@ -159,7 +165,7 @@ export function LoginPage() {
           response.status === 403 &&
           errCode === "ROLE_MISMATCH" &&
           suggestedTab &&
-          (suggestedTab === "admin" || suggestedTab === "teacher" || suggestedTab === "student")
+          (suggestedTab === "owner" || suggestedTab === "admin" || suggestedTab === "teacher" || suggestedTab === "student")
         ) {
           setSelectedRole(suggestedTab as Role);
         }

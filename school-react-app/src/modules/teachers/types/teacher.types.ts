@@ -1,5 +1,6 @@
 export interface TeacherRow {
     _id: string;
+    id?: string;
     employee_no: string;
     first_name: string;
     last_name: string;
@@ -17,6 +18,7 @@ export interface TeacherFormInput {
     email: string;
     phone: string;
     qualification?: string;
+    status?: string;
     subjects: string[];
     class_ids: string[];
     password: string;

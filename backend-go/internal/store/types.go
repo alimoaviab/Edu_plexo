@@ -9,6 +9,10 @@ import "time"
 type School struct {
 	ID              string     `json:"_id"`
 	SchoolID        string     `json:"school_id"`
+	OwnerEmail      string     `json:"owner_email,omitempty"`
+	OwnerUserID     string     `json:"owner_user_id,omitempty"`
+	CampusGroupID   string     `json:"campus_group_id,omitempty"`
+	CampusType      string     `json:"campus_type,omitempty"` // main, branch
 	Name            string     `json:"name"`
 	Code            string     `json:"code"`
 	Email           string     `json:"email,omitempty"`
@@ -228,5 +232,36 @@ type Section struct {
 	Status         string    `json:"status"`
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+// Campus represents a physical campus/branch under a school.
+type Campus struct {
+	ID             string    `json:"_id"`
+	SchoolID       string    `json:"school_id"`
+	OwnerUserID    string    `json:"owner_user_id,omitempty"`
+	Name           string    `json:"name"`
+	Code           string    `json:"code,omitempty"`
+	LogoURL        string    `json:"logo_url,omitempty"`
+	Address        string    `json:"address,omitempty"`
+	City           string    `json:"city,omitempty"`
+	Phone          string    `json:"phone,omitempty"`
+	Email          string    `json:"email,omitempty"`
+	Website        string    `json:"website,omitempty"`
+	PrincipalName  string    `json:"principal_name,omitempty"`
+	PrincipalPhone string    `json:"principal_phone,omitempty"`
+	Timezone       string    `json:"timezone,omitempty"`
+	Currency       string    `json:"currency,omitempty"`
+	Status         string    `json:"status"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+// OwnerSchool links an owner user to the schools they own.
+type OwnerSchool struct {
+	ID          string    `json:"_id"`
+	OwnerUserID string    `json:"owner_user_id"`
+	SchoolID    string    `json:"school_id"`
+	Role        string    `json:"role"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 

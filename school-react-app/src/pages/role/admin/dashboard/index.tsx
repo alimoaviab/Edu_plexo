@@ -3,8 +3,9 @@ import { Skeleton } from "@/components/ui";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import { Link } from "react-router-dom";
 import { useCompositeDashboard } from "@/hooks/useCompositeDashboard";
-import { CompactBarChart } from "@/components/ui/charts/CompactBarChart";
-import { CompactLineChart } from "@/components/ui/charts/CompactLineChart";
+import React, { Suspense } from "react";
+const CompactBarChart = React.lazy(() => import("@/components/ui/charts/CompactBarChart").then(m => ({ default: m.CompactBarChart })));
+const CompactLineChart = React.lazy(() => import("@/components/ui/charts/CompactLineChart").then(m => ({ default: m.CompactLineChart })));
 
 /**
  * Admin Dashboard — Production-Optimized
@@ -36,13 +37,13 @@ export function AdminDashboardPage() {
     { title: "Exams", value: overview?.activeExams ?? "0", icon: "quiz", color: "text-rose-600 bg-rose-50" },
     { title: "Homework", value: overview?.totalHomework ?? "0", icon: "assignment", color: "text-pink-600 bg-pink-50" },
     { title: "Live Classes", value: overview?.totalLiveClasses ?? "0", icon: "videocam", color: "text-red-600 bg-red-50" },
-    { title: "Pending Fees", value: `PKR ${(overview?.pendingFees ?? 0).toLocaleString()}`, icon: "account_balance_wallet", color: "text-slate-600 bg-slate-50" },
+    { title: "Pending Fees", value: `PKR ${(overview?.pendingFees ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: "account_balance_wallet", color: "text-slate-600 bg-slate-50" },
   ];
 
 
 
   const attendanceCompletionPercent = data
-    ? Math.round(((classAttendance?.filter(c => c.has_attendance).length || 0) / (overview?.totalClasses || 1)) * 100)
+    ? Number((((classAttendance?.filter(c => c.has_attendance).length || 0) / (overview?.totalClasses || 1)) * 100).toFixed(2))
     : 0;
 
   // Transform data for charts
@@ -163,7 +164,9 @@ export function AdminDashboardPage() {
           {loading ? (
              <div className="h-[120px] w-full animate-pulse rounded-lg bg-slate-50" />
           ) : (
-            <CompactBarChart data={studentAttChartData} color1="#3b82f6" color2="#f43f5e" height={120} />
+            <Suspense fallback={<div className="h-[120px] w-full animate-pulse rounded-lg bg-slate-50" />}>
+              <CompactBarChart data={studentAttChartData} color1="#3b82f6" color2="#f43f5e" height={120} />
+            </Suspense>
           )}
         </div>
 
@@ -182,7 +185,7 @@ export function AdminDashboardPage() {
             <div>
               <p className="text-[20px] font-bold leading-none text-slate-800">
                 <span className="text-[11px] text-slate-400 mr-1">PKR</span>
-                {(overview?.collectedFees ?? 0).toLocaleString()}
+                {(overview?.collectedFees ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-wider">Total Collected</p>
             </div>
@@ -196,7 +199,9 @@ export function AdminDashboardPage() {
           {loading ? (
              <div className="h-[120px] w-full animate-pulse rounded-lg bg-slate-50" />
           ) : (
-            <CompactLineChart data={feeTrendChartData} color="#8b5cf6" height={120} />
+            <Suspense fallback={<div className="h-[120px] w-full animate-pulse rounded-lg bg-slate-50" />}>
+              <CompactLineChart data={feeTrendChartData} color="#8b5cf6" height={120} />
+            </Suspense>
           )}
         </div>
       </div>

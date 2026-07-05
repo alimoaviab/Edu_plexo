@@ -173,6 +173,7 @@ func (h *PGHandler) MarkBulkPG(w http.ResponseWriter, r *http.Request) {
 			cacheKeys := []string{
 				fmt.Sprintf("att:today:%s:%s", reqCtx.SchoolID, dateStr),
 				fmt.Sprintf("dash:%s:%s", reqCtx.SchoolID, yearID),
+				fmt.Sprintf("composite:%s:%s", reqCtx.SchoolID, yearID),
 			}
 			if _, err := h.Cache.Del(r.Context(), cacheKeys...); err != nil {
 				log.Printf("[attendance-pg] cache invalidation error: %v", err)
@@ -181,6 +182,8 @@ func (h *PGHandler) MarkBulkPG(w http.ResponseWriter, r *http.Request) {
 			_, _ = h.Cache.DelPattern(r.Context(), fmt.Sprintf("attendance:list:%s:*", reqCtx.SchoolID))
 			_, _ = h.Cache.DelPattern(r.Context(), fmt.Sprintf("parent:attendance:%s:*", reqCtx.SchoolID))
 			_, _ = h.Cache.DelPattern(r.Context(), fmt.Sprintf("parent:dash:%s:*", reqCtx.SchoolID))
+			_, _ = h.Cache.DelPattern(r.Context(), fmt.Sprintf("dash:%s:*", reqCtx.SchoolID))
+			_, _ = h.Cache.DelPattern(r.Context(), fmt.Sprintf("composite:%s:*", reqCtx.SchoolID))
 		}
 
 		return markBulkResponse{

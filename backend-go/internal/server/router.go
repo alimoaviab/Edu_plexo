@@ -28,11 +28,13 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/liveclass"
 	"github.com/eduplexo/backend-go/internal/domain/messaging"
 	"github.com/eduplexo/backend-go/internal/domain/notifications"
+	"github.com/eduplexo/backend-go/internal/domain/owner"
 	"github.com/eduplexo/backend-go/internal/domain/packages"
 	"github.com/eduplexo/backend-go/internal/domain/parent"
 	"github.com/eduplexo/backend-go/internal/domain/questionpapers"
 	"github.com/eduplexo/backend-go/internal/domain/results"
 	"github.com/eduplexo/backend-go/internal/domain/schedule"
+	"github.com/eduplexo/backend-go/internal/domain/search"
 	"github.com/eduplexo/backend-go/internal/domain/seo"
 	"github.com/eduplexo/backend-go/internal/domain/settings"
 	"github.com/eduplexo/backend-go/internal/domain/sections"
@@ -145,6 +147,27 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Delete("/academic-years/{id}", ayH.Delete)
 			r.Post("/academic-years/switch", authH.SwitchAcademicYear)
 
+			// ─── Owner ERP ──────────────────────────────────────────────────────
+			owH := owner.NewPG(cfg, s, saveFn, pg.Pool())
+			r.Get("/owner/dashboard", owH.DashboardStats)
+			r.Get("/owner/schools", owH.GetSchools)
+			r.Post("/owner/schools", owH.CreateSchool)
+			r.Post("/owner/schools/create", owH.CreateSchool) // backward compat
+			r.Patch("/owner/schools/{id}", owH.UpdateSchool)
+			r.Delete("/owner/schools/{id}", owH.DeleteSchool)
+			r.Post("/owner/schools/{id}/{action}", owH.SchoolAction)
+			r.Get("/owner/campuses", owH.ListCampuses)
+			r.Post("/owner/campuses", owH.CreateCampus)
+			r.Patch("/owner/campuses/{id}", owH.UpdateCampus)
+			r.Delete("/owner/campuses/{id}", owH.DeleteCampus)
+			r.Get("/owner/admins", owH.ListAdmins)
+			r.Post("/owner/admins", owH.CreateAdmin)
+			r.Patch("/owner/admins/{id}", owH.UpdateAdmin)
+			r.Delete("/owner/admins/{id}", owH.DeleteAdmin)
+			r.Get("/owner/subscriptions", owH.ListSubscriptions)
+			r.Get("/owner/analytics", owH.Analytics)
+			r.Get("/owner/notifications", owH.Notifications)
+
 			stH := students.NewPG(s, saveFn, pg.Pool(), rdb)
 			// Subscription limit checker is set after subH is created below
 			r.Get("/students", stH.List)
@@ -190,6 +213,9 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 
 			dH := dashboard.NewPG(pg.Pool(), rdb, s)
 			r.Get("/analytics/dashboard", dH.Get)
+
+			searchH := search.New(s)
+			r.Get("/search", searchH.GlobalSearch)
 
 			// Composite dashboard — single call replaces 4-6 separate queries
 			compH := dashboard.NewComposite(s, rdb)

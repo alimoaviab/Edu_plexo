@@ -4,6 +4,7 @@ import { RouterProvider } from "react-router-dom";
 import "./app/globals.css";
 import { router } from "@/routes";
 import { env } from "@/config/env";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PERMANENT FIX: Handle "Failed to fetch dynamically imported module" errors.
@@ -89,7 +90,12 @@ const root = createRoot(rootElement);
 void startMocksIfEnabled().then(() => {
   root.render(
     <StrictMode>
-      <RouterProvider router={router} />
+      <ErrorBoundary
+        title="Application Error"
+        message="A critical error occurred in the application. Please refresh or contact support."
+      >
+        <RouterProvider router={router} />
+      </ErrorBoundary>
     </StrictMode>
   );
 });

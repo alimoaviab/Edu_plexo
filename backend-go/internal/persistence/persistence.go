@@ -55,6 +55,8 @@ func extractSchoolID(doc any) string {
 	switch v := doc.(type) {
 	case *store.School:
 		return v.SchoolID
+	case *store.OwnerSchool:
+		return v.SchoolID
 	case *store.User:
 		return v.SchoolID
 	case *store.AcademicYear:
@@ -257,7 +259,7 @@ func (p *Persister) drainQueue() []write {
 // tableOrder defines the FK-safe insertion order. Parent tables first,
 // child tables after. This prevents FK violations during flush.
 var tableOrder = []string{
-	"schools", "boards", "packages", "subscriptions", "users", "academic_years", "subjects",
+	"schools", "owner_schools", "boards", "packages", "subscriptions", "users", "academic_years", "subjects",
 	"teachers", "classes",
 	"students", "parents", "student_parents",
 	"attendance", "exams", "results", "homework", "announcements",

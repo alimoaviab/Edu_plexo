@@ -196,6 +196,25 @@ export function ExamMarksEntryPage({ examId, role = "TEACHER" }: { examId: strin
                 </div>
              </div>
           </div>
+          <div className="flex items-center ml-auto">
+            <Button 
+              onClick={handleSubmit} 
+              disabled={saving || !studentState.data?.length}
+              className="h-11 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs uppercase tracking-widest gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
+            >
+              {saving ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Synchronizing...
+                </>
+              ) : (
+                <>
+                  <AppIcon name="Save" className="h-4 w-4" />
+                  Commit Marks
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -232,7 +251,7 @@ export function ExamMarksEntryPage({ examId, role = "TEACHER" }: { examId: strin
                       <select 
                         value={entry.attendance_status}
                         onChange={(e) => handleMarkChange(student._id, "attendance_status", e.target.value)}
-                        className={`h-8 w-24 rounded-lg text-[10px] font-black uppercase tracking-tight border-0 transition-all cursor-pointer ${
+                        className={`h-8 w-26 px-3 pr-8 rounded-lg text-[10px] font-black uppercase tracking-tight border-0 transition-all cursor-pointer ${
                           isAbsent ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-600"
                         }`}
                       >
@@ -271,27 +290,7 @@ export function ExamMarksEntryPage({ examId, role = "TEACHER" }: { examId: strin
         </div>
       </div>
 
-      {/* STICKY FOOTER */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-48px)] max-w-6xl bg-slate-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between z-50">
-        <div className="flex items-center gap-6 px-4 border-r border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-blue-500 flex items-center justify-center">
-              <AppIcon name="Users" className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[8px] font-black uppercase tracking-widest text-blue-300 leading-none mb-1">Roster Count</p>
-              <p className="text-xs font-black leading-none">{studentState.data?.length || 0} Students</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-1 px-8 flex items-center gap-10">
-           <div className="flex items-center gap-3">
-             <AppIcon name="AlertCircle" className="h-4 w-4 text-amber-400" />
-             <p className="text-[10px] font-bold text-slate-300">Ensure marks do not exceed max threshold (<span className="text-white">{exam.max_marks}</span>).</p>
-           </div>
-        </div>
-
+      <div className="flex items-center justify-end">
         <Button 
           onClick={handleSubmit} 
           disabled={saving || !studentState.data?.length}

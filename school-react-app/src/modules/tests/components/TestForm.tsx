@@ -271,7 +271,7 @@ export function TestForm({
 
             {/* Premium Action Row */}
             {showFooter && (
-                <div className="-mx-6 -mb-6 mt-12 flex items-center justify-between border-t border-slate-100 bg-slate-50/40 px-8 py-4">
+                <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-12 flex items-center justify-between border-t border-slate-100 bg-white/80 backdrop-blur-md px-6 py-4 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
                     <Link
                         to="/admin/tests"
                         className="flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold normal-case  text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-900"

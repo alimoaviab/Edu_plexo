@@ -178,7 +178,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	// Check school status for non-super_admin users — same logic as the
 	// original: only admin/teacher/parent/student users care about school
 	// state, and the messages are preserved verbatim.
-	if user.Role != "super_admin" {
+	if user.Role != "super_admin" && user.Role != "owner" {
 		h.Store.RLock()
 		var school *store.School
 		for _, s := range h.Store.Schools {
@@ -214,6 +214,30 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 			api.WriteJSON(w, http.StatusForbidden, map[string]any{
 				"ok":      false,
 				"message": "Your school account has been suspended. Please contact administration.",
+			})
+			return
+		}
+
+		// Subscription check
+		h.Store.RLock()
+		activeSub := false
+		for _, sub := range h.Store.Subscriptions {
+			if sub.SchoolID == user.SchoolID {
+				if (sub.Status == "active" || sub.Status == "trial") && time.Now().Before(sub.NextRenewal) {
+					activeSub = true
+					break
+				}
+			}
+		}
+		h.Store.RUnlock()
+
+		if !activeSub && user.SchoolID != "__global__" && user.SchoolID != "system" {
+			api.WriteJSON(w, http.StatusForbidden, map[string]any{
+				"ok":      false,
+				"message": "Your school subscription has expired or is inactive. Please contact the school owner to renew.",
+				"error": map[string]any{
+					"code": "SUBSCRIPTION_EXPIRED",
+				},
 			})
 			return
 		}
@@ -313,6 +337,7 @@ type signupRequest struct {
 	Password         string   `json:"password"`
 	FullName         string   `json:"fullName"`
 	AdminName        string   `json:"admin_name"`
+	Phone            string   `json:"phone,omitempty"`
 	SchoolName       string   `json:"schoolName"`
 	SchoolName2      string   `json:"school_name"`
 	SchoolCode       string   `json:"schoolCode"`
@@ -321,8 +346,7 @@ type signupRequest struct {
 }
 
 // Signup implements POST /api/auth/signup. Mirrors the Node route file.
-// For role="admin": creates a new School (status=pending), default
-// AcademicYear, and Admin user — returns 201 with `{ status: "pending", school_id }`.
+// For role="admin"/"owner": creates an Owner user with "system" scope (no default school).
 // For other roles: looks up the school by its school_id/code, validates,
 // creates the user, signs a token, sets the cookie, and returns 201 with
 // the token.
@@ -334,8 +358,8 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	role := strings.ToLower(strings.TrimSpace(body.Role))
-	if role == "" {
-		role = "admin"
+	if role == "" || role == "admin" {
+		role = "owner"
 	}
 	email := strings.ToLower(strings.TrimSpace(body.Email))
 	password := body.Password
@@ -343,7 +367,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	schoolName := strings.TrimSpace(firstNonEmpty(body.SchoolName, body.SchoolName2))
 	schoolCode := strings.ToUpper(strings.TrimSpace(firstNonEmpty(body.SchoolCode, body.SchoolCode2)))
 
-	if role != "admin" && role != "teacher" && role != "student" && role != "parent" {
+	if role != "teacher" && role != "student" && role != "parent" && role != "owner" {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("Invalid role selected"))
 		return
 	}
@@ -351,11 +375,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("All fields are required"))
 		return
 	}
-	if role == "admin" && schoolName == "" {
-		api.WriteJSON(w, http.StatusBadRequest, signupErr("School name is required"))
-		return
-	}
-	if role != "admin" && schoolCode == "" {
+	if role != "owner" && schoolCode == "" {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("School code is required"))
 		return
 	}
@@ -390,6 +410,59 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	now := time.Now()
+
+	if role == "owner" {
+		userID := store.NewID("usr")
+		newUser := &store.User{
+			ID:           userID,
+			SchoolID:     "system",
+			Email:        email,
+			PasswordHash: hash,
+			Role:         role,
+			Permissions:  []string{"*"},
+			Profile: store.UserProfile{
+				FirstName: firstWord(fullName),
+				LastName:  remainingWords(fullName),
+				Phone:     body.Phone,
+			},
+			Status:    "active",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		h.Store.Lock()
+		h.Store.Users = append(h.Store.Users, newUser)
+		h.Store.Unlock()
+		h.Persist("users", newUser)
+
+		claims := authpkg.Claims{
+			SchoolID:             "system",
+			Role:                 "owner",
+			Permissions:          newUser.Permissions,
+			ActiveAcademicYearID: "",
+			SessionID:            "sess_" + randomID(),
+			App:                  h.Cfg.AppName,
+			ActorEmail:           email,
+		}
+		claims.Subject = newUser.ID
+		token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
+		if err == nil {
+			h.setSessionCookie(w, token, true)
+		}
+
+		api.WriteJSON(w, http.StatusCreated, map[string]any{
+			"ok":      true,
+			"success": true,
+			"message": "Owner account created successfully. Redirecting to dashboard...",
+			"data": map[string]any{
+				"status":                  "active",
+				"school_id":               "system",
+				"token":                   token,
+				"role":                    "owner",
+			},
+		})
+		return
+	}
 
 	if role == "admin" {
 		schoolID := "SCH-" + strings.ToUpper(randomID()[:8])
@@ -907,6 +980,8 @@ func randomID() string {
 // land on a portal that doesn't match their permissions.
 func allowedRolesForTab(tab string) []string {
 	switch strings.ToLower(strings.TrimSpace(tab)) {
+	case "owner":
+		return []string{"owner"}
 	case "admin":
 		return []string{"admin", "super_admin"}
 	case "teacher":
@@ -925,6 +1000,8 @@ func allowedRolesForTab(tab string) []string {
 // actual role should be using.
 func suggestedTabFor(role string) string {
 	switch strings.ToLower(role) {
+	case "owner":
+		return "Owner"
 	case "admin", "super_admin":
 		return "Admin"
 	case "teacher":
@@ -940,6 +1017,8 @@ func suggestedTabFor(role string) string {
 // display in error messages.
 func prettyRole(role string) string {
 	switch strings.ToLower(role) {
+	case "owner":
+		return "a School Owner"
 	case "super_admin":
 		return "a Super Admin"
 	case "admin":

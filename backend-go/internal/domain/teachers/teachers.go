@@ -627,11 +627,15 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				count++
 			}
 		}
+		teacherStatus := body.Status
+		if teacherStatus == "" {
+			teacherStatus = "active"
+		}
 		newTeacher := &store.Teacher{
 			ID: store.NewID("tch"), SchoolID: ctx.SchoolID, AcademicYearID: yearID, UserID: userID, Email: body.Email,
 			EmployeeNo: "TCH-" + store.NewID("")[1:6] + "-" + padLeft(count+1, 3), FirstName: body.FirstName, LastName: body.LastName, Phone: body.Phone,
 			Qualification: body.Qualification, SubjectIDs: orEmpty(body.SubjectIDs), Subjects: orEmpty(body.Subjects),
-			ClassIDs: orEmpty(body.ClassIDs), Status: "active", JoinedAt: now, CreatedAt: now, UpdatedAt: now,
+			ClassIDs: orEmpty(body.ClassIDs), Status: teacherStatus, JoinedAt: now, CreatedAt: now, UpdatedAt: now,
 		}
 
 		// Direct PG write so the immediate frontend refetch (which
@@ -842,6 +846,7 @@ type createInput struct {
 	LastName      string   `json:"last_name"`
 	Phone         string   `json:"phone"`
 	Qualification string   `json:"qualification,omitempty"`
+	Status        string   `json:"status,omitempty"`
 	SubjectIDs    []string `json:"subject_ids,omitempty"`
 	Subjects      []string `json:"subjects,omitempty"`
 	ClassIDs      []string `json:"class_ids,omitempty"`
@@ -850,7 +855,10 @@ type createInput struct {
 func teacherMatchesSearch(t *store.Teacher, term string) bool {
 	q := strings.ToLower(term)
 	full := strings.ToLower(t.FirstName + " " + t.LastName)
-	return strings.Contains(full, q) || strings.Contains(strings.ToLower(t.Email), q)
+	return strings.Contains(full, q) ||
+		strings.Contains(strings.ToLower(t.Email), q) ||
+		strings.Contains(strings.ToLower(t.Phone), q) ||
+		strings.Contains(strings.ToLower(t.EmployeeNo), q)
 }
 
 func padLeft(n, width int) string {

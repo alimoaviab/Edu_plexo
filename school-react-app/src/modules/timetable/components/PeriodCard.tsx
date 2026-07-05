@@ -11,6 +11,8 @@ import { AppIcon } from "shared/ui/AppIcon";
  */
 
 import { memo } from "react";
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import type { TimetableRecord, PeriodStatus } from "../types/timetable.types";
 
 interface PeriodCardProps {
@@ -92,11 +94,26 @@ function PeriodCardImpl({
       ? conflictTone
       : toneByStatus[effective as Exclude<PeriodStatus, "free" | "conflict">];
 
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: slot._id,
+    disabled: !canManage,
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : undefined,
+    zIndex: isDragging ? 999 : undefined,
+  };
+
   return (
     <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
       className={`group relative rounded-lg border ${tone.border} ${tone.bg} ${
         isCompact ? "px-2 py-1.5" : "px-2.5 py-2"
-      } shadow-[0_2px_8px_rgb(0,0,0,0.02)] hover:shadow-[0_4px_14px_rgb(0,0,0,0.05)] transition-shadow flex flex-col gap-1 h-full overflow-hidden`}
+      } shadow-[0_2px_8px_rgb(0,0,0,0.02)] hover:shadow-[0_4px_14px_rgb(0,0,0,0.05)] transition-shadow flex flex-col gap-1 h-full overflow-hidden ${canManage ? "cursor-grab active:cursor-grabbing" : ""}`}
     >
       {/* Status bar */}
       <div className={`absolute left-0 top-0 bottom-0 w-0.5 ${tone.bar}`} />
@@ -122,9 +139,10 @@ function PeriodCardImpl({
       </div>
 
       {/* Teacher + class */}
-      <p className={`text-[10px] font-medium leading-tight truncate ${tone.meta}`}>
-        {slot.teacher_name || "No teacher"}
-      </p>
+      <div className={`text-[10px] font-medium leading-tight ${tone.meta}`}>
+        <p className="truncate">{slot.teacher_name || "No teacher"}</p>
+        <p className="truncate opacity-75">{slot.class_name || "Unknown class"}{slot.section ? ` - ${slot.section}` : ""}</p>
+      </div>
 
       {/* Bottom row: time + room */}
       {!isCompact && (

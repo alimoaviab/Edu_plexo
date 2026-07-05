@@ -813,7 +813,10 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 func studentMatchesSearch(s *store.Student, term string) bool {
 	t := strings.ToLower(term)
 	full := strings.ToLower(s.FirstName + " " + s.LastName)
-	return strings.Contains(full, t) || strings.Contains(strings.ToLower(s.AdmissionNo), t)
+	return strings.Contains(full, t) ||
+		strings.Contains(strings.ToLower(s.AdmissionNo), t) ||
+		strings.Contains(strings.ToLower(s.Guardian.Email), t) ||
+		strings.Contains(strings.ToLower(s.Guardian.Phone), t)
 }
 
 func (h *Handler) nextAdmissionNo(schoolID string) string {

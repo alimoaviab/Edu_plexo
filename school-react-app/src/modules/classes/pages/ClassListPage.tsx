@@ -135,7 +135,7 @@ export function ClassListPage() {
         items={[
           { label: "Total classes", value: meta?.total || classes.length, icon: "door_front", accent: "blue" },
           { label: "Active classes", value: (classes || []).filter((c: ClassRow) => c.status === "active").length, icon: "sensors", accent: "emerald" },
-          { label: "Attendance rate", value: `${Math.round((classes || []).reduce((acc: number, c: ClassRow) => acc + (c.attendance_percentage || 0), 0) / (classes.length || 1))}%`, icon: "insights", accent: "purple" },
+          { label: "Attendance rate", value: `${Number(((classes || []).reduce((acc: number, c: ClassRow) => acc + (c.attendance_percentage || 0), 0) / (classes.length || 1)).toFixed(2))}%`, icon: "insights", accent: "purple" },
           { label: "Total students", value: (classes || []).reduce((acc: number, c: ClassRow) => acc + (c.student_count || 0), 0), icon: "groups", accent: "amber" },
         ]}
       />

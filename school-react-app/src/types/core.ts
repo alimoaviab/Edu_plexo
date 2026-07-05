@@ -6,7 +6,7 @@
  * service must produce the same `ServiceResult<T>` envelope.
  */
 
-export type Role = "super_admin" | "admin" | "teacher" | "parent" | "student";
+export type Role = "owner" | "super_admin" | "admin" | "teacher" | "parent" | "student";
 
 export type AppName = "school" | "super_admin";
 

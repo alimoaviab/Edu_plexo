@@ -5,7 +5,7 @@ import { StatCard } from "./StatCard";
 export interface StatItem {
   title: string;
   value: string | number;
-  icon: string; // material-symbols-outlined icon name
+  icon: string; // lucide-react icon name
   iconBg?: string;
   iconColor?: string;
   trend?: { value: string; positive: boolean };

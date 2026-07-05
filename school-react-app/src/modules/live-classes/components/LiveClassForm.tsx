@@ -211,7 +211,16 @@ export function LiveClassForm({
               label="Class Section"
               required
               value={formData.classId}
-              onChange={(e) => setFormData({ ...formData, classId: e.target.value, subjectId: "" })}
+              onChange={(e) => {
+                const classId = e.target.value;
+                const cls = classes.find((c) => c.id === classId || c._id === classId);
+                setFormData({ 
+                  ...formData, 
+                  classId, 
+                  subjectId: "",
+                  ...(showTeacherField ? { teacherId: cls?.class_teacher?.id || "" } : {})
+                });
+              }}
               options={classOptions}
               className="h-14 text-base rounded-2xl"
             />

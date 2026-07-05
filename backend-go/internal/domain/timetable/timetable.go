@@ -718,8 +718,12 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 			var newSess store.TimetableSession
 			if len(patch) > 0 {
 				newSess = patch[0]
-				newSess.Day = day // pin to the URL coordinates
-				newSess.Period = period
+				if newSess.Day == 0 {
+					newSess.Day = day
+				}
+				if newSess.Period == 0 {
+					newSess.Period = period
+				}
 			} else {
 				// Partial update: start from the existing session and overlay.
 				for _, s := range target.Sessions {
@@ -736,7 +740,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 				h.Store.Unlock()
 				return nil, api.NewControlledError("VALIDATION_ERROR", "end_time must be after start_time.", 400, nil)
 			}
-			// Conflict check (excluding self).
+			// Conflict check (excluding self and target).
 			if newSess.StartsAt != "" {
 				h.Store.Unlock()
 				if conflicts := h.detectConflicts(ctx.SchoolID, yearID, target.ClassID, []store.TimetableSession{newSess}, target.ID); len(conflicts) > 0 {
@@ -744,17 +748,20 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 				}
 				h.Store.Lock()
 			}
-			replaced := false
-			for i, s := range target.Sessions {
+			
+			// Rebuild the sessions array: remove the old source cell, remove any existing target cell, and append the new session
+			var filtered []store.TimetableSession
+			for _, s := range target.Sessions {
 				if s.Day == day && s.Period == period {
-					target.Sessions[i] = newSess
-					replaced = true
-					break
+					continue // remove source
 				}
+				if s.Day == newSess.Day && s.Period == newSess.Period {
+					continue // remove overwritten target
+				}
+				filtered = append(filtered, s)
 			}
-			if !replaced {
-				target.Sessions = append(target.Sessions, newSess)
-			}
+			filtered = append(filtered, newSess)
+			target.Sessions = filtered
 		} else {
 			// Whole-row update (rare path).
 			if body.ClassID != "" {

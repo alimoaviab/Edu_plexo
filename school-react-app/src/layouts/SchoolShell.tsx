@@ -28,6 +28,8 @@ import {
 import { useAuth, type Role } from "@/hooks/useAuth";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { ChildSwitcher } from "@/components/parent/ChildSwitcher";
+import { OwnerSchoolSwitcher } from "@/components/owner/OwnerSchoolSwitcher";
+import { GlobalSearch } from "shared/components/GlobalSearch";
 import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
 
 type NavItem = {
@@ -40,6 +42,16 @@ type NavGroup = {
   label: string;
   items: NavItem[];
 };
+
+const ownerNavGroups: NavGroup[] = [
+  {
+    label: "Executive",
+    items: [
+      { label: "Dashboard", href: "/owner/dashboard", icon: "dashboard" },
+      { label: "My Schools", href: "/owner/schools", icon: "domain" },
+    ],
+  },
+];
 
 const adminNavGroups: NavGroup[] = [
   {
@@ -215,6 +227,20 @@ const studentNavGroups: NavGroup[] = [
 
 function navGroupsForRole(role: Role | undefined): NavGroup[] {
   if (!role) return [];
+  if (role === "owner") {
+    // Map the admin routes to /owner/ for the owner role
+    const ownerMappedAdminGroups = adminNavGroups.map(group => ({
+      ...group,
+      items: group.items
+        .filter(item => item.href !== "/admin/dashboard") // Remove admin dashboard to prevent conflict
+        .map(item => ({
+          ...item,
+          href: item.href.replace("/admin", "/owner")
+        }))
+    })).filter(group => group.items.length > 0); // Remove empty groups like Reports
+
+    return [...ownerNavGroups, ...ownerMappedAdminGroups];
+  }
   if (role === "admin" || role === "super_admin") return adminNavGroups;
   if (role === "teacher") return teacherNavGroups;
   if (role === "parent") return parentNavGroups;
@@ -635,7 +661,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
 
         <nav className="flex-1 space-y-1.5 px-2 py-2.5 custom-scrollbar overflow-y-auto">
           {filteredNavGroups.map((group) => (
-            <div key={group.label} className="space-y-0.5">
+            <div key={group.label} className="space-y-0.5 mt-2">
               {group.items.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                 return isCollapsed ? (
@@ -710,17 +736,11 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
             >
               <AppIcon name="Menu" size={18} className="text-slate-600" />
             </button>
-            <div className="relative max-w-[420px] w-full hidden xl:block">
-              <AppIcon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Quick search..."
-                className="w-full rounded-lg border border-slate-100 bg-slate-50/50 py-1.5 pl-9 pr-3 text-[11px] font-bold text-slate-600 placeholder:text-slate-400/60 transition-all focus:border-blue-200 focus:bg-white focus:outline-none"
-              />
-            </div>
+            <GlobalSearch />
           </div>
 
           <div className="flex items-center gap-3 relative z-[100] overflow-visible">
+            {user.role === "owner" && <OwnerSchoolSwitcher />}
             {user.role === "parent" && <ChildSwitcher />}
 
             {user.role === "admin" && (
@@ -780,7 +800,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
           </div>
         </header>
 
-        <div key={pathname} className="w-full flex-1 overflow-y-auto animate-fade-in-up px-3 py-3 md:px-6 md:py-4 lg:px-8 custom-scrollbar relative z-10">
+        <div key={pathname} className="w-full flex-1 overflow-y-auto animate-fade-in-up p-4 sm:p-6 lg:p-8 custom-scrollbar relative z-10">
           <ErrorBoundary
             title="This page ran into a problem"
             message="A part of this page failed to render. Try the action again, or refresh the page."

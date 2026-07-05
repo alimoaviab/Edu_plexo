@@ -36,8 +36,10 @@ export interface ExamSubjectRecord {
 
 export interface ExamRow {
   _id: string;
+  academic_year_id?: string;
   class_id: string;
   class_name: string;
+  teacher_id?: string;
   // Joined display string for legacy widgets (e.g. "Math, English, …").
   subject: string;
   subjects: ExamSubjectRecord[];

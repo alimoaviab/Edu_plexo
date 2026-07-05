@@ -62,6 +62,8 @@ func (h *Handler) invalidateList(r *http.Request, schoolID string) {
 		return
 	}
 	_, _ = h.Cache.DelPattern(r.Context(), fmt.Sprintf("attendance:list:%s:*", schoolID))
+	_, _ = h.Cache.DelPattern(r.Context(), fmt.Sprintf("dash:%s:*", schoolID))
+	_, _ = h.Cache.DelPattern(r.Context(), fmt.Sprintf("composite:%s:*", schoolID))
 }
 
 // hydrated mirrors the populated row shape returned by the original
