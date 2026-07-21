@@ -202,6 +202,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			if s.SchoolID != ctx.SchoolID {
 				continue
 			}
+			if ctx.CampusID != "" && s.CampusID != "" && s.CampusID != ctx.CampusID {
+				continue
+			}
 			if ctx.Role == "teacher" && !teacherClassIDs[s.ClassID] {
 				continue
 			}

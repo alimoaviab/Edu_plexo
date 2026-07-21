@@ -223,33 +223,6 @@ services:
         max-size: "50m"
         max-file: "5"
 
-  owner:
-    build:
-      context: ./owner-app
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    depends_on:
-      backend-go:
-        condition: service_started
-    ports:
-      - "3003:80"
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: "0.5"
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:80/ || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "50m"
-        max-file: "5"
-
   landing:
     build:
       context: ./landing-app

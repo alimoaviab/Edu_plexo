@@ -11,6 +11,7 @@ import (
 // context for downstream handlers.
 type RequestContext struct {
 	SchoolID              string   `json:"school_id"`
+	CampusID              string   `json:"campus_id,omitempty"`
 	UserID                string   `json:"user_id"`
 	Role                  string   `json:"role"`
 	App                   string   `json:"app"`

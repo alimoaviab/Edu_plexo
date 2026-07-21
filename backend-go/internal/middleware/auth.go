@@ -132,6 +132,15 @@ func Authenticator(cfg config.Config, s *store.MemStore) func(http.Handler) http
 				}
 			}
 
+			// Support global branch/campus context switching
+			branch := strings.TrimSpace(r.Header.Get("x-branch-id"))
+			if branch == "" {
+				branch = strings.TrimSpace(r.Header.Get("x-campus-id"))
+			}
+			if branch != "" && branch != "undefined" && branch != "all" {
+				ctx.CampusID = branch
+			}
+
 			r = r.WithContext(api.WithContext(r.Context(), ctx))
 			next.ServeHTTP(w, r)
 		})

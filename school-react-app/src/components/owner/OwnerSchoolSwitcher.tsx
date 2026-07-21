@@ -4,59 +4,115 @@ import { serviceRequest } from "@/services/service-client";
 
 export function OwnerSchoolSwitcher() {
   const [schools, setSchools] = useState<any[]>([]);
+  const [campuses, setCampuses] = useState<any[]>([]);
   const [activeSchoolId, setActiveSchoolId] = useState<string>("");
+  const [activeBranchId, setActiveBranchId] = useState<string>("");
 
   useEffect(() => {
-    async function load() {
+    async function loadSchools() {
       try {
         const res = await serviceRequest<any[]>("/api/owner/schools");
         if (res.success && res.data) {
           setSchools(res.data);
           
-          const stored = window.localStorage.getItem("active_school_id");
-          if (stored) {
-            setActiveSchoolId(stored);
-          } else if (res.data.length > 0) {
-            // Default to first active school
+          let curSchool = window.localStorage.getItem("active_school_id");
+          if (!curSchool && res.data.length > 0) {
             const first = res.data.find(s => s.status === "active") || res.data[0];
-            window.localStorage.setItem("active_school_id", first.school_id);
-            setActiveSchoolId(first.school_id);
-            window.location.reload();
+            curSchool = String(first.school_id || first._id || "");
+            if (curSchool) {
+              window.localStorage.setItem("active_school_id", curSchool);
+            }
           }
+          if (curSchool) {
+            setActiveSchoolId(curSchool);
+          }
+
+          const curBranch = window.localStorage.getItem("active_branch_id") || "";
+          setActiveBranchId(curBranch);
         }
       } catch (err) {
         console.error("Failed to load schools for switcher", err);
       }
     }
-    load();
+    loadSchools();
   }, []);
 
-  const handleSwitch = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  useEffect(() => {
+    async function loadCampuses() {
+      if (!activeSchoolId) {
+        setCampuses([]);
+        return;
+      }
+      try {
+        const res = await serviceRequest<any[]>(`/api/owner/campuses?school_id=${activeSchoolId}`);
+        if (res.success && res.data) {
+          setCampuses(res.data);
+        } else {
+          setCampuses([]);
+        }
+      } catch (err) {
+        console.error("Failed to load campuses", err);
+        setCampuses([]);
+      }
+    }
+    loadCampuses();
+  }, [activeSchoolId]);
+
+  const handleSchoolSwitch = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newId = e.target.value;
     if (newId === activeSchoolId) return;
     window.localStorage.setItem("active_school_id", newId);
+    window.localStorage.setItem("active_branch_id", "");
     setActiveSchoolId(newId);
-    // Reload to ensure all context switches
+    setActiveBranchId("");
+    window.location.reload();
+  };
+
+  const handleBranchSwitch = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newBranch = e.target.value;
+    if (newBranch === activeBranchId) return;
+    window.localStorage.setItem("active_branch_id", newBranch);
+    setActiveBranchId(newBranch);
     window.location.reload();
   };
 
   if (schools.length === 0) return null;
 
   return (
-    <div className="hidden sm:flex items-center gap-2 rounded-md border border-slate-100 bg-white px-2 py-1">
-      <AppIcon name="Building" size={14} className="text-slate-400" />
-      <select
-        value={activeSchoolId}
-        onChange={handleSwitch}
-        className="bg-transparent text-[10px] font-bold text-slate-700 outline-none cursor-pointer max-w-[150px] truncate"
-      >
-        <option value="" disabled>Select Campus...</option>
-        {schools.map((s) => (
-          <option key={s._id} value={s.school_id}>
-            {s.name}
-          </option>
-        ))}
-      </select>
+    <div className="hidden sm:flex items-center gap-2">
+      {/* School Selector */}
+      <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 shadow-sm">
+        <AppIcon name="Building" size={14} className="text-blue-600" />
+        <select
+          value={activeSchoolId}
+          onChange={handleSchoolSwitch}
+          className="bg-transparent text-[11px] font-bold text-slate-800 outline-none cursor-pointer max-w-[140px] truncate"
+        >
+          <option value="" disabled>Select School...</option>
+          {schools.map((s) => (
+            <option key={s._id || s.school_id} value={s.school_id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Branch Selector */}
+      <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 shadow-sm">
+        <AppIcon name="GitBranch" size={14} className="text-emerald-600" />
+        <select
+          value={activeBranchId}
+          onChange={handleBranchSwitch}
+          className="bg-transparent text-[11px] font-bold text-slate-800 outline-none cursor-pointer max-w-[140px] truncate"
+        >
+          <option value="">All Branches</option>
+          {campuses.map((c) => (
+            <option key={c._id || c.id} value={c._id || c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 }

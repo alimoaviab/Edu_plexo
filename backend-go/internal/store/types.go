@@ -42,6 +42,7 @@ type UserProfile struct {
 type User struct {
 	ID           string      `json:"_id"`
 	SchoolID     string      `json:"school_id"`
+	CampusID     string      `json:"campus_id,omitempty"`
 	Email        string      `json:"email"`
 	PasswordHash string      `json:"-"`
 	Password     string      `json:"-"`
@@ -103,6 +104,7 @@ type GradeThreshold struct {
 type Class struct {
 	ID                string           `json:"_id"`
 	SchoolID          string           `json:"school_id"`
+	CampusID          string           `json:"campus_id,omitempty"`
 	BoardID           string           `json:"board_id,omitempty"`
 	AcademicYearID    string           `json:"academic_year_id"`
 	Name              string           `json:"name"`
@@ -142,6 +144,7 @@ type ClassTeacherRef struct {
 type Teacher struct {
 	ID             string    `json:"_id"`
 	SchoolID       string    `json:"school_id"`
+	CampusID       string    `json:"campus_id,omitempty"`
 	AcademicYearID string    `json:"academic_year_id,omitempty"`
 	UserID         string    `json:"user_id,omitempty"`
 	Email          string    `json:"email"`
@@ -168,6 +171,7 @@ type Guardian struct {
 type Student struct {
 	ID             string     `json:"_id"`
 	SchoolID       string     `json:"school_id"`
+	CampusID       string     `json:"campus_id,omitempty"`
 	AcademicYearID string     `json:"academic_year_id"`
 	UserID         string     `json:"user_id,omitempty"`
 	AdmissionNo    string     `json:"admission_no"`

@@ -73,6 +73,11 @@ function readActiveSchoolId(): string {
   return window.localStorage.getItem("active_school_id") ?? "";
 }
 
+function readActiveBranchId(): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem("active_branch_id") ?? "";
+}
+
 function handleUnauthorized() {
   if (typeof window === "undefined") return;
   try {
@@ -107,6 +112,7 @@ export async function serviceRequest<T>(
           "content-type": "application/json",
           "x-academic-year-id": readAcademicYearId(),
           "x-school-id": readActiveSchoolId(),
+          "x-branch-id": readActiveBranchId(),
           ...(token ? { authorization: `Bearer ${token}` } : {}),
           ...(options.headers ?? {}),
         },
@@ -143,8 +149,15 @@ export async function serviceRequest<T>(
       }
 
       if (response.ok) {
-        if (payload && typeof payload === "object" && "ok" in (payload as object)) {
-          return payload as ServiceResult<T>;
+        if (payload && typeof payload === "object") {
+          const p = payload as Record<string, unknown>;
+          const isSuccess = p.ok !== false && p.success !== false;
+          return {
+            ok: isSuccess,
+            success: isSuccess,
+            data: (p.data !== undefined ? p.data : payload) as T,
+            message: (p.message as string | undefined) ?? "",
+          };
         }
         return {
           ok: true,

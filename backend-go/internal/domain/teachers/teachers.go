@@ -149,6 +149,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			if t.SchoolID != ctx.SchoolID {
 				continue
 			}
+			if ctx.CampusID != "" && t.CampusID != "" && t.CampusID != ctx.CampusID {
+				continue
+			}
 			if yearID != "" && t.AcademicYearID != "" && t.AcademicYearID != yearID {
 				continue
 			}

@@ -358,8 +358,12 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	role := strings.ToLower(strings.TrimSpace(body.Role))
-	if role == "" || role == "admin" {
-		role = "owner"
+	if role == "owner" {
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Owner accounts cannot be created via public registration. Contact system administration."))
+		return
+	}
+	if role == "" {
+		role = "admin"
 	}
 	email := strings.ToLower(strings.TrimSpace(body.Email))
 	password := body.Password
@@ -367,7 +371,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	schoolName := strings.TrimSpace(firstNonEmpty(body.SchoolName, body.SchoolName2))
 	schoolCode := strings.ToUpper(strings.TrimSpace(firstNonEmpty(body.SchoolCode, body.SchoolCode2)))
 
-	if role != "teacher" && role != "student" && role != "parent" && role != "owner" {
+	if role != "teacher" && role != "student" && role != "parent" && role != "admin" {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("Invalid role selected"))
 		return
 	}
@@ -375,7 +379,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("All fields are required"))
 		return
 	}
-	if role != "owner" && schoolCode == "" {
+	if role != "admin" && schoolCode == "" {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("School code is required"))
 		return
 	}
@@ -411,65 +415,25 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 
-	if role == "owner" {
-		userID := store.NewID("usr")
-		newUser := &store.User{
-			ID:           userID,
-			SchoolID:     "system",
-			Email:        email,
-			PasswordHash: hash,
-			Role:         role,
-			Permissions:  []string{"*"},
-			Profile: store.UserProfile{
-				FirstName: firstWord(fullName),
-				LastName:  remainingWords(fullName),
-				Phone:     body.Phone,
-			},
-			Status:    "active",
-			CreatedAt: now,
-			UpdatedAt: now,
-		}
-
-		h.Store.Lock()
-		h.Store.Users = append(h.Store.Users, newUser)
-		h.Store.Unlock()
-		h.Persist("users", newUser)
-
-		claims := authpkg.Claims{
-			SchoolID:             "system",
-			Role:                 "owner",
-			Permissions:          newUser.Permissions,
-			ActiveAcademicYearID: "",
-			SessionID:            "sess_" + randomID(),
-			App:                  h.Cfg.AppName,
-			ActorEmail:           email,
-		}
-		claims.Subject = newUser.ID
-		token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
-		if err == nil {
-			h.setSessionCookie(w, token, true)
-		}
-
-		api.WriteJSON(w, http.StatusCreated, map[string]any{
-			"ok":      true,
-			"success": true,
-			"message": "Owner account created successfully. Redirecting to dashboard...",
-			"data": map[string]any{
-				"status":                  "active",
-				"school_id":               "system",
-				"token":                   token,
-				"role":                    "owner",
-			},
-		})
-		return
-	}
-
 	if role == "admin" {
 		schoolID := "SCH-" + strings.ToUpper(randomID()[:8])
 		uniqueCode := h.uniqueSchoolCode(schoolName)
 
 		yearID := store.NewID("ay")
 		year := time.Now().Year()
+
+		campusID := store.NewID("cmp")
+		newCampus := &store.Campus{
+			ID:        campusID,
+			SchoolID:  schoolID,
+			Name:      "Main Campus",
+			Code:      "MAIN",
+			Status:    "active",
+			Timezone:  "Asia/Karachi",
+			Currency:  "PKR",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
 
 		// Check platform settings for auto-approve behavior
 		settings := superadmin.GetPlatformSettings()
@@ -519,6 +483,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		newUser := &store.User{
 			ID:           store.NewID("usr"),
 			SchoolID:     schoolID,
+			CampusID:     campusID,
 			Email:        email,
 			PasswordHash: hash,
 			Role:         "admin",
@@ -554,17 +519,13 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 
 		h.Store.Lock()
 		h.Store.Schools = append(h.Store.Schools, newSchool)
+		h.Store.Campuses = append(h.Store.Campuses, newCampus)
 		h.Store.AcademicYears = append(h.Store.AcademicYears, newYear)
 		h.Store.Users = append(h.Store.Users, newUser)
 		h.Store.SchoolSettings = append(h.Store.SchoolSettings, newSettings)
 		h.Store.Subscriptions = append(h.Store.Subscriptions, newSub)
 		h.Store.Unlock()
 
-		// Push the freshly-minted school/year/user to PostgreSQL.
-		// Without this the row only exists in memory and the next
-		// server restart wipes it — the user comes back the next day
-		// to "Invalid email or password" because PG never saw their
-		// account. Order matters: school first (FK target), then
 		// year, then user.
 		h.Persist("schools", newSchool)
 		h.Persist("academic_years", newYear)
