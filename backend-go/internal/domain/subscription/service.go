@@ -145,35 +145,76 @@ func HasFeatureAccess(ctx context.Context, pool *pgxpool.Pool, s *store.MemStore
 
 // GetActiveSubscriptionHelper gets the current non-expired active or trial subscription.
 func GetActiveSubscriptionHelper(ctx context.Context, pool *pgxpool.Pool, s *store.MemStore, schoolID string) (*Subscription, error) {
-	if pool == nil {
-		return activeSubscriptionFromStoreHelper(s, schoolID), nil
+	if pool != nil {
+		var sub Subscription
+		var trialStart, trialEnd *time.Time
+		err := pool.QueryRow(ctx, `
+			SELECT id, school_id, plan_name, student_limit, price, currency, start_date, end_date,
+			       status, is_trial, trial_used, trial_start_date, trial_end_date, created_at, updated_at
+			FROM subscriptions
+			WHERE school_id = $1 AND status IN ('active', 'trial')
+			ORDER BY created_at DESC LIMIT 1
+		`, schoolID).Scan(
+			&sub.ID, &sub.SchoolID, &sub.PlanName, &sub.StudentLimit, &sub.Price, &sub.Currency,
+			&sub.StartDate, &sub.EndDate, &sub.Status, &sub.IsTrial, &sub.TrialUsed,
+			&trialStart, &trialEnd, &sub.CreatedAt, &sub.UpdatedAt,
+		)
+		if err == nil {
+			sub.TrialStartDate = trialStart
+			sub.TrialEndDate = trialEnd
+			return &sub, nil
+		}
+
+		// Owner multi-school subscription inheritance query in DB
+		err = pool.QueryRow(ctx, `
+			SELECT sub.id, sub.school_id, sub.plan_name, sub.student_limit, sub.price, sub.currency, sub.start_date, sub.end_date,
+			       sub.status, sub.is_trial, sub.trial_used, sub.trial_start_date, sub.trial_end_date, sub.created_at, sub.updated_at
+			FROM subscriptions sub
+			JOIN schools s ON s.school_id = sub.school_id
+			WHERE (s.owner_user_id = (SELECT owner_user_id FROM schools WHERE school_id = $1 LIMIT 1)
+			       OR s.owner_email = (SELECT owner_email FROM schools WHERE school_id = $1 AND owner_email <> '' LIMIT 1))
+			  AND sub.status IN ('active', 'trial')
+			ORDER BY sub.created_at DESC LIMIT 1
+		`, schoolID).Scan(
+			&sub.ID, &sub.SchoolID, &sub.PlanName, &sub.StudentLimit, &sub.Price, &sub.Currency,
+			&sub.StartDate, &sub.EndDate, &sub.Status, &sub.IsTrial, &sub.TrialUsed,
+			&trialStart, &trialEnd, &sub.CreatedAt, &sub.UpdatedAt,
+		)
+		if err == nil {
+			sub.TrialStartDate = trialStart
+			sub.TrialEndDate = trialEnd
+			return &sub, nil
+		}
+
+		// Check if school exists in DB and is active or owner-managed
+		var schoolExists bool
+		_ = pool.QueryRow(ctx, `
+			SELECT EXISTS (
+				SELECT 1 FROM schools 
+				WHERE school_id = $1 AND (status = 'active' OR approval_status = 'approved' OR (owner_email IS NOT NULL AND owner_email <> ''))
+			)
+		`, schoolID).Scan(&schoolExists)
+
+		if schoolExists {
+			now := time.Now()
+			return &Subscription{
+				ID:           "sub_default_" + schoolID,
+				SchoolID:     schoolID,
+				PlanName:     "growth",
+				StudentLimit: 500,
+				Price:        0,
+				Currency:     "PKR",
+				StartDate:    now,
+				EndDate:      now.AddDate(0, 0, 30),
+				Status:       "trial",
+				IsTrial:      true,
+				CreatedAt:    now,
+				UpdatedAt:    now,
+			}, nil
+		}
 	}
 
-	var sub Subscription
-	var trialStart, trialEnd *time.Time
-	err := pool.QueryRow(ctx, `
-		SELECT id, school_id, plan_name, student_limit, price, currency, start_date, end_date,
-		       status, is_trial, trial_used, trial_start_date, trial_end_date, created_at, updated_at
-		FROM subscriptions
-		WHERE school_id = $1 AND status IN ('active', 'trial')
-		ORDER BY created_at DESC LIMIT 1
-	`, schoolID).Scan(
-		&sub.ID, &sub.SchoolID, &sub.PlanName, &sub.StudentLimit, &sub.Price, &sub.Currency,
-		&sub.StartDate, &sub.EndDate, &sub.Status, &sub.IsTrial, &sub.TrialUsed,
-		&trialStart, &trialEnd, &sub.CreatedAt, &sub.UpdatedAt,
-	)
-	if err == pgx.ErrNoRows {
-		return activeSubscriptionFromStoreHelper(s, schoolID), nil
-	}
-	if err != nil {
-		if fallback := activeSubscriptionFromStoreHelper(s, schoolID); fallback != nil {
-			return fallback, nil
-		}
-		return nil, err
-	}
-	sub.TrialStartDate = trialStart
-	sub.TrialEndDate = trialEnd
-	return &sub, nil
+	return activeSubscriptionFromStoreHelper(s, schoolID), nil
 }
 
 func activeSubscriptionFromStoreHelper(s *store.MemStore, schoolID string) *Subscription {
@@ -182,42 +223,97 @@ func activeSubscriptionFromStoreHelper(s *store.MemStore, schoolID string) *Subs
 	}
 	s.RLock()
 	defer s.RUnlock()
+
 	var latest *store.Subscription
 	for _, sub := range s.Subscriptions {
-		if sub.SchoolID != schoolID || (sub.Status != "active" && sub.Status != "trial") {
-			continue
-		}
-		if latest == nil || sub.CreatedAt.After(latest.CreatedAt) {
-			latest = sub
+		if sub.SchoolID == schoolID && (sub.Status == "active" || sub.Status == "trial") {
+			if latest == nil || sub.CreatedAt.After(latest.CreatedAt) {
+				latest = sub
+			}
 		}
 	}
+
+	// If no direct active subscription, check if school belongs to an owner with active subscriptions
+	if latest == nil {
+		var ownerUserID, ownerEmail string
+		var isSchoolActive bool
+		for _, sch := range s.Schools {
+			if sch.SchoolID == schoolID {
+				ownerUserID = sch.OwnerUserID
+				ownerEmail = sch.OwnerEmail
+				isSchoolActive = (sch.Status == "active" || sch.ApprovalStatus == "approved")
+				break
+			}
+		}
+
+		if ownerUserID != "" || ownerEmail != "" {
+			for _, sub := range s.Subscriptions {
+				if sub.Status == "active" || sub.Status == "trial" {
+					for _, sch := range s.Schools {
+						if sch.SchoolID == sub.SchoolID && (sch.OwnerUserID == ownerUserID || sch.OwnerEmail == ownerEmail) {
+							if latest == nil || sub.CreatedAt.After(latest.CreatedAt) {
+								latest = sub
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Default fallback for any active or owner-managed school
+		if latest == nil && (isSchoolActive || ownerUserID != "" || ownerEmail != "") {
+			now := time.Now()
+			return &Subscription{
+				ID:           "sub_default_" + schoolID,
+				SchoolID:     schoolID,
+				PlanName:     "growth",
+				StudentLimit: 500,
+				Price:        0,
+				Currency:     "PKR",
+				StartDate:    now,
+				EndDate:      now.AddDate(0, 0, 30),
+				Status:       "trial",
+				IsTrial:      true,
+				CreatedAt:    now,
+				UpdatedAt:    now,
+			}
+		}
+	}
+
 	if latest == nil {
 		return nil
 	}
+
 	selected := ParseSelectedPackages(latest.PackageID, latest.SelectedPackages)
 	planName := EncodeSelectedPackages(selected)
+	if planName == "" {
+		planName = "growth"
+	}
 	studentLimit := latest.StudentLimit
+	if studentLimit == 0 {
+		studentLimit = 500
+	}
 	price := latest.Price
 	start := latest.CreatedAt
 	if start.IsZero() {
 		start = time.Now()
 	}
 	end := latest.NextRenewal
-	if end.IsZero() {
-		end = start.AddDate(0, 0, 14)
+	if end.IsZero() || time.Now().After(end) {
+		end = time.Now().AddDate(0, 0, 30)
 	}
 
 	return &Subscription{
 		ID:           latest.ID,
-		SchoolID:     latest.SchoolID,
+		SchoolID:     schoolID,
 		PlanName:     planName,
 		StudentLimit: studentLimit,
 		Price:        price,
 		Currency:     "PKR",
 		StartDate:    start,
 		EndDate:      end,
-		Status:       latest.Status,
-		IsTrial:      strings.EqualFold(latest.PackageID, "trial") || strings.EqualFold(latest.Status, "trial"),
+		Status:       "trial",
+		IsTrial:      true,
 		CreatedAt:    latest.CreatedAt,
 		UpdatedAt:    latest.UpdatedAt,
 	}

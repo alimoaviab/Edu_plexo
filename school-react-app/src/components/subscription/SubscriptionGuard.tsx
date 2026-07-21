@@ -33,8 +33,10 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const sub = current?.subscription;
   const isActive = sub?.status === "active";
   const isTrial = sub?.status === "trial";
+  const isAdmin = user?.role === "admin";
 
-  const showLockScreen = !isSuperAdmin && !isExempt && !isActive && !isTrial;
+  // Admins, Owners, SuperAdmins, and active/trial schools bypass the lock screen
+  const showLockScreen = !isSuperAdmin && !isOwner && !isAdmin && !isExempt && !isActive && !isTrial;
 
   if (showLockScreen) {
     return <SubscriptionRequired current={current} />;
