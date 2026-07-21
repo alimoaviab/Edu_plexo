@@ -12,23 +12,26 @@ export function OwnerSchoolSwitcher() {
     async function loadSchools() {
       try {
         const res = await serviceRequest<any[]>("/api/owner/schools");
-        if (res.success && res.data) {
-          setSchools(res.data);
-          
-          let curSchool = window.localStorage.getItem("active_school_id");
-          if (!curSchool && res.data.length > 0) {
-            const first = res.data.find(s => s.status === "active") || res.data[0];
-            curSchool = String(first.school_id || first._id || "");
-            if (curSchool) {
-              window.localStorage.setItem("active_school_id", curSchool);
+        if (res.ok && Array.isArray(res.data)) {
+          const list = res.data;
+          if (list.length > 0) {
+            setSchools(list);
+            
+            let curSchool = window.localStorage.getItem("active_school_id");
+            if (!curSchool && list.length > 0) {
+              const first = list.find((s: any) => s.status === "active") || list[0];
+              curSchool = String(first.school_id || first._id || "");
+              if (curSchool) {
+                window.localStorage.setItem("active_school_id", curSchool);
+              }
             }
-          }
-          if (curSchool) {
-            setActiveSchoolId(curSchool);
-          }
+            if (curSchool) {
+              setActiveSchoolId(curSchool);
+            }
 
-          const curBranch = window.localStorage.getItem("active_branch_id") || "";
-          setActiveBranchId(curBranch);
+            const curBranch = window.localStorage.getItem("active_branch_id") || "";
+            setActiveBranchId(curBranch);
+          }
         }
       } catch (err) {
         console.error("Failed to load schools for switcher", err);
@@ -45,7 +48,7 @@ export function OwnerSchoolSwitcher() {
       }
       try {
         const res = await serviceRequest<any[]>(`/api/owner/campuses?school_id=${activeSchoolId}`);
-        if (res.success && res.data) {
+        if (res.ok && Array.isArray(res.data)) {
           setCampuses(res.data);
         } else {
           setCampuses([]);

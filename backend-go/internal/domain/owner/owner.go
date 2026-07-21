@@ -141,7 +141,7 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 		SubStatus    string `json:"subscription_status"`
 	}
 
-	var result []schoolWithStats
+	result := make([]schoolWithStats, 0)
 	for _, s := range h.Store.Schools {
 		if !containsStr(ownerSchoolIDs, s.SchoolID) {
 			continue
@@ -285,14 +285,17 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:   now,
 	}
 
-	// Create subscription (pending — owner must purchase)
+	// Create subscription (default 14-day free trial for onboarded campus)
+	trialExpiry := now.AddDate(0, 0, 14)
 	newSub := &store.Subscription{
-		ID:        store.NewID("sub"),
-		SchoolID:  schoolID,
-		PackageID: "inactive",
-		Status:    "pending",
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:           store.NewID("sub"),
+		SchoolID:     schoolID,
+		PackageID:    "growth",
+		StudentLimit: 500,
+		Status:       "trial",
+		NextRenewal:  trialExpiry,
+		CreatedAt:    now,
+		UpdatedAt:    now,
 	}
 
 	h.Store.Schools = append(h.Store.Schools, newSchool)

@@ -223,8 +223,20 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		activeSub := false
 		for _, sub := range h.Store.Subscriptions {
 			if sub.SchoolID == user.SchoolID {
-				if (sub.Status == "active" || sub.Status == "trial") && time.Now().Before(sub.NextRenewal) {
-					activeSub = true
+				if sub.Status == "active" || sub.Status == "trial" || sub.Status == "pending" {
+					if sub.NextRenewal.IsZero() || time.Now().Before(sub.NextRenewal) {
+						activeSub = true
+						break
+					}
+				}
+			}
+		}
+		if !activeSub {
+			for _, s := range h.Store.Schools {
+				if s.SchoolID == user.SchoolID {
+					if s.Status == "active" || s.ApprovalStatus == "approved" || s.OwnerUserID != "" || s.OwnerEmail != "" {
+						activeSub = true
+					}
 					break
 				}
 			}
@@ -507,14 +519,16 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			Academic:  map[string]any{"institutionalLevel": "K-12"},
 			UpdatedAt: now,
 		}
+		trialExpiry := now.AddDate(0, 0, 14)
 		newSub := &store.Subscription{
-			ID:          store.NewID("sub"),
-			SchoolID:    schoolID,
-			PackageID:   "inactive",
-			Status:      "pending",
-			NextRenewal: now,
-			CreatedAt:   now,
-			UpdatedAt:   now,
+			ID:           store.NewID("sub"),
+			SchoolID:     schoolID,
+			PackageID:    "growth",
+			StudentLimit: 500,
+			Status:       "trial",
+			NextRenewal:  trialExpiry,
+			CreatedAt:    now,
+			UpdatedAt:    now,
 		}
 
 		h.Store.Lock()

@@ -16,8 +16,8 @@ export default function OwnerSchoolsPage() {
     async function load() {
       try {
         const res = await serviceRequest<any[]>("/api/owner/schools");
-        if (res.success && res.data) {
-          setSchools(res.data);
+        if (res.ok) {
+          setSchools(Array.isArray(res.data) ? res.data : []);
         }
       } catch (err) {
         console.error("Failed to load schools", err);
