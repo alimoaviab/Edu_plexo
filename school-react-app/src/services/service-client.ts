@@ -151,10 +151,22 @@ export async function serviceRequest<T>(
       if (response.ok) {
         if (payload && typeof payload === "object") {
           const p = payload as Record<string, unknown>;
-          const isSuccess = p.ok !== false && p.success !== false;
+          if (p.ok === false || p.success === false) {
+            const message = (p.message as string | undefined) || "Request failed.";
+            return {
+              ok: false,
+              success: false,
+              message,
+              error: {
+                code: ((p.error as Record<string, unknown> | undefined)?.code as string | undefined) || "API_ERROR",
+                message,
+                status: response.status,
+              },
+            };
+          }
           return {
-            ok: isSuccess,
-            success: isSuccess,
+            ok: true,
+            success: true,
             data: (p.data !== undefined ? p.data : payload) as T,
             message: (p.message as string | undefined) ?? "",
           };
