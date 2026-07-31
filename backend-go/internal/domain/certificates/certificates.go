@@ -128,7 +128,7 @@ func (h *Handler) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateTemplate(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
 	id := chi.URLParam(r, "id")
-	var body templateInput
+	body := map[string]json.RawMessage{}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "Invalid JSON body.", 400, nil))
 		return
@@ -138,23 +138,32 @@ func (h *Handler) UpdateTemplate(w http.ResponseWriter, r *http.Request) {
 	defer h.Store.Unlock()
 	for _, t := range h.Store.CertificateTemplates {
 		if t.ID == id && t.SchoolID == ctx.SchoolID {
-			if body.Name != "" {
-				t.Name = body.Name
+			if v, ok := body["name"]; ok {
+				_ = json.Unmarshal(v, &t.Name)
 			}
-			if body.Type != "" {
-				t.Type = body.Type
+			if v, ok := body["type"]; ok {
+				_ = json.Unmarshal(v, &t.Type)
 			}
-			if body.Orientation != "" {
-				t.Orientation = body.Orientation
+			if v, ok := body["orientation"]; ok {
+				_ = json.Unmarshal(v, &t.Orientation)
 			}
-			if body.BodyText != "" {
-				t.BodyText = body.BodyText
+			if v, ok := body["body_text"]; ok {
+				_ = json.Unmarshal(v, &t.BodyText)
 			}
-			if body.BackgroundURL != "" {
-				t.BackgroundURL = body.BackgroundURL
+			if v, ok := body["background_url"]; ok {
+				_ = json.Unmarshal(v, &t.BackgroundURL)
 			}
-			if len(body.Elements) > 0 {
-				t.Elements = string(body.Elements)
+			if v, ok := body["watermark_url"]; ok {
+				_ = json.Unmarshal(v, &t.WatermarkURL)
+			}
+			if v, ok := body["border_style"]; ok {
+				_ = json.Unmarshal(v, &t.BorderStyle)
+			}
+			if v, ok := body["is_default"]; ok {
+				_ = json.Unmarshal(v, &t.IsDefault)
+			}
+			if v, ok := body["elements"]; ok {
+				t.Elements = string(v)
 			}
 			t.UpdatedAt = time.Now()
 			h.Save("certificate_templates", t)
@@ -384,6 +393,12 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
 func templateToMap(t *store.CertificateTemplate) map[string]any {
+	var elements json.RawMessage
+	if t.Elements != "" {
+		elements = json.RawMessage(t.Elements)
+	} else {
+		elements = json.RawMessage("[]")
+	}
 	return map[string]any{
 		"_id":            t.ID,
 		"school_id":      t.SchoolID,
@@ -394,7 +409,7 @@ func templateToMap(t *store.CertificateTemplate) map[string]any {
 		"watermark_url":  t.WatermarkURL,
 		"border_style":   t.BorderStyle,
 		"body_text":      t.BodyText,
-		"elements":       t.Elements,
+		"elements":       elements,
 		"is_default":     t.IsDefault,
 		"status":         t.Status,
 		"created_at":     t.CreatedAt,

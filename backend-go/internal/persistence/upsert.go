@@ -18,6 +18,8 @@ func upsertRow(ctx context.Context, tx pgx.Tx, table string, doc any) error {
 	switch v := doc.(type) {
 	case *store.School:
 		return upsertSchool(ctx, tx, v)
+	case *store.OwnerSchool:
+		return upsertOwnerSchool(ctx, tx, v)
 	case *store.User:
 		return upsertUser(ctx, tx, v)
 	case *store.AcademicYear:
@@ -161,6 +163,16 @@ func upsertSchool(ctx context.Context, tx pgx.Tx, v *store.School) error {
 		v.Phone, v.Address, v.PrincipalName, v.Email, v.Phone,
 		defaultStr(v.Status, "pending"), v.RejectionReason, v.ApprovedBy, v.ApprovedAt,
 		planKey, v.CreatedAt, v.UpdatedAt)
+	return err
+}
+
+func upsertOwnerSchool(ctx context.Context, tx pgx.Tx, v *store.OwnerSchool) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO owner_schools (id, owner_user_id, school_id, role, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (id) DO UPDATE SET
+			role = EXCLUDED.role
+	`, v.ID, v.OwnerUserID, v.SchoolID, v.Role, v.CreatedAt)
 	return err
 }
 

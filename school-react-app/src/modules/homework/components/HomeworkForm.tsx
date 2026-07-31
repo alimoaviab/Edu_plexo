@@ -277,16 +277,16 @@ export function HomeworkForm({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+      <div className="sticky bottom-0 z-10 -mx-6 -mb-6 mt-12 flex items-center justify-between border-t border-slate-100 bg-white/80 backdrop-blur-md px-6 py-4 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
         <Button
           type="button"
           variant="ghost"
           onClick={() => window.history.back()}
-          className="flex-1"
+          className="flex-1 max-w-[200px]"
         >
           Cancel
         </Button>
-        <Button type="submit" variant="primary" disabled={loading} className="flex-1">
+        <Button type="submit" variant="primary" disabled={loading} className="flex-1 max-w-[200px]">
           {loading
             ? "Saving…"
             : initialValues

@@ -102,11 +102,12 @@ func (r *StudentRepo) List(ctx context.Context, schoolID, yearID string, opts Li
 		argIdx++
 	}
 	if opts.Search != "" {
+		term := "%" + strings.ToLower(opts.Search) + "%"
 		where = append(where, fmt.Sprintf(
-			"(LOWER(first_name || ' ' || last_name) LIKE $%d OR LOWER(admission_no) LIKE $%d)",
-			argIdx, argIdx,
+			"(LOWER(first_name || ' ' || last_name) LIKE $%d OR LOWER(admission_no) LIKE $%d OR LOWER(COALESCE(guardian_email,'')) LIKE $%d OR LOWER(COALESCE(guardian_phone,'')) LIKE $%d)",
+			argIdx, argIdx, argIdx, argIdx,
 		))
-		args = append(args, "%"+strings.ToLower(opts.Search)+"%")
+		args = append(args, term)
 		argIdx++
 	}
 

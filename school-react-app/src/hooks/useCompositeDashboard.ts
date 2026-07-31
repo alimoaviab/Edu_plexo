@@ -22,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { serviceRequest } from "@/services/service-client";
 import { useTenantContext } from "./useTenantContext";
 import { STALE_TIME_DASHBOARD } from "@/lib/query-client";
+import { useRealtimeAttendanceSync } from "./useRealtimeAttendanceSync";
 
 interface AttendanceSummary {
   present: number;
@@ -107,6 +108,7 @@ export interface CompositeDashboardData {
 
 export function useCompositeDashboard() {
   const { schoolId, academicYearId } = useTenantContext();
+  useRealtimeAttendanceSync();
 
   const query = useQuery<CompositeDashboardData>({
     queryKey: ["dashboard", "composite", schoolId, academicYearId],

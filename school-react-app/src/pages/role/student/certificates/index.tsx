@@ -1,3 +1,4 @@
+import { AppIcon } from "shared/ui/AppIcon";
 import { useEffect, useState } from "react";
 import { Badge, Card, DataState, Skeleton } from "@/components/ui";
 import { SchoolShell } from "@/layouts/SchoolShell";
@@ -17,33 +18,35 @@ interface Certificate {
 }
 
 export function StudentCertificatesPage() {
-  const { user } = useAuth();
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [certificates, setCertificates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchCertificates() {
+    let mounted = true;
+    const fetchCertificates = async () => {
       try {
-        const studentId = user?.studentId || "";
-        const result = await serviceRequest<any>(
-          `/api/certificates?student_id=${studentId}`
-        );
-        if (!result.ok) {
-          setError(result.error?.message || "Failed to load certificates");
-          return;
+        // Fetch student's own certificates. The backend endpoint `/api/students/me/certificates`
+        // should exist, or we use a general endpoint with appropriate filters.
+        const res = await serviceRequest<any>("/api/students/me/certificates");
+        if (mounted) {
+          if (res.ok) {
+            setCertificates(res.data?.data || res.data || []);
+          } else {
+            setError(res.error?.message || "Failed to load certificates");
+          }
+          setLoading(false);
         }
-        const raw = result.data;
-        const certs = Array.isArray(raw) ? raw : raw?.data || [];
-        setCertificates(certs);
-      } catch (e: any) {
-        setError(e.message || "Failed to load certificates");
-      } finally {
-        setLoading(false);
+      } catch (err) {
+        if (mounted) {
+          setError("An error occurred while fetching certificates");
+          setLoading(false);
+        }
       }
-    }
+    };
     fetchCertificates();
-  }, [user?.studentId]);
+    return () => { mounted = false; };
+  }, []);
 
   if (loading) {
     return (
@@ -71,7 +74,7 @@ export function StudentCertificatesPage() {
         {certificates.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-100">
             <div className="h-12 w-12 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-              <span className="material-symbols-outlined text-2xl text-slate-300">workspace_premium</span>
+              <AppIcon name="Award" className="h-6 w-6 text-slate-300" />
             </div>
             <h3 className="text-sm font-bold text-slate-900">No certificates yet</h3>
             <p className="text-[11px] text-slate-400 mt-1 max-w-[240px] text-center font-medium">
@@ -85,7 +88,7 @@ export function StudentCertificatesPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-lg text-amber-600">workspace_premium</span>
+                      <AppIcon name="Award" className="h-5 w-5 text-amber-600" />
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">{cert.template_name}</h4>
@@ -107,7 +110,7 @@ export function StudentCertificatesPage() {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-blue-50 text-blue-600 text-[10px] font-bold hover:bg-blue-100 transition-colors"
                   >
-                    <span className="material-symbols-outlined text-sm">download</span>
+                    <AppIcon name="Download" className="h-3.5 w-3.5" />
                     Download
                   </a>
                 )}

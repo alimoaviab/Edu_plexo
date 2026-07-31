@@ -390,7 +390,7 @@ export function DataTable<T>({
       </div>
 
       {paginated && filteredRows.length > 0 && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white">
           <div className="flex items-center gap-3">
             <p className="text-sm text-slate-500">
               Showing {(page - 1) * pageSize + 1} to{" "}

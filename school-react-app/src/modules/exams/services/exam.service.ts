@@ -45,3 +45,9 @@ export function deleteExam(id: string) {
     method: "DELETE",
   });
 }
+
+export function getExam(id: string) {
+  return serviceRequest<ExamRow>(`/api/exams/${id}`, {
+    method: "GET",
+  });
+}

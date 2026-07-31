@@ -35,7 +35,7 @@ const DEFAULT_META: TeacherListMeta = { total: 0, page: 1, limit: 0, pages: 1 };
  * ClassCreatePage, etc.) which read `state.data` as an array.
  */
 export function useTeachers(params: UseTeachersParams = {}) {
-    const { state, run } = useSafeAsync<TeacherRow[]>();
+    const { state, run, setState } = useSafeAsync<TeacherRow[]>();
     const [meta, setMeta] = useState<TeacherListMeta>(DEFAULT_META);
 
     const paramsKey = useMemo(
@@ -106,9 +106,18 @@ export function useTeachers(params: UseTeachersParams = {}) {
 
     const deleteTeacher = useCallback(
         async (id: string) => {
+            setState((prev) => {
+                if (prev.status !== "success") return prev;
+                return {
+                    ...prev,
+                    data: prev.data?.filter((t) => t._id !== id && t.id !== id),
+                };
+            });
+
             const result = await service.deleteTeacher(id);
             if (!result.success) {
                 showToast(result.message || "Could not delete teacher. The teacher may have assigned classes or records.", "error");
+                await loadTeachers(); // rollback
                 return result;
             }
             showToast("Teacher deleted.", "success");
@@ -116,7 +125,7 @@ export function useTeachers(params: UseTeachersParams = {}) {
             publish("teachers");
             return result;
         },
-        [loadTeachers]
+        [loadTeachers, setState]
     );
 
     useEffect(() => {

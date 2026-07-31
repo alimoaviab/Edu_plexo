@@ -68,6 +68,16 @@ function readAcademicYearId(): string {
   return window.localStorage.getItem("academic_year_id") ?? "";
 }
 
+function readActiveSchoolId(): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem("active_school_id") ?? "";
+}
+
+function readActiveBranchId(): string {
+  if (typeof window === "undefined") return "";
+  return window.localStorage.getItem("active_branch_id") ?? "";
+}
+
 function handleUnauthorized() {
   if (typeof window === "undefined") return;
   try {
@@ -101,6 +111,8 @@ export async function serviceRequest<T>(
         headers: {
           "content-type": "application/json",
           "x-academic-year-id": readAcademicYearId(),
+          "x-school-id": readActiveSchoolId(),
+          "x-branch-id": readActiveBranchId(),
           ...(token ? { authorization: `Bearer ${token}` } : {}),
           ...(options.headers ?? {}),
         },
@@ -137,8 +149,27 @@ export async function serviceRequest<T>(
       }
 
       if (response.ok) {
-        if (payload && typeof payload === "object" && "ok" in (payload as object)) {
-          return payload as ServiceResult<T>;
+        if (payload && typeof payload === "object") {
+          const p = payload as Record<string, unknown>;
+          if (p.ok === false || p.success === false) {
+            const message = (p.message as string | undefined) || "Request failed.";
+            return {
+              ok: false,
+              success: false,
+              message,
+              error: {
+                code: ((p.error as Record<string, unknown> | undefined)?.code as string | undefined) || "API_ERROR",
+                message,
+                status: response.status,
+              },
+            };
+          }
+          return {
+            ok: true,
+            success: true,
+            data: (p.data !== undefined ? p.data : payload) as T,
+            message: (p.message as string | undefined) ?? "",
+          };
         }
         return {
           ok: true,

@@ -15,7 +15,7 @@ func SubscriptionGate(pool *pgxpool.Pool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := api.FromRequest(r)
-			if ctx == nil || ctx.Role == "super_admin" || ctx.SchoolID == "system" || pool == nil {
+			if ctx == nil || ctx.Role == "super_admin" || ctx.Role == "owner" || ctx.SchoolID == "system" || pool == nil {
 				next.ServeHTTP(w, r)
 				return
 			}

@@ -23,6 +23,7 @@ const initialForm: TeacherFormInput = {
     email: "",
     phone: "",
     qualification: "",
+    status: "active",
     subjects: [],
     class_ids: [],
     password: ""
@@ -205,7 +206,7 @@ export function TeacherForm({
                     />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <Input
                         label="Phone Number"
                         placeholder="+1 234 567 890"
@@ -221,6 +222,22 @@ export function TeacherForm({
                         placeholder="e.g., MSc Mathematics"
                         value={form.qualification || ""}
                         onChange={(e) => setForm({ ...form, qualification: e.target.value })}
+                    />
+
+                    <Select
+                        label="Status"
+                        value={form.status || "active"}
+                        onChange={(event) =>
+                            setForm({
+                                ...form,
+                                status: event.target.value
+                            })
+                        }
+                        options={[
+                            { label: "Active", value: "active" },
+                            { label: "Inactive", value: "inactive" },
+                            { label: "On Leave", value: "on_leave" }
+                        ]}
                     />
                 </div>
             </div>
@@ -301,6 +318,7 @@ function mapInitialValues(t: TeacherRow): TeacherFormInput {
         email: t.email ?? "",
         phone: t.phone ?? "",
         qualification: t.qualification ?? "",
+        status: t.status ?? "active",
         subjects: t.subjects ?? [],
         class_ids: t.class_ids ?? [],
         password: "",

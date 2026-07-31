@@ -448,9 +448,9 @@ func (h *Handler) UpdatePackages(w http.ResponseWriter, r *http.Request) {
 		amount := MonthlyEstimate(students, selected, rates)
 		planName := EncodeSelectedPackages(selected)
 
+		var subID string
+		var endDate time.Time
 		if h.Pool != nil {
-			var subID string
-			var endDate time.Time
 			err := h.Pool.QueryRow(r.Context(), `
 				SELECT id, end_date FROM subscriptions
 				WHERE school_id=$1 AND status IN ('active','trial')
@@ -486,13 +486,17 @@ func (h *Handler) UpdatePackages(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			if latest == nil {
+				if subID == "" {
+					subID = store.NewID("sub")
+					endDate = now.AddDate(0, 0, 14)
+				}
 				latest = &store.Subscription{
-					ID:          store.NewID("sub"),
+					ID:          subID,
 					SchoolID:    ctx.SchoolID,
-					Status:      "trial",
-					AutoRenew:   false,
-					NextRenewal: now.AddDate(0, 0, 14),
 					CreatedAt:   now,
+					Status:      "active",
+					AutoRenew:   false,
+					NextRenewal: endDate,
 				}
 				h.Store.Subscriptions = append(h.Store.Subscriptions, latest)
 			}

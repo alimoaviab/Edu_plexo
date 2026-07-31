@@ -20,10 +20,13 @@ import {
   Skeleton,
   StatCardGrid,
   EntityGridSkeleton,
+  Pagination,
 } from "@/components/ui";
 import { useExams } from "../hooks/useExams";
 import { ExamRow } from "../types/exam.types";
 import { useQueryParams } from "@/hooks/useQueryParams";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { usePagination } from "@/hooks/usePagination";
 
 export function ExamListPage({
   filters,
@@ -38,6 +41,8 @@ export function ExamListPage({
   const { currentParams, updateQuery, withQuery } = useQueryParams();
 
   const [searchQuery, setSearchQuery] = useState(currentParams.get("search") || "");
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
+
   const [statusFilter, setStatusFilter] = useState<
     "all" | "scheduled" | "completed" | "cancelled"
   >((currentParams.get("status") as any) || "all");
@@ -45,7 +50,25 @@ export function ExamListPage({
     (currentParams.get("view") as any) || "grid"
   );
 
-  const { state } = useExams(filters);
+  const pagination = usePagination({ defaultLimit: 12 });
+
+  useEffect(() => {
+    pagination.resetToFirst();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, statusFilter]);
+
+  const { state, meta, deleteExam } = useExams({
+    ...filters,
+    page: pagination.page,
+    limit: pagination.limit,
+    status: statusFilter === "all" ? "" : statusFilter,
+    search: debouncedSearch,
+  });
+
+  useEffect(() => {
+    if (meta) pagination.applyMeta(meta);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meta.total, meta.pages, meta.page]);
 
   useEffect(() => {
     setSearchQuery(currentParams.get("search") || "");
@@ -53,24 +76,8 @@ export function ExamListPage({
     setViewMode((currentParams.get("view") as any) || "grid");
   }, [currentParams.toString()]);
 
-  const filteredRows = useMemo(() => {
-    const rows = state.data || [];
-    const q = searchQuery.trim().toLowerCase();
-    return rows.filter((row) => {
-      const subjectsConcat = (row.subjects || [])
-        .filter((s) => s)
-        .map((s) => s?.subject_name || "")
-        .join(" ")
-        .toLowerCase();
-      const queryMatch =
-        q.length === 0 ||
-        row.title.toLowerCase().includes(q) ||
-        (row.subject || "").toLowerCase().includes(q) ||
-        subjectsConcat.includes(q);
-      const statusMatch = statusFilter === "all" || row.status === statusFilter;
-      return queryMatch && statusMatch;
-    });
-  }, [state.data, searchQuery, statusFilter]);
+  const rows = state.data ?? [];
+  const filteredRows = rows; // Backend now handles filtering
 
   const columns: DataTableColumn<ExamRow>[] = [
     {
@@ -141,6 +148,27 @@ export function ExamListPage({
             window.location.assign(`${marksBase}?exam_id=${encodeURIComponent(row._id)}`);
           },
         },
+        ...(isTeacher ? [] : [
+          {
+            icon: "edit",
+            label: "Edit",
+            variant: "ghost" as const,
+            onClick: (row: ExamRow) => {
+              window.location.assign(`/admin/exams/edit/${encodeURIComponent(row._id)}`);
+            },
+          },
+          {
+            icon: "delete",
+            label: "Delete",
+            variant: "danger" as const,
+            onClick: (row: ExamRow) => {
+              if (window.confirm(`Are you sure you want to delete "${row.title}"?`)) {
+                // We don't have deleteExam mapped in this component yet, we should extract it from useExams
+                deleteExam(row._id);
+              }
+            },
+          }
+        ]),
       ];
 
   if (state.status === "loading" || state.status === "idle") {
@@ -309,6 +337,20 @@ export function ExamListPage({
             rows={filteredRows}
             rowKey={(row) => row._id}
             rowActions={rowActions}
+          />
+        </div>
+      )}
+
+      {/* Pagination Footer */}
+      {meta.pages > 1 && (
+        <div className="mt-6 flex justify-center">
+          <Pagination
+            page={pagination.page}
+            pages={meta.pages}
+            total={meta.total}
+            limit={pagination.limit}
+            onPageChange={pagination.setPage}
+            hideLimit
           />
         </div>
       )}

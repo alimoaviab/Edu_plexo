@@ -41,6 +41,7 @@ import {
   Paintbrush
 } from "lucide-react";
 import { showToast } from "@/utils/toast";
+import { compressImageToBudget } from "@/utils/image-compress";
 
 interface TemplateDesignerProps {
   initialData?: any;
@@ -1014,14 +1015,15 @@ export function TemplateDesigner({ initialData, onSave, saving = false }: Templa
   };
 
   // Image upload
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !canvas) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      if (!dataUrl) return;
+    try {
+      showToast("Optimizing image...", "info");
+      // Compress to ~2KB max and limit dimension to 300px to preserve quality at small sizes
+      const compressed = await compressImageToBudget(file, { targetBytes: 2 * 1024, maxDimension: 300 });
+      const dataUrl = compressed.dataUrl;
       setCustomUploads((prev) => [dataUrl, ...prev]);
 
       fabric.Image.fromURL(dataUrl, (img) => {
@@ -1032,8 +1034,9 @@ export function TemplateDesigner({ initialData, onSave, saving = false }: Templa
         canvas.requestRenderAll();
         saveState();
       });
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      showToast(err.message || "Failed to upload and compress image", "error");
+    }
   };
 
   const addImageFromUrl = (url: string) => {

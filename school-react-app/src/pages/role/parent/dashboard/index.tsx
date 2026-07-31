@@ -191,7 +191,7 @@ export function ParentDashboardPage() {
               Attendance
             </p>
             <p className="text-lg font-black text-slate-900">
-              {data.attendance_percentage}%
+              {Number((data.attendance_percentage || 0).toFixed(2))}%
             </p>
           </div>
           <div>

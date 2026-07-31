@@ -39,6 +39,10 @@ type MemStore struct {
 	AuditLogs      []*AuditLog
 	Sections       []*Section
 
+	// Owner ERP collections.
+	Campuses     []*Campus
+	OwnerSchools []*OwnerSchool
+
 	// Phase 2.1 collections.
 	Attendance     []*Attendance
 	Exams          []*Exam
@@ -183,6 +187,16 @@ func EnsureBootstrapUsers(s *MemStore) {
 		superPassword = "Test@123"
 	}
 
+	// Owner credentials
+	ownerEmail := strings.ToLower(strings.TrimSpace(os.Getenv("EDUPLEXO_OWNER_EMAIL")))
+	if ownerEmail == "" {
+		ownerEmail = "owner@gmail.com"
+	}
+	ownerPassword := os.Getenv("EDUPLEXO_OWNER_PASSWORD")
+	if ownerPassword == "" {
+		ownerPassword = "Test@123"
+	}
+
 	s.Lock()
 	defer s.Unlock()
 
@@ -191,6 +205,7 @@ func EnsureBootstrapUsers(s *MemStore) {
 	// Check existing users and update roles/passwords
 	var superUser *User
 	var schoolUser *User
+	var ownerUser *User
 	for _, u := range s.Users {
 		if u.Email == superEmail {
 			u.Role = "super_admin"
@@ -199,6 +214,9 @@ func EnsureBootstrapUsers(s *MemStore) {
 		}
 		if u.Email == schoolEmail && u.Role == "admin" {
 			schoolUser = u
+		}
+		if u.Email == ownerEmail && u.Role == "owner" {
+			ownerUser = u
 		}
 	}
 
@@ -236,6 +254,7 @@ func EnsureBootstrapUsers(s *MemStore) {
 			SchoolID:  schoolID,
 			Name:      "Eduplexo Academy",
 			Code:      "MAIN",
+			OwnerEmail: ownerEmail,
 			Status:    "active",
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -314,6 +333,27 @@ func EnsureBootstrapUsers(s *MemStore) {
 			Permissions:  []string{"*"},
 			Status:       "active",
 			Profile:      UserProfile{FirstName: "School", LastName: "Admin"},
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		})
+	}
+
+	if ownerUser != nil {
+		hash, _ := auth.HashPassword(ownerPassword)
+		ownerUser.PasswordHash = hash
+		ownerUser.Password = ownerPassword
+	} else {
+		hash, _ := auth.HashPassword(ownerPassword)
+		s.Users = append(s.Users, &User{
+			ID:           NewID("user"),
+			SchoolID:     "system", // Owners are stored under system scope
+			Email:        ownerEmail,
+			PasswordHash: hash,
+			Password:     ownerPassword,
+			Role:         "owner",
+			Permissions:  []string{"*"},
+			Status:       "active",
+			Profile:      UserProfile{FirstName: "Platform", LastName: "Owner"},
 			CreatedAt:    now,
 			UpdatedAt:    now,
 		})

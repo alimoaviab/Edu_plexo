@@ -45,22 +45,12 @@ export function SubscriptionRequired({ current }: SubscriptionRequiredProps) {
           {description}
         </p>
 
-        {isAdmin ? (
-          <button
-            onClick={() => navigate("/admin/subscription")}
-            className="w-full h-11 md:h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs md:text-sm tracking-wide shadow-lg shadow-blue-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <span>Choose Plan</span>
-            <AppIcon name="ChevronRight" size={16} />
-          </button>
-        ) : (
-          <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-            <p className="text-[11px] font-semibold text-slate-500 leading-normal flex items-center gap-1.5 justify-center">
-              <AppIcon name="Lock" size={12} className="text-slate-400 shrink-0" />
-              <span>Please contact your school administrator to activate or renew the subscription.</span>
-            </p>
-          </div>
-        )}
+        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+          <p className="text-[12px] font-semibold text-slate-600 leading-normal flex items-center gap-1.5 justify-center">
+            <AppIcon name="Lock" size={14} className="text-slate-400 shrink-0" />
+            <span>School subscriptions are managed by the School Owner. Please contact your school owner to activate or renew plans.</span>
+          </p>
+        </div>
       </div>
     </div>
   );

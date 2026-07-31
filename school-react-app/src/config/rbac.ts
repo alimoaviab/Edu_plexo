@@ -11,6 +11,11 @@ import type { Feature, PermissionAction, Role } from "@/types/core";
 type RoleAccess = Partial<Record<Feature, PermissionAction[]>>;
 
 export const roleAccessMatrix: Record<Role, RoleAccess> = {
+  owner: {
+    platform: ["view"],
+    schools: ["view"],
+    reports: ["view"],
+  },
   super_admin: {
     platform: ["manage"],
     schools: ["view", "create", "update", "delete", "manage"],

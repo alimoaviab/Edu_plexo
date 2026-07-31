@@ -38,5 +38,5 @@ export function useSafeAsync<T>(
     [isEmpty]
   );
 
-  return { state, run };
+  return { state, run, setState };
 }

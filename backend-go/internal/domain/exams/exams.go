@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/eduplexo/backend-go/internal/api"
@@ -259,6 +260,8 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 				return []any{}, nil
 			}
 		}
+		searchQ := strings.ToLower(q.Get("search"))
+
 		rows := make([]*store.Exam, 0)
 		for _, e := range h.Store.Exams {
 			if e.SchoolID != ctx.SchoolID {
@@ -282,6 +285,37 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			if statusQ != "" && e.Status != statusQ {
 				continue
 			}
+
+			if searchQ != "" {
+				match := strings.Contains(strings.ToLower(e.Title), searchQ)
+				if !match {
+					// Check subjects
+					for _, sub := range e.Subjects {
+						if sub.SubjectName == "" {
+							for _, sObj := range h.Store.Subjects {
+								if sObj.ID == sub.SubjectID {
+									if strings.Contains(strings.ToLower(sObj.Name), searchQ) {
+										match = true
+									}
+									break
+								}
+							}
+						} else {
+							if strings.Contains(strings.ToLower(sub.SubjectName), searchQ) {
+								match = true
+								break
+							}
+						}
+					}
+				}
+				if !match && e.Subject != "" {
+					match = strings.Contains(strings.ToLower(e.Subject), searchQ)
+				}
+				if !match {
+					continue
+				}
+			}
+
 			rows = append(rows, e)
 		}
 		h.Store.RUnlock()

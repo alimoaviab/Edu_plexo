@@ -234,7 +234,7 @@ export function TeacherClassesPage() {
             {filteredClasses.filter(c => c.is_incharge).length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm text-blue-600">shield_person</span>
+                  <AppIcon name="ShieldCheck" className="h-3.5 w-3.5 text-blue-600" />
                   Assigned Classes (Incharge)
                 </h3>
                 {viewMode === "grid" ? (
@@ -253,7 +253,7 @@ export function TeacherClassesPage() {
             {filteredClasses.filter(c => !c.is_incharge).length > 0 && (
               <div className="space-y-3">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm text-emerald-600">schedule</span>
+                  <AppIcon name="Clock" className="h-3.5 w-3.5 text-emerald-600" />
                   Classes with Assigned Periods
                 </h3>
                 {viewMode === "grid" ? (

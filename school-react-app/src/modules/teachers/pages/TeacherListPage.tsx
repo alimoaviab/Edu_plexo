@@ -17,6 +17,7 @@ import { useTeachers } from "../hooks/useTeachers";
 import { TeacherRow } from "../types/teacher.types";
 import { showToast } from "@/utils/toast";
 import { useQueryParams } from "@/hooks/useQueryParams";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { usePagination } from "@/hooks/usePagination";
 import { TeacherDetailsModal } from "../components/TeacherDetailsModal";
@@ -27,6 +28,8 @@ export function TeacherListPage() {
 
   // ─── Filters ────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState(currentParams.get("search") || "");
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
+
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "on_leave" | "inactive"
   >((currentParams.get("status") as any) || "all");
@@ -42,14 +45,14 @@ export function TeacherListPage() {
   useEffect(() => {
     pagination.resetToFirst();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, statusFilter]);
+  }, [debouncedSearch, statusFilter]);
 
   // ─── Data ───────────────────────────────────────────────────────────
   const { state, meta, deleteTeacher } = useTeachers({
     page: pagination.page,
     limit: pagination.limit,
-    status: statusFilter,
-    search: searchQuery,
+    status: statusFilter === "all" ? "" : statusFilter,
+    search: debouncedSearch,
   });
 
   // Mirror server-side meta into the pagination hook so it can clamp

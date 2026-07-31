@@ -121,7 +121,7 @@ export function StudentDetailsModal({ isOpen, studentId, onClose }: StudentDetai
     });
 
     const activeDays = present + absent + late;
-    const percentage = activeDays > 0 ? Math.round(( (present + late) / activeDays) * 100) : 100;
+    const percentage = activeDays > 0 ? Number((((present + late) / activeDays) * 100).toFixed(2)) : 100;
     return { present, absent, late, leave, percentage };
   }, [attendance]);
 

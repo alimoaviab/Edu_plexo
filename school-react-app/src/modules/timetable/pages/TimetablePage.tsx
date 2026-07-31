@@ -20,6 +20,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { DndContext, DragEndEvent, closestCenter } from "@dnd-kit/core";
 import {
   DataState,
   ConfirmModal,
@@ -51,7 +52,7 @@ export function TimetablePage() {
 
   const { state: classesState } = useClasses();
   const { state: summaryState } = useTimetableSummary();
-  const { state, deleteTimetable, refresh } = useTimetable(
+  const { state, updateTimetable, deleteTimetable, refresh } = useTimetable(
     classId ? { class_id: classId } : undefined
   );
 
@@ -114,6 +115,43 @@ export function TimetablePage() {
     setPendingDelete(rec);
   }
 
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    // active.id is the TimetableRecord._id
+    // over.id is the drop target string: drop_${day}_${period}_${start}_${end}
+    const recId = active.id as string;
+    const dropId = over.id as string;
+    if (!dropId.startsWith("drop_")) return;
+
+    const [, dayStr, periodStr, start, end] = dropId.split("_");
+    const day = Number(dayStr);
+    const period = Number(periodStr);
+
+    const rec = (state.data ?? []).find((r) => r._id === recId);
+    if (!rec) return;
+
+    if (
+      rec.day_of_week === day &&
+      rec.period_number === period &&
+      rec.start_time === start &&
+      rec.end_time === end
+    ) {
+      return; // No change
+    }
+
+    const result = await updateTimetable(recId, {
+      day_of_week: day,
+      period_number: period,
+      start_time: start,
+      end_time: end,
+    });
+    if (result.ok) {
+      showToast("Period updated", "success");
+    }
+  }
+
   function loadingError(): string | undefined {
     if (state.status === "error") return state.error;
     if (summaryState.status === "error") return summaryState.error;
@@ -125,80 +163,82 @@ export function TimetablePage() {
     state.status === "success" && records.length === 0 && !loadingError();
 
   return (
-    <div className="space-y-6 pb-12">
-      <TimetableSummaryStats
-        summary={summary}
-        isLoading={summaryState.status === "loading" || summaryState.status === "idle"}
-      />
-
-      <TimetableToolbar
-        classId={classId}
-        onClassChange={handleClassChange}
-        classOptions={classOptions}
-        onNewEntry={handleNewEntry}
-        conflictsCount={conflictsCount}
-        isCompact={isCompact}
-        onCompactToggle={() => setIsCompact((v) => !v)}
-      />
-
-      {summary && (summary.currentPeriod || summary.nextPeriod) && (
-        <TimetableLivePeriodCard summary={summary} />
-      )}
-
-      {(state.status === "loading" || state.status === "idle") && (
-        <GridSkeleton />
-      )}
-
-      {state.status === "error" && (
-        <DataState
-          variant="error"
-          title="Couldn't load timetable"
-          message={state.error}
-          onRetry={() => {
-            void refresh();
-            showToast("Retrying…", "success");
-          }}
+    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <div className="space-y-6 pb-12">
+        <TimetableSummaryStats
+          summary={summary}
+          isLoading={summaryState.status === "loading" || summaryState.status === "idle"}
         />
-      )}
 
-      {showEmpty && (
-        <TimetableEmptyState
+        <TimetableToolbar
           classId={classId}
-          className={
-            classOptions.find((c) => c.id === classId)?.label ?? undefined
-          }
-          onCreate={handleNewEntry}
-          unscheduled={summary?.unscheduledClasses}
-          onSelectClass={handleClassChange}
-        />
-      )}
-
-      {state.status === "success" && records.length > 0 && (
-        <TimetableGrid
-          records={records}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
+          onClassChange={handleClassChange}
+          classOptions={classOptions}
+          onNewEntry={handleNewEntry}
+          conflictsCount={conflictsCount}
           isCompact={isCompact}
-          canManage
+          onCompactToggle={() => setIsCompact((v) => !v)}
         />
-      )}
 
-      <ConfirmModal
-        isOpen={pendingDelete !== null}
-        title="Remove this period?"
-        message={
-          pendingDelete
-            ? `Removing "${pendingDelete.subject_name}" on ${
-                pendingDelete.start_time
-              }–${pendingDelete.end_time} for ${pendingDelete.class_name}. This cannot be undone.`
-            : ""
-        }
-        confirmLabel="Remove"
-        confirmVariant="danger"
-        onCancel={() => setPendingDelete(null)}
-        onConfirm={handleConfirmDelete}
-      />
-    </div>
+        {summary && (summary.currentPeriod || summary.nextPeriod) && (
+          <TimetableLivePeriodCard summary={summary} />
+        )}
+
+        {(state.status === "loading" || state.status === "idle") && (
+          <GridSkeleton />
+        )}
+
+        {state.status === "error" && (
+          <DataState
+            variant="error"
+            title="Couldn't load timetable"
+            message={state.error}
+            onRetry={() => {
+              void refresh();
+              showToast("Retrying…", "success");
+            }}
+          />
+        )}
+
+        {showEmpty && (
+          <TimetableEmptyState
+            classId={classId}
+            className={
+              classOptions.find((c) => c.id === classId)?.label ?? undefined
+            }
+            onCreate={handleNewEntry}
+            unscheduled={summary?.unscheduledClasses}
+            onSelectClass={handleClassChange}
+          />
+        )}
+
+        {state.status === "success" && records.length > 0 && (
+          <TimetableGrid
+            records={records}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            isCompact={isCompact}
+            canManage
+          />
+        )}
+
+        <ConfirmModal
+          isOpen={pendingDelete !== null}
+          title="Remove this period?"
+          message={
+            pendingDelete
+              ? `Removing "${pendingDelete.subject_name}" on ${
+                  pendingDelete.start_time
+                }–${pendingDelete.end_time} for ${pendingDelete.class_name}. This cannot be undone.`
+              : ""
+          }
+          confirmLabel="Remove"
+          confirmVariant="danger"
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={handleConfirmDelete}
+        />
+      </div>
+    </DndContext>
   );
 }
 

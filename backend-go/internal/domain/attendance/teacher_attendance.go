@@ -2,6 +2,7 @@ package attendance
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"strings"
@@ -108,6 +109,10 @@ func (h *TeacherAttendanceHandler) CheckIn(w http.ResponseWriter, r *http.Reques
 	}
 
 	h.saveFn("teacher_attendance", rec)
+	if h.rdb != nil && h.rdb.Available() {
+		_, _ = h.rdb.DelPattern(r.Context(), fmt.Sprintf("dash:%s:*", ctx.SchoolID))
+		_, _ = h.rdb.DelPattern(r.Context(), fmt.Sprintf("composite:%s:*", ctx.SchoolID))
+	}
 	api.WriteJSON(w, http.StatusOK, rec)
 }
 
@@ -176,6 +181,10 @@ func (h *TeacherAttendanceHandler) CheckOut(w http.ResponseWriter, r *http.Reque
 	h.store.Unlock()
 
 	h.saveFn("teacher_attendance", rec)
+	if h.rdb != nil && h.rdb.Available() {
+		_, _ = h.rdb.DelPattern(r.Context(), fmt.Sprintf("dash:%s:*", ctx.SchoolID))
+		_, _ = h.rdb.DelPattern(r.Context(), fmt.Sprintf("composite:%s:*", ctx.SchoolID))
+	}
 	api.WriteJSON(w, http.StatusOK, rec)
 }
 
