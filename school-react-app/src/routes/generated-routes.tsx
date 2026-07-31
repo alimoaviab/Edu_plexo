@@ -210,13 +210,8 @@ export const adminRoutes: RouteObject[] = [
   { path: "/admin/timetable", element: lazyPage(() => import("@/pages/role/admin/timetable"), "TimetableRoute") },
   { path: "/admin/timetable/create", element: lazyPage(() => import("@/pages/role/admin/timetable/create"), "AdminTimetableCreatePage") },
   { path: "/admin/timetable/edit/:id", element: lazyPage(() => import("@/pages/role/admin/timetable/edit/Param_id"), "AdminTimetableEditPage") },
-
-  // Messages
-  { path: "/admin/messages", element: lazyPage(() => import("@/pages/role/shared/messages"), "MessagesPage") },
-
-  // Schedule
-  { path: "/admin/schedule", element: lazyPage(() => import("@/pages/role/shared/schedule")) },
 ];
+
 
 // ─── Teacher Routes (lazy-loaded) ────────────────────────────────────────
 
