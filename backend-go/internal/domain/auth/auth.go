@@ -370,12 +370,8 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	role := strings.ToLower(strings.TrimSpace(body.Role))
-	if role == "owner" {
-		api.WriteJSON(w, http.StatusBadRequest, signupErr("Owner accounts cannot be created via public registration. Contact system administration."))
-		return
-	}
 	if role == "" {
-		role = "admin"
+		role = "owner"
 	}
 	email := strings.ToLower(strings.TrimSpace(body.Email))
 	password := body.Password
@@ -383,7 +379,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	schoolName := strings.TrimSpace(firstNonEmpty(body.SchoolName, body.SchoolName2))
 	schoolCode := strings.ToUpper(strings.TrimSpace(firstNonEmpty(body.SchoolCode, body.SchoolCode2)))
 
-	if role != "teacher" && role != "student" && role != "parent" && role != "admin" {
+	if role != "teacher" && role != "student" && role != "parent" && role != "admin" && role != "owner" {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("Invalid role selected"))
 		return
 	}
@@ -391,7 +387,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("All fields are required"))
 		return
 	}
-	if role != "admin" && schoolCode == "" {
+	if role != "admin" && role != "owner" && schoolCode == "" {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("School code is required"))
 		return
 	}
@@ -427,7 +423,10 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 
-	if role == "admin" {
+	if role == "admin" || role == "owner" {
+		if schoolName == "" {
+			schoolName = fullName + "'s Institution"
+		}
 		schoolID := "SCH-" + strings.ToUpper(randomID()[:8])
 		uniqueCode := h.uniqueSchoolCode(schoolName)
 
@@ -454,7 +453,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		var approvedAt *time.Time
 		var approvedBy string
 
-		if settings.AutoApproveSchools {
+		if settings.AutoApproveSchools || role == "owner" {
 			schoolStatus = "active"
 			approvalStatus = "approved"
 			approvedAt = &now
@@ -466,12 +465,33 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			approvedBy = ""
 		}
 
+		newUser := &store.User{
+			ID:           store.NewID("usr"),
+			SchoolID:     schoolID,
+			CampusID:     campusID,
+			Email:        email,
+			PasswordHash: hash,
+			Role:         role,
+			Permissions:  []string{"*"},
+			Profile: store.UserProfile{
+				FirstName: firstWord(fullName),
+				LastName:  remainingWords(fullName),
+				Phone:     body.Phone,
+			},
+			Status:    "active",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
 		newSchool := &store.School{
 			ID:             store.NewID("sch"),
 			SchoolID:       schoolID,
+			OwnerEmail:     email,
+			OwnerUserID:    newUser.ID,
 			Name:           schoolName,
 			Code:           uniqueCode,
 			Email:          email,
+			Phone:          body.Phone,
 			PrincipalName:  fullName,
 			Status:         schoolStatus,
 			ApprovalStatus: approvalStatus,
@@ -480,6 +500,15 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			CreatedAt:      now,
 			UpdatedAt:      now,
 		}
+
+		ownerSchool := &store.OwnerSchool{
+			ID:          store.NewID("os"),
+			OwnerUserID: newUser.ID,
+			SchoolID:    schoolID,
+			Role:        "owner",
+			CreatedAt:   now,
+		}
+
 		newYear := &store.AcademicYear{
 			ID:          yearID,
 			SchoolID:    schoolID,
@@ -492,22 +521,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			CreatedAt:   now,
 			UpdatedAt:   now,
 		}
-		newUser := &store.User{
-			ID:           store.NewID("usr"),
-			SchoolID:     schoolID,
-			CampusID:     campusID,
-			Email:        email,
-			PasswordHash: hash,
-			Role:         "admin",
-			Permissions:  []string{"*"},
-			Profile: store.UserProfile{
-				FirstName: firstWord(fullName),
-				LastName:  remainingWords(fullName),
-			},
-			Status:    "active",
-			CreatedAt: now,
-			UpdatedAt: now,
-		}
+
 		newSettings := &store.SchoolSettings{
 			SchoolID: schoolID,
 			Profile: map[string]any{
@@ -519,13 +533,14 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			Academic:  map[string]any{"institutionalLevel": "K-12"},
 			UpdatedAt: now,
 		}
+
 		trialExpiry := now.AddDate(0, 0, 14)
 		newSub := &store.Subscription{
 			ID:           store.NewID("sub"),
 			SchoolID:     schoolID,
 			PackageID:    "growth",
 			StudentLimit: 500,
-			Status:       "trial",
+			Status:       "active",
 			NextRenewal:  trialExpiry,
 			CreatedAt:    now,
 			UpdatedAt:    now,
@@ -536,27 +551,28 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		h.Store.Campuses = append(h.Store.Campuses, newCampus)
 		h.Store.AcademicYears = append(h.Store.AcademicYears, newYear)
 		h.Store.Users = append(h.Store.Users, newUser)
+		h.Store.OwnerSchools = append(h.Store.OwnerSchools, ownerSchool)
 		h.Store.SchoolSettings = append(h.Store.SchoolSettings, newSettings)
 		h.Store.Subscriptions = append(h.Store.Subscriptions, newSub)
 		h.Store.Unlock()
 
-		// year, then user.
 		h.Persist("schools", newSchool)
 		h.Persist("academic_years", newYear)
 		h.Persist("users", newUser)
+		h.Persist("owner_schools", ownerSchool)
 		h.Persist("school_settings", newSettings)
 		h.Persist("subscriptions", newSub)
 
 		var message string
-		if settings.AutoApproveSchools {
-			message = "Your school account is active. Redirecting to dashboard..."
+		if schoolStatus == "active" {
+			message = "Your owner account is active. Redirecting to dashboard..."
 		} else {
-			message = "Your school registration is pending approval. You will have limited access until approved."
+			message = "Your account registration is pending approval."
 		}
 
 		claims := authpkg.Claims{
 			SchoolID:             schoolID,
-			Role:                 "admin",
+			Role:                 role,
 			Permissions:          newUser.Permissions,
 			ActiveAcademicYearID: yearID,
 			SessionID:            "sess_" + randomID(),
@@ -577,7 +593,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 				"status":                  schoolStatus,
 				"school_id":               schoolID,
 				"token":                   token,
-				"role":                    "admin",
+				"role":                    role,
 				"active_academic_year_id": yearID,
 			},
 		})
@@ -958,7 +974,7 @@ func allowedRolesForTab(tab string) []string {
 	case "owner":
 		return []string{"owner"}
 	case "admin":
-		return []string{"admin", "super_admin"}
+		return []string{"admin", "super_admin", "owner"}
 	case "teacher":
 		return []string{"teacher"}
 	case "student":
