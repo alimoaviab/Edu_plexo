@@ -22,10 +22,14 @@ interface AuthState {
   hydrated: boolean;
   loading: boolean;
   error: string | null;
+  activeSchoolId: string | null;
+  activeBranchId: string | null;
 
   hydrate: () => Promise<void>;
   login: (input: LoginRequest) => Promise<{ ok: boolean; role?: Role; message?: string }>;
   logout: () => Promise<void>;
+  setActiveSchool: (schoolId: string) => Promise<void>;
+  setActiveBranch: (branchId: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -57,6 +61,10 @@ async function persistLoginExtras(payload: LoginResponse): Promise<void> {
   if (payload.active_academic_year_id) {
     await prefStorage.set(StorageKeys.academicYearId, payload.active_academic_year_id);
   }
+
+  if (payload.branch_id || payload.campus_id) {
+    await prefStorage.set(StorageKeys.activeBranchId, (payload.branch_id || payload.campus_id)!);
+  }
 }
 
 async function buildUserFromToken(token: string): Promise<AuthUser | null> {
@@ -66,11 +74,13 @@ async function buildUserFromToken(token: string): Promise<AuthUser | null> {
 
   await enforceSchoolBoundary(payload.school_id);
 
-  const [profileId, classId, studentId, scopedYear] = await Promise.all([
+  const [profileId, classId, studentId, scopedYear, activeSchoolId, activeBranchId] = await Promise.all([
     prefStorage.get(StorageKeys.profileId),
     prefStorage.get(StorageKeys.classId),
     prefStorage.get(StorageKeys.studentId),
     prefStorage.get(StorageKeys.academicYearId),
+    prefStorage.get(StorageKeys.activeSchoolId),
+    prefStorage.get(StorageKeys.activeBranchId),
   ]);
 
   const effectiveYear = scopedYear || payload.active_academic_year_id;
@@ -78,11 +88,20 @@ async function buildUserFromToken(token: string): Promise<AuthUser | null> {
     await prefStorage.set(StorageKeys.academicYearId, effectiveYear);
   }
 
+  const effectiveSchoolId = activeSchoolId || payload.school_id;
+  if (effectiveSchoolId) {
+    await prefStorage.set(StorageKeys.activeSchoolId, effectiveSchoolId);
+  }
+
   return {
     id: payload.sub,
     email: payload.actor_email || payload.email || '',
     role: payload.role,
-    schoolId: payload.school_id,
+    schoolId: effectiveSchoolId,
+    ownerId: payload.owner_id,
+    branchId: activeBranchId || payload.branch_id || payload.campus_id,
+    campusId: activeBranchId || payload.campus_id,
+    isOwner: payload.is_owner || payload.role === 'owner',
     activeAcademicYearId: effectiveYear ?? undefined,
     profileId: profileId ?? undefined,
     classId: classId ?? undefined,
@@ -95,6 +114,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   hydrated: false,
   loading: false,
   error: null,
+  activeSchoolId: null,
+  activeBranchId: null,
 
   hydrate: async () => {
     const token = await secureStorage.get(StorageKeys.token);
@@ -102,14 +123,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: null, hydrated: true });
       return;
     }
+    const [activeSchoolId, activeBranchId] = await Promise.all([
+      prefStorage.get(StorageKeys.activeSchoolId),
+      prefStorage.get(StorageKeys.activeBranchId),
+    ]);
     const user = await buildUserFromToken(token);
     if (!user) {
       // Token expired or malformed — clean up.
       await secureStorage.remove(StorageKeys.token);
-      set({ user: null, hydrated: true });
+      set({ user: null, hydrated: true, activeSchoolId: null, activeBranchId: null });
       return;
     }
-    set({ user, hydrated: true });
+    set({ user, hydrated: true, activeSchoolId, activeBranchId });
   },
 
   login: async (input) => {
@@ -128,7 +153,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     await prefStorage.set(StorageKeys.lastLoginRole, input.role);
 
     const user = await buildUserFromToken(data.token);
-    set({ user, loading: false, error: null });
+    set({ user, loading: false, error: null, activeSchoolId: user?.schoolId || null, activeBranchId: user?.branchId || null });
     return { ok: true, role: data.role ?? user?.role };
   },
 
@@ -142,9 +167,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       prefStorage.remove(StorageKeys.classId),
       prefStorage.remove(StorageKeys.studentId),
       prefStorage.remove(StorageKeys.academicYearId),
+      prefStorage.remove(StorageKeys.activeSchoolId),
+      prefStorage.remove(StorageKeys.activeBranchId),
     ]);
 
-    set({ user: null });
+    set({ user: null, activeSchoolId: null, activeBranchId: null });
+  },
+
+  setActiveSchool: async (schoolId: string) => {
+    await prefStorage.set(StorageKeys.activeSchoolId, schoolId);
+    await prefStorage.remove(StorageKeys.activeBranchId);
+    const user = get().user;
+    if (user) {
+      set({ activeSchoolId: schoolId, activeBranchId: null, user: { ...user, schoolId } });
+    }
+  },
+
+  setActiveBranch: async (branchId: string) => {
+    if (branchId) {
+      await prefStorage.set(StorageKeys.activeBranchId, branchId);
+    } else {
+      await prefStorage.remove(StorageKeys.activeBranchId);
+    }
+    const user = get().user;
+    if (user) {
+      set({ activeBranchId: branchId || null, user: { ...user, branchId, campusId: branchId } });
+    }
   },
 
   clearError: () => set({ error: null }),

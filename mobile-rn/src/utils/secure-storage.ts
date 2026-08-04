@@ -12,6 +12,8 @@ export const StorageKeys = {
   token: 'token',
   // Non-sensitive
   academicYearId: 'academic_year_id',
+  activeSchoolId: 'active_school_id',
+  activeBranchId: 'active_branch_id',
   profileId: 'profile_id',
   classId: 'class_id',
   studentId: 'student_id',
