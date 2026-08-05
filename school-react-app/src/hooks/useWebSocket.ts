@@ -48,10 +48,18 @@ export function useWebSocket(opts: UseWebSocketOptions = {}) {
 
   // Build WebSocket URL
   const getWSUrl = useCallback(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
     const token = localStorage.getItem("token") || "";
-    return `${protocol}//${host}/ws?token=${encodeURIComponent(token)}`;
+    const apiBase = (import.meta.env.VITE_API_URL || import.meta.env.VITE_WS_URL || "").replace(/\/$/, "");
+    if (apiBase) {
+      const wsBase = apiBase.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
+      return `${wsBase}/ws?token=${encodeURIComponent(token)}`;
+    }
+    let wsHost = window.location.host;
+    if (wsHost === "app.eduplexo.com" || wsHost === "admin.eduplexo.com") {
+      wsHost = "api.eduplexo.com";
+    }
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    return `${protocol}//${wsHost}/ws?token=${encodeURIComponent(token)}`;
   }, []);
 
   // Handle incoming messages

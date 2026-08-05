@@ -558,6 +558,9 @@ const materialToLucideMap: Record<string, string> = {
   language: "Globe",
   globe: "Globe",
   wifi_off: "WifiOff",
+  domain: "Globe",
+  palette: "Palette",
+  hourglass_empty: "Hourglass",
   cell_tower: "Radio"
 };
 
@@ -627,7 +630,9 @@ export function AppIcon({
   const Icon = resolvedName ? iconRegistry[resolvedName] : undefined;
 
   if (!Icon) {
-    console.warn("Missing icon mapping or Lucide icon:", name);
+    if (import.meta.env.DEV) {
+      console.warn("Missing icon mapping or Lucide icon:", name);
+    }
     // Render a fallback icon instead of crashing or showing text
     const FallbackIcon = HelpCircle;
     return <FallbackIcon size={size} className={className} strokeWidth={strokeWidth} />;

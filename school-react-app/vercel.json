@@ -9,6 +9,10 @@
       "destination": "https://api.eduplexo.com/api/:path*"
     },
     {
+      "source": "/ws",
+      "destination": "https://api.eduplexo.com/ws"
+    },
+    {
       "source": "/chat/:path*",
       "destination": "https://bot.eduplexo.com/chat/:path*"
     },
