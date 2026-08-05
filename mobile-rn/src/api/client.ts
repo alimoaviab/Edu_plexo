@@ -49,9 +49,11 @@ export const http: AxiosInstance = axios.create({
 });
 
 http.interceptors.request.use(async (config) => {
-  const [token, academicYearId] = await Promise.all([
+  const [token, academicYearId, activeSchoolId, activeBranchId] = await Promise.all([
     secureStorage.get(StorageKeys.token),
     prefStorage.get(StorageKeys.academicYearId),
+    prefStorage.get(StorageKeys.activeSchoolId),
+    prefStorage.get(StorageKeys.activeBranchId),
   ]);
 
   config.headers = config.headers ?? {};
@@ -61,6 +63,12 @@ http.interceptors.request.use(async (config) => {
   }
   if (academicYearId) {
     config.headers['X-Academic-Year-Id'] = academicYearId;
+  }
+  if (activeSchoolId) {
+    config.headers['X-School-Id'] = activeSchoolId;
+  }
+  if (activeBranchId) {
+    config.headers['X-Branch-Id'] = activeBranchId;
   }
   return config;
 });

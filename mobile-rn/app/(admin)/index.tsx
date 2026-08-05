@@ -24,6 +24,7 @@ import {
   type ListRow,
   type ModuleGridItem,
 } from '@/components/dashboard/widgets';
+import { TrialBanner } from '@/components/subscription/TrialBanner';
 import { fetchAdminComposite } from '@/modules/dashboard/api';
 import type { AdminComposite } from '@/modules/dashboard/types';
 import { useAuthStore } from '@/store/auth-store';
@@ -97,6 +98,7 @@ export default function AdminDashboard() {
             <ErrorBanner message={(query.error as Error).message} onRetry={() => query.refetch()} />
           ) : null}
 
+          <TrialBanner />
           <Kpis data={data} loading={query.isLoading} />
 
           <AttendanceCard data={data} />

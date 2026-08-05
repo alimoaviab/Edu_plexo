@@ -34,6 +34,7 @@ import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 import type { LoginRole, Role } from '@/types/auth';
 
 const ROLE_HOME: Record<Role, string> = {
+  owner: '/(admin)',
   admin: '/(admin)',
   super_admin: '/(admin)',
   teacher: '/(teacher)',
