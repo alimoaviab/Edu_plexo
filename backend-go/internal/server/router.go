@@ -19,6 +19,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/certificates"
 	"github.com/eduplexo/backend-go/internal/domain/classes"
 	"github.com/eduplexo/backend-go/internal/domain/dashboard"
+	"github.com/eduplexo/backend-go/internal/domain/eduplexoextension"
 	"github.com/eduplexo/backend-go/internal/domain/events"
 	"github.com/eduplexo/backend-go/internal/domain/exams"
 	"github.com/eduplexo/backend-go/internal/domain/examsecurity"
@@ -35,9 +36,9 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/results"
 	"github.com/eduplexo/backend-go/internal/domain/schedule"
 	"github.com/eduplexo/backend-go/internal/domain/search"
+	"github.com/eduplexo/backend-go/internal/domain/sections"
 	"github.com/eduplexo/backend-go/internal/domain/seo"
 	"github.com/eduplexo/backend-go/internal/domain/settings"
-	"github.com/eduplexo/backend-go/internal/domain/sections"
 	"github.com/eduplexo/backend-go/internal/domain/students"
 	"github.com/eduplexo/backend-go/internal/domain/subjects"
 	"github.com/eduplexo/backend-go/internal/domain/subscription"
@@ -167,6 +168,19 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Get("/owner/subscriptions", owH.ListSubscriptions)
 			r.Get("/owner/analytics", owH.Analytics)
 			r.Get("/owner/notifications", owH.Notifications)
+
+			edxH := eduplexoextension.New(s, saveFn)
+			r.Get("/eduplexo-extension/auth/current", edxH.CurrentUser)
+			r.Get("/eduplexo-extension/context", edxH.Context)
+			r.Get("/eduplexo-extension/schools", edxH.Schools)
+			r.Get("/eduplexo-extension/schools/{schoolID}/campuses", edxH.CampusesBySchool)
+			r.Get("/eduplexo-extension/hierarchy", edxH.Hierarchy)
+			r.Post("/eduplexo-extension/preview", edxH.Preview)
+			r.Post("/eduplexo-extension/insert", edxH.Insert)
+			r.Get("/eduplexo-extension/history", edxH.History)
+			r.Get("/eduplexo-extension/history/export.csv", edxH.ExportCSV)
+			r.Get("/eduplexo-extension/history/{id}", edxH.Detail)
+			r.Post("/eduplexo-extension/history/{id}/revert", edxH.Revert)
 
 			stH := students.NewPG(s, saveFn, pg.Pool(), rdb)
 			// Subscription limit checker is set after subH is created below

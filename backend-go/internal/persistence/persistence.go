@@ -57,6 +57,10 @@ func extractSchoolID(doc any) string {
 		return v.SchoolID
 	case *store.OwnerSchool:
 		return v.SchoolID
+	case *store.Campus:
+		return v.SchoolID
+	case *store.DummyDataBatch:
+		return v.SchoolID
 	case *store.User:
 		return v.SchoolID
 	case *store.AcademicYear:
@@ -259,12 +263,12 @@ func (p *Persister) drainQueue() []write {
 // tableOrder defines the FK-safe insertion order. Parent tables first,
 // child tables after. This prevents FK violations during flush.
 var tableOrder = []string{
-	"schools", "owner_schools", "boards", "packages", "subscriptions", "users", "academic_years", "subjects",
+	"schools", "owner_schools", "campuses", "boards", "packages", "subscriptions", "users", "academic_years", "subjects",
 	"teachers", "classes",
 	"students", "parents", "student_parents",
 	"attendance", "exams", "results", "homework", "announcements",
 	"behaviors", "events", "leaves", "timetables", "live_classes",
-	"notifications", "fee_types", "class_fees", "fees",
+	"notifications", "fee_types", "class_fees", "fees", "dummy_data_batches",
 	"fee_adjustments", "fee_payments", "school_settings", "audit_logs", "import_logs",
 	"certificate_templates", "generated_certificates",
 	"chapters", "topics", "questions", "question_papers", "star_collections",
@@ -442,6 +446,12 @@ func (p *Persister) FullSnapshot(ctx context.Context, s *store.MemStore) error {
 	for _, v := range s.Schools {
 		plan = append(plan, write{table: "schools", doc: v})
 	}
+	for _, v := range s.OwnerSchools {
+		plan = append(plan, write{table: "owner_schools", doc: v})
+	}
+	for _, v := range s.Campuses {
+		plan = append(plan, write{table: "campuses", doc: v})
+	}
 	for _, v := range s.Packages {
 		plan = append(plan, write{table: "packages", doc: v})
 	}
@@ -541,6 +551,9 @@ func (p *Persister) FullSnapshot(ctx context.Context, s *store.MemStore) error {
 	}
 	for _, v := range s.Fees {
 		plan = append(plan, write{table: "fees", doc: v})
+	}
+	for _, v := range s.DummyDataBatches {
+		plan = append(plan, write{table: "dummy_data_batches", doc: v})
 	}
 	for _, v := range s.FeeAdjustments {
 		plan = append(plan, write{table: "fee_adjustments", doc: v})

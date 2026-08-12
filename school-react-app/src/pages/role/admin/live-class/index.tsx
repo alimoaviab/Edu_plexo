@@ -154,34 +154,6 @@ export function LiveClassPage() {
                             </div>
                         </div>
 
-                        {/* Integration Status Panel */}
-                        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-                            <div className="bg-slate-900 p-5">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 text-white">
-                                        <AppIcon name="Video" className="h-5 w-5 text-indigo-400" />
-                                        <h2 className="text-sm font-bold">Meet Integration</h2>
-                                    </div>
-                                    <span className="flex h-2 w-2 rounded-full bg-emerald-400"></span>
-                                </div>
-                            </div>
-                            <div className="p-5 space-y-4">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-slate-500 font-medium">Auto-Generation</span>
-                                    <span className="font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full text-xs">Active</span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-slate-500 font-medium">Calendar Sync</span>
-                                    <span className="font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full text-xs">Connected</span>
-                                </div>
-                                <div className="pt-3 border-t border-slate-100">
-                                    <p className="text-xs text-slate-500 leading-relaxed">
-                                        Session links are automatically generated via Google Workspace API upon scheduling.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
                         {/* Live Attendance Tracking (Mock) */}
                         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">

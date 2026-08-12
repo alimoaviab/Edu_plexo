@@ -1,0 +1,204 @@
+openapi: 3.0.3
+info:
+  title: Eduplexo Extension APIs
+  version: 1.0.0
+servers:
+  - url: /api/eduplexo-extension
+security:
+  - bearerAuth: []
+paths:
+  /auth/current:
+    get:
+      summary: Auth/current user API
+      responses:
+        "200":
+          description: Current request context, user, school, campus, and teacher profile.
+  /context:
+    get:
+      summary: Extension bootstrap context
+      responses:
+        "200":
+          description: Role, active tenant, schools, campuses, classes, teachers, and defaults.
+  /schools:
+    get:
+      summary: Schools list API
+      responses:
+        "200":
+          description: Schools visible to the active role.
+  /schools/{schoolID}/campuses:
+    get:
+      summary: Campuses by school API
+      parameters:
+        - name: schoolID
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Campuses for the selected school.
+  /hierarchy:
+    get:
+      summary: Owner/admin/teacher hierarchy API
+      parameters:
+        - name: school_id
+          in: query
+          schema:
+            type: string
+        - name: campus_id
+          in: query
+          schema:
+            type: string
+        - name: teacher_id
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Owner, school, campus, admins, teachers, classes, students, and counts.
+  /preview:
+    post:
+      summary: Dummy data generate preview API
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GeneratorPayload"
+      responses:
+        "200":
+          description: Preview counts, hierarchy, samples, and warnings.
+  /insert:
+    post:
+      summary: Dummy data insert API
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/GeneratorPayload"
+                - type: object
+                  required: [confirm]
+                  properties:
+                    confirm:
+                      type: boolean
+                      enum: [true]
+      responses:
+        "200":
+          description: Saved batch and final preview.
+  /history:
+    get:
+      summary: Dummy data history/list API
+      parameters:
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: school
+          in: query
+          schema:
+            type: string
+        - name: campus
+          in: query
+          schema:
+            type: string
+        - name: owner
+          in: query
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Filtered generated batch history.
+  /history/export.csv:
+    get:
+      summary: Export generated history as CSV
+      responses:
+        "200":
+          description: CSV file.
+  /history/{id}:
+    get:
+      summary: Batch detail API
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Full batch record with metadata.
+  /history/{id}/revert:
+    post:
+      summary: Optional batch revert/delete API
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Batch marked reverted and tracked generated rows removed.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    GeneratorPayload:
+      type: object
+      properties:
+        batch_name:
+          type: string
+        school_id:
+          type: string
+        school_name:
+          type: string
+        campus_id:
+          type: string
+        campus_name:
+          type: string
+        owner_name:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        academic_year_id:
+          type: string
+        academic_year:
+          type: string
+        admin_count:
+          type: integer
+          minimum: 0
+          maximum: 10
+        teacher_count:
+          type: integer
+          minimum: 1
+          maximum: 50
+        student_count:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        class_count:
+          type: integer
+          minimum: 1
+          maximum: 20
+        sections_per_class:
+          type: integer
+          minimum: 1
+          maximum: 6
+        subjects_per_class:
+          type: integer
+          minimum: 1
+          maximum: 10

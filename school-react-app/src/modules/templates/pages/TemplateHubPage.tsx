@@ -59,22 +59,19 @@ export function TemplateHubPage() {
   return (
     <div className="space-y-6 pb-12 px-4 max-w-7xl mx-auto py-6">
       
-      {/* Visual Header */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 p-6 sm:p-8 text-white shadow-lg overflow-hidden">
-        <div className="absolute right-0 bottom-0 top-0 w-1/3 opacity-10 pointer-events-none select-none">
-          <Layers className="w-48 h-48 absolute right-[-20px] bottom-[-20px]" />
+      <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Template Designer</p>
+          <p className="mt-0.5 text-sm font-bold text-slate-900 truncate">Manage Custom Layouts</p>
         </div>
-        <div className="relative z-10 space-y-2">
-          <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[10px] font-black uppercase tracking-widest text-blue-200 border border-white/5">
-            Canva Studio
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight uppercase">
-            EduPlexo Template Designer
-          </h1>
-          <p className="text-xs sm:text-sm text-blue-100 max-w-2xl font-medium">
-            Design certificates, student ID cards, monthly fee challans, result cards, and admission forms from a single drag-and-drop studio.
-          </p>
-        </div>
+        <button
+          type="button"
+          onClick={() => navigate("/admin/templates/create")}
+          className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-md shadow-blue-600/10 hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Create Template
+        </button>
       </div>
 
       {/* Stats row */}
@@ -140,15 +137,6 @@ export function TemplateHubPage() {
             ))}
           </div>
 
-          {/* New template button */}
-          <button
-            type="button"
-            onClick={() => navigate("/admin/templates/create")}
-            className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-md shadow-blue-600/10 hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Create Template
-          </button>
         </div>
       </div>
 

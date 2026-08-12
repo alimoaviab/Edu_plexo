@@ -1,5 +1,6 @@
 import { AppIcon } from "shared/ui/AppIcon";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { Badge, Button, Card, DataState, LayoutCard, PageHeader, Skeleton, TableSkeleton } from "@/components/ui";
 import { useAcademicYears } from "../hooks/useAcademicYears";
@@ -14,6 +15,7 @@ import { ConstraintSidebar } from "../components/ConstraintSidebar";
 type ViewMode = "grid" | "list";
 
 export function AcademicYearListPage() {
+  const navigate = useNavigate();
   const { state, page, setPage, updateAcademicYear, deleteAcademicYear } = useAcademicYears();
   const [editingYear, setEditingYear] = useState<AcademicYearRow | null>(null);
   const [deletingYear, setDeletingYear] = useState<AcademicYearRow | null>(null);
@@ -140,8 +142,9 @@ export function AcademicYearListPage() {
               </div>
             </div>
           ))}
-          <Link
-            to="/admin/academic-years/create"
+          <button
+            type="button"
+            onClick={() => navigate("/admin/academic-years/create")}
             className={`bg-white rounded-xl border border-slate-200 ring-1 ring-slate-900/5 px-3.5 py-3 shadow-[0_4px_18px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.05)] hover:border-blue-300 transition-all group flex items-center gap-3 ${isDrawerOpen ? "hidden md:flex" : ""}`}
           >
             <div className="h-9 w-9 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:rotate-90 transition-all shrink-0">
@@ -151,7 +154,7 @@ export function AcademicYearListPage() {
               <p className="text-[10px] font-bold text-slate-400 normal-case truncate">Quick Action</p>
               <p className="mt-0.5 text-sm font-bold text-slate-900 tracking-tight leading-none group-hover:text-blue-600 transition-colors truncate">Add New Session</p>
             </div>
-          </Link>
+          </button>
         </div>
 
         {/* Operational Toolbar */}
@@ -245,12 +248,14 @@ export function AcademicYearListPage() {
                           icon={<AppIcon name="Calendar" size={24} />}
                           badge={isActive && <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-ping" />}
                           actions={
-                            <Link 
-                              to={`/admin/academic-years/${row._id}/edit`}
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/admin/academic-years/${row._id}/edit`)}
                               className="h-8 w-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white hover:shadow-lg transition-all"
+                              title="Edit session"
                             >
                               <AppIcon name="SquarePen" size={18} />
-                            </Link>
+                            </button>
                           }
                         >
                           {/* Timeline Visualization */}

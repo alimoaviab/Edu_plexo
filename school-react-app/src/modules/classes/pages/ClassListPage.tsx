@@ -192,6 +192,22 @@ export function ClassListPage() {
         </div>
       </div>
 
+      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Current session</p>
+          <p className="mt-0.5 text-sm font-bold text-slate-900 truncate">
+            {academicYearState.data?.data?.find(y => y._id === getSelectedAcademicYearId())?.year || "Selected academic year"}
+          </p>
+        </div>
+        <Link
+          to="/admin/leave"
+          className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[10px] font-bold text-slate-600 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50 transition-all"
+        >
+          <AppIcon name="event_available" size={16} />
+          Leave
+        </Link>
+      </div>
+
       {/* Academic Year Filter Warning */}
       {classes.length === 0 && (
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex items-center gap-4 animate-in fade-in slide-in-from-top-4">

@@ -43,6 +43,9 @@ type MemStore struct {
 	Campuses     []*Campus
 	OwnerSchools []*OwnerSchool
 
+	// Eduplexo Extension collections.
+	DummyDataBatches []*DummyDataBatch
+
 	// Phase 2.1 collections.
 	Attendance     []*Attendance
 	Exams          []*Exam
@@ -101,9 +104,9 @@ type MemStore struct {
 
 	// AI Generation.
 	AIGenerationLogs []*AIGenerationLog
-	Invoices       []*Invoice
-	Transactions   []*Transaction
-	Subscriptions  []*Subscription
+	Invoices         []*Invoice
+	Transactions     []*Transaction
+	Subscriptions    []*Subscription
 
 	// Fee extensions: scholarships, discounts, wallets.
 	StudentScholarships []*StudentScholarship
@@ -250,14 +253,14 @@ func EnsureBootstrapUsers(s *MemStore) {
 	}
 	if !hasDefaultSchool {
 		s.Schools = append(s.Schools, &School{
-			ID:        NewID("sch"),
-			SchoolID:  schoolID,
-			Name:      "Eduplexo Academy",
-			Code:      "MAIN",
+			ID:         NewID("sch"),
+			SchoolID:   schoolID,
+			Name:       "Eduplexo Academy",
+			Code:       "MAIN",
 			OwnerEmail: ownerEmail,
-			Status:    "active",
-			CreatedAt: now,
-			UpdatedAt: now,
+			Status:     "active",
+			CreatedAt:  now,
+			UpdatedAt:  now,
 		})
 
 		// Also create a default academic year for this school

@@ -38,6 +38,8 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 		fn   func(context.Context, *store.MemStore) error
 	}{
 		{"schools", p.loadSchools},
+		{"owner_schools", p.loadOwnerSchools},
+		{"campuses", p.loadCampuses},
 		{"packages", p.loadPackages},
 		{"subscriptions", p.loadSubscriptions},
 		{"users", p.loadUsers},
@@ -86,6 +88,7 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 		{"student_fee_discounts", p.loadStudentFeeDiscounts},
 		{"student_wallets", p.loadStudentWallets},
 		{"wallet_transactions", p.loadWalletTransactions},
+		{"dummy_data_batches", p.loadDummyDataBatches},
 	}
 
 	s.Lock()
@@ -95,6 +98,8 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 	// whole MemStore — that would also zero the embedded sync.RWMutex we
 	// are currently holding.
 	s.Schools = nil
+	s.OwnerSchools = nil
+	s.Campuses = nil
 	s.Packages = nil
 	s.Users = nil
 	s.AcademicYears = nil
@@ -142,6 +147,7 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 	s.StudentFeeDiscounts = nil
 	s.StudentWallets = nil
 	s.WalletTransactions = nil
+	s.DummyDataBatches = nil
 
 	for _, l := range loaders {
 		if err := l.fn(ctx, s); err != nil {
@@ -150,6 +156,80 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 		}
 	}
 	return nil
+}
+
+func (p *Persister) loadOwnerSchools(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, owner_user_id, school_id, role, created_at
+		FROM owner_schools ORDER BY created_at`)
+	if err != nil {
+		log.Printf("[persistence] loadOwnerSchools: %v (table may not exist yet)", err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		v := &store.OwnerSchool{}
+		if err := rows.Scan(&v.ID, &v.OwnerUserID, &v.SchoolID, &v.Role, &v.CreatedAt); err != nil {
+			return err
+		}
+		s.OwnerSchools = append(s.OwnerSchools, v)
+	}
+	return rows.Err()
+}
+
+func (p *Persister) loadCampuses(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, school_id, owner_user_id, name, code, logo_url, address, city,
+			phone, email, website, principal_name, principal_phone, timezone,
+			currency, status, created_at, updated_at
+		FROM campuses ORDER BY created_at`)
+	if err != nil {
+		log.Printf("[persistence] loadCampuses: %v (table may not exist yet)", err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		v := &store.Campus{}
+		if err := rows.Scan(&v.ID, &v.SchoolID, &v.OwnerUserID, &v.Name, &v.Code, &v.LogoURL,
+			&v.Address, &v.City, &v.Phone, &v.Email, &v.Website, &v.PrincipalName,
+			&v.PrincipalPhone, &v.Timezone, &v.Currency, &v.Status, &v.CreatedAt, &v.UpdatedAt); err != nil {
+			return err
+		}
+		s.Campuses = append(s.Campuses, v)
+	}
+	return rows.Err()
+}
+
+func (p *Persister) loadDummyDataBatches(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, school_id, campus_id, owner_id, inserted_by_user_id,
+			inserted_by_role, batch_name, school_name, campus_name, owner_name,
+			status, classes_added, sections_added, teachers_added, students_added,
+			admins_added, subjects_added, error_message, metadata, created_at, updated_at
+		FROM dummy_data_batches ORDER BY created_at DESC`)
+	if err != nil {
+		log.Printf("[persistence] loadDummyDataBatches: %v (table may not exist yet)", err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		v := &store.DummyDataBatch{}
+		var metadata []byte
+		if err := rows.Scan(&v.ID, &v.SchoolID, &v.CampusID, &v.OwnerID, &v.InsertedByID,
+			&v.InsertedByRole, &v.BatchName, &v.SchoolName, &v.CampusName, &v.OwnerName,
+			&v.Status, &v.ClassesAdded, &v.SectionsAdded, &v.TeachersAdded, &v.StudentsAdded,
+			&v.AdminsAdded, &v.SubjectsAdded, &v.ErrorMessage, &metadata, &v.CreatedAt, &v.UpdatedAt); err != nil {
+			return err
+		}
+		if len(metadata) > 0 {
+			var decoded any
+			if err := json.Unmarshal(metadata, &decoded); err == nil {
+				v.Metadata = decoded
+			}
+		}
+		s.DummyDataBatches = append(s.DummyDataBatches, v)
+	}
+	return rows.Err()
 }
 
 func (p *Persister) loadSchools(ctx context.Context, s *store.MemStore) error {

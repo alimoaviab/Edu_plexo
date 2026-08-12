@@ -20,6 +20,8 @@ func upsertRow(ctx context.Context, tx pgx.Tx, table string, doc any) error {
 		return upsertSchool(ctx, tx, v)
 	case *store.OwnerSchool:
 		return upsertOwnerSchool(ctx, tx, v)
+	case *store.Campus:
+		return upsertCampus(ctx, tx, v)
 	case *store.User:
 		return upsertUser(ctx, tx, v)
 	case *store.AcademicYear:
@@ -116,8 +118,64 @@ func upsertRow(ctx context.Context, tx pgx.Tx, table string, doc any) error {
 		return upsertTopic(ctx, tx, v)
 	case *store.ImportLog:
 		return upsertImportLog(ctx, tx, v)
+	case *store.DummyDataBatch:
+		return upsertDummyDataBatch(ctx, tx, v)
 	}
 	return fmt.Errorf("upsert: unknown document type for table %s", table)
+}
+
+func upsertCampus(ctx context.Context, tx pgx.Tx, v *store.Campus) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO campuses (id, school_id, owner_user_id, name, code, logo_url,
+			address, city, phone, email, website, principal_name, principal_phone,
+			timezone, currency, status, created_at, updated_at)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+		ON CONFLICT (id) DO UPDATE SET
+			school_id=EXCLUDED.school_id, owner_user_id=EXCLUDED.owner_user_id,
+			name=EXCLUDED.name, code=EXCLUDED.code, logo_url=EXCLUDED.logo_url,
+			address=EXCLUDED.address, city=EXCLUDED.city, phone=EXCLUDED.phone,
+			email=EXCLUDED.email, website=EXCLUDED.website,
+			principal_name=EXCLUDED.principal_name,
+			principal_phone=EXCLUDED.principal_phone, timezone=EXCLUDED.timezone,
+			currency=EXCLUDED.currency, status=EXCLUDED.status,
+			updated_at=EXCLUDED.updated_at
+	`, v.ID, v.SchoolID, v.OwnerUserID, v.Name, v.Code, v.LogoURL, v.Address,
+		v.City, v.Phone, v.Email, v.Website, v.PrincipalName, v.PrincipalPhone,
+		defaultStr(v.Timezone, "Asia/Karachi"), defaultStr(v.Currency, "PKR"),
+		defaultStr(v.Status, "active"), v.CreatedAt, v.UpdatedAt)
+	return err
+}
+
+func upsertDummyDataBatch(ctx context.Context, tx pgx.Tx, v *store.DummyDataBatch) error {
+	metadata, err := jsonOrEmpty(v.Metadata)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, `
+		INSERT INTO dummy_data_batches (
+			id, school_id, campus_id, owner_id, inserted_by_user_id, inserted_by_role,
+			batch_name, school_name, campus_name, owner_name, status,
+			classes_added, sections_added, teachers_added, students_added,
+			admins_added, subjects_added, error_message, metadata, created_at, updated_at
+		)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+		ON CONFLICT (id) DO UPDATE SET
+			school_id=EXCLUDED.school_id, campus_id=EXCLUDED.campus_id,
+			owner_id=EXCLUDED.owner_id, inserted_by_user_id=EXCLUDED.inserted_by_user_id,
+			inserted_by_role=EXCLUDED.inserted_by_role, batch_name=EXCLUDED.batch_name,
+			school_name=EXCLUDED.school_name, campus_name=EXCLUDED.campus_name,
+			owner_name=EXCLUDED.owner_name, status=EXCLUDED.status,
+			classes_added=EXCLUDED.classes_added, sections_added=EXCLUDED.sections_added,
+			teachers_added=EXCLUDED.teachers_added, students_added=EXCLUDED.students_added,
+			admins_added=EXCLUDED.admins_added, subjects_added=EXCLUDED.subjects_added,
+			error_message=EXCLUDED.error_message, metadata=EXCLUDED.metadata,
+			updated_at=EXCLUDED.updated_at
+	`, v.ID, v.SchoolID, nullableString(v.CampusID), nullableString(v.OwnerID),
+		v.InsertedByID, v.InsertedByRole, v.BatchName, v.SchoolName, v.CampusName,
+		v.OwnerName, defaultStr(v.Status, "success"), v.ClassesAdded, v.SectionsAdded,
+		v.TeachersAdded, v.StudentsAdded, v.AdminsAdded, v.SubjectsAdded,
+		v.ErrorMessage, metadata, v.CreatedAt, v.UpdatedAt)
+	return err
 }
 
 func deleteRow(ctx context.Context, tx pgx.Tx, table, id string) error {

@@ -81,6 +81,7 @@ export function AcademicYearTable({
             render: (row: AcademicYearRow) => (
                 <div className="flex justify-end items-center gap-1.5 py-1">
                     <button 
+                        type="button"
                         onClick={() => onSetActive(row)}
                         className={`h-8 px-3 flex items-center justify-center gap-2 rounded-lg transition-all border text-[9px] font-bold normal-case  ${
                             row.is_active 
@@ -94,23 +95,24 @@ export function AcademicYearTable({
                     </button>
                     <div className="w-px h-3 bg-slate-100 mx-0.5" />
                     <button 
+                        type="button"
                         onClick={() => onEdit(row)}
                         className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-slate-50 hover:text-blue-600 transition-colors"
-                        title="Edit"
+                        title="Edit session"
                     >
-                        <AppIcon name="FileText" size={18} />
+                        <AppIcon name="SquarePen" size={18} />
                     </button>
-                    {/* 
                     <button 
+                        type="button"
                         onClick={() => onDelete(row)}
                         className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                        title="Delete"
+                        title="Delete session"
                     >
                         <AppIcon name="Trash2" size={18} />
                     </button>
-                    */}
                     <div className="w-px h-3 bg-slate-100 mx-0.5" />
-                    <button 
+                    <button
+                        type="button"
                         onClick={() => onEdit(row)}
                         className="h-7 px-3 rounded bg-blue-600 text-[10px] font-bold normal-case  text-white hover:bg-blue-700 transition-all shadow-sm active:scale-95"
                     >

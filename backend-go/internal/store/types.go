@@ -269,3 +269,29 @@ type OwnerSchool struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+// DummyDataBatch records each Eduplexo Extension data insertion. Metadata
+// stores the generated hierarchy and inserted IDs so batches can be inspected
+// or safely reverted later.
+type DummyDataBatch struct {
+	ID             string    `json:"_id"`
+	SchoolID       string    `json:"school_id"`
+	CampusID       string    `json:"campus_id,omitempty"`
+	OwnerID        string    `json:"owner_id,omitempty"`
+	InsertedByID   string    `json:"inserted_by_user_id"`
+	InsertedByRole string    `json:"inserted_by_role"`
+	BatchName      string    `json:"batch_name"`
+	SchoolName     string    `json:"school_name"`
+	CampusName     string    `json:"campus_name"`
+	OwnerName      string    `json:"owner_name"`
+	Status         string    `json:"status"`
+	ClassesAdded   int       `json:"classes_added"`
+	SectionsAdded  int       `json:"sections_added"`
+	TeachersAdded  int       `json:"teachers_added"`
+	StudentsAdded  int       `json:"students_added"`
+	AdminsAdded    int       `json:"admins_added"`
+	SubjectsAdded  int       `json:"subjects_added"`
+	ErrorMessage   string    `json:"error_message,omitempty"`
+	Metadata       any       `json:"metadata,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}

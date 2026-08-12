@@ -145,7 +145,9 @@ const teacherNavGroups: NavGroup[] = [
   },
   {
     label: "Students",
-    items: [{ label: "Behavior", href: "/teacher/behavior", icon: "gavel" }],
+    items: [
+      { label: "Behavior", href: "/teacher/behavior", icon: "gavel" },
+    ],
   },
   {
     label: "Communication",
@@ -252,6 +254,7 @@ function AdminActions({ allowedModules, subscription }: { allowedModules: Record
   const actions = [
     { label: "Student", icon: "person_add", href: "/admin/students?action=new", color: "text-blue-600 border-blue-200 hover:bg-blue-50", module: "students" },
     { label: "Attendance", icon: "how_to_reg", href: "/admin/attendance", color: "text-blue-600 border-blue-200 hover:bg-blue-50", module: "attendance" },
+    { label: "Leave", icon: "event_available", href: "/admin/leave", color: "text-blue-600 border-blue-200 hover:bg-blue-50", module: "leave" },
     { label: "Exam", icon: "add_task", href: "/admin/exams?action=new", color: "text-blue-600 border-blue-200 hover:bg-blue-50", module: "exams" },
     { label: "Broadcast", icon: "campaign", href: "/admin/announcements?action=new", color: "text-blue-600 border-blue-200 hover:bg-blue-50", module: "announcements" },
   ];
