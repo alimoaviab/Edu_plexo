@@ -37,40 +37,7 @@ from app.tools.catalog import (
 logger = structlog.get_logger()
 
 
-# ─── Primary: Groq or Gemini ───────────────────────────────────────────────
-
-if settings.GROQ_API_KEY:
-    _groq_client = AsyncOpenAI(
-        api_key=settings.GROQ_API_KEY,
-        base_url="https://api.groq.com/openai/v1",
-    )
-    _primary_model = OpenAIChatCompletionsModel(
-        model=settings.GROQ_MODEL,
-        openai_client=_groq_client,
-    )
-else:
-    _gemini_client = AsyncOpenAI(
-        api_key=settings.GEMINI_API_KEY or "dummy",
-        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-    )
-    _primary_model = OpenAIChatCompletionsModel(
-        model=settings.GEMINI_MODEL,
-        openai_client=_gemini_client,
-    )
-
-
-# ─── Fallback: OpenRouter ─────────────────────────────────────────────────
-
-_fallback_model = None
-if settings.OPENROUTER_API_KEY:
-    _openrouter_client = AsyncOpenAI(
-        api_key=settings.OPENROUTER_API_KEY,
-        base_url="https://openrouter.ai/api/v1",
-    )
-    _fallback_model = OpenAIChatCompletionsModel(
-        model=settings.OPENROUTER_MODEL,
-        openai_client=_openrouter_client,
-    )
+from app.core.ai_keys import key_pool
 
 
 # ─── Tools ────────────────────────────────────────────────────────────────
@@ -96,17 +63,13 @@ _tools = [
 # ─── Agent factory ────────────────────────────────────────────────────────
 
 
-def create_agent(role: str, name: str, language: str, use_fallback: bool = False) -> Agent:
-    """Create a per-turn agent with the correct instruction and model.
-
-    Args:
-        role: User's role (admin, teacher, parent, student).
-        name: User's display name.
-        language: Response language (english, urdu).
-        use_fallback: If True, use OpenRouter instead of Gemini.
-    """
-    model = _fallback_model if (use_fallback and _fallback_model) else _primary_model
-
+def create_agent(
+    role: str,
+    name: str,
+    language: str,
+    model: OpenAIChatCompletionsModel,
+) -> Agent:
+    """Create a per-turn agent with the specified model and instructions."""
     return Agent(
         name="Plexa",
         model=model,
@@ -121,68 +84,47 @@ def create_agent(role: str, name: str, language: str, use_fallback: bool = False
 
 
 async def run_with_fallback(agent_kwargs: dict, user_input: str) -> str:
-    """Run the agent with automatic fallback to OpenRouter on failure.
+    """Run the agent with automatic multi-key and multi-provider pool failover."""
+    key_specs = key_pool.get_available_key_specs()
 
-    Returns the final output text.
-    """
-    # Try primary (Gemini) with one retry for rate limits
-    for attempt in range(2):
+    for spec in key_specs:
+        model_obj, api_key, provider = key_pool.get_model_for_spec(spec)
         try:
-            agent = create_agent(**agent_kwargs, use_fallback=False)
+            agent = create_agent(**agent_kwargs, model=model_obj)
             result = await Runner.run(agent, user_input)
             if result.final_output:
                 return result.final_output
-            break  # Got a result (even if empty), don't retry
         except Exception as e:
             error_str = str(e).lower()
-            logger.warning("primary_model_failed", error=str(e), attempt=attempt)
-            is_rate_limit = "429" in str(e) or "quota" in error_str or "resource_exhausted" in error_str
-            # Retry once after a short delay for rate limits
-            if is_rate_limit and attempt == 0:
-                await asyncio.sleep(2)
-                continue
-            # If quota exhausted and no fallback, surface a clear message
-            if is_rate_limit and not _fallback_model:
-                return (
-                    "The AI service is temporarily at capacity. "
-                    "Please try again in a few moments."
-                )
-            break
+            is_rate_limit = (
+                "429" in str(e)
+                or "quota" in error_str
+                or "resource_exhausted" in error_str
+                or "rate limit" in error_str
+            )
+            if is_rate_limit:
+                key_pool.mark_rate_limited(api_key, cooldown_seconds=60.0)
+            logger.warning(
+                "agent_key_failed",
+                provider=provider,
+                model=spec["model"],
+                error=str(e),
+                rate_limited=is_rate_limit,
+            )
+            continue
 
-    # Fallback to OpenRouter
-    if _fallback_model:
-        try:
-            agent = create_agent(**agent_kwargs, use_fallback=True)
-            result = await Runner.run(agent, user_input)
-            if result.final_output:
-                logger.info("fallback_model_used")
-                return result.final_output
-        except Exception as e:
-            logger.error("fallback_model_failed", error=str(e))
-
-    return ""
+    return "The AI service is temporarily at capacity. Please try again in a few moments."
 
 
 async def stream_with_fallback(agent_kwargs: dict, user_input: str):
-    """Stream the agent's reply chunk-by-chunk with automatic fallback.
-
-    CRITICAL: This function MUST go through `create_agent()` so the
-    system instructions (Eduplexo-only context, role/language rules,
-    refusal rules) and the tool catalog are applied. A previous version
-    bypassed the agent and called the raw chat completions endpoint with
-    only the user message, which silently dropped the system prompt and
-    let the model answer programming / general-knowledge questions.
-
-    Yields plain text chunks as they arrive.
-    """
-    primary_failed = False
-    primary_rate_limited = False
+    """Stream the agent's reply chunk-by-chunk with automatic multi-key failover."""
+    key_specs = key_pool.get_available_key_specs()
     last_error: Exception | None = None
 
-    # ─── Primary attempt (Gemini / Groq) with one retry on rate limit ──
-    for attempt in range(2):
+    for spec in key_specs:
+        model_obj, api_key, provider = key_pool.get_model_for_spec(spec)
         try:
-            agent = create_agent(**agent_kwargs, use_fallback=False)
+            agent = create_agent(**agent_kwargs, model=model_obj)
             result = Runner.run_streamed(agent, user_input)
 
             got_text = False
@@ -192,18 +134,12 @@ async def stream_with_fallback(agent_kwargs: dict, user_input: str):
                     got_text = True
                     yield text
 
-            # Some models (Gemini via the OpenAI-compat layer in particular)
-            # complete the run without surfacing token-level deltas. In that
-            # case `final_output` is populated only when the run finishes.
             if not got_text and result.final_output:
                 yield result.final_output
                 got_text = True
 
             if got_text:
-                return  # success — done
-            # No text and no final_output → treat as a soft failure and try fallback.
-            primary_failed = True
-            break
+                return  # Success with current key
         except Exception as e:
             last_error = e
             error_str = str(e).lower()
@@ -213,63 +149,19 @@ async def stream_with_fallback(agent_kwargs: dict, user_input: str):
                 or "resource_exhausted" in error_str
                 or "rate limit" in error_str
             )
+            if is_rate_limit:
+                key_pool.mark_rate_limited(api_key, cooldown_seconds=60.0)
             logger.warning(
-                "primary_stream_failed",
+                "agent_stream_key_failed",
+                provider=provider,
+                model=spec["model"],
                 error=str(e),
-                attempt=attempt,
                 rate_limited=is_rate_limit,
             )
-            if is_rate_limit and attempt == 0:
-                # Brief backoff and retry once.
-                await asyncio.sleep(2)
-                continue
-            primary_failed = True
-            primary_rate_limited = is_rate_limit
-            break
+            continue
 
-    # ─── Fallback (OpenRouter) ─────────────────────────────────────────
-    if primary_failed and _fallback_model is not None:
-        try:
-            agent = create_agent(**agent_kwargs, use_fallback=True)
-            result = Runner.run_streamed(agent, user_input)
-
-            got_text = False
-            async for event in result.stream_events():
-                text = _extract_text(event)
-                if text:
-                    got_text = True
-                    yield text
-
-            if not got_text and result.final_output:
-                yield result.final_output
-                got_text = True
-
-            if got_text:
-                logger.info("fallback_stream_used")
-                return
-        except Exception as e:
-            logger.error("fallback_stream_failed", error=str(e))
-            last_error = e
-
-    # ─── No path produced output — surface a clean message ────────────
-    if primary_rate_limited and _fallback_model is None:
-        yield (
-            "The AI service is temporarily at capacity. "
-            "Please try again in a few moments."
-        )
-        return
-
-    logger.error(
-        "stream_no_output",
-        primary_failed=primary_failed,
-        rate_limited=primary_rate_limited,
-        has_fallback=_fallback_model is not None,
-        last_error=str(last_error) if last_error else None,
-    )
-    yield (
-        "The AI service is currently unavailable. "
-        "Please try again in a few moments."
-    )
+    logger.error("stream_all_keys_failed", last_error=str(last_error) if last_error else None)
+    yield "The AI service is temporarily at capacity. Please try again in a few moments."
 
 
 def _extract_text(event) -> str:

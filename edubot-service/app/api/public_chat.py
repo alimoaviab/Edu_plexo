@@ -87,42 +87,71 @@ async def public_stream(body: PublicChatRequest):
 
 
 async def _call_gemini(message: str, language: str) -> str:
-    """Call Gemini API with the landing page system prompt."""
+    """Call AI provider API with landing page system prompt, rotating through key pool."""
     import httpx
+    from app.core.ai_keys import key_pool
 
     lang_instruction = ""
     if language == "urdu":
         lang_instruction = "\n\nIMPORTANT: Respond in Roman Urdu (English script mein Urdu)."
 
-    api_key = settings.GEMINI_API_KEY
-    model = settings.GEMINI_MODEL
+    key_specs = key_pool.get_available_key_specs()
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+    for spec in key_specs:
+        api_key = spec["apiKey"]
+        provider = spec["provider"]
+        model = spec["model"]
 
-    payload = {
-        "contents": [
-            {"role": "user", "parts": [{"text": LANDING_SYSTEM_PROMPT + lang_instruction}]},
-            {"role": "model", "parts": [{"text": "Understood. I am the EduPlexo AI Assistant. I will help visitors learn about EduPlexo, guide them through features, and encourage demo bookings. Ready to assist."}]},
-            {"role": "user", "parts": [{"text": message}]},
-        ],
-        "generationConfig": {
-            "temperature": 0.5,
-            "maxOutputTokens": 500,
-            "topP": 0.9,
-        },
-    }
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                if provider == "groq":
+                    url = "https://api.groq.com/openai/v1/chat/completions"
+                    headers = {
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    }
+                    payload = {
+                        "model": model,
+                        "messages": [
+                            {"role": "system", "content": LANDING_SYSTEM_PROMPT + lang_instruction},
+                            {"role": "user", "content": message},
+                        ],
+                        "temperature": 0.5,
+                        "max_tokens": 500,
+                    }
+                    resp = await client.post(url, headers=headers, json=payload)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    choices = data.get("choices", [])
+                    if choices and choices[0].get("message", {}).get("content"):
+                        return choices[0]["message"]["content"]
+                else:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+                    payload = {
+                        "contents": [
+                            {"role": "user", "parts": [{"text": LANDING_SYSTEM_PROMPT + lang_instruction}]},
+                            {"role": "model", "parts": [{"text": "Understood. I am the EduPlexo AI Assistant. I will help visitors learn about EduPlexo."}]},
+                            {"role": "user", "parts": [{"text": message}]},
+                        ],
+                        "generationConfig": {
+                            "temperature": 0.5,
+                            "maxOutputTokens": 500,
+                            "topP": 0.9,
+                        },
+                    }
+                    resp = await client.post(url, json=payload)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts and parts[0].get("text"):
+                            return parts[0]["text"]
+        except Exception as e:
+            error_str = str(e).lower()
+            if "429" in str(e) or "quota" in error_str or "rate limit" in error_str:
+                key_pool.mark_rate_limited(api_key, cooldown_seconds=60.0)
+            logger.warning("public_chat_key_failed", provider=provider, model=model, error=str(e))
+            continue
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        resp = await client.post(url, json=payload)
-        resp.raise_for_status()
-
-    data = resp.json()
-    candidates = data.get("candidates", [])
-    if not candidates:
-        return "I'm here to help you learn about EduPlexo. What would you like to know?"
-
-    parts = candidates[0].get("content", {}).get("parts", [])
-    if not parts:
-        return "I'm here to help you learn about EduPlexo. What would you like to know?"
-
-    return parts[0].get("text", "")
+    return "I'm here to help you learn about EduPlexo. Please ask any question about features or pricing!"

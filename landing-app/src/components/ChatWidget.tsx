@@ -7,8 +7,113 @@ interface Message {
   timestamp: string;
 }
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || "";
-const GEMINI_MODEL = "gemini-2.0-flash";
+function getClientSideKeys(): Array<{ provider: string; apiKey: string; model: string }> {
+  const keys: Array<{ provider: string; apiKey: string; model: string }> = [];
+  const groqEnv = import.meta.env.VITE_GROQ_API_KEYS || import.meta.env.VITE_GROQ_API_KEY || "";
+  if (groqEnv) {
+    for (const k of groqEnv.split(",")) {
+      const trimmed = k.strip ? k.strip() : k.trim();
+      if (trimmed) {
+        keys.push({ provider: "groq", apiKey: trimmed, model: "llama-3.3-70b-versatile" });
+      }
+    }
+  }
+  const geminiEnv = import.meta.env.VITE_GEMINI_API_KEYS || import.meta.env.VITE_GEMINI_API_KEY || "";
+  if (geminiEnv) {
+    for (const k of geminiEnv.split(",")) {
+      const trimmed = k.strip ? k.strip() : k.trim();
+      if (trimmed) {
+        keys.push({ provider: "gemini", apiKey: trimmed, model: "gemini-2.5-flash" });
+      }
+    }
+  }
+  return keys;
+}
+
+async function callGemini(
+  message: string,
+  history: Array<{ role: string; parts: Array<{ text: string }> }>
+): Promise<string> {
+  // First try backend API service if available
+  try {
+    const apiRes = await fetch("/public-chat/message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    });
+    if (apiRes.ok) {
+      const data = await apiRes.json();
+      if (data.reply) return data.reply;
+    }
+  } catch {
+    /* Fallback to direct AI Key Pool rotation */
+  }
+
+  // Iterate over key pool
+  for (const item of getClientSideKeys()) {
+    try {
+      if (item.provider === "groq") {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${item.apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: item.model,
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              ...history.map(h => ({
+                role: h.role === "model" ? "assistant" : "user",
+                content: h.parts[0]?.text || "",
+              })),
+              { role: "user", content: message },
+            ],
+            temperature: 0.5,
+            max_tokens: 500,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.choices?.[0]?.message?.content;
+          if (text) return text;
+        }
+      } else {
+        const contents = [
+          { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
+          { role: "model", parts: [{ text: "Understood. I am the EduPlexo AI Assistant. Ready to help visitors learn about EduPlexo." }] },
+          ...history.slice(-10),
+          { role: "user", parts: [{ text: message }] },
+        ];
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${item.model}:generateContent?key=${item.apiKey}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents,
+            generationConfig: {
+              temperature: 0.5,
+              maxOutputTokens: 500,
+              topP: 0.9,
+            },
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text;
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error("All AI model keys are currently unavailable.");
+}
 
 const SYSTEM_PROMPT = `You are EduPlexo AI Assistant, an intelligent onboarding and support assistant for EduPlexo School Management System — Pakistan's #1 AI-powered School ERP.
 
@@ -210,50 +315,4 @@ export function ChatWidget() {
   );
 }
 
-async function callGemini(
-  message: string,
-  history: Array<{ role: string; parts: Array<{ text: string }> }>
-): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    throw new Error("Gemini API key not configured");
-  }
 
-  const contents = [
-    { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
-    { role: "model", parts: [{ text: "Understood. I am the EduPlexo AI Assistant. Ready to help visitors learn about EduPlexo." }] },
-    ...history.slice(-10), // Last 10 messages for context
-    { role: "user", parts: [{ text: message }] },
-  ];
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents,
-      generationConfig: {
-        temperature: 0.5,
-        maxOutputTokens: 500,
-        topP: 0.9,
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    throw new Error(`Gemini API error: ${res.status}`);
-  }
-
-  const data = await res.json();
-  const candidates = data?.candidates;
-  if (!candidates?.length) {
-    throw new Error("No response from AI");
-  }
-
-  const parts = candidates[0]?.content?.parts;
-  if (!parts?.length) {
-    throw new Error("Empty response");
-  }
-
-  return parts[0].text;
-}

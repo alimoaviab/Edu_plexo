@@ -7,7 +7,8 @@ class Settings(BaseSettings):
     """Plexa service configuration."""
 
     # AI — Primary (Gemini via OpenAI-compatible endpoint)
-    GEMINI_API_KEY: str
+    GEMINI_API_KEY: str = ""
+    GEMINI_API_KEYS: str = ""
     GEMINI_MODEL: str = "gemini-2.5-flash"
     GEMINI_TIMEOUT_SECONDS: int = 30
 
@@ -17,6 +18,7 @@ class Settings(BaseSettings):
 
     # AI — Groq
     GROQ_API_KEY: str = ""
+    GROQ_API_KEYS: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # Auth

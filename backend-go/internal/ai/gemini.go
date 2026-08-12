@@ -15,12 +15,15 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 )
 
-// GeminiClient wraps the Google Gemini API.
+// GeminiClient wraps the Google Gemini API with key rotation.
 type GeminiClient struct {
 	apiKey     string
+	apiKeys    []string
 	model      string
 	httpClient *http.Client
 	timeout    time.Duration
@@ -41,20 +44,43 @@ type IntentResult struct {
 	Language   string            `json:"language"`
 }
 
-// NewGeminiClient creates a Gemini API client. Returns nil if apiKey is empty.
+// NewGeminiClient creates a Gemini API client with key rotation from environment.
 func NewGeminiClient(apiKey, model string, timeoutMs int) *GeminiClient {
-	if apiKey == "" {
+	var keys []string
+	if envKeys := os.Getenv("GEMINI_API_KEYS"); envKeys != "" {
+		for _, k := range strings.Split(envKeys, ",") {
+			k = strings.TrimSpace(k)
+			if k != "" {
+				keys = append(keys, k)
+			}
+		}
+	}
+	if apiKey != "" {
+		alreadyHas := false
+		for _, k := range keys {
+			if k == apiKey {
+				alreadyHas = true
+				break
+			}
+		}
+		if !alreadyHas {
+			keys = append([]string{apiKey}, keys...)
+		}
+	}
+
+	if len(keys) == 0 {
 		return nil
 	}
 	if model == "" {
-		model = "gemini-2.0-flash"
+		model = "gemini-2.5-flash"
 	}
 	timeout := time.Duration(timeoutMs) * time.Millisecond
 	if timeout == 0 {
 		timeout = 8000 * time.Millisecond
 	}
 	return &GeminiClient{
-		apiKey:  apiKey,
+		apiKey:  keys[0],
+		apiKeys: keys,
 		model:   model,
 		timeout: timeout,
 		httpClient: &http.Client{
@@ -125,52 +151,65 @@ func (g *GeminiClient) GenerateResponse(ctx context.Context, systemPrompt string
 		return "", fmt.Errorf("marshal: %w", err)
 	}
 
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", g.model, g.apiKey)
+	var lastErr error
+	for _, key := range g.apiKeys {
+		url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", g.model, key)
 
-	reqCtx, cancel := context.WithTimeout(ctx, g.timeout)
-	defer cancel()
+		reqCtx, cancel := context.WithTimeout(ctx, g.timeout)
+		req, err := http.NewRequestWithContext(reqCtx, "POST", url, bytes.NewReader(body))
+		if err != nil {
+			cancel()
+			lastErr = fmt.Errorf("create request: %w", err)
+			continue
+		}
+		req.Header.Set("Content-Type", "application/json")
 
-	req, err := http.NewRequestWithContext(reqCtx, "POST", url, bytes.NewReader(body))
-	if err != nil {
-		return "", fmt.Errorf("create request: %w", err)
+		resp, err := g.httpClient.Do(req)
+		if err != nil {
+			cancel()
+			lastErr = fmt.Errorf("gemini request: %w", err)
+			continue
+		}
+
+		respBody, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		cancel()
+
+		if err != nil {
+			lastErr = fmt.Errorf("read response: %w", err)
+			continue
+		}
+
+		if resp.StatusCode != 200 {
+			log.Printf("[gemini] API error %d with key %s...: %s", resp.StatusCode, key[:min(len(key), 8)], string(respBody[:min(len(respBody), 200)]))
+			lastErr = fmt.Errorf("gemini API error: status %d", resp.StatusCode)
+			continue
+		}
+
+		// Parse response
+		var geminiResp struct {
+			Candidates []struct {
+				Content struct {
+					Parts []struct {
+						Text string `json:"text"`
+					} `json:"parts"`
+				} `json:"content"`
+			} `json:"candidates"`
+		}
+		if err := json.Unmarshal(respBody, &geminiResp); err != nil {
+			lastErr = fmt.Errorf("parse response: %w", err)
+			continue
+		}
+
+		if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
+			lastErr = fmt.Errorf("empty response")
+			continue
+		}
+
+		return geminiResp.Candidates[0].Content.Parts[0].Text, nil
 	}
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := g.httpClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("gemini request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("read response: %w", err)
-	}
-
-	if resp.StatusCode != 200 {
-		log.Printf("[gemini] API error %d: %s", resp.StatusCode, string(respBody[:min(len(respBody), 300)]))
-		return "", fmt.Errorf("gemini API error: status %d", resp.StatusCode)
-	}
-
-	// Parse response
-	var geminiResp struct {
-		Candidates []struct {
-			Content struct {
-				Parts []struct {
-					Text string `json:"text"`
-				} `json:"parts"`
-			} `json:"content"`
-		} `json:"candidates"`
-	}
-	if err := json.Unmarshal(respBody, &geminiResp); err != nil {
-		return "", fmt.Errorf("parse response: %w", err)
-	}
-
-	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
-		return "", fmt.Errorf("empty response")
-	}
-
-	return geminiResp.Candidates[0].Content.Parts[0].Text, nil
+	return "", fmt.Errorf("all gemini keys failed: %w", lastErr)
 }
 
 // DetectIntent classifies a user message (used for routing when full reasoning isn't needed).
@@ -193,59 +232,74 @@ func (g *GeminiClient) DetectIntent(ctx context.Context, message string, history
 	}
 
 	body, _ := json.Marshal(reqBody)
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", g.model, g.apiKey)
+	var lastErr error
 
-	reqCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
-	defer cancel()
+	for _, key := range g.apiKeys {
+		url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", g.model, key)
 
-	req, _ := http.NewRequestWithContext(reqCtx, "POST", url, bytes.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
+		reqCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		req, err := http.NewRequestWithContext(reqCtx, "POST", url, bytes.NewReader(body))
+		if err != nil {
+			cancel()
+			lastErr = err
+			continue
+		}
+		req.Header.Set("Content-Type", "application/json")
 
-	resp, err := g.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+		resp, err := g.httpClient.Do(req)
+		if err != nil {
+			cancel()
+			lastErr = err
+			continue
+		}
 
-	if resp.StatusCode != 200 {
 		respBody, _ := io.ReadAll(resp.Body)
-		log.Printf("[gemini] intent error %d: %s", resp.StatusCode, string(respBody[:min(len(respBody), 200)]))
-		return nil, fmt.Errorf("status %d", resp.StatusCode)
-	}
+		resp.Body.Close()
+		cancel()
 
-	respBody, _ := io.ReadAll(resp.Body)
-	var geminiResp struct {
-		Candidates []struct {
-			Content struct {
-				Parts []struct {
-					Text string `json:"text"`
-				} `json:"parts"`
-			} `json:"content"`
-		} `json:"candidates"`
-	}
-	json.Unmarshal(respBody, &geminiResp)
+		if resp.StatusCode != 200 {
+			log.Printf("[gemini] intent error %d key %s...: %s", resp.StatusCode, key[:min(len(key), 8)], string(respBody[:min(len(respBody), 200)]))
+			lastErr = fmt.Errorf("status %d", resp.StatusCode)
+			continue
+		}
 
-	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
-		return nil, fmt.Errorf("empty")
-	}
+		var geminiResp struct {
+			Candidates []struct {
+				Content struct {
+					Parts []struct {
+						Text string `json:"text"`
+					} `json:"parts"`
+				} `json:"content"`
+			} `json:"candidates"`
+		}
+		json.Unmarshal(respBody, &geminiResp)
 
-	text := geminiResp.Candidates[0].Content.Parts[0].Text
-	var result IntentResult
-	if err := json.Unmarshal([]byte(text), &result); err != nil {
-		// Try extracting JSON from text
-		if start := indexOf(text, "{"); start >= 0 {
-			if end := lastIndexOf(text, "}"); end > start {
-				json.Unmarshal([]byte(text[start:end+1]), &result)
+		if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
+			lastErr = fmt.Errorf("empty")
+			continue
+		}
+
+		text := geminiResp.Candidates[0].Content.Parts[0].Text
+		var result IntentResult
+		if err := json.Unmarshal([]byte(text), &result); err != nil {
+			// Try extracting JSON from text
+			if start := indexOf(text, "{"); start >= 0 {
+				if end := lastIndexOf(text, "}"); end > start {
+					json.Unmarshal([]byte(text[start:end+1]), &result)
+				}
+			}
+			if result.Intent == "" {
+				lastErr = fmt.Errorf("parse failed")
+				continue
 			}
 		}
-		if result.Intent == "" {
-			return nil, fmt.Errorf("parse failed")
+		if result.Entities == nil {
+			result.Entities = map[string]string{}
 		}
+		return &result, nil
 	}
-	if result.Entities == nil {
-		result.Entities = map[string]string{}
-	}
-	return &result, nil
+
+	return nil, fmt.Errorf("detect intent failed across all keys: %w", lastErr)
 }
 
 func intentDetectionPrompt() string {
