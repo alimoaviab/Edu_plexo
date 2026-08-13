@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/eduplexo/backend-go/internal/api"
-	// "github.com/eduplexo/backend-go/internal/ai"
 	"github.com/eduplexo/backend-go/internal/cache"
 	"github.com/eduplexo/backend-go/internal/config"
 	"github.com/eduplexo/backend-go/internal/domain/academicyear"
