@@ -33,6 +33,8 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/parent"
 	"github.com/eduplexo/backend-go/internal/domain/questionpapers"
 	"github.com/eduplexo/backend-go/internal/domain/results"
+	"github.com/eduplexo/backend-go/internal/domain/schedule"
+	"github.com/eduplexo/backend-go/internal/domain/search"
 	"github.com/eduplexo/backend-go/internal/domain/sections"
 	"github.com/eduplexo/backend-go/internal/domain/seo"
 	"github.com/eduplexo/backend-go/internal/domain/settings"

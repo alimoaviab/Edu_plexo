@@ -57,13 +57,10 @@ func extractSchoolID(doc any) string {
 		return v.SchoolID
 	case *store.OwnerSchool:
 		return v.SchoolID
-<<<<<<< HEAD
 	case *store.Campus:
 		return v.SchoolID
 	case *store.DummyDataBatch:
 		return v.SchoolID
-=======
->>>>>>> 9415cd3 (create app)
 	case *store.User:
 		return v.SchoolID
 	case *store.AcademicYear:
