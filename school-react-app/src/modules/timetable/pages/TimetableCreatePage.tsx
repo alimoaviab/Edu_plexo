@@ -32,9 +32,11 @@ import { TimetableFormInput } from "../types/timetable.types";
 import { showToast } from "@/utils/toast";
 import { bindRefresh, publish } from "@/services/data-bus";
 import { createTimetableBulk } from "../services/timetable.service";
+import { useRolePath } from "@/hooks/useRolePath";
 
 export function TimetableCreatePage() {
   const navigate = useNavigate();
+  const { rolePath, roleNavigate } = useRolePath();
   const [searchParams] = useSearchParams();
   const initialClassId = searchParams.get("class_id") || undefined;
   const { addTimetable } = useTimetable();
@@ -111,7 +113,7 @@ export function TimetableCreatePage() {
         const dest = input.class_id
           ? `/admin/timetable?class_id=${encodeURIComponent(input.class_id)}`
           : "/admin/timetable";
-        navigate(dest);
+        roleNavigate(dest);
       } else if (result.error?.code !== "CONFLICT") {
         showToast(result.error?.message || "Failed to save period.", "error");
       }
@@ -124,7 +126,7 @@ export function TimetableCreatePage() {
       const dest = input.class_id
         ? `/admin/timetable?class_id=${encodeURIComponent(input.class_id)}`
         : "/admin/timetable";
-      navigate(dest);
+      roleNavigate(dest);
     } else if (result.error?.code !== "CONFLICT") {
       // CONFLICT → form renders inline banner. Anything else → toast.
       showToast(result.error?.message || "Failed to save period.", "error");
@@ -162,9 +164,11 @@ export function TimetableCreatePage() {
   return (
     <EntityCreateLayout
       backTo={
-        initialClassId
-          ? `/admin/timetable?class_id=${encodeURIComponent(initialClassId)}`
-          : "/admin/timetable"
+        rolePath(
+          initialClassId
+            ? `/admin/timetable?class_id=${encodeURIComponent(initialClassId)}`
+            : "/admin/timetable"
+        )
       }
       backLabel="Back to timetable"
       eyebrow="Timetable Composer"

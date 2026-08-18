@@ -12,9 +12,11 @@ import { ClassFormInput } from "../types/class.types";
 import { showToast } from "@/utils/toast";
 import { ClassForm } from "../components/ClassForm";
 import { getSelectedAcademicYearId } from "@/services/academic-year-context";
+import { useRolePath } from "@/hooks/useRolePath";
 
 export function ClassCreatePage() {
   const navigate = useNavigate();
+  const { rolePath, roleNavigate } = useRolePath();
   const { addClass } = useClasses();
   const { state: academicYearState } = useAcademicYears();
   const { state: teacherState } = useTeachers();
@@ -66,7 +68,7 @@ export function ClassCreatePage() {
       const result = await addClass(input);
       if (result && (result as { ok?: boolean }).ok !== false) {
         // Toast is already shown by the hook — no duplicate here
-        navigate("/admin/classes");
+        roleNavigate("/admin/classes");
         return true;
       }
       return false;
@@ -79,7 +81,7 @@ export function ClassCreatePage() {
     <div className="max-w-7xl mx-auto py-2 px-4 sm:px-6">
       <div className="mb-3 flex items-center justify-between">
         <Link
-          to="/admin/classes"
+          to={rolePath("/admin/classes")}
           className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-400 normal-case hover:text-slate-900 transition-all group"
         >
           <AppIcon name="ArrowLeft" size={16} className="group-hover:-translate-x-0.5 transition-transform" />
@@ -116,7 +118,7 @@ export function ClassCreatePage() {
                    </div>
                 </div>
                 <Link
-                  to="/admin/academic-years"
+                  to={rolePath("/admin/academic-years")}
                   className="h-9 px-4 rounded-lg bg-amber-600 text-[10px] font-bold text-white hover:bg-amber-700 transition-all shadow-sm flex items-center"
                 >
                   Create Session
@@ -129,7 +131,7 @@ export function ClassCreatePage() {
             teacherOptions={teacherOptions}
             subjectOptions={subjectOptions}
             sectionOptions={sectionOptions}
-            onCreateTeacher={() => navigate("/admin/teachers/create")}
+            onCreateTeacher={() => roleNavigate("/admin/teachers/create")}
             autoSelectAcademicYear={activeAcademicYear?._id}
             activeAcademicYearLabel={activeAcademicYearLabel}
           />

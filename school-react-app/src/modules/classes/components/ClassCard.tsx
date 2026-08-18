@@ -9,6 +9,7 @@ import { ClassRow } from "../types/class.types";
 import { EntityCard, EntityCardAction } from "@/components/ui";
 import { ClassViewModal } from "./ClassViewModal";
 import { useState } from "react";
+import { useRolePath } from "@/hooks/useRolePath";
 
 interface ClassCardProps {
   classItem: ClassRow;
@@ -18,6 +19,7 @@ interface ClassCardProps {
 }
 
 export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps) {
+  const { rolePath } = useRolePath();
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const isActive = classItem.status === "active";
   const studentCount = classItem.enrolled_students || classItem.student_count || 0;
@@ -26,14 +28,14 @@ export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps
     {
       label: "Attend",
       icon: "fact_check",
-      to: `/admin/attendance?class_id=${classItem._id}`,
+      to: rolePath(`/admin/attendance?class_id=${classItem._id}`),
       accent: "blue",
       primary: true,
     },
     {
       label: "Schedule",
       icon: "calendar_view_week",
-      to: `/admin/timetable?class_id=${classItem._id}`,
+      to: rolePath(`/admin/timetable?class_id=${classItem._id}`),
       accent: "emerald",
       primary: true,
     },
@@ -110,7 +112,7 @@ export function ClassCard({ classItem, onEdit, onDelete, onFee }: ClassCardProps
             ))}
           </div>
         ),
-        to: `/admin/students?class_id=${classItem._id}`,
+        to: rolePath(`/admin/students?class_id=${classItem._id}`),
       }}
       actions={actions}
     />

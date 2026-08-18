@@ -6,9 +6,11 @@ import { AcademicYearForm } from "../components/AcademicYearForm";
 import { useAcademicYears } from "../hooks/useAcademicYears";
 import { AcademicYearFormInput, AcademicYearRow } from "../types/academicYear.types";
 import { Skeleton } from "@/components/ui";
+import { useRolePath } from "@/hooks/useRolePath";
 
 export function AcademicYearEditPage() {
   const navigate = useNavigate();
+  const { rolePath, roleNavigate } = useRolePath();
   const params = useParams();
   const id = params.id as string;
   const { updateAcademicYear, state } = useAcademicYears();
@@ -27,7 +29,7 @@ export function AcademicYearEditPage() {
     const result = await updateAcademicYear(id, input);
     if (result && (result as { ok?: boolean }).ok !== false) {
       // Toast is already raised by useAcademicYears on success.
-      navigate("/admin/academic-years");
+      roleNavigate("/admin/academic-years");
     }
     return result;
   }
@@ -48,7 +50,7 @@ export function AcademicYearEditPage() {
     <div className="max-w-7xl mx-auto py-2 px-4 sm:px-6">
       <div className="mb-3 flex items-center justify-between">
         <Link
-          to="/admin/academic-years"
+          to={rolePath("/admin/academic-years")}
           className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-400 normal-case  hover:text-slate-900 transition-all group"
         >
           <AppIcon name="ArrowLeft" size={16} className="group-hover:-translate-x-0.5 transition-transform" />

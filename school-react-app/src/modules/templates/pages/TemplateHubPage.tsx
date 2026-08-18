@@ -5,11 +5,13 @@ import { StatCardCompact, Skeleton, DataState, EntityCard, EntityGrid, ConfirmMo
 import { useCertificateTemplates } from "@/modules/certificates/hooks/useCertificates";
 import { CERTIFICATE_TYPE_LABELS, type CertificateTemplate } from "@/modules/certificates/types/certificate.types";
 import { FileText, Plus, Search, Sparkles, Layers, CreditCard, Award, HelpCircle } from "lucide-react";
+import { useRolePath } from "@/hooks/useRolePath";
 
 type TemplateFilterTab = "all" | "certificates" | "fees" | "results" | "admission";
 
 export function TemplateHubPage() {
   const navigate = useNavigate();
+  const { rolePath, roleNavigate } = useRolePath();
   const [tab, setTab] = useState<TemplateFilterTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
@@ -66,7 +68,7 @@ export function TemplateHubPage() {
         </div>
         <button
           type="button"
-          onClick={() => navigate("/admin/templates/create")}
+          onClick={() => roleNavigate("/admin/templates/create")}
           className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-md shadow-blue-600/10 hover:bg-blue-700 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -165,7 +167,7 @@ export function TemplateHubPage() {
                 const isResult = (template.type as string) === "result_card";
                 const isAdmit = (template.type as string) === "admission_form";
                 
-                let linkPath = `/admin/templates/edit/${template._id}`;
+                let linkPath = rolePath(`/admin/templates/edit/${template._id}`);
                 let label = CERTIFICATE_TYPE_LABELS[template.type as keyof typeof CERTIFICATE_TYPE_LABELS] || template.type.replace("_", " ");
                 let accentColor: "blue" | "purple" | "emerald" | "amber" | "rose" = "blue";
                 
@@ -224,20 +226,20 @@ export function TemplateHubPage() {
                         ? [{
                             label: "Go to Fees",
                             icon: "payments",
-                            to: "/admin/fee",
+                            to: rolePath("/admin/fee"),
                             accent: "purple" as const,
                           }]
                         : isResult 
                         ? [{
                             label: "Go to Results",
                             icon: "assessment",
-                            to: "/admin/results",
+                            to: rolePath("/admin/results"),
                             accent: "amber" as const,
                           }]
                         : [{
                             label: "Generate Documents",
                             icon: "print",
-                            to: `/admin/certificates/generate/${template._id}`,
+                            to: rolePath(`/admin/certificates/generate/${template._id}`),
                             accent: "emerald" as const,
                           }]
                       )

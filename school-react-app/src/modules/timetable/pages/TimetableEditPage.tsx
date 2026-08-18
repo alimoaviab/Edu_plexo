@@ -28,6 +28,7 @@ import {
 } from "../types/timetable.types";
 import { showToast } from "@/utils/toast";
 import * as service from "../services/timetable.service";
+import { useRolePath } from "@/hooks/useRolePath";
 
 interface TimetableEditPageProps {
   id: string;
@@ -35,6 +36,7 @@ interface TimetableEditPageProps {
 
 export function TimetableEditPage({ id }: TimetableEditPageProps) {
   const navigate = useNavigate();
+  const { rolePath, roleNavigate } = useRolePath();
   const { updateTimetable } = useTimetable();
 
   // NEVER_EMPTY must be a stable reference — an inline () => false
@@ -117,7 +119,7 @@ export function TimetableEditPage({ id }: TimetableEditPageProps) {
       const dest = input.class_id
         ? `/admin/timetable?class_id=${encodeURIComponent(input.class_id)}`
         : "/admin/timetable";
-      navigate(dest);
+      roleNavigate(dest);
     } else if (result.error?.code !== "CONFLICT") {
       showToast(result.error?.message || "Failed to update period.", "error");
     }
@@ -126,7 +128,7 @@ export function TimetableEditPage({ id }: TimetableEditPageProps) {
 
   return (
     <EntityCreateLayout
-      backTo="/admin/timetable"
+      backTo={rolePath("/admin/timetable")}
       backLabel="Back to timetable"
       eyebrow="Timetable Composer"
       icon="schedule"

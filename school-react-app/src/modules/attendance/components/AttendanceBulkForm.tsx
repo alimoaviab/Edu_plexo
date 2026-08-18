@@ -13,7 +13,7 @@ import { serviceRequest } from "@/services/service-client";
 import { listAttendance, markAttendance } from "../services/attendance.service";
 import { AttendanceBulkInput, AttendanceStatus, AttendanceRecordRow } from "../types/attendance.types";
 import { AppIcon } from "shared/ui/AppIcon";
-import { CheckCircle2, UserX } from "lucide-react";
+import { CheckCircle2, UserX, CalendarOff } from "lucide-react";
 
 interface ClassOption {
     id: string;
@@ -42,9 +42,10 @@ interface AttendanceBulkFormProps {
     onSaved?: () => void;
 }
 
-const statusOptions: Array<{ label: string; value: AttendanceStatus; icon: any; color: string; bg: string }> = [
-    { label: "Present", value: "present", icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "Absent", value: "absent", icon: UserX, color: "text-red-600", bg: "bg-red-50" }
+const statusOptions: Array<{ label: string; value: AttendanceStatus; icon: any; color: string; bg: string; activeClass: string }> = [
+    { label: "Present", value: "present", icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", activeClass: "bg-emerald-50 text-emerald-700 border-emerald-300 shadow-sm ring-1 ring-emerald-500/20" },
+    { label: "Absent", value: "absent", icon: UserX, color: "text-red-600", bg: "bg-red-50", activeClass: "bg-red-50 text-red-700 border-red-300 shadow-sm ring-1 ring-red-500/20" },
+    { label: "Leave", value: "leave", icon: CalendarOff, color: "text-amber-600", bg: "bg-amber-50", activeClass: "bg-amber-50 text-amber-700 border-amber-300 shadow-sm ring-1 ring-amber-500/20" }
 ];
 
 export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "list", onSaved }: AttendanceBulkFormProps) {
@@ -201,7 +202,7 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-2 pt-4 border-t border-slate-50">
+                        <div className="grid grid-cols-3 gap-1.5 pt-4 border-t border-slate-50">
                           {statusOptions.map((opt) => (
                             <button
                               key={opt.value}
@@ -226,14 +227,14 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
                                   refreshAttendanceSnapshot();
                                 }
                               }}
-                              className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-tight ${
+                              className={`flex items-center justify-center gap-1 px-1.5 py-2 rounded-xl border transition-all text-[9px] font-black uppercase tracking-tight ${
                                 status === opt.value 
-                                  ? `${opt.bg} ${opt.color} border-${opt.color.split('-')[1]}-200 shadow-md ring-1 ring-${opt.color.split('-')[1]}-500/20` 
+                                  ? opt.activeClass
                                   : "bg-white text-slate-400 border-slate-100 hover:border-slate-300 hover:text-slate-600"
                               }`}
                             >
-                              <opt.icon className={`h-3 w-3 ${status === opt.value ? 'animate-pulse' : ''}`} />
-                              {opt.label}
+                              <opt.icon className={`h-3 w-3 shrink-0 ${status === opt.value ? 'animate-pulse' : ''}`} />
+                              <span className="truncate">{opt.label}</span>
                             </button>
                           ))}
                         </div>
@@ -292,13 +293,13 @@ export function AttendanceBulkForm({ initialClassId, initialDate, viewMode = "li
                                           refreshAttendanceSnapshot();
                                         }
                                       }}
-                                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border transition-all text-[10px] font-black uppercase tracking-tight ${
+                                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-[10px] font-black uppercase tracking-tight ${
                                         status === opt.value 
-                                          ? `${opt.bg} ${opt.color} border-${opt.color.split('-')[1]}-200 shadow-md ring-1 ring-${opt.color.split('-')[1]}-500/20` 
+                                          ? opt.activeClass
                                           : "bg-white text-slate-400 border-slate-100 hover:border-slate-300 hover:text-slate-600"
                                       }`}
                                     >
-                                      <opt.icon className={`h-3.5 w-3.5 ${status === opt.value ? 'animate-pulse' : ''}`} />
+                                      <opt.icon className={`h-3.5 w-3.5 shrink-0 ${status === opt.value ? 'animate-pulse' : ''}`} />
                                       {opt.label}
                                     </button>
                                   ))}

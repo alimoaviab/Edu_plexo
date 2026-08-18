@@ -20,6 +20,7 @@ import { LiveClassForm } from "../components/LiveClassForm";
 import { showToast } from "@/utils/toast";
 import { serviceRequest } from "@/services/service-client";
 import { bindRefresh, publish } from "@/services/data-bus";
+import { useRolePath } from "@/hooks/useRolePath";
 
 interface LiveClassCreatePageProps {
   role: "ADMIN" | "TEACHER";
@@ -27,6 +28,7 @@ interface LiveClassCreatePageProps {
 
 export function LiveClassCreatePage({ role }: LiveClassCreatePageProps) {
   const navigate = useNavigate();
+  const { rolePath, roleNavigate } = useRolePath();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState<{ classes: any[]; teachers: any[] }>({
@@ -107,7 +109,7 @@ export function LiveClassCreatePage({ role }: LiveClassCreatePageProps) {
         
         publish("live-classes");
         setTimeout(() => {
-          navigate(role === "ADMIN" ? "/admin/live-class" : "/teacher/live-class");
+          roleNavigate(role === "ADMIN" ? "/admin/live-class" : "/teacher/live-class");
         }, 1200);
       } else {
         const errorMsg = result.message || "Failed to schedule class";
@@ -131,7 +133,7 @@ export function LiveClassCreatePage({ role }: LiveClassCreatePageProps) {
     );
   }
 
-  const backPath = role === "ADMIN" ? "/admin/live-class" : "/teacher/live-class";
+  const backPath = role === "ADMIN" ? rolePath("/admin/live-class") : "/teacher/live-class";
 
   return (
     <EntityCreateLayout

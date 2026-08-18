@@ -160,15 +160,17 @@ function PeriodCardImpl({
 
       {/* Hover actions */}
       {canManage && (onEdit || onDelete) && (
-        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
+        <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 z-20">
           {onEdit && (
             <button
               type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit(slot);
               }}
-              className="h-5 w-5 inline-flex items-center justify-center rounded-md bg-white/95 border border-slate-200 text-slate-500 hover:text-blue-600 shadow-sm"
+              className="h-5 w-5 inline-flex items-center justify-center rounded-md bg-white/95 border border-slate-200 text-slate-500 hover:text-blue-600 shadow-sm transition-colors"
               title="Edit"
               aria-label="Edit period"
             >
@@ -178,11 +180,13 @@ function PeriodCardImpl({
           {onDelete && (
             <button
               type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(slot._id);
               }}
-              className="h-5 w-5 inline-flex items-center justify-center rounded-md bg-white/95 border border-slate-200 text-slate-500 hover:text-rose-600 shadow-sm"
+              className="h-5 w-5 inline-flex items-center justify-center rounded-md bg-white/95 border border-slate-200 text-slate-500 hover:text-rose-600 shadow-sm transition-colors"
               title="Delete"
               aria-label="Delete period"
             >

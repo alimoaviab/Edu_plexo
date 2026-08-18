@@ -6,9 +6,11 @@ import { useNavigate } from "react-router-dom";
 import { serviceRequest } from "@/services/service-client";
 import { AppIcon } from "shared/ui/AppIcon";
 import { StatCardGrid } from "@/components/ui";
+import { useRolePath } from "@/hooks/useRolePath";
 
 export function LiveClassPage() {
     const navigate = useNavigate();
+    const { rolePath, roleNavigate } = useRolePath();
     const [reloadKey, setReloadKey] = useState(0);
     const [teachersData, setTeachersData] = useState<any[]>([]);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -69,7 +71,7 @@ export function LiveClassPage() {
                             <AppIcon name="RefreshCw" className={`h-5 w-5 ${isSyncing ? 'animate-spin text-indigo-600' : ''}`} />
                         </button>
                         <button
-                            onClick={() => navigate("/admin/live-class/create")}
+                            onClick={() => roleNavigate("/admin/live-class/create")}
                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 transition-colors"
                         >
                             <AppIcon name="PlusCircle" className="h-4 w-4" />
@@ -131,10 +133,10 @@ export function LiveClassPage() {
 
                         {/* Quick Actions Panel */}
                         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                            <h2 className="text-sm font-bold normal-case  text-slate-500 mb-4">Workspace Tools</h2>
+                            <h2 className="text-sm font-bold normal-case text-slate-500 mb-4">Workspace Tools</h2>
                             <div className="space-y-2">
                                 <Link
-                                    to="/admin/teachers"
+                                    to={rolePath("/admin/teachers")}
                                     className="group flex w-full items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white hover:shadow-sm"
                                 >
                                     <div className="flex items-center gap-3">
@@ -143,7 +145,7 @@ export function LiveClassPage() {
                                     </div>
                                 </Link>
                                 <Link
-                                    to="/admin/timetable"
+                                    to={rolePath("/admin/timetable")}
                                     className="group flex w-full items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-white hover:shadow-sm"
                                 >
                                     <div className="flex items-center gap-3">
@@ -154,11 +156,38 @@ export function LiveClassPage() {
                             </div>
                         </div>
 
-                        {/* Live Attendance Tracking (Mock) */}
+                        {/* High-Contrast Live Meeting Integration Widget */}
+                        <div className="rounded-2xl border border-slate-200 bg-slate-900 text-white p-5 shadow-sm space-y-3.5">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="h-8 w-8 rounded-lg bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center text-indigo-300">
+                                        <AppIcon name="Video" size={16} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xs font-bold text-white tracking-wide">Meet Integration</h3>
+                                        <p className="text-[10px] text-slate-400 font-medium">Virtual Classroom Engine</p>
+                                    </div>
+                                </div>
+                                <span className="flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                            </div>
+
+                            <div className="space-y-2 pt-2 border-t border-slate-800 text-[11px]">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-slate-400 font-medium">Auto-Generation</span>
+                                    <span className="text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded-md text-[10px]">Active</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-slate-400 font-medium">Calendar Sync</span>
+                                    <span className="text-blue-400 font-bold bg-blue-950/60 border border-blue-800/40 px-2 py-0.5 rounded-md text-[10px]">Connected</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Live Attendance Tracking */}
                         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-4">
                                 <AppIcon name="UserCheck" className="h-4 w-4 text-indigo-600" />
-                                <h2 className="text-sm font-bold normal-case  text-slate-500">Live Attendance</h2>
+                                <h2 className="text-sm font-bold normal-case text-slate-500">Live Attendance</h2>
                             </div>
                             <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 text-center">
                                 <p className="text-sm text-slate-500 font-medium mb-2">No active tracking</p>

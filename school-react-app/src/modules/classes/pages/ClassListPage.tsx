@@ -14,9 +14,11 @@ import { showToast } from "@/utils/toast";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { ClassCard } from "../components/ClassCard";
 import { SectionManagement } from "../components/SectionManagement";
+import { useRolePath } from "@/hooks/useRolePath";
 
 export function ClassListPage() {
   const navigate = useNavigate();
+  const { rolePath, roleNavigate } = useRolePath();
   const { currentParams, updateQuery, withQuery } = useQueryParams();
   
   const page = parseInt(currentParams.get("page") || "1");
@@ -114,9 +116,9 @@ export function ClassListPage() {
   ];
 
   const rowActions: RowAction<ClassRow>[] = [
-    { icon: "edit_note", label: "Configure", onClick: (row) => navigate(`/admin/classes/${row._id}/edit`) },
-    { icon: "schedule", label: "Timetable", onClick: (row) => navigate(`/admin/timetable?class_id=${row._id}`) },
-    { icon: "payments", label: "Fee structure", onClick: (row) => navigate(`/admin/classes/${row._id}/fees`) },
+    { icon: "edit_note", label: "Configure", onClick: (row) => roleNavigate(`/admin/classes/${row._id}/edit`) },
+    { icon: "schedule", label: "Timetable", onClick: (row) => roleNavigate(`/admin/timetable?class_id=${row._id}`) },
+    { icon: "payments", label: "Fee structure", onClick: (row) => roleNavigate(`/admin/classes/${row._id}/fees`) },
     { icon: "delete", label: "Remove", variant: "danger", onClick: (row) => setDeletingClass(row) },
   ];
 
@@ -183,7 +185,7 @@ export function ClassListPage() {
             Manage Sections
           </button>
           <Link
-            to={withQuery("/admin/classes/create")}
+            to={withQuery(rolePath("/admin/classes/create"))}
             className="inline-flex h-8 items-center gap-2 px-4 text-[10px] font-bold text-white bg-blue-600 border border-slate-900/10 rounded-lg hover:bg-blue-700 transition-all shadow-sm active:scale-95"
           >
             <AppIcon name="PlusSquare" size={16} />
@@ -200,7 +202,7 @@ export function ClassListPage() {
           </p>
         </div>
         <Link
-          to="/admin/leave"
+          to={rolePath("/admin/leave")}
           className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-[10px] font-bold text-slate-600 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50 transition-all"
         >
           <AppIcon name="event_available" size={16} />
@@ -242,9 +244,9 @@ export function ClassListPage() {
                     <ClassCard
                       key={row._id}
                       classItem={row}
-                      onEdit={(item) => navigate(`/admin/classes/${item._id}/edit`)}
+                      onEdit={(item) => roleNavigate(`/admin/classes/${item._id}/edit`)}
                       onDelete={setDeletingClass}
-                      onFee={(item) => navigate(`/admin/classes/${item._id}/fees`)}
+                      onFee={(item) => roleNavigate(`/admin/classes/${item._id}/fees`)}
                     />
                   ))}
                 </div>

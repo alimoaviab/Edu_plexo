@@ -11,11 +11,13 @@ import { AcademicYearTable } from "../components/AcademicYearTable";
 import { DeleteSessionSidebar } from "../components/DeleteSessionSidebar";
 import { setSelectedAcademicYearId } from "@/services/academic-year-context";
 import { ConstraintSidebar } from "../components/ConstraintSidebar";
+import { useRolePath } from "@/hooks/useRolePath";
 
 type ViewMode = "grid" | "list";
 
 export function AcademicYearListPage() {
   const navigate = useNavigate();
+  const { rolePath, roleNavigate } = useRolePath();
   const { state, page, setPage, updateAcademicYear, deleteAcademicYear } = useAcademicYears();
   const [editingYear, setEditingYear] = useState<AcademicYearRow | null>(null);
   const [deletingYear, setDeletingYear] = useState<AcademicYearRow | null>(null);
@@ -144,7 +146,7 @@ export function AcademicYearListPage() {
           ))}
           <button
             type="button"
-            onClick={() => navigate("/admin/academic-years/create")}
+            onClick={() => roleNavigate("/admin/academic-years/create")}
             className={`bg-white rounded-xl border border-slate-200 ring-1 ring-slate-900/5 px-3.5 py-3 shadow-[0_4px_18px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.05)] hover:border-blue-300 transition-all group flex items-center gap-3 ${isDrawerOpen ? "hidden md:flex" : ""}`}
           >
             <div className="h-9 w-9 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-600 group-hover:rotate-90 transition-all shrink-0">
@@ -205,7 +207,7 @@ export function AcademicYearListPage() {
             </div>
             <div className="h-6 w-px bg-slate-200" />
             <Link
-              to="/admin/academic-years/create"
+              to={rolePath("/admin/academic-years/create")}
               className="flex h-9 items-center gap-2 rounded-lg bg-blue-600 px-4 text-[11px] font-bold text-white shadow-lg shadow-blue-600/10 transition-all hover:bg-blue-700 active:scale-95"
             >
               <AppIcon name="Plus" size={16} />
@@ -250,11 +252,11 @@ export function AcademicYearListPage() {
                           actions={
                             <button
                               type="button"
-                              onClick={() => navigate(`/admin/academic-years/${row._id}/edit`)}
+                              onClick={() => setEditingYear(row)}
                               className="h-8 w-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-blue-600 hover:text-white hover:shadow-lg transition-all"
                               title="Edit session"
                             >
-                              <AppIcon name="SquarePen" size={18} />
+                              <AppIcon name="Pencil" size={18} />
                             </button>
                           }
                         >

@@ -87,6 +87,7 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
       total: totalStudents,
       present: data.filter(r => r.status === 'present').length,
       absent: data.filter(r => r.status === 'absent').length,
+      leave: data.filter(r => r.status === 'leave').length,
       unmarked: Math.max(0, totalStudents - data.length),
     };
   }, [state.data, classState.data, activeFilters.class_id]);
@@ -127,10 +128,10 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
       label: "Status",
       render: (row) => (
         <Badge
-            variant={
-              row.status === "present" ? "success" : "error"
-            }
-          className="normal-case text-[10px] font-bold  px-2 py-0.5"
+          variant={
+            row.status === "present" ? "success" : row.status === "leave" ? "warning" : "error"
+          }
+          className="normal-case text-[10px] font-bold px-2 py-0.5"
         >
           {row.status}
         </Badge>
@@ -143,7 +144,7 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
       icon: "edit",
       label: "Edit",
       onClick: async (row) => {
-        const status = (await prompt("Edit Status", "Status (present/absent)", row.status))?.trim();
+        const status = (await prompt("Edit Status", "Status (present/absent/leave)", row.status))?.trim();
         if (!status) return;
         await updateAttendance(row._id, { status: status as any });
       },
@@ -166,7 +167,7 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
             { label: "Total Strength", value: stats.total, icon: "groups", accent: "blue" },
             { label: "Present Today", value: stats.present, icon: "check_circle", accent: "emerald" },
             { label: "Absent", value: stats.absent, icon: "cancel", accent: "rose" },
-            { label: "Unmarked", value: stats.unmarked, icon: "pending", accent: "amber" },
+            { label: "On Leave", value: stats.leave, icon: "event_busy", accent: "amber" },
           ]}
         />
       </div>
@@ -228,6 +229,7 @@ export function AttendanceListPage({ filters: initialFilters }: { filters?: { cl
               <option value="">Status: All</option>
               <option value="present">Present</option>
               <option value="absent">Absent</option>
+              <option value="leave">Leave</option>
             </select>
           </div>
         </div>

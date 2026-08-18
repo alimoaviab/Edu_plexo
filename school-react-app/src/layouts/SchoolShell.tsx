@@ -31,6 +31,7 @@ import { ChildSwitcher } from "@/components/parent/ChildSwitcher";
 import { OwnerSchoolSwitcher } from "@/components/owner/OwnerSchoolSwitcher";
 import { GlobalSearch } from "shared/components/GlobalSearch";
 import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
+import { toRolePath, getRolePrefix } from "@/hooks/useRolePath";
 
 type NavItem = {
   label: string;
@@ -250,7 +251,7 @@ function navGroupsForRole(role: Role | undefined): NavGroup[] {
   return [];
 }
 
-function AdminActions({ allowedModules, subscription }: { allowedModules: Record<string, boolean> | null; subscription: any }) {
+function AdminActions({ allowedModules, subscription, rolePrefix }: { allowedModules: Record<string, boolean> | null; subscription: any; rolePrefix?: string }) {
   const actions = [
     { label: "Student", icon: "person_add", href: "/admin/students?action=new", color: "text-blue-600 border-blue-200 hover:bg-blue-50", module: "students" },
     { label: "Attendance", icon: "how_to_reg", href: "/admin/attendance", color: "text-blue-600 border-blue-200 hover:bg-blue-50", module: "attendance" },
@@ -276,7 +277,7 @@ function AdminActions({ allowedModules, subscription }: { allowedModules: Record
       {filteredActions.map((action) => (
         <Link
           key={action.label}
-          to={action.href}
+          to={toRolePath(action.href, rolePrefix)}
           className={`flex items-center gap-1.5 px-3 py-1 rounded-full border bg-white transition-all hover:scale-[1.02] active:scale-[0.98] ${action.color} shadow-sm`}
         >
           <AppIcon name={action.icon} size={15} />
@@ -285,12 +286,12 @@ function AdminActions({ allowedModules, subscription }: { allowedModules: Record
       ))}
       <div className="flex gap-1 ml-1">
         {(!shouldFilter || !allowedModules || allowedModules["results"] !== false) && (
-          <Link to="/admin/results" className="p-1 rounded-full text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition-all" title="Results">
+          <Link to={toRolePath("/admin/results", rolePrefix)} className="p-1 rounded-full text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition-all" title="Results">
             <AppIcon name="Leaderboard" size={18} />
           </Link>
         )}
         {(!shouldFilter || !allowedModules || allowedModules["timetable"] !== false) && (
-          <Link to="/admin/timetable" className="p-1 rounded-full text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition-all" title="Timetable">
+          <Link to={toRolePath("/admin/timetable", rolePrefix)} className="p-1 rounded-full text-slate-400 hover:text-blue-600 hover:bg-slate-50 transition-all" title="Timetable">
             <AppIcon name="CalendarDays" size={18} />
           </Link>
         )}
@@ -546,7 +547,9 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
     if (user) {
       const path = pathname;
       if (path.startsWith("/admin")) {
-        if (user.role !== "admin" && user.role !== "super_admin") {
+        if (user.role === "owner") {
+          navigate(path.replace(/^\/admin/, "/owner"), { replace: true });
+        } else if (user.role !== "admin" && user.role !== "super_admin") {
           navigate(`/${user.role}/dashboard`, { replace: true });
         }
       } else if (path.startsWith("/teacher") && user.role !== "teacher") {
@@ -790,15 +793,13 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
             <div className="mx-0.5 hidden h-3 w-px bg-slate-200/40 sm:block" />
 
             <div className="flex items-center gap-2">
-              {user.role === "admin" && <AdminActions allowedModules={allowedModules} subscription={subscription} />}
-
-              <button className="relative flex h-8 w-8 items-center justify-center rounded-full border border-slate-100 bg-white text-slate-400 transition-all hover:border-blue-400 hover:text-blue-600 active:scale-95 shadow-sm">
-                <AppIcon name="Bell" size={19} />
-                <span className="absolute top-1.5 right-1.5 flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
-                </span>
-              </button>
+              {(user.role === "admin" || user.role === "owner") && (
+                <AdminActions 
+                  allowedModules={allowedModules} 
+                  subscription={subscription} 
+                  rolePrefix={getRolePrefix(pathname, user.role)} 
+                />
+              )}
             </div>
           </div>
         </header>

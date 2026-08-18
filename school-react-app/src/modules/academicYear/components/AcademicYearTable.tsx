@@ -100,7 +100,7 @@ export function AcademicYearTable({
                         className="h-7 w-7 flex items-center justify-center rounded text-slate-400 hover:bg-slate-50 hover:text-blue-600 transition-colors"
                         title="Edit session"
                     >
-                        <AppIcon name="SquarePen" size={18} />
+                        <AppIcon name="Pencil" size={18} />
                     </button>
                     <button 
                         type="button"

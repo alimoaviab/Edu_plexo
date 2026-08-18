@@ -35,9 +35,11 @@ import { TimetableEmptyState } from "../components/TimetableEmptyState";
 import type { TimetableRecord } from "../types/timetable.types";
 import { findTimetableConflicts } from "../utils/conflicts";
 import { showToast } from "@/utils/toast";
+import { useRolePath } from "@/hooks/useRolePath";
 
 export function TimetablePage() {
   const navigate = useNavigate();
+  const { roleNavigate } = useRolePath();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlClassId = searchParams.get("class_id") || "";
 
@@ -46,15 +48,12 @@ export function TimetablePage() {
   const [pendingDelete, setPendingDelete] = useState<TimetableRecord | null>(null);
 
   useEffect(() => {
-    if (urlClassId !== classId) setClassId(urlClassId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setClassId(urlClassId);
   }, [urlClassId]);
 
-  const { state: classesState } = useClasses();
-  const { state: summaryState } = useTimetableSummary();
-  const { state, updateTimetable, deleteTimetable, refresh } = useTimetable(
-    classId ? { class_id: classId } : undefined
-  );
+  const { state: classesState } = useClasses({ limit: 100 });
+  const { state, refresh, deleteTimetable, updateTimetable } = useTimetable({ class_id: classId || undefined });
+  const summaryState = useTimetableSummary();
 
   const classOptions = useMemo(() => {
     const raw =
@@ -69,22 +68,18 @@ export function TimetablePage() {
   }, [classesState.data]);
 
   const conflictsCount = useMemo(() => {
-    const data = state.data ?? [];
-    if (data.length === 0) return 0;
-    let count = 0;
-    const seen = new Set<string>();
-    for (const rec of data) {
-      if (seen.has(rec._id)) continue;
-      const c = findTimetableConflicts(data, rec);
+    const list = state.data ?? [];
+    const conflictedIds = new Set<string>();
+    for (const rec of list) {
+      const c = findTimetableConflicts(list, rec);
       if (c.length > 0) {
-        count += 1;
-        seen.add(rec._id);
+        conflictedIds.add(rec._id);
       }
     }
-    return count;
+    return conflictedIds.size;
   }, [state.data]);
 
-  const summary = summaryState.data;
+  const summary = summaryState.state.data;
 
   function handleClassChange(id: string) {
     setClassId(id);
@@ -96,11 +91,11 @@ export function TimetablePage() {
     const url = classId
       ? `/admin/timetable/create?class_id=${encodeURIComponent(classId)}`
       : `/admin/timetable/create`;
-    navigate(url);
+    roleNavigate(url);
   }
 
   function handleEdit(rec: TimetableRecord) {
-    navigate(`/admin/timetable/edit/${encodeURIComponent(rec._id)}`);
+    roleNavigate(`/admin/timetable/edit/${encodeURIComponent(rec._id)}`);
   }
 
   async function handleConfirmDelete() {
@@ -154,7 +149,7 @@ export function TimetablePage() {
 
   function loadingError(): string | undefined {
     if (state.status === "error") return state.error;
-    if (summaryState.status === "error") return summaryState.error;
+    if (summaryState.state.status === "error") return summaryState.state.error;
     return undefined;
   }
 
@@ -167,7 +162,7 @@ export function TimetablePage() {
       <div className="space-y-6 pb-12">
         <TimetableSummaryStats
           summary={summary}
-          isLoading={summaryState.status === "loading" || summaryState.status === "idle"}
+          isLoading={summaryState.state.status === "loading" || summaryState.state.status === "idle"}
         />
 
         <TimetableToolbar

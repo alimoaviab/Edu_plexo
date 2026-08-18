@@ -4,16 +4,18 @@ import { Link } from "react-router-dom";
 import { AcademicYearForm } from "../components/AcademicYearForm";
 import { useAcademicYears } from "../hooks/useAcademicYears";
 import { AcademicYearFormInput } from "../types/academicYear.types";
+import { useRolePath } from "@/hooks/useRolePath";
 
 export function AcademicYearCreatePage() {
   const navigate = useNavigate();
+  const { rolePath, roleNavigate } = useRolePath();
   const { addAcademicYear } = useAcademicYears();
 
   async function handleCreate(input: AcademicYearFormInput) {
     const result = await addAcademicYear(input);
     if (result && (result as { ok?: boolean }).ok !== false) {
       // Toast is already shown by the hook — no duplicate here
-      navigate("/admin/academic-years");
+      roleNavigate("/admin/academic-years");
     }
     return result;
   }
@@ -22,7 +24,7 @@ export function AcademicYearCreatePage() {
     <div className="max-w-7xl mx-auto py-2 px-4 sm:px-6">
       <div className="mb-3 flex items-center justify-between">
         <Link
-          to="/admin/academic-years"
+          to={rolePath("/admin/academic-years")}
           className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-400 normal-case  hover:text-slate-900 transition-all group"
         >
           <AppIcon name="ArrowLeft" size={16} className="group-hover:-translate-x-0.5 transition-transform" />
