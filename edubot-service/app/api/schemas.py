@@ -68,16 +68,3 @@ class HealthResponse(BaseModel):
     status: str
     gemini: str
     redis: str
-
-
-class ErrorDetail(BaseModel):
-    """Error response body."""
-
-    code: str
-    message: str
-
-
-class ErrorResponse(BaseModel):
-    """Wrapper for error responses."""
-
-    error: ErrorDetail

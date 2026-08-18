@@ -324,21 +324,3 @@ async def get_timetable() -> dict:
         tool_name="get_timetable",
     )
 
-
-# Bundle for the agent module.
-ALL_TOOLS = [
-    get_dashboard_stats,
-    list_students,
-    list_teachers,
-    list_classes,
-    list_subjects,
-    get_attendance,
-    list_exams,
-    list_results,
-    list_homework,
-    list_events,
-    list_announcements,
-    list_behavior,
-    list_fees,
-    get_timetable,
-]
