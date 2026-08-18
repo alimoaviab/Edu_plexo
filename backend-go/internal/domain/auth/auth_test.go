@@ -68,9 +68,9 @@ func TestLogin_Success(t *testing.T) {
 		t.Fatal("expected session cookie to be set")
 	}
 
-	// Because rememberMe is true, max age should be 30 days
-	if sessionCookie.MaxAge != 60*60*24*30 {
-		t.Errorf("expected MaxAge to be 30 days, got %d", sessionCookie.MaxAge)
+	// Because rememberMe is true, max age should be 5 years
+	if sessionCookie.MaxAge != 60*60*24*365*5 {
+		t.Errorf("expected MaxAge to be 5 years, got %d", sessionCookie.MaxAge)
 	}
 }
 

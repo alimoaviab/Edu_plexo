@@ -337,14 +337,3 @@ def find_actions(message: str, role: str, language: str = "english", limit: int 
 
     return results
 
-
-def is_path_allowed(path: str, role: str) -> bool:
-    """Strict check: validate a path returned by the LLM against the catalog."""
-    if not path:
-        return False
-    for action in CATALOG:
-        if role not in action.allowed_roles:
-            continue
-        if _adjust_path(action.path, role) == path or action.path == path:
-            return True
-    return False

@@ -2,6 +2,7 @@ package search
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/eduplexo/backend-go/internal/api"
@@ -83,7 +84,7 @@ func (h *Handler) GlobalSearch(w http.ResponseWriter, r *http.Request) {
 				"_id":         c.ID,
 				"name":        c.Name,
 				"type":        "class",
-				"description": "Capacity: " + string(c.Capacity),
+				"description": "Capacity: " + strconv.Itoa(c.Capacity),
 				"url":         "/admin/classes",
 			})
 		}

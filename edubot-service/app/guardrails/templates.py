@@ -10,16 +10,6 @@ REFUSAL_OUT_OF_SCOPE = (
     "exams, fees, timetable, or how to use a feature."
 )
 
-REFUSAL_PERMISSION_DENIED = (
-    "You do not have permission to view that information. If you believe this "
-    "is a mistake, please contact your school administrator."
-)
-
-REFUSAL_ANOTHER_USERS_DATA = (
-    "I can only show information that belongs to you or your access scope. "
-    "I cannot share data about other users, classes, or schools."
-)
-
 REFUSAL_BULK_EXPORT = (
     "For privacy reasons, I can show summaries and small samples, not full "
     "exports. To download data, please use the export feature in the relevant "
