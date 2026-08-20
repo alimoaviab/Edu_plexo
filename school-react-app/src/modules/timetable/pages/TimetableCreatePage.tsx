@@ -33,6 +33,7 @@ import { showToast } from "@/utils/toast";
 import { bindRefresh, publish } from "@/services/data-bus";
 import { createTimetableBulk } from "../services/timetable.service";
 import { useRolePath } from "@/hooks/useRolePath";
+import { CampusRequirementGuard } from "@/components/common/CampusRequirementGuard";
 
 export function TimetableCreatePage() {
   const navigate = useNavigate();
@@ -209,15 +210,17 @@ export function TimetableCreatePage() {
           <Skeleton className="h-24 w-full rounded-xl" />
         </div>
       ) : (
-        <TimetableForm
-          onSubmit={handleCreate}
-          onCancel={() => navigate(-1)}
-          classOptions={classOptions}
-          teacherOptions={teacherOptions}
-          subjectOptions={subjectOptions}
-          initialClassId={initialClassId}
-          isLoading={isLoading}
-        />
+        <CampusRequirementGuard entityName="timetable period">
+          <TimetableForm
+            onSubmit={handleCreate}
+            onCancel={() => navigate(-1)}
+            classOptions={classOptions}
+            teacherOptions={teacherOptions}
+            subjectOptions={subjectOptions}
+            initialClassId={initialClassId}
+            isLoading={isLoading}
+          />
+        </CampusRequirementGuard>
       )}
     </EntityCreateLayout>
   );

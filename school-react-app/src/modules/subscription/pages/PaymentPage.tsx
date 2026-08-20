@@ -73,11 +73,13 @@ export function PaymentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
+  const rolePrefix = location.pathname.startsWith("/owner") ? "/owner" : "/admin";
+
   useEffect(() => {
     if (!plan) {
-      navigate("/admin/subscription");
+      navigate(`${rolePrefix}/subscription`);
     }
-  }, [plan, navigate]);
+  }, [plan, navigate, rolePrefix]);
 
   useEffect(() => {
     if (file) {
@@ -122,7 +124,7 @@ export function PaymentPage() {
           "Payment proof submitted! Our team will verify and activate your plan within 24 hours.",
           "success"
         );
-        navigate("/admin/subscription");
+        navigate(`${rolePrefix}/subscription`);
       } else {
         showToast(res.error?.message || "Failed to submit. Please try again.", "error");
       }

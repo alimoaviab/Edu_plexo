@@ -13,6 +13,7 @@ import { showToast } from "@/utils/toast";
 import { ClassForm } from "../components/ClassForm";
 import { getSelectedAcademicYearId } from "@/services/academic-year-context";
 import { useRolePath } from "@/hooks/useRolePath";
+import { CampusRequirementGuard } from "@/components/common/CampusRequirementGuard";
 
 export function ClassCreatePage() {
   const navigate = useNavigate();
@@ -125,16 +126,19 @@ export function ClassCreatePage() {
                 </Link>
              </div>
           )}
-          <ClassForm
-            onCreate={handleCreate}
-            academicYearOptions={academicYearOptions}
-            teacherOptions={teacherOptions}
-            subjectOptions={subjectOptions}
-            sectionOptions={sectionOptions}
-            onCreateTeacher={() => roleNavigate("/admin/teachers/create")}
-            autoSelectAcademicYear={activeAcademicYear?._id}
-            activeAcademicYearLabel={activeAcademicYearLabel}
-          />
+
+          <CampusRequirementGuard entityName="class">
+            <ClassForm
+              onCreate={handleCreate}
+              academicYearOptions={academicYearOptions}
+              teacherOptions={teacherOptions}
+              subjectOptions={subjectOptions}
+              sectionOptions={sectionOptions}
+              onCreateTeacher={() => roleNavigate("/admin/teachers/create")}
+              autoSelectAcademicYear={activeAcademicYear?._id}
+              activeAcademicYearLabel={activeAcademicYearLabel}
+            />
+          </CampusRequirementGuard>
         </div>
       )}
     </div>

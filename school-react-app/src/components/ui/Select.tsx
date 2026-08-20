@@ -38,7 +38,9 @@ export function Select({
   ...props
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const selectId = id ?? props.name;
+  const fallbackName = props.name || (label ? label.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/^_+|_+$/g, "") : undefined);
+  const selectId = id || fallbackName;
+  const selectName = props.name || fallbackName;
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -222,6 +224,30 @@ export function Select({
           </span>
           <AppIcon name="KeyboardArrowDown" size={18} className={` text-[18px] text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180 text-blue-600" : ""} `} />
         </button>
+
+        <select
+          id={selectId}
+          name={selectName}
+          value={value ?? ""}
+          onChange={(e) => {
+            if (onChange) {
+              onChange({
+                target: {
+                  name: selectName,
+                  value: e.target.value,
+                },
+              });
+            }
+          }}
+          className="sr-only opacity-0 absolute pointer-events-none w-0 h-0"
+          tabIndex={-1}
+        >
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
 
         {/* Portal-rendered dropdown — never clipped by parent overflow */}
         {createPortal(dropdownList, document.body)}

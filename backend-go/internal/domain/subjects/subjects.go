@@ -122,6 +122,43 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 				rows = append(rows, s)
 			}
 		}
+
+		// Auto-seed default curriculum subjects if school has 0 custom subjects
+		if len(rows) == 0 && ctx.SchoolID != "" && ctx.SchoolID != "system" {
+			defaultSubjects := []struct {
+				Name string
+				Code string
+			}{
+				{"English", "ENG"},
+				{"Urdu", "URD"},
+				{"Mathematics", "MAT"},
+				{"Science", "SCI"},
+				{"Computer", "COM"},
+				{"Physics", "PHY"},
+				{"Chemistry", "CHE"},
+				{"Biology", "BIO"},
+			}
+			now := time.Now()
+			for _, ds := range defaultSubjects {
+				subj := &store.Subject{
+					ID:           store.NewID("sub"),
+					SchoolID:     ctx.SchoolID,
+					Name:         ds.Name,
+					Code:         ds.Code,
+					Status:       "active",
+					TotalMarks:   100,
+					PassingMarks: 33,
+					ClassMapping: []string{},
+					CreatedAt:    now,
+				}
+				h.Store.Subjects = append(h.Store.Subjects, subj)
+				rows = append(rows, subj)
+				if h.Persist != nil {
+					h.Persist("subjects", subj)
+				}
+			}
+		}
+
 		sort.SliceStable(rows, func(i, j int) bool { return rows[i].Name < rows[j].Name })
 		return rows, nil
 	})

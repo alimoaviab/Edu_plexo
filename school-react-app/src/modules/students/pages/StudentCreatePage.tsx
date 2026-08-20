@@ -8,6 +8,8 @@ import { StudentForm } from "../components/StudentForm";
 import { useStudents } from "../hooks/useStudents";
 import { StudentFormInput } from "../types/student.types";
 
+import { CampusRequirementGuard } from "@/components/common/CampusRequirementGuard";
+
 export function StudentCreatePage() {
   const navigate = useNavigate();
   const { addStudent } = useStudents();
@@ -46,23 +48,25 @@ export function StudentCreatePage() {
   }
 
   return (
-    <div className="w-full py-2 px-6">
-      <Card className="p-4 md:p-6 border-slate-200/60 bg-white shadow-2xl shadow-slate-200/50 rounded-3xl">
+    <CampusRequirementGuard entityName="student">
+      <div className="w-full py-2 px-6">
+        <Card className="p-4 md:p-6 border-slate-200/60 bg-white shadow-2xl shadow-slate-200/50 rounded-3xl">
 
-        {classState.status === "error" ? (
-          <DataState variant="error" title="Failed to load classes" message={classState.error} />
-        ) : isClassDependencyLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <div className="grid grid-cols-2 gap-4">
+          {classState.status === "error" ? (
+            <DataState variant="error" title="Failed to load classes" message={classState.error} />
+          ) : isClassDependencyLoading ? (
+            <div className="space-y-4">
               <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
+              <div className="grid grid-cols-2 gap-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
             </div>
-          </div>
-        ) : (
-          <StudentForm onSubmit={handleCreate} classOptions={classOptions} mode="create" />
-        )}
-      </Card>
-    </div>
+          ) : (
+            <StudentForm onSubmit={handleCreate} classOptions={classOptions} mode="create" />
+          )}
+        </Card>
+      </div>
+    </CampusRequirementGuard>
   );
 }

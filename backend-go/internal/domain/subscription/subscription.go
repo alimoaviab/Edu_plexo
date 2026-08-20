@@ -198,22 +198,49 @@ type CurrentResponse struct {
 	PackageBuilderRequired bool            `json:"package_builder_required"`
 }
 
+func (h *Handler) resolveSchoolID(ctx *api.RequestContext) string {
+	if ctx == nil {
+		return ""
+	}
+	if ctx.SchoolID != "" {
+		return ctx.SchoolID
+	}
+	if h.Store != nil {
+		h.Store.RLock()
+		defer h.Store.RUnlock()
+		for _, s := range h.Store.Schools {
+			if s.SchoolID != "" && s.SchoolID != "system" && s.SchoolID != "__global__" {
+				if s.OwnerEmail == ctx.ActorEmail || s.OwnerUserID == ctx.UserID || ctx.Role == "owner" || ctx.Role == "super_admin" {
+					return s.SchoolID
+				}
+			}
+		}
+		for _, s := range h.Store.Schools {
+			if s.SchoolID != "" && s.SchoolID != "system" && s.SchoolID != "__global__" {
+				return s.SchoolID
+			}
+		}
+	}
+	return ""
+}
+
 func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	schoolID := h.resolveSchoolID(ctx)
 	api.WriteResult(w, api.ServiceTry(func() (CurrentResponse, error) {
-		sub, err := GetActiveSubscriptionHelper(r.Context(), h.Pool, h.Store, ctx.SchoolID)
+		sub, err := GetActiveSubscriptionHelper(r.Context(), h.Pool, h.Store, schoolID)
 		if err != nil {
 			return CurrentResponse{}, err
 		}
 
-		studentsUsed := h.countActiveStudents(ctx.SchoolID)
+		studentsUsed := h.countActiveStudents(schoolID)
 		rates := superadmin.GetPlatformSettings().PackageRates
 		selected := []string{}
 		trialWarning := ""
 		builderRequired := false
 
 		// Check if trial already used in DB or MemStore
-		canTrial, err := IsTrialAvailable(r.Context(), h.Pool, h.Store, ctx.SchoolID)
+		canTrial, err := IsTrialAvailable(r.Context(), h.Pool, h.Store, schoolID)
 		if err != nil {
 			return CurrentResponse{}, err
 		}
@@ -315,6 +342,7 @@ func (h *Handler) GetPlans(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	schoolID := h.resolveSchoolID(ctx)
 	api.WriteResult(w, api.ServiceTry(func() (*Subscription, error) {
 		var body struct {
 			PlanName string `json:"plan_name"`
@@ -329,25 +357,29 @@ func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 
 		// Check if trial already used
 		var trialUsed bool
-		err := h.Pool.QueryRow(r.Context(), `
-			SELECT EXISTS(
-				SELECT 1 FROM subscriptions 
-				WHERE school_id = $1 AND (trial_used = true OR is_trial = true)
-			)
-		`, ctx.SchoolID).Scan(&trialUsed)
-		if err != nil && err != pgx.ErrNoRows {
-			return nil, fmt.Errorf("check trial: %w", err)
+		if h.Pool != nil {
+			err := h.Pool.QueryRow(r.Context(), `
+				SELECT EXISTS(
+					SELECT 1 FROM subscriptions 
+					WHERE school_id = $1 AND (trial_used = true OR is_trial = true)
+				)
+			`, schoolID).Scan(&trialUsed)
+			if err != nil && err != pgx.ErrNoRows {
+				return nil, fmt.Errorf("check trial: %w", err)
+			}
 		}
 
 		if trialUsed {
 			return nil, api.NewControlledError("TRIAL_USED", "Your school has already used the free trial. Please subscribe to a plan.", 400, nil)
 		}
 
-		// Deactivate any existing subscription
-		_, _ = h.Pool.Exec(r.Context(), `
-			UPDATE subscriptions SET status = 'cancelled', updated_at = NOW()
-			WHERE school_id = $1 AND status IN ('active', 'trial')
-		`, ctx.SchoolID)
+		if h.Pool != nil {
+			// Deactivate any existing subscription
+			_, _ = h.Pool.Exec(r.Context(), `
+				UPDATE subscriptions SET status = 'cancelled', updated_at = NOW()
+				WHERE school_id = $1 AND status IN ('active', 'trial')
+			`, schoolID)
+		}
 
 		// Create trial subscription (all features included, student limit based on plan)
 		now := time.Now()
@@ -372,7 +404,7 @@ func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 
 		sub := &Subscription{
 			ID:             id,
-			SchoolID:       ctx.SchoolID,
+			SchoolID:       schoolID,
 			PlanName:       planName,
 			StudentLimit:   studentLimit,
 			Price:          0,
@@ -388,14 +420,16 @@ func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt:      now,
 		}
 
-		_, err = h.Pool.Exec(r.Context(), `
-			INSERT INTO subscriptions (id, school_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, trial_start_date, trial_end_date, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-		`, sub.ID, sub.SchoolID, sub.PlanName, sub.StudentLimit, sub.Price, sub.Currency,
-			sub.StartDate, sub.EndDate, sub.Status, sub.IsTrial, sub.TrialUsed,
-			sub.TrialStartDate, sub.TrialEndDate, sub.CreatedAt, sub.UpdatedAt)
-		if err != nil {
-			return nil, fmt.Errorf("create trial: %w", err)
+		if h.Pool != nil {
+			_, err := h.Pool.Exec(r.Context(), `
+				INSERT INTO subscriptions (id, school_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, trial_start_date, trial_end_date, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+			`, sub.ID, sub.SchoolID, sub.PlanName, sub.StudentLimit, sub.Price, sub.Currency,
+				sub.StartDate, sub.EndDate, sub.Status, sub.IsTrial, sub.TrialUsed,
+				sub.TrialStartDate, sub.TrialEndDate, sub.CreatedAt, sub.UpdatedAt)
+			if err != nil {
+				return nil, fmt.Errorf("create trial: %w", err)
+			}
 		}
 
 		// Record in history
@@ -560,6 +594,7 @@ type upgradeInput struct {
 
 func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	schoolID := h.resolveSchoolID(ctx)
 	var body upgradeInput
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "Invalid JSON body.", 400, nil))
@@ -587,11 +622,13 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 			price = body.StudentLimit * 15
 		}
 
-		// Deactivate current subscription
-		_, _ = h.Pool.Exec(r.Context(), `
-			UPDATE subscriptions SET status = 'cancelled', updated_at = NOW()
-			WHERE school_id = $1 AND status IN ('active', 'trial')
-		`, ctx.SchoolID)
+		if h.Pool != nil {
+			// Deactivate current subscription
+			_, _ = h.Pool.Exec(r.Context(), `
+				UPDATE subscriptions SET status = 'cancelled', updated_at = NOW()
+				WHERE school_id = $1 AND status IN ('active', 'trial')
+			`, schoolID)
+		}
 
 		// Create new subscription (1 month)
 		now := time.Now()
@@ -600,13 +637,15 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 
 		// Preserve trial_used flag
 		var trialUsed bool
-		_ = h.Pool.QueryRow(r.Context(), `
-			SELECT COALESCE(bool_or(trial_used), false) FROM subscriptions WHERE school_id = $1
-		`, ctx.SchoolID).Scan(&trialUsed)
+		if h.Pool != nil {
+			_ = h.Pool.QueryRow(r.Context(), `
+				SELECT COALESCE(bool_or(trial_used), false) FROM subscriptions WHERE school_id = $1
+			`, schoolID).Scan(&trialUsed)
+		}
 
 		sub := &Subscription{
 			ID:           id,
-			SchoolID:     ctx.SchoolID,
+			SchoolID:     schoolID,
 			PlanName:     plan.Name,
 			StudentLimit: studentLimit,
 			Price:        price,
@@ -620,17 +659,19 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt:    now,
 		}
 
-		_, err := h.Pool.Exec(r.Context(), `
-			INSERT INTO subscriptions (id, school_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-		`, sub.ID, sub.SchoolID, sub.PlanName, sub.StudentLimit, sub.Price, sub.Currency,
-			sub.StartDate, sub.EndDate, sub.Status, sub.IsTrial, sub.TrialUsed,
-			sub.CreatedAt, sub.UpdatedAt)
-		if err != nil {
-			return nil, fmt.Errorf("create subscription: %w", err)
+		if h.Pool != nil {
+			_, err := h.Pool.Exec(r.Context(), `
+				INSERT INTO subscriptions (id, school_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+			`, sub.ID, sub.SchoolID, sub.PlanName, sub.StudentLimit, sub.Price, sub.Currency,
+				sub.StartDate, sub.EndDate, sub.Status, sub.IsTrial, sub.TrialUsed,
+				sub.CreatedAt, sub.UpdatedAt)
+			if err != nil {
+				return nil, fmt.Errorf("create subscription: %w", err)
+			}
 		}
 
-		h.recordHistory(r.Context(), ctx.SchoolID, plan.Name, studentLimit, price, "paid", now, endDate, "upgrade")
+		h.recordHistory(r.Context(), schoolID, plan.Name, studentLimit, price, "paid", now, endDate, "upgrade")
 
 		// Also update the MemStore to keep it in sync during runtime without restart
 		if h.Store != nil {

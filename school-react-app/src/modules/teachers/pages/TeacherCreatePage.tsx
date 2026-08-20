@@ -23,6 +23,8 @@ import { useTeachers } from "../hooks/useTeachers";
 import { TeacherFormInput } from "../types/teacher.types";
 import { bindRefresh } from "@/services/data-bus";
 
+import { CampusRequirementGuard } from "@/components/common/CampusRequirementGuard";
+
 export function TeacherCreatePage() {
   const navigate = useNavigate();
   const { addTeacher } = useTeachers();
@@ -62,53 +64,55 @@ export function TeacherCreatePage() {
   }
 
   return (
-    <EntityCreateLayout
-      backTo="/admin/teachers"
-      backLabel="Return to Faculty"
-      eyebrow="Faculty Onboarding"
-      icon="person_add"
-      title="Register New Teacher"
-      subtitle="Provision a faculty account with credentials, contact details, and class assignment."
-      asideTitle="Onboarding Intelligence"
-      aside={
-        <>
-          <GuidanceSection title="What gets created?">
-            A teacher record plus a companion login account. The teacher signs in with the email and
-            password you set here.
-          </GuidanceSection>
-          <GuidanceSection title="Class Assignment">
-            <GuidanceCallout tone="blue">
-              You can leave the class blank and assign it later. Teachers can be reassigned at any time.
-            </GuidanceCallout>
-          </GuidanceSection>
-          <GuidanceChecklist
-            items={[
-              { done: classOptions.length > 0, label: "Classes available to assign" },
-              { done: true, label: "Email and phone are reachable" },
-              { done: true, label: "Password meets school policy" },
-            ]}
+    <CampusRequirementGuard entityName="teacher">
+      <EntityCreateLayout
+        backTo="/admin/teachers"
+        backLabel="Return to Faculty"
+        eyebrow="Faculty Onboarding"
+        icon="person_add"
+        title="Register New Teacher"
+        subtitle="Provision a faculty account with credentials, contact details, and class assignment."
+        asideTitle="Onboarding Intelligence"
+        aside={
+          <>
+            <GuidanceSection title="What gets created?">
+              A teacher record plus a companion login account. The teacher signs in with the email and
+              password you set here.
+            </GuidanceSection>
+            <GuidanceSection title="Class Assignment">
+              <GuidanceCallout tone="blue">
+                You can leave the class blank and assign it later. Teachers can be reassigned at any time.
+              </GuidanceCallout>
+            </GuidanceSection>
+            <GuidanceChecklist
+              items={[
+                { done: classOptions.length > 0, label: "Classes available to assign" },
+                { done: true, label: "Email and phone are reachable" },
+                { done: true, label: "Password meets school policy" },
+              ]}
+            />
+          </>
+        }
+      >
+        {classState.status === "error" ? (
+          <DataState
+            variant="error"
+            title="Failed to load classes"
+            message={classState.error}
           />
-        </>
-      }
-    >
-      {classState.status === "error" ? (
-        <DataState
-          variant="error"
-          title="Failed to load classes"
-          message={classState.error}
-        />
-      ) : isClassDependencyLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-11 w-full rounded-xl" />
-          <div className="grid grid-cols-2 gap-4">
+        ) : isClassDependencyLoading ? (
+          <div className="space-y-4">
             <Skeleton className="h-11 w-full rounded-xl" />
-            <Skeleton className="h-11 w-full rounded-xl" />
+            <div className="grid grid-cols-2 gap-4">
+              <Skeleton className="h-11 w-full rounded-xl" />
+              <Skeleton className="h-11 w-full rounded-xl" />
+            </div>
+            <Skeleton className="h-32 w-full rounded-xl" />
           </div>
-          <Skeleton className="h-32 w-full rounded-xl" />
-        </div>
-      ) : (
-        <TeacherForm onSubmit={handleCreate} classOptions={classOptions} mode="create" />
-      )}
-    </EntityCreateLayout>
+        ) : (
+          <TeacherForm onSubmit={handleCreate} classOptions={classOptions} mode="create" />
+        )}
+      </EntityCreateLayout>
+    </CampusRequirementGuard>
   );
 }

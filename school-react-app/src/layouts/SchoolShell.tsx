@@ -91,7 +91,7 @@ const adminNavGroups: NavGroup[] = [
       { label: "Exams", href: "/admin/exams", icon: "quiz" },
       { label: "Tests", href: "/admin/tests", icon: "assignment_turned_in" },
       { label: "Results", href: "/admin/results", icon: "leaderboard" },
-      { label: "Question Papers", href: "/admin/question-papers", icon: "description" },
+      // { label: "Question Papers", href: "/admin/question-papers", icon: "description" },
       { label: "Live classes", href: "/admin/live-class", icon: "videocam" },
     ],
   },
@@ -140,7 +140,7 @@ const teacherNavGroups: NavGroup[] = [
       { label: "Attendance", href: "/teacher/attendance", icon: "fact_check" },
       { label: "Live classes", href: "/teacher/live-class", icon: "videocam" },
       { label: "Homework", href: "/teacher/homework", icon: "assignment" },
-      { label: "Question Papers", href: "/teacher/question-papers", icon: "description" },
+      // { label: "Question Papers", href: "/teacher/question-papers", icon: "description" },
       { label: "Leave", href: "/teacher/leave", icon: "event_available" },
     ],
   },
@@ -234,13 +234,14 @@ function navGroupsForRole(role: Role | undefined): NavGroup[] {
     // Map the admin routes to /owner/ for the owner role
     const ownerMappedAdminGroups = adminNavGroups.map(group => ({
       ...group,
-      items: group.items
-        .filter(item => item.href !== "/admin/dashboard") // Remove admin dashboard to prevent conflict
+      items: (group.items || [])
+        .filter(Boolean)
+        .filter(item => item && item.href && item.href !== "/admin/dashboard")
         .map(item => ({
           ...item,
           href: item.href.replace("/admin", "/owner")
         }))
-    })).filter(group => group.items.length > 0); // Remove empty groups like Reports
+    })).filter(group => Array.isArray(group.items) && group.items.length > 0); // Remove empty groups like Reports
 
     return [...ownerNavGroups, ...ownerMappedAdminGroups];
   }
@@ -582,18 +583,20 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
           ? data
           : Array.isArray(data?.items)
             ? data.items
-            : [];
-        if (!rows.length) return;
+            : Array.isArray(data?.data)
+              ? data.data
+              : [];
+        if (!Array.isArray(rows) || !rows.length) return;
 
         setAcademyYears(rows);
 
         const stored = getSelectedAcademicYearId();
-        const hasStored = !!stored && rows.some((row) => (row._id || row.id) === stored);
+        const hasStored = !!stored && Array.isArray(rows) && rows.some((row) => row && (row._id || row.id) === stored);
         const defaultId =
           (hasStored ? stored : undefined) ||
-          rows.find((row) => row.is_active)?._id ||
+          rows.find((row) => row && row.is_active)?._id ||
           rows[0]?._id ||
-          rows.find((row) => row.id)?._id ||
+          rows.find((row) => row && row.id)?._id ||
           "";
         if (!defaultId) return;
 

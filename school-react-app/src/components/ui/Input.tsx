@@ -1,17 +1,4 @@
-/**
- * Input primitive — unified to the Academic Year design system.
- *
- * Default visual contract:
- *   - Label: text-[11px] font-bold text-slate-500 normal-case px-1
- *   - Input: h-11 rounded-xl border-slate-200 text-[13px] font-medium
- *   - Focus: border-blue-600 ring-4 ring-blue-600/5
- *   - Error: border-rose-500 ring-rose-500/10
- *   - Left icon: absolute left-3.5, text-[18px] text-slate-400
- *
- * Consumers can still override via className for special cases.
- */
-
-import type { InputHTMLAttributes, ReactNode } from "react";
+import { useEffect, useRef, type InputHTMLAttributes, type ReactNode } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -28,13 +15,35 @@ export function Input({
   leftIcon,
   rightIcon,
   id,
+  name,
   className = "",
+  onChange,
   ...props
 }: InputProps) {
-  const inputId = id ?? props.name;
+  const fallbackName = name || (label ? label.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/^_+|_+$/g, "") : undefined);
+  const inputId = id || fallbackName;
+  const inputName = name || fallbackName;
   const helperId = helperText ? `${inputId}-helper` : undefined;
   const errorId = error ? `${inputId}-error` : undefined;
   const describedBy = [helperId, errorId].filter(Boolean).join(" ") || undefined;
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el || !onChange) return;
+
+    const handleNativeEvent = (e: Event) => {
+      onChange(e as unknown as React.ChangeEvent<HTMLInputElement>);
+    };
+
+    el.addEventListener("input", handleNativeEvent);
+    el.addEventListener("change", handleNativeEvent);
+    return () => {
+      el.removeEventListener("input", handleNativeEvent);
+      el.removeEventListener("change", handleNativeEvent);
+    };
+  }, [onChange]);
 
   return (
     <div className="flex flex-col gap-1 w-full">
@@ -58,7 +67,10 @@ export function Input({
           </div>
         )}
         <input
+          ref={inputRef}
           id={inputId}
+          name={inputName}
+          onChange={onChange}
           {...props}
           aria-describedby={describedBy}
           aria-invalid={!!error}

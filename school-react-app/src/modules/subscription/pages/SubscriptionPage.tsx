@@ -100,23 +100,26 @@ export function SubscriptionPage() {
         <div>
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Available Plans</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {displayPlans.map((plan) => (
-              <PricingCard
-                key={plan.name}
-                plan={plan}
-                isCurrentPlan={sub?.plan_name === plan.name}
-                canTrial={current?.can_trial ?? false}
-                onStartTrial={async () => {
-                  await startTrial(plan.name);
-                  navigate("/admin/dashboard");
-                }}
-                onUpgrade={() => navigate("/admin/subscription/payment", { state: { plan } })}
-                onManualSubscribe={() => navigate("/admin/subscription/custom")}
-                isUpgrading={isUpgrading}
-                isStartingTrial={isStartingTrial}
-                sub={sub}
-              />
-            ))}
+            {displayPlans.map((plan) => {
+              const rolePrefix = window.location.pathname.startsWith("/owner") ? "/owner" : "/admin";
+              return (
+                <PricingCard
+                  key={plan.name}
+                  plan={plan}
+                  isCurrentPlan={sub?.plan_name === plan.name}
+                  canTrial={current?.can_trial ?? false}
+                  onStartTrial={async () => {
+                    await startTrial(plan.name);
+                    navigate(`${rolePrefix}/dashboard`);
+                  }}
+                  onUpgrade={() => navigate(`${rolePrefix}/subscription/payment`, { state: { plan } })}
+                  onManualSubscribe={() => navigate(`${rolePrefix}/subscription/custom`)}
+                  isUpgrading={isUpgrading}
+                  isStartingTrial={isStartingTrial}
+                  sub={sub}
+                />
+              );
+            })}
           </div>
         </div>
 

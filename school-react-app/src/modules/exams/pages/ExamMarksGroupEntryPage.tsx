@@ -78,14 +78,25 @@ const ABSENT_SENTINEL = -1;
 type MarkCell = number | "" | "A";
 type MarksMap = Record<string, Record<string, MarkCell>>;
 
+import { useSearchParams } from "react-router-dom";
+import { Select } from "@/components/ui";
+import { useRolePath } from "@/hooks/useRolePath";
+
 export function ExamMarksGroupEntryPage({
-  examId,
+  examId: examIdProp,
   role = "ADMIN",
 }: {
-  examId: string;
+  examId?: string;
   role?: "ADMIN" | "TEACHER";
 }) {
   const navigate = useNavigate();
+  const { rolePath } = useRolePath();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const examId = examIdProp || searchParams.get("exam_id") || "";
+
+  const [allExams, setAllExams] = useState<ExamRow[]>([]);
+  const [loadingExams, setLoadingExams] = useState<boolean>(false);
+
   const { state: examState, run: runExam } = useSafeAsync<ExamRow>();
   const { state: studentState, run: runStudents } = useSafeAsync<Student[]>();
   const { state: resultsState, run: runResults } = useSafeAsync<ResultRow[]>();
@@ -95,6 +106,34 @@ export function ExamMarksGroupEntryPage({
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const initialMarksRef = useRef<MarksMap>({});
+
+  /* Load all exams if examId is missing */
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchExams() {
+      setLoadingExams(true);
+      try {
+        const res = await serviceRequest<any>("/api/exams");
+        if (cancelled) return;
+        const data = res.ok ? (Array.isArray(res.data) ? res.data : res.data?.data ?? []) : [];
+        setAllExams(data);
+        if (!examId && data.length > 0) {
+          const firstId = data[0]._id || data[0].id;
+          if (firstId) {
+            setSearchParams({ exam_id: firstId });
+          }
+        }
+      } catch {
+        if (!cancelled) setAllExams([]);
+      } finally {
+        if (!cancelled) setLoadingExams(false);
+      }
+    }
+    void fetchExams();
+    return () => {
+      cancelled = true;
+    };
+  }, [examId, setSearchParams]);
 
   /* Step 1: load the exam */
   useEffect(() => {
@@ -320,10 +359,24 @@ export function ExamMarksGroupEntryPage({
     }
   }
 
+  /* Empty or 0 exams check */
+  if (!examId && !loadingExams && allExams.length === 0) {
+    return (
+      <DataState
+        variant="empty"
+        title="No Scheduled Exams Found"
+        message="Please schedule an exam first before entering marks."
+        onRetry={() => navigate(rolePath("/admin/exams/create"))}
+        retryLabel="Schedule New Exam"
+      />
+    );
+  }
+
   /* Loading & error */
   if (
+    loadingExams ||
     examState.status === "loading" ||
-    examState.status === "idle" ||
+    (examId && examState.status === "idle") ||
     studentState.status === "loading"
   ) {
     return (

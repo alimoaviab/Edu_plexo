@@ -5,6 +5,7 @@ import { AcademicYearForm } from "../components/AcademicYearForm";
 import { useAcademicYears } from "../hooks/useAcademicYears";
 import { AcademicYearFormInput } from "../types/academicYear.types";
 import { useRolePath } from "@/hooks/useRolePath";
+import { CampusRequirementGuard } from "@/components/common/CampusRequirementGuard";
 
 export function AcademicYearCreatePage() {
   const navigate = useNavigate();
@@ -56,7 +57,9 @@ export function AcademicYearCreatePage() {
             </div>
 
             <div className="px-6 py-6">
-              <AcademicYearForm onCreate={handleCreate} />
+              <CampusRequirementGuard entityName="academic session">
+                <AcademicYearForm onCreate={handleCreate} />
+              </CampusRequirementGuard>
             </div>
           </div>
         </div>

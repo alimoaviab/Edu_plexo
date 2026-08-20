@@ -38,15 +38,51 @@ interface MarkEntry {
   attendance_status: "present" | "absent";
 }
 
+import { Select } from "@/components/ui";
+import { useNavigate } from "react-router-dom";
+import { useRolePath } from "@/hooks/useRolePath";
+
 export function TestMarksEntryPage({ testId: testIdProp, role = "TEACHER" }: { testId?: string; role?: "ADMIN" | "TEACHER" }) {
-  const [searchParams] = useSearchParams();
-  const testId = testIdProp || searchParams.get("test_id");
+  const navigate = useNavigate();
+  const { rolePath } = useRolePath();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const testId = testIdProp || searchParams.get("test_id") || "";
   const [marks, setMarks] = useState<Record<string, MarkEntry>>({});
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [allTests, setAllTests] = useState<TestDetails[]>([]);
+  const [loadingTests, setLoadingTests] = useState(false);
+
   const { state: testState, run: runTest } = useSafeAsync<TestDetails>();
   const { state: studentState, run: runStudents } = useSafeAsync<Student[]>();
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchTests() {
+      setLoadingTests(true);
+      try {
+        const result = await serviceRequest<any>("/api/tests");
+        if (cancelled) return;
+        const data = result.ok ? (Array.isArray(result.data) ? result.data : result.data?.data ?? []) : [];
+        setAllTests(data);
+        if (!testId && data.length > 0) {
+          const firstId = data[0]._id || data[0].id;
+          if (firstId) {
+            setSearchParams({ test_id: firstId });
+          }
+        }
+      } catch {
+        if (!cancelled) setAllTests([]);
+      } finally {
+        if (!cancelled) setLoadingTests(false);
+      }
+    }
+    void fetchTests();
+    return () => {
+      cancelled = true;
+    };
+  }, [testId, setSearchParams]);
 
   useEffect(() => {
     if (!testId) return;
@@ -145,7 +181,25 @@ export function TestMarksEntryPage({ testId: testIdProp, role = "TEACHER" }: { t
     }
   };
 
-  if (testState.status === "loading" || testState.status === "idle" || studentState.status === "loading") {
+  /* Empty or 0 tests check */
+  if (!testId && !loadingTests && allTests.length === 0) {
+    return (
+      <DataState
+        variant="empty"
+        title="No Scheduled Tests Found"
+        message="Please create a test first before entering marks."
+        onRetry={() => navigate(rolePath("/admin/tests/create"))}
+        retryLabel="Create New Test"
+      />
+    );
+  }
+
+  if (
+    loadingTests ||
+    testState.status === "loading" ||
+    (testId && testState.status === "idle") ||
+    studentState.status === "loading"
+  ) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-24 w-full rounded-2xl" />
@@ -168,7 +222,7 @@ export function TestMarksEntryPage({ testId: testIdProp, role = "TEACHER" }: { t
           <Link to={role === "ADMIN" ? "/admin/tests" : "/teacher/tests"} className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-all">
             <AppIcon name="ChevronLeft" className="h-5 w-5" />
           </Link>
-          <div>
+          <div className="flex-1 min-w-0">
             <h2 className="text-xl font-black text-slate-900">{test.title}</h2>
             <div className="flex items-center gap-3 mt-1">
               <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-100 font-black uppercase text-[9px]">{test.subject}</Badge>
@@ -177,6 +231,18 @@ export function TestMarksEntryPage({ testId: testIdProp, role = "TEACHER" }: { t
               <p className="text-[10px] font-bold text-slate-400 uppercase">Max Marks: {test.max_marks}</p>
             </div>
           </div>
+          {allTests.length > 1 && (
+            <div className="w-56">
+              <Select
+                value={testId}
+                onChange={(e) => setSearchParams({ test_id: e.target.value })}
+                options={allTests.map((t) => ({
+                  label: `${t.title} (${t.subject || "Test"})`,
+                  value: t._id || (t as any).id,
+                }))}
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-4 pt-6 border-t border-slate-50">

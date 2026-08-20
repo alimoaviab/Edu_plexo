@@ -134,11 +134,27 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 
 	ownerSchoolIDs := h.ownerSchoolIDs(ctx.ActorEmail, ctx.UserID)
 
+	type classStat struct {
+		ClassID      string  `json:"class_id"`
+		Name         string  `json:"name"`
+		Section      string  `json:"section"`
+		StudentCount int     `json:"student_count"`
+		TotalFee     float64 `json:"total_fee"`
+		CollectedFee float64 `json:"collected_fee"`
+		PendingFee   float64 `json:"pending_fee"`
+	}
+
 	type schoolWithStats struct {
 		*store.School
-		StudentCount int    `json:"student_count"`
-		TeacherCount int    `json:"teacher_count"`
-		SubStatus    string `json:"subscription_status"`
+		ClassCount        int         `json:"class_count"`
+		StudentCount      int         `json:"student_count"`
+		TeacherCount      int         `json:"teacher_count"`
+		TotalFeeCollected float64     `json:"total_fee_collected"`
+		TotalFeePending   float64     `json:"total_fee_pending"`
+		ClassesBreakdown  []classStat `json:"classes_breakdown"`
+		SubStatus         string      `json:"subscription_status"`
+		AdminEmail        string      `json:"admin_email"`
+		AdminPassword     string      `json:"admin_password"`
 	}
 
 	result := make([]schoolWithStats, 0)
@@ -170,11 +186,80 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		adminEmail := s.Email
+		adminPass := "Test@123"
+		for _, u := range h.Store.Users {
+			if u.SchoolID == s.SchoolID && (u.Role == "admin" || u.Role == "school_admin") {
+				adminEmail = u.Email
+				if u.Password != "" {
+					adminPass = u.Password
+				}
+				break
+			}
+		}
+
+		classStatsList := make([]classStat, 0)
+		classCount := 0
+		totalFeeColl := 0.0
+		totalFeePend := 0.0
+
+		for _, c := range h.Store.Classes {
+			if c.SchoolID == s.SchoolID {
+				classCount++
+				cStudents := 0
+				for _, st := range h.Store.Students {
+					if st.SchoolID == s.SchoolID && (st.ClassID == c.ID || st.ClassID == c.Name) && st.Status == "active" {
+						cStudents++
+					}
+				}
+
+				cTotal := 0.0
+				cCollected := 0.0
+				cPending := 0.0
+				for _, f := range h.Store.Fees {
+					if f.SchoolID == s.SchoolID && (f.ClassID == c.ID || f.ClassID == c.Name) {
+						cTotal += f.Amount
+						cCollected += f.PaidAmount
+						pend := f.Amount - f.PaidAmount
+						if pend > 0 {
+							cPending += pend
+						}
+					}
+				}
+
+				classStatsList = append(classStatsList, classStat{
+					ClassID:      c.ID,
+					Name:         c.Name,
+					Section:      c.Section,
+					StudentCount: cStudents,
+					TotalFee:     cTotal,
+					CollectedFee: cCollected,
+					PendingFee:   cPending,
+				})
+			}
+		}
+
+		for _, f := range h.Store.Fees {
+			if f.SchoolID == s.SchoolID {
+				totalFeeColl += f.PaidAmount
+				pend := f.Amount - f.PaidAmount
+				if pend > 0 {
+					totalFeePend += pend
+				}
+			}
+		}
+
 		result = append(result, schoolWithStats{
-			School:       s,
-			StudentCount: sc,
-			TeacherCount: tc,
-			SubStatus:    subStatus,
+			School:            s,
+			ClassCount:        classCount,
+			StudentCount:      sc,
+			TeacherCount:      tc,
+			TotalFeeCollected: totalFeeColl,
+			TotalFeePending:   totalFeePend,
+			ClassesBreakdown:  classStatsList,
+			SubStatus:         subStatus,
+			AdminEmail:        adminEmail,
+			AdminPassword:     adminPass,
 		})
 	}
 
