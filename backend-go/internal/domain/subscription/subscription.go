@@ -202,8 +202,19 @@ func (h *Handler) resolveSchoolID(ctx *api.RequestContext) string {
 	if ctx == nil {
 		return ""
 	}
-	if ctx.SchoolID != "" {
+	if ctx.SchoolID != "" && ctx.SchoolID != "system" && ctx.SchoolID != "__global__" {
 		return ctx.SchoolID
+	}
+	if h.Pool != nil {
+		var sID string
+		err := h.Pool.QueryRow(context.Background(), `
+			SELECT school_id FROM schools 
+			WHERE (owner_email = $1 OR owner_user_id = $2) AND school_id NOT IN ('system', '__global__')
+			ORDER BY created_at ASC LIMIT 1
+		`, ctx.ActorEmail, ctx.UserID).Scan(&sID)
+		if err == nil && sID != "" {
+			return sID
+		}
 	}
 	if h.Store != nil {
 		h.Store.RLock()
@@ -738,13 +749,13 @@ func (h *Handler) CheckStudentLimit(ctx context.Context, schoolID string) error 
 
 	if sub == nil {
 		return api.NewControlledError("SUBSCRIPTION_REQUIRED",
-			"No active subscription found. Please subscribe to a plan to add students.", 403, nil)
+			"No active subscription found. Please contact your school owner to activate the subscription.", 403, nil)
 	}
 
 	// Check if subscription is expired
 	if time.Now().After(sub.EndDate) {
 		return api.NewControlledError("SUBSCRIPTION_EXPIRED",
-			"Your subscription has expired. Please renew to add more students.", 403, nil)
+			"Your school subscription has expired. Please contact your school owner to renew.", 403, nil)
 	}
 
 	// Count current active students
@@ -756,7 +767,7 @@ func (h *Handler) CheckStudentLimit(ctx context.Context, schoolID string) error 
 
 	if activeStudents >= sub.StudentLimit {
 		return api.NewControlledError("STUDENT_LIMIT_REACHED",
-			fmt.Sprintf("You have reached your subscription student limit (%d students). Please upgrade your plan to add more students.", sub.StudentLimit),
+			fmt.Sprintf("You have reached your subscription student limit (%d students). Please contact your school owner to upgrade the subscription plan.", sub.StudentLimit),
 			403,
 			map[string]any{
 				"current_count": activeStudents,

@@ -162,6 +162,8 @@ export function CustomPlanBuilder() {
     return cost < 500 ? 500 : cost;
   }, [studentLimit, totalRateForDisplay]);
 
+  const rolePrefix = window.location.pathname.startsWith("/admin") ? "/admin" : "/owner";
+
   const handleSavePlan = async () => {
     setSavingPlan(true);
     try {
@@ -178,7 +180,8 @@ export function CustomPlanBuilder() {
       });
       const payload = await response.json();
       if (payload?.ok) {
-        navigate("/admin/dashboard");
+        showToast("Custom plan saved successfully!", "success");
+        navigate(`${rolePrefix}/subscription`);
       } else {
         showToast("Failed to save plan. Please try again.", "info");
       }
@@ -204,8 +207,8 @@ export function CustomPlanBuilder() {
             </p>
           </div>
           <button
-            onClick={() => navigate("/admin/subscription")}
-            className="p-2 rounded-full hover:bg-slate-200 transition-colors"
+            onClick={() => navigate(`${rolePrefix}/subscription`)}
+            className="p-2 rounded-full hover:bg-slate-200 transition-colors cursor-pointer"
           >
             <AppIcon name="X" size={20} className="text-slate-500" />
           </button>

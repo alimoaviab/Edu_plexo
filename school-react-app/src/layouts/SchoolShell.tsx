@@ -50,6 +50,7 @@ const ownerNavGroups: NavGroup[] = [
     items: [
       { label: "Dashboard", href: "/owner/dashboard", icon: "dashboard" },
       { label: "My Schools", href: "/owner/schools", icon: "domain" },
+      { label: "Subscription", href: "/owner/subscription", icon: "card_membership" },
     ],
   },
 ];
@@ -106,10 +107,6 @@ const adminNavGroups: NavGroup[] = [
   {
     label: "Finance",
     items: [{ label: "Fee", href: "/admin/fee", icon: "payments" }],
-  },
-  {
-    label: "Subscription",
-    items: [{ label: "Subscription", href: "/admin/subscription", icon: "card_membership" }],
   },
   {
     label: "Settings",

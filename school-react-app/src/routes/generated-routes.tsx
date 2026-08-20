@@ -187,12 +187,6 @@ export const adminRoutes: RouteObject[] = [
 
   // Subscription
   { path: "/admin/subscription", element: lazyPage(() => import("@/pages/role/admin/subscription"), "AdminSubscriptionPage") },
-  { path: "/admin/subscription/payment", element: lazyPage(() => import("@/modules/subscription/pages/PaymentPage"), "PaymentPage") },
-  { path: "/admin/subscription/custom", element: lazyPage(() => import("@/modules/subscription/pages/CustomPlanBuilder"), "CustomPlanBuilder") },
-
-  { path: "/owner/subscription", element: lazyPage(() => import("@/pages/role/admin/subscription"), "AdminSubscriptionPage") },
-  { path: "/owner/subscription/payment", element: lazyPage(() => import("@/modules/subscription/pages/PaymentPage"), "PaymentPage") },
-  { path: "/owner/subscription/custom", element: lazyPage(() => import("@/modules/subscription/pages/CustomPlanBuilder"), "CustomPlanBuilder") },
 
   // Students
   { path: "/admin/students", element: lazyPage(() => import("@/pages/role/admin/students"), "AdminStudentsPage") },
@@ -316,4 +310,7 @@ export const studentRoutes: RouteObject[] = [
 export const ownerRoutes: RouteObject[] = [
   { path: "/owner/dashboard", element: lazyPage(() => import("@/pages/role/owner/dashboard"), "OwnerDashboardPage") },
   { path: "/owner/schools", element: lazyPage(() => import("@/pages/role/owner/schools"), "OwnerSchoolsPage") },
+  { path: "/owner/subscription", element: lazyPage(() => import("@/pages/role/owner/subscription"), "OwnerSubscriptionPage") },
+  { path: "/owner/subscription/payment", element: lazyPage(() => import("@/modules/subscription/pages/PaymentPage"), "PaymentPage") },
+  { path: "/owner/subscription/custom", element: lazyPage(() => import("@/modules/subscription/pages/CustomPlanBuilder"), "CustomPlanBuilder") },
 ];

@@ -12,17 +12,22 @@ export function SubscriptionRequired({ current }: SubscriptionRequiredProps) {
   const { user } = useAuth();
 
   const sub = current?.subscription;
-  // If sub is null or has status pending, they never trialed. If status is expired/cancelled, they did.
   const isExpired = sub?.status === "expired" || sub?.status === "cancelled";
-  const isAdmin = user?.role === "admin";
+  const isOwner = user?.role === "owner";
 
-  const title = isExpired 
-    ? "Your Free Trial Has Expired" 
-    : "Please Choose Your Plan";
+  const title = isOwner
+    ? isExpired
+      ? "Your Subscription Has Expired"
+      : "Please Choose Your Subscription Plan"
+    : isExpired
+      ? "Subscription Expired"
+      : "Subscription Inactive";
 
-  const description = isExpired
-    ? "Please choose a subscription plan to continue using Eduplexo."
-    : "You have not activated your Free Trial or Subscription. Please choose a plan to continue.";
+  const description = isOwner
+    ? isExpired
+      ? "Your institution subscription has ended. Please renew or upgrade your plan to restore full access across all your campuses."
+      : "You have not activated your Free Trial or Subscription. Please choose a plan to continue managing your institution."
+    : "Your school's subscription plan is currently inactive or has expired. Please contact your School Owner to renew or activate the plan.";
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center min-h-[70vh] bg-slate-50/50 p-6 md:p-12 animate-fade-in-up">
@@ -45,19 +50,19 @@ export function SubscriptionRequired({ current }: SubscriptionRequiredProps) {
           {description}
         </p>
 
-        {isAdmin ? (
+        {isOwner ? (
           <button
-            onClick={() => navigate("/admin/subscription")}
+            onClick={() => navigate("/owner/subscription")}
             className="w-full h-11 md:h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs md:text-sm tracking-wide shadow-lg shadow-blue-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span>Choose Plan</span>
+            <span>Manage Subscription</span>
             <AppIcon name="ChevronRight" size={16} />
           </button>
         ) : (
           <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-            <p className="text-[11px] font-semibold text-slate-500 leading-normal flex items-center gap-1.5 justify-center">
-              <AppIcon name="Lock" size={12} className="text-slate-400 shrink-0" />
-              <span>Please contact your school administrator or school owner to activate or renew the subscription.</span>
+            <p className="text-xs font-semibold text-slate-600 leading-normal flex items-center gap-2 justify-center">
+              <AppIcon name="Lock" size={14} className="text-slate-400 shrink-0" />
+              <span>Please contact your <strong>School Owner</strong> to renew or activate the subscription.</span>
             </p>
           </div>
         )}

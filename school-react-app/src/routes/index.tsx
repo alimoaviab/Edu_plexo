@@ -154,7 +154,7 @@ export const router = createBrowserRouter([
           { path: "/owner", element: <Navigate to="/owner/dashboard" replace /> },
           ...ownerRoutes,
           ...adminRoutes
-            .filter(route => route.path !== "/admin/dashboard")
+            .filter(route => route.path !== "/admin/dashboard" && !route.path?.startsWith("/admin/subscription"))
             .map(route => ({
               ...route,
               path: (route.path || "").replace("/admin", "/owner")

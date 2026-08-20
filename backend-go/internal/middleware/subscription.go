@@ -36,7 +36,7 @@ func SubscriptionGate(pool *pgxpool.Pool) func(http.Handler) http.Handler {
 					next.ServeHTTP(w, r)
 					return
 				}
-				api.WriteResult(w, api.Fail("SUBSCRIPTION_EXPIRED", "Your school subscription has expired or is inactive. Please choose a plan to continue.", 403, nil))
+				api.WriteResult(w, api.Fail("SUBSCRIPTION_EXPIRED", "Your school subscription has expired or is inactive. Please contact your school owner to renew.", 403, nil))
 				return
 			}
 

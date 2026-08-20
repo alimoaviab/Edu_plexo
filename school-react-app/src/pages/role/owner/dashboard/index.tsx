@@ -37,31 +37,38 @@ export default function OwnerDashboardPage() {
   const schools = stats?.schools || [];
   
   const kpis = [
-    { title: "Total Schools", value: stats?.total_schools ?? 0, icon: "domain", color: "text-blue-600 bg-blue-50" },
-    { title: "Active Branches", value: stats?.total_campuses ?? 0, icon: "business", color: "text-emerald-600 bg-emerald-50" },
+    { title: "Total Schools", value: stats?.total_schools ?? 0, icon: "domain", color: "text-blue-600 bg-blue-50", href: "/owner/schools" },
+    { title: "Active Branches", value: stats?.total_campuses ?? 0, icon: "business", color: "text-emerald-600 bg-emerald-50", href: "/owner/schools" },
     { title: "Total Students", value: stats?.total_students ?? 0, icon: "school", color: "text-purple-600 bg-purple-50" },
     { title: "Total Teachers", value: stats?.total_teachers ?? 0, icon: "badge", color: "text-orange-600 bg-orange-50" },
     { title: "Total Staff", value: stats?.total_staff ?? 0, icon: "groups", color: "text-cyan-600 bg-cyan-50" },
-    { title: "Active Subs", value: stats?.active_subscriptions ?? 0, icon: "check_circle", color: "text-rose-600 bg-rose-50" },
+    { title: "Active Subs", value: stats?.active_subscriptions ?? 0, icon: "check_circle", color: "text-rose-600 bg-rose-50", href: "/owner/subscription" },
   ];
 
   return (
     <SchoolShell eyebrow="Owner Portal" title="Executive Dashboard">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-6">
 
         {/* 1. KPI Cards Row - Matching Admin Dashboard Style */}
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-6">
-          {kpis.map((stat) => (
-            <div key={stat.title} className="premium-card relative flex items-center gap-2.5 p-2.5 transition-all hover:border-blue-200/60 hover:shadow-sm">
-              <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${stat.color} border border-current/5 shadow-sm`}>
-                <AppIcon name={stat.icon} size={16} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[9px] font-bold normal-case text-slate-400">{stat.title}</p>
-                <h3 className="text-lg font-bold text-slate-900 tabular-nums leading-tight">{stat.value}</h3>
-              </div>
-            </div>
-          ))}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 xl:grid-cols-6">
+          {kpis.map((stat) => {
+            const CardWrapper = stat.href ? Link : "div";
+            return (
+              <CardWrapper
+                key={stat.title}
+                to={stat.href || ""}
+                className="premium-card relative flex items-center gap-2.5 p-2.5 transition-all hover:border-blue-200/60 hover:shadow-sm cursor-pointer"
+              >
+                <div className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg ${stat.color} border border-current/5 shadow-sm`}>
+                  <AppIcon name={stat.icon} size={16} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] font-bold normal-case text-slate-400">{stat.title}</p>
+                  <h3 className="text-lg font-bold text-slate-900 tabular-nums leading-tight">{stat.value}</h3>
+                </div>
+              </CardWrapper>
+            );
+          })}
         </div>
 
         {/* Portfolio List */}

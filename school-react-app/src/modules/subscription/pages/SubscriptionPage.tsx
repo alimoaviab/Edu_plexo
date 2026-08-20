@@ -56,14 +56,16 @@ export function SubscriptionPage() {
     return true;
   });
 
+  const rolePrefix = window.location.pathname.startsWith("/admin") ? "/admin" : "/owner";
+
   return (
-    <SchoolShell>
+    <SchoolShell eyebrow="Owner Portal" title="Subscription & Billing">
       <div className="max-w-6xl mx-auto space-y-12">
 
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Subscription & Billing</h1>
-          <p className="mt-2 text-gray-600">Manage your school's subscription plan and student limits</p>
+          <p className="mt-2 text-gray-600">Manage your institution's subscription plan, student capacity limits, and billing across all campuses</p>
         </div>
 
 
@@ -101,7 +103,6 @@ export function SubscriptionPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Available Plans</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {displayPlans.map((plan) => {
-              const rolePrefix = window.location.pathname.startsWith("/owner") ? "/owner" : "/admin";
               return (
                 <PricingCard
                   key={plan.name}
