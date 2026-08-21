@@ -6,6 +6,7 @@
  * Add new icons by appending to the `paths` map.
  */
 
+import React from 'react';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { colors } from '@/theme/tokens';
@@ -17,6 +18,14 @@ export type IconName =
   | 'family'
   | 'calendar'
   | 'check-circle'
+  | 'check'
+  | 'copy'
+  | 'gift'
+  | 'trash'
+  | 'info'
+  | 'alert-triangle'
+  | 'check-square'
+  | 'square'
   | 'clipboard'
   | 'book'
   | 'megaphone'
@@ -29,6 +38,7 @@ export type IconName =
   | 'eye'
   | 'eye-off'
   | 'arrow-right'
+  | 'arrow-left'
   | 'chevron-right'
   | 'plus'
   | 'bell'
@@ -112,6 +122,53 @@ function renderPath(name: IconName, p: object): React.ReactNode {
           <Path d="m8.5 12 2.5 2.5L15.5 10" {...p} />
         </>
       );
+    case 'check':
+      return <Path d="M20 6 9 17l-5-5" {...p} />;
+    case 'copy':
+      return (
+        <>
+          <Rect x={9} y={9} width={13} height={13} rx={2} {...p} />
+          <Path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" {...p} />
+        </>
+      );
+    case 'gift':
+      return (
+        <>
+          <Rect x={3} y={8} width={18} height={4} rx={1} {...p} />
+          <Path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" {...p} />
+          <Path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" {...p} />
+        </>
+      );
+    case 'trash':
+      return (
+        <>
+          <Path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" {...p} />
+          <Path d="M10 11v6M14 11v6" {...p} />
+        </>
+      );
+    case 'info':
+      return (
+        <>
+          <Circle cx={12} cy={12} r={9} {...p} />
+          <Path d="M12 16v-4M12 8h.01" {...p} />
+        </>
+      );
+    case 'alert-triangle':
+      return (
+        <>
+          <Path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" {...p} />
+          <Path d="M12 9v4M12 17h.01" {...p} />
+        </>
+      );
+    case 'check-square':
+      return (
+        <>
+          <Path d="m9 11 3 3L22 4" {...p} />
+          <Path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" {...p} />
+        </>
+      );
+    case 'square':
+      return <Rect x={3} y={3} width={18} height={18} rx={2} {...p} />;
     case 'clipboard':
       return (
         <>
@@ -184,6 +241,8 @@ function renderPath(name: IconName, p: object): React.ReactNode {
       );
     case 'arrow-right':
       return <Path d="M5 12h14M13 5l7 7-7 7" {...p} />;
+    case 'arrow-left':
+      return <Path d="M19 12H5M11 19l-7-7 7-7" {...p} />;
     case 'chevron-right':
       return <Path d="m9 6 6 6-6 6" {...p} />;
     case 'plus':

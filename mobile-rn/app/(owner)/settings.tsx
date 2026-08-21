@@ -18,7 +18,7 @@ export default function Settings() {
     { key: 'profile', label: user?.email ?? 'Account', description: 'Profile & preferences', icon: 'shield', accent: 'primary', href: '/(owner)/module/settings' },
     { key: 'academic-year', label: 'Academic Year', description: 'Sessions and active year', icon: 'calendar', accent: 'success', href: '/(owner)/module/academic-years' },
     { key: 'school', label: 'School Profile', description: 'Branding & contact info', icon: 'graduation', accent: 'primary', href: '/(owner)/module/settings' },
-    { key: 'subscription', label: 'Subscription', description: 'Plan & billing', icon: 'wallet', accent: 'success', href: '/(owner)/module/subscription' },
+    { key: 'subscription', label: 'Subscription', description: 'Plan & billing', icon: 'wallet', accent: 'success', href: '/(owner)/subscription' },
     { key: 'logout', label: 'Sign Out', description: 'End your session', icon: 'logout', accent: 'error', onPress: confirmLogout },
   ];
 

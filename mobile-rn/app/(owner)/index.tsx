@@ -32,6 +32,7 @@ import type { AdminRecord } from '@/modules/admin/types';
 import { readRecordPath } from '@/modules/admin/record-utils';
 import { useAuthStore } from '@/store/auth-store';
 import { compactNumber, formatDate, titleCase } from '@/utils/format';
+import { TrialBanner } from '@/components/subscription/TrialBanner';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -176,7 +177,7 @@ export default function AdminHome() {
     {
       title: 'Subscription',
       items: [
-        { key: 'subscription', label: 'Subscription', description: 'Plan limits and billing', icon: 'wallet', accent: 'primary', href: '/(owner)/module/subscription' },
+        { key: 'subscription', label: 'Subscription', description: 'Plan limits and billing', icon: 'wallet', accent: 'primary', href: '/(owner)/subscription' },
       ],
     },
     {
@@ -225,6 +226,8 @@ export default function AdminHome() {
             onMenuPress={openSidebar}
             right={<NotificationBell />}
           />
+
+          <TrialBanner />
 
           {dashboardQuery.isError ? (
             <ErrorBanner message={(dashboardQuery.error as Error).message} onRetry={() => dashboardQuery.refetch()} />

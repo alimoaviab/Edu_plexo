@@ -171,7 +171,7 @@ export default function AdminHome() {
     {
       title: 'Subscription',
       items: [
-        { key: 'subscription', label: 'Subscription', description: 'Plan limits and billing', icon: 'wallet', accent: 'primary', href: '/(admin)/module/subscription' },
+        { key: 'subscription', label: 'Subscription', description: 'Plan limits and billing', icon: 'wallet', accent: 'primary', href: '/(admin)/subscription' },
       ],
     },
     {

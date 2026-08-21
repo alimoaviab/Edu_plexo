@@ -18,7 +18,6 @@ export const StorageKeys = {
   classId: 'class_id',
   studentId: 'student_id',
   lastSchoolId: 'last_school_id',
-  activeSchoolId: 'active_school_id',
   lastLoginRole: 'last_login_role',
   lastEmail: 'last_email',
 } as const;

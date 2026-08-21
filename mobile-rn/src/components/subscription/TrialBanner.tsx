@@ -1,37 +1,59 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+
 import { Icon } from '@/components/ui/Icon';
-import { colors, radius, spacing, typography } from '@/theme/tokens';
 import { useSubscription } from '@/modules/subscription/useSubscription';
+import { useAuthStore } from '@/store/auth-store';
+import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export function TrialBanner() {
-  const { subscription, loading, isTrial, daysRemaining, isExpired } = useSubscription();
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const isOwner = user?.role === 'owner';
+  const { subscription, isLoading, isTrial, daysRemaining, isExpired } = useSubscription();
 
-  if (loading || !subscription) return null;
+  if (isLoading || !subscription) return null;
   if (!isTrial && !isExpired) return null;
 
+  const handlePress = () => {
+    if (isOwner) {
+      router.push('/(owner)/subscription' as never);
+    } else {
+      router.push('/(admin)/subscription' as never);
+    }
+  };
+
   return (
-    <View style={[styles.container, isExpired ? styles.expiredContainer : styles.trialContainer]}>
+    <Pressable
+      onPress={handlePress}
+      style={({ pressed }) => [
+        styles.container,
+        isExpired ? styles.expiredContainer : styles.trialContainer,
+        pressed && styles.pressed,
+      ]}
+    >
       <View style={styles.iconBox}>
         <Icon
-          name={isExpired ? 'shield' : 'sparkles'}
+          name={isExpired ? 'alert-triangle' : 'sparkles'}
           size={18}
           color={isExpired ? colors.error : colors.primary}
         />
       </View>
       <View style={styles.content}>
         {isExpired ? (
-          <Text style={styles.expiredTitle}>Trial Expired</Text>
+          <Text style={styles.expiredTitle}>Subscription Expired</Text>
         ) : (
-          <Text style={styles.trialTitle}>Growth Trial Active ({daysRemaining} days remaining)</Text>
+          <Text style={styles.trialTitle}>Free Trial Active ({daysRemaining} days remaining)</Text>
         )}
         <Text style={styles.subtitle}>
           {isExpired
-            ? 'Please upgrade your plan on the web portal to unlock full access.'
-            : 'You are currently on a 14-day free trial of Eduplexo Growth plan.'}
+            ? 'Tap here to renew or upgrade your plan to unlock full access.'
+            : 'You are currently on a 14-day free trial. Tap to view plans.'}
         </Text>
       </View>
-    </View>
+      <Icon name="chevron-right" size={16} color={isExpired ? colors.error : colors.primary} />
+    </Pressable>
   );
 }
 
@@ -43,7 +65,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     marginHorizontal: spacing.base,
     marginBottom: spacing.md,
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   trialContainer: {
     backgroundColor: '#eff6ff',
@@ -68,17 +90,22 @@ const styles = StyleSheet.create({
   },
   trialTitle: {
     ...typography.bodySm,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#1e40af',
   },
   expiredTitle: {
     ...typography.bodySm,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.error,
   },
   subtitle: {
-    ...typography.labelXs,
+    ...typography.caption,
     color: colors.gray600,
     marginTop: 2,
+    fontSize: 11,
+  },
+  pressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.99 }],
   },
 });

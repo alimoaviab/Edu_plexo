@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
+import { StudentLimitModal } from '@/components/subscription/StudentLimitModal';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 
 type FormMode = 'create' | 'edit';
@@ -140,6 +141,8 @@ function AdminModuleContent({
     enabled: !!selected && !!detailId && !!definition.getPath,
   });
 
+  const [limitModalOpen, setLimitModalOpen] = useState(false);
+
   const saveMutation = useMutation({
     mutationFn: (args: { payload: AdminRecord; mode: FormMode; record?: AdminRecord }) =>
       saveAdminRecord({ definition, ...args }),
@@ -148,7 +151,15 @@ function AdminModuleContent({
       setSelected(null);
       await queryClient.invalidateQueries({ queryKey: ['admin-module', definition.key] });
     },
-    onError: (error) => Alert.alert('Save failed', error.message),
+    onError: (error) => {
+      const msg = error.message?.toLowerCase() || '';
+      if (msg.includes('limit') || msg.includes('quota') || msg.includes('capacity') || msg.includes('subscription')) {
+        setFormState(null);
+        setLimitModalOpen(true);
+      } else {
+        Alert.alert('Save failed', error.message);
+      }
+    },
   });
 
   const deleteMutation = useMutation({
@@ -361,6 +372,11 @@ function AdminModuleContent({
           const enriched = applyScopeToPayload(definition, payload, scope);
           saveMutation.mutate({ payload: enriched, mode: formState.mode, record: formState.record });
         }}
+      />
+
+      <StudentLimitModal
+        isOpen={limitModalOpen}
+        onClose={() => setLimitModalOpen(false)}
       />
     </>
   );

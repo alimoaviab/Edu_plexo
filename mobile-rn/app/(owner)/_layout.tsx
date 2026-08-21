@@ -34,6 +34,9 @@ export default function OwnerLayout() {
       <Tabs.Screen name="academics" options={{ href: null, title: 'Academics' }} />
       <Tabs.Screen name="people" options={{ href: null, title: 'People' }} />
       <Tabs.Screen name="settings" options={{ href: null, title: 'Settings' }} />
+      <Tabs.Screen name="subscription" options={{ href: null, title: 'Subscription & Billing' }} />
+      <Tabs.Screen name="payment" options={{ href: null, title: 'Upgrade Payment' }} />
+      <Tabs.Screen name="custom-plan" options={{ href: null, title: 'Build Your Own Plan' }} />
       <Tabs.Screen name="module/[module]" options={{ href: null, title: 'Module' }} />
       <Tabs.Screen name="attendance" options={{ href: null, title: 'Attendance' }} />
       <Tabs.Screen name="teacher-attendance" options={{ href: null, title: 'Teacher Attendance' }} />
