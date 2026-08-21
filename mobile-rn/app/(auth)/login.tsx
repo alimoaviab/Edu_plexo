@@ -34,11 +34,11 @@ import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 import type { LoginRole, Role } from '@/types/auth';
 
 const ROLE_HOME: Record<Role, string> = {
-  owner: '/(admin)',
+  owner: '/(owner)',
   admin: '/(admin)',
   super_admin: '/(admin)',
   teacher: '/(teacher)',
-  parent: '/(student)',
+  parent: '/(parent)',
   student: '/(student)',
 };
 

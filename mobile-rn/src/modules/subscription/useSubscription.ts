@@ -209,7 +209,7 @@ export function useSubscription() {
   return {
     current,
     subscription: sub,
-    plans: plans.length > 0 ? plans : defaultPlans,
+    plans: plans.length > 0 ? plans : DEFAULT_PLANS,
     history,
     isLoading,
     isRefreshing,
