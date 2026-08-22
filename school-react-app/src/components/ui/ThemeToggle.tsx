@@ -1,5 +1,5 @@
 import React from "react";
-import { AppIcon } from "shared/ui/AppIcon";
+import { Sun, Moon, Laptop } from "lucide-react";
 import { useTheme, type Theme } from "@/contexts/ThemeContext";
 
 interface ThemeToggleProps {
@@ -11,25 +11,25 @@ interface ThemeToggleProps {
 const themeOptions: Array<{
   value: Theme;
   label: string;
-  icon: string;
+  icon: typeof Sun;
   title: string;
 }> = [
   {
     value: "light",
     label: "Light",
-    icon: "Sun",
+    icon: Sun,
     title: "Light Mode",
   },
   {
     value: "dark",
     label: "Dark",
-    icon: "Moon",
+    icon: Moon,
     title: "Dark Mode",
   },
   {
     value: "system",
     label: "Auto",
-    icon: "Laptop",
+    icon: Laptop,
     title: "System Mode",
   },
 ];
@@ -63,6 +63,7 @@ export function ThemeToggle({
         aria-label="Appearance selection"
       >
         {themeOptions.map((opt) => {
+          const Icon = opt.icon;
           const isSelected = theme === opt.value;
           return (
             <button
@@ -78,7 +79,7 @@ export function ThemeToggle({
                   : "text-text-muted hover:text-text-primary"
               }`}
             >
-              <AppIcon name={opt.icon} size={14} />
+              <Icon size={14} />
               {showLabel && <span>{opt.label}</span>}
             </button>
           );
@@ -98,16 +99,14 @@ export function ThemeToggle({
     >
       <div className="relative flex h-5 w-5 items-center justify-center">
         {isDark ? (
-          <AppIcon
-            name="Sun"
+          <Sun
             size={17}
             className="text-amber-400 transform transition-transform duration-300 rotate-0 group-hover:rotate-45"
           />
         ) : (
-          <AppIcon
-            name="Moon"
+          <Moon
             size={17}
-            className="text-slate-700 transform transition-transform duration-300 -rotate-12 group-hover:rotate-0"
+            className="text-slate-700 dark:text-slate-200 transform transition-transform duration-300 -rotate-12 group-hover:rotate-0"
           />
         )}
       </div>

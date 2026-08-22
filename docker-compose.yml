@@ -132,9 +132,11 @@ services:
     build:
       context: ./backend-go
       dockerfile: Dockerfile
-    restart: unless-stopped
     env_file:
-      - .env.local
+      - path: .env.local
+        required: false
+      - path: .env
+        required: false
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -255,7 +257,10 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file:
-      - .env.local
+      - path: .env.local
+        required: false
+      - path: .env
+        required: false
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
