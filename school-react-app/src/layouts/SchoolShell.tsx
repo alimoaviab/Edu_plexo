@@ -32,6 +32,7 @@ import { OwnerSchoolSwitcher } from "@/components/owner/OwnerSchoolSwitcher";
 import { GlobalSearch } from "shared/components/GlobalSearch";
 import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
 import { toRolePath, getRolePrefix } from "@/hooks/useRolePath";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 type NavItem = {
   label: string;
@@ -640,7 +641,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
         />
       )}
       <aside
-        className={`fixed top-0 z-40 flex h-screen flex-shrink-0 flex-col border-r border-slate-200/80 bg-white shadow-[0_1px_5px_rgba(15,23,42,0.03)] transition-all duration-300 ease-in-out ${
+        className={`fixed top-0 z-40 flex h-screen flex-shrink-0 flex-col border-r border-border bg-surface shadow-sm transition-all duration-300 ease-in-out ${
           isCollapsed
             ? "-translate-x-full md:translate-x-0 md:sticky md:w-16 w-64"
             : "translate-x-0 w-64 md:sticky md:w-64"
@@ -648,17 +649,17 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
       >
         <div className={`flex h-11 items-center gap-2 px-3 ${isCollapsed ? "justify-center" : "justify-between"}`}>
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-white shadow-sm ring-1 ring-slate-200">
+            <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface shadow-sm ring-1 ring-border">
               <img src="/logo.jpeg" alt="Eduplexo" className="h-full w-full object-cover" />
             </div>
             {!isCollapsed && (
-              <span className="text-[13px] font-bold tracking-tight text-slate-900">Eduplexo</span>
+              <span className="text-[13px] font-bold tracking-tight text-text-primary">Eduplexo</span>
             )}
           </div>
 
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="rounded p-1 text-slate-300 transition-colors hover:bg-slate-50 hover:text-blue-600"
+            className="rounded p-1 text-text-muted transition-colors hover:bg-surface-hover hover:text-primary"
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <AppIcon name={isCollapsed ? "chevron_right" : "chevron_left"} size={15} />
@@ -674,7 +675,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
                   <Tooltip key={item.href} text={item.label}>
                     <Link
                       to={item.href}
-                      className={`flex h-7 w-7 items-center justify-center rounded transition-all duration-200 ${isActive ? "bg-blue-600 !text-white shadow-sm" : "text-slate-400 hover:bg-blue-50 hover:text-blue-600"}`}
+                      className={`flex h-7 w-7 items-center justify-center rounded transition-all duration-200 ${isActive ? "bg-primary !text-white shadow-sm" : "text-text-muted hover:bg-surface-hover hover:text-primary"}`}
                     >
                       <AppIcon name={item.icon} size={16} className={` text-[16px] ${isActive ? "font-bold" : ""} `} />
                     </Link>
@@ -683,9 +684,9 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
                   <Link
                     key={item.href}
                     to={item.href}
-                    className={`group flex h-7 items-center gap-2.5 px-2.5 py-1 text-[10px] font-extrabold transition-all duration-200 rounded-lg ${isActive ? "bg-blue-600 !text-white shadow-md shadow-blue-600/20" : "text-slate-700 hover:bg-blue-50/50 hover:text-blue-600"}`}
+                    className={`group flex h-7 items-center gap-2.5 px-2.5 py-1 text-[10px] font-extrabold transition-all duration-200 rounded-lg ${isActive ? "bg-primary !text-white shadow-md shadow-primary/20" : "text-text-secondary hover:bg-surface-hover hover:text-primary"}`}
                   >
-                    <AppIcon name={item.icon} size={16} className={` text-[16px] transition-colors ${isActive ? "text-white" : "text-slate-500 group-hover:text-blue-600"} `} />
+                    <AppIcon name={item.icon} size={16} className={` text-[16px] transition-colors ${isActive ? "text-white" : "text-text-muted group-hover:text-primary"} `} />
                     <span className="truncate tracking-tight font-extrabold">{item.label}</span>
                     {isActive && !isCollapsed && <span className="ml-auto h-1 w-1 rounded-full bg-white/60" />}
                   </Link>
@@ -695,9 +696,9 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
           ))}
         </nav>
 
-        <div className={`mt-auto border-t border-slate-50 p-1.5 space-y-1 ${isCollapsed ? "flex flex-col items-center" : ""}`}>
-          <div className={`flex w-full items-center gap-2.5 rounded-lg border border-slate-50 bg-slate-50/30 px-2.5 py-1.5 transition-colors group ${isCollapsed ? "justify-center" : ""}`}>
-            <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-blue-600 shadow-sm">
+        <div className={`mt-auto border-t border-border p-1.5 space-y-1 ${isCollapsed ? "flex flex-col items-center" : ""}`}>
+          <div className={`flex w-full items-center gap-2.5 rounded-lg border border-border bg-surface-muted px-2.5 py-1.5 transition-colors group ${isCollapsed ? "justify-center" : ""}`}>
+            <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary shadow-sm text-white">
               {brandedLogo ? (
                 <img
                   src={brandedLogo}
@@ -713,16 +714,16 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
             {!isCollapsed && (
               <>
                 <div className="flex flex-col min-w-0 text-left flex-1">
-                  <span className="truncate text-[12px] font-bold text-slate-900">
+                  <span className="truncate text-[12px] font-bold text-text-primary">
                     {brandedName || (user.email || "user").split("@")[0]}
                   </span>
-                  <span className="text-[10px] font-bold normal-case  text-slate-400">
+                  <span className="text-[10px] font-bold normal-case text-text-muted">
                     {user.role === "student" ? "Parent/Student" : user.role.replace("_", " ")}
                   </span>
                 </div>
                 <button
                   onClick={logout}
-                  className="rounded p-1 text-slate-300 transition-colors hover:bg-red-50 hover:text-red-500"
+                  className="rounded p-1 text-text-muted transition-colors hover:bg-error/10 hover:text-error"
                 >
                   <AppIcon name="LogOut" size={18} />
                 </button>
@@ -734,13 +735,13 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 flex flex-col bg-background h-screen overflow-hidden relative z-0">
-        <header className="sticky top-0 z-50 flex h-12 md:h-10 items-center justify-between border-b border-slate-200/40 bg-white/70 px-3 md:px-4 backdrop-blur-md overflow-visible gap-2">
+        <header className="sticky top-0 z-50 flex h-12 md:h-10 items-center justify-between border-b border-border bg-surface/80 px-3 md:px-4 backdrop-blur-md overflow-visible gap-2">
           <div className="flex items-center gap-3 flex-1 overflow-visible">
             <button
               onClick={() => setIsCollapsed(false)}
-              className="rounded p-1 transition-colors hover:bg-blue-50 md:hidden"
+              className="rounded p-1 transition-colors hover:bg-surface-hover md:hidden text-text-secondary"
             >
-              <AppIcon name="Menu" size={18} className="text-slate-600" />
+              <AppIcon name="Menu" size={18} />
             </button>
             <GlobalSearch />
           </div>
@@ -750,8 +751,8 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
             {user.role === "parent" && <ChildSwitcher />}
 
             {user.role === "admin" && (
-            <div className="hidden sm:flex items-center gap-2 rounded-md border border-slate-100 bg-white px-2 py-1">
-              <AppIcon name="Calendar" size={14} className="text-slate-400" />
+            <div className="hidden sm:flex items-center gap-2 rounded-md border border-border bg-surface px-2 py-1">
+              <AppIcon name="Calendar" size={14} className="text-text-muted" />
               <select
                 value={selectedAcademicYearId}
                 onChange={async (event) => {
@@ -779,7 +780,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
                   }
                   window.location.reload();
                 }}
-                className="bg-transparent text-[10px] font-black tracking-widest text-slate-500 focus:outline-none cursor-pointer"
+                className="bg-transparent text-[10px] font-black tracking-widest text-text-secondary focus:outline-none cursor-pointer"
               >
                 {academyYears.map((row) => (
                   <option key={row._id} value={row._id}>
@@ -790,7 +791,9 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
             </div>
             )}
 
-            <div className="mx-0.5 hidden h-3 w-px bg-slate-200/40 sm:block" />
+            <div className="mx-0.5 hidden h-3 w-px bg-border sm:block" />
+
+            <ThemeToggle />
 
             <div className="flex items-center gap-2">
               {(user.role === "admin" || user.role === "owner") && (

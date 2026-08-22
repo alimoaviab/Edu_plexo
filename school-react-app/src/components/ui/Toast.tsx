@@ -24,35 +24,35 @@ const toneStyles: Record<
 > = {
   success: {
     icon: "check_circle",
-    iconColor: "text-emerald-600",
+    iconColor: "text-emerald-500",
     progress: "bg-emerald-500",
-    border: "border-emerald-200",
-    accent: "bg-emerald-50",
-    bg: "bg-white",
+    border: "border-emerald-500/30",
+    accent: "bg-emerald-500/15",
+    bg: "bg-surface",
   },
   error: {
     icon: "error",
-    iconColor: "text-red-600",
+    iconColor: "text-red-500",
     progress: "bg-red-500",
-    border: "border-red-200",
-    accent: "bg-red-50",
-    bg: "bg-white",
+    border: "border-red-500/30",
+    accent: "bg-red-500/15",
+    bg: "bg-surface",
   },
   info: {
     icon: "info",
-    iconColor: "text-blue-600",
-    progress: "bg-blue-500",
-    border: "border-blue-200",
-    accent: "bg-blue-50",
-    bg: "bg-white",
+    iconColor: "text-primary",
+    progress: "bg-primary",
+    border: "border-primary/30",
+    accent: "bg-primary/15",
+    bg: "bg-surface",
   },
   warning: {
     icon: "warning",
-    iconColor: "text-amber-600",
+    iconColor: "text-amber-500",
     progress: "bg-amber-500",
-    border: "border-amber-200",
-    accent: "bg-amber-50",
-    bg: "bg-white",
+    border: "border-amber-500/30",
+    accent: "bg-amber-500/15",
+    bg: "bg-surface",
   },
 };
 
@@ -123,7 +123,7 @@ export function Toast({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={[
-        "relative flex w-full items-start gap-3 overflow-hidden rounded-xl border shadow-[0_8px_30px_rgba(15,23,42,0.08)] backdrop-blur transition-all duration-200",
+        "relative flex w-full items-start gap-3 overflow-hidden rounded-xl border shadow-xl backdrop-blur transition-all duration-200 text-text-primary",
         "p-3 sm:p-4 max-w-[calc(100vw-2rem)] sm:max-w-md",
         styles.bg,
         styles.border,
@@ -141,10 +141,10 @@ export function Toast({
 
       <div className="min-w-0 flex-1 pr-1">
         {title && (
-          <p className="text-[13px] font-bold leading-tight text-slate-900">{title}</p>
+          <p className="text-[13px] font-bold leading-tight text-text-primary">{title}</p>
         )}
         <p
-          className={`text-[13px] leading-snug text-slate-700 break-words ${
+          className={`text-[13px] leading-snug text-text-secondary break-words ${
             title ? "mt-0.5" : ""
           }`}
           style={{ overflowWrap: "anywhere" }}
@@ -155,7 +155,7 @@ export function Toast({
           <button
             type="button"
             onClick={handleAction}
-            className="mt-2 inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:border-blue-300 hover:text-blue-700 transition-colors"
+            className="mt-2 inline-flex items-center gap-1 rounded-lg border border-border bg-surface-muted px-2.5 py-1 text-[11px] font-bold text-text-primary hover:border-primary hover:text-primary transition-colors"
           >
             {action.label}
           </button>
@@ -164,14 +164,14 @@ export function Toast({
 
       <button
         onClick={handleClose}
-        className="flex-shrink-0 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+        className="flex-shrink-0 rounded-lg p-1 text-text-muted transition-colors hover:bg-surface-hover hover:text-text-primary"
         aria-label="Dismiss notification"
       >
         <AppIcon name="X" size={18} />
       </button>
 
       {duration > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-100">
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-border">
           <div
             className={`h-full ${styles.progress} transition-[width] duration-100 ease-linear`}
             style={{ width: `${progress}%` }}

@@ -46,4 +46,5 @@ export type {
 export { EntityGrid, EntityGridSkeleton, EntityGridEmpty } from "./EntityGrid";
 export { Modal } from "./Modal";
 export { DetailsPanel } from "./DetailsPanel";
+export { ThemeToggle } from "./ThemeToggle";
 

@@ -94,29 +94,29 @@ export function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] relative flex items-center justify-center p-4 md:p-8 overflow-hidden">
+    <div className="min-h-screen bg-background relative flex items-center justify-center p-4 md:p-8 overflow-hidden text-text-primary">
       {/* Background with overlay */}
       <div 
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: 'url("/school-bg.png")' }}
       />
-      <div className="absolute inset-0 z-0 bg-white/40 backdrop-blur-[2px]" />
+      <div className="absolute inset-0 z-0 bg-background/60 dark:bg-background/85 backdrop-blur-[2px]" />
 
       <div className="w-full max-w-[500px] relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-2xl rounded-[36px] shadow-[0_30px_90px_rgba(0,0,0,0.12)] border border-white/60 p-8 md:p-10 overflow-hidden"
+          className="bg-surface/85 dark:bg-surface/90 backdrop-blur-2xl rounded-[36px] shadow-2xl border border-border p-8 md:p-10 overflow-hidden text-text-primary"
         >
           <div className="text-center mb-8">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-md ring-1 ring-black/5">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-surface shadow-sm ring-1 ring-border">
               <img src="/logo.jpeg" alt="Eduplexo" className="h-full w-full object-cover" />
             </div>
-            <h2 className="text-3xl font-black text-gray-900 mb-1 tracking-tight">Create Owner Account</h2>
-            <p className="text-gray-500 font-medium text-xs">Enter owner details below to register your account</p>
+            <h2 className="text-3xl font-black text-text-primary mb-1 tracking-tight">Create Owner Account</h2>
+            <p className="text-text-muted font-medium text-xs">Enter owner details below to register your account</p>
           </div>
 
-          <form className="space-y-5" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <Field 
               label="Owner Name" 
               name="fullName" 
@@ -177,16 +177,16 @@ export function SignupPage() {
                   setAcceptTerms(e.target.checked);
                   setError("");
                 }}
-                className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 accent-blue-600 cursor-pointer mt-0.5"
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30 accent-primary cursor-pointer mt-0.5"
               />
-              <label htmlFor="acceptTerms" className="text-xs text-gray-600 font-medium select-none cursor-pointer">
+              <label htmlFor="acceptTerms" className="text-xs text-text-secondary font-medium select-none cursor-pointer">
                 I accept the{" "}
                 <a
                   href="https://eduplexo.com/terms"
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="text-blue-600 hover:underline font-semibold"
+                  className="text-primary hover:underline font-semibold"
                 >
                   Terms & Conditions
                 </a>{" "}
@@ -196,7 +196,7 @@ export function SignupPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="text-blue-600 hover:underline font-semibold"
+                  className="text-primary hover:underline font-semibold"
                 >
                   Privacy Policy
                 </a>
@@ -205,7 +205,7 @@ export function SignupPage() {
             </div>
 
             {error && (
-              <p className="text-[11px] text-red-600 font-bold bg-red-50/90 p-3.5 rounded-2xl border border-red-200 flex items-center gap-2 shadow-sm">
+              <p className="text-[11px] text-red-500 font-bold bg-red-500/10 p-3.5 rounded-2xl border border-red-500/30 flex items-center gap-2 shadow-sm">
                 <AppIcon name="AlertCircle" size={16} className="flex-shrink-0 text-red-500" />
                 {error}
               </p>
@@ -214,17 +214,17 @@ export function SignupPage() {
             <button 
               type="submit" 
               disabled={loading} 
-              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4 text-sm"
+              className="w-full h-12 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4 text-sm"
             >
               {loading ? "Creating Account..." : "Create Owner Account"}
               {!loading && <AppIcon name="ArrowRight" size={18} />}
             </button>
           </form>
 
-          <div className="mt-8 text-center border-t border-gray-100 pt-6">
-            <p className="text-gray-500 font-semibold text-xs tracking-wider">
+          <div className="mt-8 text-center border-t border-border pt-6">
+            <p className="text-text-muted font-semibold text-xs tracking-wider">
               Already have an account?{" "}
-              <Link to="/auth/login" className="text-blue-600 hover:underline underline-offset-4 font-bold">
+              <Link to="/auth/login" className="text-primary hover:underline underline-offset-4 font-bold">
                 Sign In
               </Link>
             </p>
@@ -238,7 +238,7 @@ export function SignupPage() {
 function Field({ label, name, value, onChange, type = "text", placeholder, required, autoFocus }: any) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">{label}</label>
+      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider ml-1">{label}</label>
       <input 
         name={name} 
         type={type} 
@@ -247,7 +247,7 @@ function Field({ label, name, value, onChange, type = "text", placeholder, requi
         onChange={onChange} 
         placeholder={placeholder} 
         autoFocus={autoFocus} 
-        className="w-full h-12 px-5 bg-white/70 border border-gray-200 rounded-2xl focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-gray-900 font-semibold placeholder:text-gray-400 text-sm shadow-sm" 
+        className="w-full h-12 px-5 bg-surface-muted border border-border rounded-2xl focus:bg-surface focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-text-primary font-semibold placeholder:text-text-muted text-sm shadow-sm" 
       />
     </div>
   );
@@ -256,7 +256,7 @@ function Field({ label, name, value, onChange, type = "text", placeholder, requi
 function PasswordField({ label, name, value, onChange, show, onToggle }: any) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider ml-1">{label}</label>
+      <label className="text-[11px] font-bold text-text-secondary uppercase tracking-wider ml-1">{label}</label>
       <div className="relative">
         <input 
           name={name} 
@@ -265,12 +265,12 @@ function PasswordField({ label, name, value, onChange, show, onToggle }: any) {
           value={value} 
           onChange={onChange} 
           placeholder="••••••••" 
-          className="w-full h-12 pl-5 pr-12 bg-white/70 border border-gray-200 rounded-2xl focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-gray-900 font-semibold placeholder:text-gray-400 text-sm shadow-sm" 
+          className="w-full h-12 pl-5 pr-12 bg-surface-muted border border-border rounded-2xl focus:bg-surface focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-text-primary font-semibold placeholder:text-text-muted text-sm shadow-sm" 
         />
         <button 
           type="button" 
           onClick={onToggle} 
-          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" 
+          className="absolute right-4 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors" 
           tabIndex={-1}
         >
           {show ? <AppIcon name="EyeOff" size={18} /> : <AppIcon name="Eye" size={18} />}

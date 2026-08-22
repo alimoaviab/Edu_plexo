@@ -21,16 +21,16 @@ export function PageHeader({ title, subtitle, description, eyebrow, actions, bre
     <div className="mb-6">
       {/* Breadcrumb */}
       {breadcrumb && breadcrumb.length > 0 && (
-        <nav className="flex items-center gap-1.5 mb-3 text-xs text-slate-400">
+        <nav className="flex items-center gap-1.5 mb-3 text-xs text-text-muted">
           {breadcrumb.map((item, i) => (
             <span key={i} className="flex items-center gap-1.5">
               {i > 0 && <AppIcon name="ChevronRight" size={12} />}
               {item.href ? (
-                <Link to={item.href} className="hover:text-blue-600 transition-colors font-medium">
+                <Link to={item.href} className="hover:text-primary transition-colors font-medium">
                   {item.label}
                 </Link>
               ) : (
-                <span className="text-slate-600 font-semibold">{item.label}</span>
+                <span className="text-text-primary font-semibold">{item.label}</span>
               )}
             </span>
           ))}
@@ -40,17 +40,17 @@ export function PageHeader({ title, subtitle, description, eyebrow, actions, bre
       {/* Eyebrow */}
       {eyebrow && (
         <div className="flex items-center gap-2 mb-1">
-          <span className="h-px w-4 bg-blue-600/30" />
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600/60">{eyebrow}</p>
+          <span className="h-px w-4 bg-primary/40" />
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">{eyebrow}</p>
         </div>
       )}
 
       {/* Title + Actions Row */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{title}</h1>
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight">{title}</h1>
           {(subtitle || description) && (
-            <p className="mt-1 text-sm font-medium text-slate-500 max-w-2xl">
+            <p className="mt-1 text-sm font-medium text-text-muted max-w-2xl">
               {subtitle || description}
             </p>
           )}
@@ -59,7 +59,7 @@ export function PageHeader({ title, subtitle, description, eyebrow, actions, bre
       </div>
 
       {/* Divider */}
-      <div className="mt-4 border-b border-slate-100" />
+      <div className="mt-4 border-b border-border" />
     </div>
   );
 }

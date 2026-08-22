@@ -231,7 +231,7 @@ export function DataTable<T>({
         <div className="flex items-center justify-between gap-4">
           {searchable && (
             <div className="relative flex-1 max-w-sm">
-              <AppIcon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <AppIcon name="Search" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
               <input
                 type="text"
                 placeholder="Search..."
@@ -240,22 +240,22 @@ export function DataTable<T>({
                   setSearchQuery(e.target.value);
                   setPage(1);
                 }}
-                className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 text-sm bg-surface text-text-primary border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-text-muted/60"
               />
             </div>
           )}
 
           {selectable && selectedRows.size > 0 && bulkActions && (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500 mr-2">{selectedRows.size} selected</span>
+              <span className="text-sm text-text-muted mr-2">{selectedRows.size} selected</span>
               {bulkActions.map((action) => (
                 <button
                   key={action.label}
                   onClick={() => action.onClick(selectedRowData)}
                   className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
                     action.variant === "danger"
-                      ? "bg-red-50 text-red-600 hover:bg-red-100"
-                      : "bg-blue-50 text-blue-600 hover:bg-blue-100"
+                      ? "bg-error/10 text-error hover:bg-error/20"
+                      : "bg-primary/10 text-primary hover:bg-primary/20"
                   }`}
                 >
                   <AppIcon name={action.icon} size={14} />
@@ -267,17 +267,17 @@ export function DataTable<T>({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-sm">
         <table className="w-full text-left border-collapse">
-          <thead className="sticky top-0 z-10 bg-slate-50/90 backdrop-blur">
+          <thead className="sticky top-0 z-10 bg-surface-muted backdrop-blur">
             <tr>
               {selectable && (
-                <th className="w-12 border-b border-slate-200 px-3 py-2.5">
+                <th className="w-12 border-b border-border px-3 py-2.5">
                   <input
                     type="checkbox"
                     checked={allCurrentSelected}
                     onChange={toggleSelectAll}
-                    className="h-4 w-4 cursor-pointer rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 cursor-pointer rounded border-border text-primary focus:ring-primary"
                   />
                 </th>
               )}
@@ -286,9 +286,9 @@ export function DataTable<T>({
                   key={column.key}
                   onClick={() => handleSort(column.key)}
                   style={column.width ? { width: column.width } : undefined}
-                  className={`whitespace-nowrap border-b border-slate-200 px-3 py-2.5 text-[11px] font-semibold normal-case tracking-[0.14em] text-slate-500 ${
+                  className={`whitespace-nowrap border-b border-border px-3 py-2.5 text-[11px] font-semibold normal-case tracking-[0.14em] text-text-muted ${
                     sortable && column.sortable !== false
-                      ? "cursor-pointer select-none hover:text-slate-700"
+                      ? "cursor-pointer select-none hover:text-text-primary"
                       : ""
                   } ${
                     column.align === "right"
@@ -317,13 +317,13 @@ export function DataTable<T>({
                 </th>
               ))}
               {rowActions && (
-                <th className="w-px border-b border-slate-200 px-4 py-3.5 text-xs font-semibold normal-case tracking-[0.14em] text-slate-500">
+                <th className="w-px border-b border-border px-4 py-3.5 text-xs font-semibold normal-case tracking-[0.14em] text-text-muted">
                   Actions
                 </th>
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-border/60">
             {paginatedRows.map((row, rowIndex) => {
               const id = rowKey(row, rowIndex);
               const isSelected = selectedRows.has(id);
@@ -333,7 +333,7 @@ export function DataTable<T>({
                   onClick={() => onRowClick?.(row)}
                   className={`group transition-colors ${
                     onRowClick ? "cursor-pointer" : ""
-                  } ${isSelected ? "bg-blue-50/50" : "hover:bg-slate-50"}`}
+                  } ${isSelected ? "bg-primary/10" : "hover:bg-surface-hover"}`}
                 >
                   {selectable && (
                     <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
@@ -341,7 +341,7 @@ export function DataTable<T>({
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleSelectRow(id)}
-                        className="h-4 w-4 cursor-pointer rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="h-4 w-4 cursor-pointer rounded border-border text-primary focus:ring-primary"
                       />
                     </td>
                   )}
@@ -349,7 +349,7 @@ export function DataTable<T>({
                     <td
                       key={column.key}
                       style={column.width ? { width: column.width } : undefined}
-                      className={`px-3 py-2.5 text-[13px] text-slate-700 ${
+                      className={`px-3 py-2.5 text-[13px] text-text-primary ${
                         column.align === "right"
                           ? "text-right"
                           : column.align === "center"
@@ -370,10 +370,10 @@ export function DataTable<T>({
                             title={action.label}
                             className={`rounded-lg p-1.5 transition-colors ${
                               action.variant === "danger"
-                                ? "text-slate-400 hover:bg-red-50 hover:text-red-500"
+                                ? "text-text-muted hover:bg-error/10 hover:text-error"
                                 : action.variant === "primary"
-                                  ? "text-slate-400 hover:bg-blue-50 hover:text-blue-600"
-                                  : "text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                  ? "text-text-muted hover:bg-primary/10 hover:text-primary"
+                                  : "text-text-muted hover:bg-surface-hover hover:text-text-primary"
                             }`}
                           >
                             <AppIcon name={action.icon} size={18} />
@@ -390,9 +390,9 @@ export function DataTable<T>({
       </div>
 
       {paginated && filteredRows.length > 0 && (
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-surface">
           <div className="flex items-center gap-3">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-text-muted">
               Showing {(page - 1) * pageSize + 1} to{" "}
               {Math.min(page * pageSize, filteredRows.length)} of {filteredRows.length} results
             </p>
@@ -402,7 +402,7 @@ export function DataTable<T>({
                 setPageSize(Number(e.target.value));
                 setPage(1);
               }}
-              className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:border-blue-400"
+              className="bg-surface border border-border rounded px-1.5 py-0.5 text-[11px] font-bold text-text-primary focus:outline-none focus:border-primary"
             >
               {[10, 20, 50, 100].map((size) => (
                 <option key={size} value={size}>
@@ -417,7 +417,7 @@ export function DataTable<T>({
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="rounded-lg border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-border p-2 text-text-secondary transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <AppIcon name="ChevronLeft" />
               </button>
@@ -426,7 +426,7 @@ export function DataTable<T>({
                   key={p}
                   onClick={() => setPage(p)}
                   className={`h-9 w-9 rounded-lg text-sm font-semibold transition-colors ${
-                    p === page ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-50"
+                    p === page ? "bg-primary text-white shadow-sm font-bold" : "text-text-secondary hover:bg-surface-hover"
                   }`}
                 >
                   {p}
@@ -435,7 +435,7 @@ export function DataTable<T>({
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="rounded-lg border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-border p-2 text-text-secondary transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <AppIcon name="ChevronRight" />
               </button>
