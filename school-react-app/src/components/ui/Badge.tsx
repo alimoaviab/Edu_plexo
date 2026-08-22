@@ -8,12 +8,12 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 
 export function Badge({ variant = "gray", className = "", ...props }: BadgeProps) {
   const variants = {
-    primary: "bg-blue-50 text-blue-700 border-blue-200",
-    secondary: "bg-slate-100 text-slate-700 border-slate-200",
-    success: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    error: "bg-red-50 text-red-700 border-red-200",
-    warning: "bg-amber-50 text-amber-700 border-amber-200",
-    gray: "bg-slate-100 text-slate-600 border-slate-200",
+    primary: "bg-primary/10 text-primary border-primary/20",
+    secondary: "bg-surface-muted text-text-secondary border-border",
+    success: "bg-success/10 text-success border-success/20",
+    error: "bg-error/10 text-error border-error/20",
+    warning: "bg-warning/10 text-warning border-warning/20",
+    gray: "bg-surface-muted text-text-muted border-border",
   };
 
   return (

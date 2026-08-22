@@ -59,25 +59,25 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-200"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
     >
       <div
         ref={modalRef}
-        className={`relative flex flex-col w-full bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 ${sizeClasses[size]} ${className}`}
+        className={`relative flex flex-col w-full bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 text-text-primary ${sizeClasses[size]} ${className}`}
       >
         {/* Header */}
         {(title || subtitle) && (
-          <div className="flex items-start justify-between px-6 py-5 border-b border-slate-100 bg-white">
+          <div className="flex items-start justify-between px-6 py-5 border-b border-border bg-surface">
             <div>
-              {title && <h2 className="text-lg font-bold text-slate-900">{title}</h2>}
-              {subtitle && <p className="text-sm font-medium text-slate-500 mt-1">{subtitle}</p>}
+              {title && <h2 className="text-lg font-bold text-text-primary">{title}</h2>}
+              {subtitle && <p className="text-sm font-medium text-text-muted mt-1">{subtitle}</p>}
             </div>
             <button
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors shrink-0"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-text-muted hover:bg-surface-hover hover:text-text-primary transition-colors shrink-0"
               aria-label="Close modal"
             >
               <AppIcon name="X" size={18} />
@@ -89,7 +89,7 @@ export function Modal({
         {!title && !subtitle && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100/80 text-slate-500 hover:bg-slate-200 hover:text-slate-800 transition-colors backdrop-blur-sm shadow-sm"
+            className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted/80 text-text-muted hover:bg-surface-hover hover:text-text-primary transition-colors backdrop-blur-sm shadow-sm"
             aria-label="Close modal"
           >
             <AppIcon name="X" size={18} />
@@ -97,13 +97,13 @@ export function Modal({
         )}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-slate-200">
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar text-text-primary">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3 rounded-b-2xl">
+          <div className="px-6 py-4 border-t border-border bg-surface-muted flex items-center justify-end gap-3 rounded-b-2xl">
             {footer}
           </div>
         )}

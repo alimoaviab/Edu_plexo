@@ -35,8 +35,8 @@ export function CompactBarChart({
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
           <Tooltip 
-            contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)', fontSize: '11px', fontWeight: 'bold' }}
-            itemStyle={{ color: '#0f172a' }}
+            contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)', fontSize: '11px', fontWeight: 'bold' }}
+            itemStyle={{ color: 'var(--text-primary)' }}
             cursor={{ fill: 'transparent' }}
           />
           <Bar dataKey="value1" stackId="a" fill={color1} radius={[data[0]?.value2 ? 0 : 4, data[0]?.value2 ? 0 : 4, 4, 4]} barSize={16} />
@@ -46,7 +46,7 @@ export function CompactBarChart({
           <XAxis dataKey="label" hide />
         </BarChart>
       </ResponsiveContainer>
-      <div className="absolute -bottom-5 left-0 right-0 flex justify-between text-[10px] text-gray-500 font-medium">
+      <div className="absolute -bottom-5 left-0 right-0 flex justify-between text-[10px] text-text-muted font-medium">
         {data.map((item, index) => (
           <div key={index} className="flex-1 text-center truncate px-1">
             {item.label}

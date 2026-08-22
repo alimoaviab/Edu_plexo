@@ -2,6 +2,7 @@ import { AppIcon } from "shared/ui/AppIcon";
 import { useEffect, useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { apiRequest, clearStoredSession } from '@/lib/api'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
@@ -77,27 +78,30 @@ export function Layout() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="h-8 w-8 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-8 w-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="flex h-screen bg-slate-50">
+    <div className="flex h-screen bg-background text-text-primary">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
-        <div className="h-14 flex items-center gap-2 px-5 border-b border-slate-100">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-sm shadow-blue-600/20">
-            <AppIcon name="ShieldAlert" size={14} className="text-white" />
+      <aside className="w-64 bg-surface border-r border-border flex flex-col">
+        <div className="h-14 flex items-center justify-between px-5 border-b border-border">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center shadow-sm shadow-primary/20">
+              <AppIcon name="ShieldAlert" size={14} className="text-white" />
+            </div>
+            <div>
+              <span className="text-sm font-bold text-text-primary block leading-none">Eduplexo</span>
+              <span className="text-[10px] text-text-muted font-medium">Super Admin</span>
+            </div>
           </div>
-          <div>
-            <span className="text-sm font-bold text-slate-900 block leading-none">Eduplexo</span>
-            <span className="text-[10px] text-slate-400 font-medium">Super Admin</span>
-          </div>
+          <ThemeToggle />
         </div>
 
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = location.pathname === item.href
             return (
@@ -106,8 +110,8 @@ export function Layout() {
                 to={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/20'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    ? 'bg-primary text-white shadow-sm shadow-primary/20'
+                    : 'text-text-secondary hover:bg-surface-hover hover:text-text-primary'
                 }`}
               >
                 <AppIcon name={item.icon} size={18} />
@@ -117,21 +121,21 @@ export function Layout() {
           })}
         </nav>
 
-        <div className="p-3 border-t border-slate-100 space-y-2">
+        <div className="p-3 border-t border-border space-y-2">
           {/* User info */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50/60">
-            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-xs font-bold flex-shrink-0">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-muted">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
               {(user.email || 'U').substring(0, 2).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-slate-900 truncate">{user.email}</p>
-              <p className="text-[10px] text-slate-400 capitalize">{user.role.replace('_', ' ')}</p>
+              <p className="text-xs font-semibold text-text-primary truncate">{user.email}</p>
+              <p className="text-[10px] text-text-muted capitalize">{user.role.replace('_', ' ')}</p>
             </div>
           </div>
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all w-full"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-text-muted hover:bg-red-500/10 hover:text-red-500 transition-all w-full"
           >
             <AppIcon name="LogOut" size={18} />
             Logout
@@ -140,7 +144,7 @@ export function Layout() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto bg-background">
         <div className="p-6">
           <Outlet />
         </div>

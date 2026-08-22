@@ -22,10 +22,10 @@ interface EmptyStateProps {
 }
 
 const toneToBg: Record<NonNullable<EmptyStateProps["tone"]>, string> = {
-  default: "bg-blue-50 text-blue-600",
-  info: "bg-blue-50 text-blue-600",
-  success: "bg-emerald-50 text-emerald-600",
-  warning: "bg-amber-50 text-amber-600",
+  default: "bg-primary/10 text-primary",
+  info: "bg-primary/10 text-primary",
+  success: "bg-emerald-500/15 text-emerald-500",
+  warning: "bg-amber-500/15 text-amber-500",
 };
 
 export function EmptyState({
@@ -52,11 +52,11 @@ export function EmptyState({
     );
 
   return (
-    <Card className="flex flex-col items-center justify-center border-dashed border-2 px-4 py-10 text-center md:px-8">
+    <Card className="flex flex-col items-center justify-center border-dashed border-2 border-border px-4 py-10 text-center md:px-8 bg-surface text-text-primary">
       {iconContent}
-      <h3 className="text-lg font-semibold tracking-tight text-slate-950">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">{description}</p>
-      {hint && <p className="mx-auto mt-1.5 max-w-md text-xs leading-5 text-slate-400">{hint}</p>}
+      <h3 className="text-lg font-semibold tracking-tight text-text-primary">{title}</h3>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-text-secondary">{description}</p>
+      {hint && <p className="mx-auto mt-1.5 max-w-md text-xs leading-5 text-text-muted">{hint}</p>}
 
       {(action || secondaryAction) && (
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -64,7 +64,7 @@ export function EmptyState({
             (action.href ? (
               <Link
                 to={action.href}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/15 transition-all hover:-translate-y-0.5 hover:shadow-md hover:shadow-blue-600/20 active:scale-[0.98]"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-primary/20 transition-all hover:-translate-y-0.5 hover:shadow-md hover:bg-primary-hover active:scale-[0.98]"
               >
                 <AppIcon name={action.icon ?? "add"} size={18} />
                 {action.label}
@@ -80,7 +80,7 @@ export function EmptyState({
             (secondaryAction.href ? (
               <Link
                 to={secondaryAction.href}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700"
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface-muted px-4 py-2 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:text-primary"
               >
                 {secondaryAction.icon && (
                   <AppIcon name={secondaryAction.icon} size={16} />
@@ -91,7 +91,7 @@ export function EmptyState({
               <button
                 type="button"
                 onClick={secondaryAction.onClick}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-700"
+                className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface-muted px-4 py-2 text-sm font-semibold text-text-primary transition-colors hover:border-primary hover:text-primary"
               >
                 {secondaryAction.icon && (
                   <AppIcon name={secondaryAction.icon} size={16} />

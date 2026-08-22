@@ -137,27 +137,27 @@ export function Select({
     <div
       ref={listRef}
       style={dropdownStyle}
-      className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] overflow-hidden py-1 max-h-80 flex flex-col animate-in fade-in slide-in-from-top-2 duration-150"
+      className="bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden py-1 max-h-80 flex flex-col animate-in fade-in slide-in-from-top-2 duration-150 backdrop-blur-md"
     >
       {props.searchable && (
-        <div className="p-2 border-b border-slate-100 sticky top-0 bg-white/95 backdrop-blur-md z-10 shrink-0">
+        <div className="p-2 border-b border-border sticky top-0 bg-surface z-10 shrink-0">
           <div className="relative">
-            <AppIcon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <AppIcon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
               autoFocus
               type="text"
               placeholder="Search..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full h-8 pl-8 pr-3 text-[12px] bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full h-8 pl-8 pr-3 text-[12px] bg-surface-muted text-text-primary border border-border rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               onClick={e => e.stopPropagation()}
             />
           </div>
         </div>
       )}
-      <div className="overflow-y-auto max-h-60 flex-1">
+      <div className="overflow-y-auto max-h-60 flex-1 custom-scrollbar">
         {filteredOptions.length === 0 ? (
-            <div className="px-4 py-3 text-[13px] text-slate-500 text-center font-medium">No results found</div>
+            <div className="px-4 py-3 text-[13px] text-text-muted text-center font-medium">No results found</div>
         ) : (
             filteredOptions.map((option) => {
               const isSelected = option.value === value;
@@ -169,13 +169,13 @@ export function Select({
                   onClick={() => handleSelect(option.value)}
                   className={`flex items-center justify-between px-4 py-2.5 text-[13px] font-bold cursor-pointer transition-all ${
                     isSelected
-                      ? "text-blue-600 bg-blue-50/50 font-extrabold"
-                      : "text-slate-600 hover:text-blue-600 hover:bg-slate-50/80"
+                      ? "text-primary bg-primary/10 font-extrabold"
+                      : "text-text-secondary hover:text-primary hover:bg-surface-hover"
                   }`}
                 >
                   <span className="truncate">{option.label}</span>
                   {isSelected && (
-                    <AppIcon name="Check" size={16} className="text-blue-600" />
+                    <AppIcon name="Check" size={16} className="text-primary" />
                   )}
                 </div>
               );
@@ -190,11 +190,11 @@ export function Select({
       {label && (
         <label
           htmlFor={selectId}
-          className="text-[11px] font-bold text-slate-500 normal-case mb-1 px-1"
+          className="text-[11px] font-bold text-text-muted normal-case mb-1 px-1"
         >
           {label}
           {props.required && (
-            <span className="text-rose-500 ml-0.5" aria-hidden="true">
+            <span className="text-error ml-0.5" aria-hidden="true">
               *
             </span>
           )}
@@ -211,18 +211,18 @@ export function Select({
           aria-expanded={isOpen}
           aria-invalid={!!error}
           disabled={props.disabled}
-          className={`w-full h-11 px-4 pr-10 text-[13px] font-bold text-slate-700 bg-slate-50/50 hover:bg-slate-100/50 border rounded-xl outline-none transition-all flex items-center justify-between cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-left ${
+          className={`w-full h-11 px-4 pr-10 text-[13px] font-bold text-text-primary bg-surface hover:bg-surface-hover border rounded-xl outline-none transition-all flex items-center justify-between cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-left ${
             isOpen
-              ? "border-blue-600 ring-4 ring-blue-600/5 bg-white shadow-sm"
+              ? "border-primary ring-4 ring-primary/10 shadow-sm"
               : error
-              ? "border-rose-400 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10"
-              : "border-slate-200 hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/5"
+              ? "border-error focus:border-error focus:ring-4 focus:ring-error/10"
+              : "border-border hover:border-border-strong focus:border-primary focus:ring-4 focus:ring-primary/10"
           } ${className}`}
         >
           <span className="truncate">
             {selectedOption ? selectedOption.label : placeholder || "Select..."}
           </span>
-          <AppIcon name="KeyboardArrowDown" size={18} className={` text-[18px] text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180 text-blue-600" : ""} `} />
+          <AppIcon name="KeyboardArrowDown" size={18} className={` text-[18px] text-text-muted transition-transform duration-200 ${isOpen ? "rotate-180 text-primary" : ""} `} />
         </button>
 
         <select
@@ -254,7 +254,7 @@ export function Select({
       </div>
 
       {error && (
-        <span className="text-[10px] font-bold text-rose-600 mt-0.5 px-1" role="alert">
+        <span className="text-[10px] font-bold text-error mt-0.5 px-1" role="alert">
           {error}
         </span>
       )}
