@@ -1,7 +1,8 @@
 import { ScrollView, StyleSheet, View, type ViewProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, spacing } from '@/theme/tokens';
+import { useColors } from '@/theme/ThemeContext';
+import { spacing } from '@/theme/tokens';
 
 interface ScreenContainerProps extends ViewProps {
   scroll?: boolean;
@@ -16,6 +17,8 @@ export function ScreenContainer({
   children,
   ...rest
 }: ScreenContainerProps) {
+  const colors = useColors();
+
   const inner = (
     <View style={[styles.inner, !flush && styles.padded, style]} {...rest}>
       {children}
@@ -23,7 +26,7 @@ export function ScreenContainer({
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
       {scroll ? (
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -40,7 +43,7 @@ export function ScreenContainer({
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.surface },
+  safe: { flex: 1 },
   scroll: { flexGrow: 1, paddingBottom: spacing.xl3 },
   inner: { flex: 1 },
   padded: { paddingHorizontal: spacing.base },
