@@ -821,9 +821,47 @@ function formatValue(value: unknown, key?: string): string {
 
   if (Array.isArray(value)) {
     if (value.length === 0) return '-';
-    return value.map((val) => formatValue(val, key)).join(', ');
+    if (value.every((item) => item === null || typeof item !== 'object')) {
+      return value
+        .map((val) => {
+          const str = formatValue(val, key);
+          return str.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        })
+        .join(', ');
+    }
+    return value
+      .map((item) => {
+        if (typeof item === 'object' && item !== null) {
+          const rec = item as Record<string, unknown>;
+          return rec.name || rec.title || rec.label || rec.plan_name || rec.id || Object.values(rec)[0] || '';
+        }
+        return formatValue(item, key);
+      })
+      .filter(Boolean)
+      .join(', ');
   }
-  if (typeof value === 'object') return JSON.stringify(value);
+
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    const entries = Object.entries(obj);
+    if (entries.length === 0) return '-';
+
+    const isFlagMap = entries.every(([_, v]) => typeof v === 'boolean');
+    if (isFlagMap) {
+      const activeKeys = entries
+        .filter(([_, v]) => v === true)
+        .map(([k]) => k.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()));
+      return activeKeys.length > 0 ? activeKeys.join(', ') : 'None';
+    }
+
+    if (obj.name || obj.title || obj.label || obj.plan_name) {
+      return String(obj.name || obj.title || obj.label || obj.plan_name);
+    }
+
+    return entries
+      .map(([k, v]) => `${k.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}: ${formatValue(v, k)}`)
+      .join(', ');
+  }
   return String(value);
 }
 

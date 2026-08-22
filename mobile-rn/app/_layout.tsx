@@ -18,6 +18,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth-store';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { colors } from '@/theme/tokens';
+import { ThemeProvider, useTheme } from '@/theme/ThemeContext';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -75,15 +76,22 @@ function ProtectedRouter() {
   return <Slot />;
 }
 
+function ThemeAwareStatusBar() {
+  const { isDark, colors } = useTheme();
+  return <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={colors.surface} />;
+}
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ErrorBoundary>
-          <QueryClientProvider client={queryClient}>
-            <StatusBar style="dark" backgroundColor={colors.surface} />
-            <ProtectedRouter />
-          </QueryClientProvider>
+          <ThemeProvider>
+            <QueryClientProvider client={queryClient}>
+              <ThemeAwareStatusBar />
+              <ProtectedRouter />
+            </QueryClientProvider>
+          </ThemeProvider>
         </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>

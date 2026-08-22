@@ -1,6 +1,7 @@
 import { StyleSheet, View, type ViewProps } from 'react-native';
 
-import { colors, radius, shadows, spacing } from '@/theme/tokens';
+import { useColors } from '@/theme/ThemeContext';
+import { radius, shadows, spacing } from '@/theme/tokens';
 
 interface CardProps extends ViewProps {
   variant?: 'default' | 'flat';
@@ -14,11 +15,17 @@ export function Card({
   children,
   ...rest
 }: CardProps) {
+  const colors = useColors();
+
   return (
     <View
       style={[
         styles.card,
-        { padding: spacing[padding] },
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          padding: spacing[padding],
+        },
         variant === 'default' && shadows.card,
         style,
       ]}
@@ -31,9 +38,7 @@ export function Card({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.white,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.cardBorder,
   },
 });
