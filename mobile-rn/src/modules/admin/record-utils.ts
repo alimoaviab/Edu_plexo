@@ -94,13 +94,58 @@ export function formatRecordValue(value: unknown, key?: string): string {
   if (Array.isArray(value)) {
     if (value.length === 0) return '-';
     if (value.every((item) => item === null || typeof item !== 'object')) {
-      return value.map((item) => formatRecordValue(item, key)).join(', ');
+      return value
+        .map((item) => {
+          const formatted = formatRecordValue(item, key);
+          return formatHumanLabel(formatted);
+        })
+        .join(', ');
     }
-    return JSON.stringify(value);
+    return value
+      .map((item) => {
+        if (typeof item === 'object' && item !== null) {
+          const rec = item as Record<string, unknown>;
+          return rec.name || rec.title || rec.label || rec.plan_name || rec.id || Object.values(rec)[0] || '';
+        }
+        return formatRecordValue(item, key);
+      })
+      .filter(Boolean)
+      .join(', ');
   }
 
-  if (typeof value === 'object') return JSON.stringify(value);
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    
+    // Check if it's a map of boolean flags (e.g. allowed_modules, permissions, features)
+    const entries = Object.entries(obj);
+    if (entries.length === 0) return '-';
+
+    const isFlagMap = entries.every(([_, v]) => typeof v === 'boolean');
+    if (isFlagMap) {
+      const activeKeys = entries
+        .filter(([_, v]) => v === true)
+        .map(([k]) => formatHumanLabel(k));
+      return activeKeys.length > 0 ? activeKeys.join(', ') : 'None';
+    }
+
+    // Check if it has a direct display property
+    if (obj.name || obj.title || obj.label || obj.plan_name) {
+      return String(obj.name || obj.title || obj.label || obj.plan_name);
+    }
+
+    // Format key-value pairs cleanly without JSON punctuation
+    return entries
+      .map(([k, v]) => `${formatHumanLabel(k)}: ${formatRecordValue(v, k)}`)
+      .join(', ');
+  }
   return String(value);
+}
+
+function formatHumanLabel(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 export function labelizeKey(path: string): string {
