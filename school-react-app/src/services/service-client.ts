@@ -95,11 +95,53 @@ function handleUnauthorized() {
   window.location.replace("/auth/login");
 }
 
+// In-flight request deduplication map for idempotent GET requests.
+// Prevents duplicate simultaneous network requests when multiple components
+// mount or request the same resource concurrently.
+const inFlightRequests = new Map<string, Promise<ServiceResult<any>>>();
+
+function getDeduplicationKey(url: string, options: RequestInit): string | null {
+  const method = (options.method || "GET").toUpperCase();
+  // Only deduplicate idempotent read requests
+  if (method !== "GET" && method !== "HEAD") return null;
+
+  const token = readToken() || "";
+  const ayId = readAcademicYearId();
+  const schoolId = readActiveSchoolId();
+  const branchId = readActiveBranchId();
+
+  return `${method}:${resolveUrl(url)}:${token}:${ayId}:${schoolId}:${branchId}`;
+}
+
 export async function serviceRequest<T>(
   url: string,
   options: RequestInit = {},
   retries = 1
 ): Promise<ServiceResult<T>> {
+  const dedupKey = getDeduplicationKey(url, options);
+
+  if (dedupKey && inFlightRequests.has(dedupKey)) {
+    return inFlightRequests.get(dedupKey)! as Promise<ServiceResult<T>>;
+  }
+
+  const executionPromise = executeServiceRequest<T>(url, options, retries);
+
+  if (dedupKey) {
+    inFlightRequests.set(dedupKey, executionPromise);
+    executionPromise.finally(() => {
+      inFlightRequests.delete(dedupKey);
+    });
+  }
+
+  return executionPromise;
+}
+
+async function executeServiceRequest<T>(
+  url: string,
+  options: RequestInit = {},
+  retries = 1
+): Promise<ServiceResult<T>> {
+
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {

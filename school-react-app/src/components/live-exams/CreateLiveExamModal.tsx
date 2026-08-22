@@ -1,6 +1,8 @@
 import { showToast } from "@/utils/toast";
 import { AppIcon } from "shared/ui/AppIcon";
 import React, { useState } from "react";
+import { serviceRequest } from "@/services/service-client";
+
 
 interface CreateLiveExamModalProps {
   isOpen: boolean;
@@ -37,9 +39,8 @@ export const CreateLiveExamModal: React.FC<CreateLiveExamModalProps> = ({
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch("/api/live-exams", {
+      const result = await serviceRequest<any>("/api/live-exams", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             ...formData,
             duration: Number(formData.duration),
@@ -47,12 +48,11 @@ export const CreateLiveExamModal: React.FC<CreateLiveExamModalProps> = ({
             passing_marks: Number(formData.passing_marks),
         }),
       });
-      const result = await res.json();
       if (result.ok) {
         onSuccess();
         onClose();
       } else {
-        showToast(`Error: ${result.error.message || "Failed to create exam"}`, "info");
+        showToast(`Error: ${result.error?.message || result.message || "Failed to create exam"}`, "info");
       }
     } catch (err) {
       console.error(err);
@@ -61,6 +61,7 @@ export const CreateLiveExamModal: React.FC<CreateLiveExamModalProps> = ({
       setLoading(false);
     }
   };
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">

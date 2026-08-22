@@ -1,12 +1,28 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppIcon } from "shared/ui/AppIcon";
 import { serviceRequest } from "@/services/service-client";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import { toast } from "@/utils/toast";
 
 export default function OwnerSchoolsPage() {
-  const [schools, setSchools] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  
+  const { data: schoolsData, isLoading: loading } = useQuery<any[]>({
+    queryKey: ["owner-schools"],
+    queryFn: async () => {
+      const res = await serviceRequest<any[]>("/api/owner/schools");
+      if (res.ok) {
+        return Array.isArray(res.data) ? res.data : [];
+      }
+      return [];
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+
+
+  const schools = schoolsData || [];
   
   // Onboard Modal State
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
@@ -17,22 +33,6 @@ export default function OwnerSchoolsPage() {
   // Details Modal State
   const [selectedSchool, setSelectedSchool] = useState<any | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await serviceRequest<any[]>("/api/owner/schools");
-        if (res.ok) {
-          setSchools(Array.isArray(res.data) ? res.data : []);
-        }
-      } catch (err) {
-        console.error("Failed to load schools", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [isOnboardModalOpen]);
 
   const handleCreateSchool = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +48,8 @@ export default function OwnerSchoolsPage() {
         setIsOnboardModalOpen(false);
         setModalError("");
         setNewSchool({ name: "", code: "", city: "", address: "", principal_name: "", email: "", password: "" });
+        void queryClient.invalidateQueries({ queryKey: ["owner-schools"] });
+        void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       } else {
         const errMsg = res.error?.message || res.message || "A school with this code or email already exists.";
         setModalError(errMsg);

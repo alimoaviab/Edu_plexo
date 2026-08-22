@@ -46,6 +46,7 @@ export function useStudents(filters?: { class_id?: string; status?: string }) {
 			// Small delay to ensure backend cache invalidation completes
 			await new Promise(resolve => setTimeout(resolve, 300));
 			await queryClient.invalidateQueries({ queryKey: ["students"] });
+			await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
 			list.refetch();
 			publish("students");
 			return result;
@@ -62,6 +63,7 @@ export function useStudents(filters?: { class_id?: string; status?: string }) {
 			}
 			showToast("Student updated.", "success");
 			await queryClient.invalidateQueries({ queryKey: ["students"] });
+			await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
 			list.refetch();
 			publish("students");
 			return result;
@@ -78,12 +80,14 @@ export function useStudents(filters?: { class_id?: string; status?: string }) {
 			}
 			showToast("Student deleted.", "success");
 			await queryClient.invalidateQueries({ queryKey: ["students"] });
+			await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
 			list.refetch();
 			publish("students");
 			return result;
 		},
 		[list, queryClient]
 	);
+
 
 	return {
 		// Paginated list state

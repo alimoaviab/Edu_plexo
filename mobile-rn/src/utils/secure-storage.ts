@@ -79,4 +79,36 @@ export const prefStorage = {
       // ignore
     }
   },
+  /** Get a JSON value with TTL expiration check */
+  async getWithTTL<T>(key: string): Promise<T | null> {
+    try {
+      const raw = await AsyncStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && 'expiresAt' in parsed && 'data' in parsed) {
+        if (parsed.expiresAt !== null && Date.now() > parsed.expiresAt) {
+          await AsyncStorage.removeItem(key);
+          return null;
+        }
+        return parsed.data as T;
+      }
+      return parsed as T;
+    } catch {
+      return null;
+    }
+  },
+  /** Set a JSON value with TTL expiration */
+  async setWithTTL<T>(key: string, data: T, ttlMs: number): Promise<void> {
+    try {
+      const envelope = {
+        data,
+        timestamp: Date.now(),
+        expiresAt: Date.now() + ttlMs,
+      };
+      await AsyncStorage.setItem(key, JSON.stringify(envelope));
+    } catch {
+      // ignore
+    }
+  },
 };
+

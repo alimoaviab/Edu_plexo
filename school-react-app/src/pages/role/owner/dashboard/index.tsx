@@ -1,30 +1,28 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { AppIcon } from "shared/ui/AppIcon";
 import { serviceRequest } from "@/services/service-client";
 import { SchoolShell } from "@/layouts/SchoolShell";
+import { STALE_TIME_DASHBOARD } from "@/lib/query-client";
+import { useTenantContext } from "@/hooks/useTenantContext";
 
 export default function OwnerDashboardPage() {
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { schoolId } = useTenantContext();
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await serviceRequest<any>("/api/owner/dashboard");
-        if (res.ok && res.data) {
-          setStats(res.data);
-        }
-      } catch (err) {
-        console.error("Failed to load dashboard stats", err);
-      } finally {
-        setLoading(false);
+  const { data: stats, isLoading: loading } = useQuery<any>({
+    queryKey: ["dashboard", "owner", schoolId],
+    queryFn: async () => {
+      const res = await serviceRequest<any>("/api/owner/dashboard");
+      if (!res.ok) {
+        throw new Error(res.error?.message || "Failed to load dashboard stats");
       }
-    }
-    load();
-  }, []);
+      return res.data;
+    },
+    staleTime: STALE_TIME_DASHBOARD,
+    gcTime: 30 * 60 * 1000,
+  });
 
-  if (loading) {
+  if (loading && !stats) {
     return (
       <SchoolShell eyebrow="Owner Portal" title="Executive Dashboard">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -33,6 +31,7 @@ export default function OwnerDashboardPage() {
       </SchoolShell>
     );
   }
+
 
   const schools = stats?.schools || [];
   
