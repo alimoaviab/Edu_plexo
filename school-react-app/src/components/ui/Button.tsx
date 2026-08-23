@@ -33,13 +33,13 @@ export function Button({
 
   const variants: Record<ButtonVariant, string> = {
     primary:
-      "bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary-hover hover:-translate-y-0.5 focus:ring-primary",
+      "bg-blue-600 text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700 hover:-translate-y-0.5 focus:ring-blue-600",
     secondary:
-      "bg-surface-elevated text-text-primary border border-border shadow-sm hover:bg-surface-hover hover:-translate-y-0.5 focus:ring-primary",
+      "bg-slate-900 text-white shadow-sm shadow-slate-900/10 hover:bg-slate-800 hover:-translate-y-0.5 focus:ring-slate-900",
     ghost:
-      "bg-transparent text-text-secondary hover:bg-surface-hover hover:text-text-primary focus:ring-primary/40",
+      "bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-400",
     error:
-      "bg-error text-white shadow-lg shadow-error/20 hover:opacity-90 hover:-translate-y-0.5 focus:ring-error",
+      "bg-rose-600 text-white shadow-lg shadow-rose-600/20 hover:bg-rose-700 hover:-translate-y-0.5 focus:ring-rose-600",
   };
 
   const sizes: Record<NonNullable<ButtonProps["size"]>, string> = {

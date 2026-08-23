@@ -5,21 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { router } from './routes'
 import './index.css'
 
-import { ThemeProvider } from '@/contexts/ThemeContext'
-
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      gcTime: 30 * 60 * 1000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-      refetchOnMount: true,
-      refetchOnReconnect: 'always',
-    },
-  },
+  defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 })
-
 
 function AppRoot() {
   useEffect(() => {
@@ -44,11 +32,9 @@ function AppRoot() {
   }, []);
 
   return (
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   );
 }
 

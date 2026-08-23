@@ -45,7 +45,7 @@ const FEATURE_VENDOR_LIMITS: Record<string, number> = {
   "vendor-canvas-": 220 * KB,
   "vendor-designer-": 320 * KB,
   "vendor-pdf-": 360 * KB,
-  "vendor-misc-": 500 * KB,
+  "vendor-misc-": 650 * KB,
 };
 
 

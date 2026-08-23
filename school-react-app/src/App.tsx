@@ -8,11 +8,9 @@ import { QueryProvider } from "@/providers/QueryProvider";
 import { useRealtimeAttendanceSync } from "@/hooks/useRealtimeAttendanceSync";
 import { DialogProvider } from "@/components/ui/DialogContext";
 
-import { ThemeProvider } from "@/contexts/ThemeContext";
-
 /**
  * Top-level app shell. Identical responsibility to old-app/school-app/app/layout.tsx:
- * mount global providers (ThemeProvider, TanStack Query, toast bus, network indicator), then
+ * mount global providers (TanStack Query, toast bus, network indicator), then
  * render the active route via React Router's <Outlet />.
  */
 export function App() {
@@ -41,13 +39,11 @@ export function App() {
   }, []);
 
   return (
-    <ThemeProvider>
-      <QueryProvider>
-        <DialogProvider>
-          <AppContent />
-        </DialogProvider>
-      </QueryProvider>
-    </ThemeProvider>
+    <QueryProvider>
+      <DialogProvider>
+        <AppContent />
+      </DialogProvider>
+    </QueryProvider>
   );
 }
 

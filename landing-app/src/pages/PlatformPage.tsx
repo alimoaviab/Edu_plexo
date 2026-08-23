@@ -51,7 +51,7 @@ export function PlatformPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 font-sans">
       <Seo
         title="EduPlexo Platform — School ERP Platform Overview"
         description="Explore the EduPlexo school ERP platform: admin dashboard, analytics, student records, security controls, and AI command agent. Built for modern educational institutions."
@@ -63,15 +63,15 @@ export function PlatformPage() {
       <Navbar />
 
       <header className="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden">
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-100/60 dark:from-sky-950/40 via-slate-50 dark:via-slate-950 to-slate-50 dark:to-slate-950" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-100/60 via-slate-50 to-slate-50" />
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-blue-600 dark:text-sky-400 mb-5">
+          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-blue-600 mb-5">
             School ERP Platform
           </p>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            A Unified Platform for <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400">Every School Role</span>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+            A Unified Platform for <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Every School Role</span>
           </h1>
-          <p className="mt-6 text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-6 text-lg md:text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto">
             EduPlexo is not just software — it is a complete operating system for educational institutions. Every module is designed to work together seamlessly.
           </p>
         </div>
@@ -92,19 +92,19 @@ export function PlatformPage() {
                 <div className={`w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center mb-6 shadow-sm`}>
                   <AppIcon name={module.icon} className="w-7 h-7 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">{module.title}</h2>
-                <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed mb-6">{module.description}</p>
+                <h2 className="text-3xl font-bold text-slate-900 mb-4">{module.title}</h2>
+                <p className="text-lg text-slate-600 leading-relaxed mb-6">{module.description}</p>
                 <ul className="space-y-3">
                   {module.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-medium">
-                      <AppIcon name="CheckCircle2" className="w-5 h-5 text-blue-500 dark:text-sky-400 flex-shrink-0" />
+                    <li key={i} className="flex items-center gap-2 text-slate-700">
+                      <AppIcon name="CheckCircle2" className="w-5 h-5 text-blue-500 flex-shrink-0" />
                       {feature}
                     </li>
                   ))}
                 </ul>
               </div>
               <div className="flex-1 w-full">
-                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-lg overflow-hidden">
+                <div className="bg-white rounded-2xl border border-slate-200/60 shadow-lg overflow-hidden">
                   <img
                     src={module.image}
                     alt={`EduPlexo ${module.title} — School Management System Platform`}
@@ -123,8 +123,8 @@ export function PlatformPage() {
           viewport={{ once: true }}
           className="mt-20 text-center"
         >
-          <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-4">See the Platform in Action</h2>
-          <p className="text-lg text-slate-600 dark:text-slate-400 mb-8 max-w-xl mx-auto">
+          <h2 className="text-3xl font-extrabold text-slate-900 mb-4">See the Platform in Action</h2>
+          <p className="text-lg text-slate-600 mb-8 max-w-xl mx-auto">
             Schedule a personalized demo and discover how EduPlexo can transform your school operations.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -132,13 +132,13 @@ export function PlatformPage() {
               href={whatsappUrl(WhatsappMessages.bookDemo())}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-8 py-4 bg-blue-600 dark:bg-sky-500 text-white rounded-full font-semibold shadow-lg hover:bg-blue-700 dark:hover:bg-sky-400 hover:-translate-y-1 transition-all flex items-center gap-2"
+              className="px-8 py-4 bg-blue-600 text-white rounded-full font-semibold shadow-lg hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center gap-2"
             >
               Book a Demo <AppIcon name="ArrowRight" className="w-4 h-4" />
             </a>
             <a
               href={SIGNUP_URL}
-              className="px-8 py-4 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-full font-semibold border border-slate-200 dark:border-slate-800 hover:border-blue-200 dark:hover:border-sky-500/40 hover:text-blue-600 dark:hover:text-sky-400 hover:-translate-y-1 transition-all"
+              className="px-8 py-4 bg-white text-slate-900 rounded-full font-semibold border border-slate-200 hover:border-blue-200 hover:text-blue-600 hover:-translate-y-1 transition-all"
             >
               Start Free Trial
             </a>

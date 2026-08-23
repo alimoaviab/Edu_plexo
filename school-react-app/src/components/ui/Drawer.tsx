@@ -91,7 +91,7 @@ export function Drawer({
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 ${zIndex} bg-black/60 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${
+        className={`fixed inset-0 ${zIndex} bg-slate-900/40 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${
           visible ? "opacity-100" : "opacity-0"
         }`}
         style={{ zIndex: "inherit" }}
@@ -101,9 +101,7 @@ export function Drawer({
 
       {/* Drawer panel */}
       <aside
-        className={`fixed inset-y-0 ${positionClass} ${zIndex} flex w-full ${width} flex-col bg-surface border-border ${
-          side === "right" ? "border-l" : "border-r"
-        } shadow-2xl transition-transform duration-350 ease-[cubic-bezier(0.32,0.72,0,1)] ${translateClass} text-text-primary`}
+        className={`fixed inset-y-0 ${positionClass} ${zIndex} flex w-full ${width} flex-col bg-white shadow-[-20px_0_50px_-12px_rgba(0,0,0,0.15)] transition-transform duration-350 ease-[cubic-bezier(0.32,0.72,0,1)] ${translateClass}`}
         style={{ transitionDuration: "350ms" }}
         role="dialog"
         aria-modal="true"

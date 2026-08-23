@@ -25,12 +25,12 @@ export type StatCardAccent =
   | "slate";
 
 const accentMap: Record<StatCardAccent, { iconBg: string; iconText: string }> = {
-  blue: { iconBg: "bg-primary/10", iconText: "text-primary" },
-  emerald: { iconBg: "bg-emerald-500/15", iconText: "text-emerald-500" },
-  purple: { iconBg: "bg-purple-500/15", iconText: "text-purple-500" },
-  amber: { iconBg: "bg-amber-500/15", iconText: "text-amber-500" },
-  rose: { iconBg: "bg-rose-500/15", iconText: "text-rose-500" },
-  slate: { iconBg: "bg-surface-muted", iconText: "text-text-muted" },
+  blue: { iconBg: "bg-blue-50", iconText: "text-blue-600" },
+  emerald: { iconBg: "bg-emerald-50", iconText: "text-emerald-600" },
+  purple: { iconBg: "bg-purple-50", iconText: "text-purple-600" },
+  amber: { iconBg: "bg-amber-50", iconText: "text-amber-600" },
+  rose: { iconBg: "bg-rose-50", iconText: "text-rose-600" },
+  slate: { iconBg: "bg-slate-100", iconText: "text-slate-600" },
 };
 
 export interface StatCardCompactProps {
@@ -66,15 +66,15 @@ export function StatCardCompact({
         <AppIcon name={icon} size={18} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-bold text-text-muted normal-case truncate">
+        <p className="text-[10px] font-bold text-slate-400 normal-case truncate">
           {label}
         </p>
-        <p className="mt-0.5 text-lg font-bold text-text-primary tracking-tight leading-none truncate">
+        <p className="mt-0.5 text-lg font-bold text-slate-900 tracking-tight leading-none truncate">
           {value}
-          {suffix && <span className="ml-1 text-[11px] font-bold text-text-muted uppercase">{suffix}</span>}
+          {suffix && <span className="ml-1 text-[11px] font-bold text-slate-400 uppercase">{suffix}</span>}
         </p>
         {hint && (
-          <p className="mt-1 text-[10px] font-medium text-text-muted truncate">
+          <p className="mt-1 text-[10px] font-medium text-slate-400 truncate">
             {hint}
           </p>
         )}
@@ -83,7 +83,7 @@ export function StatCardCompact({
   );
 
   const baseClass =
-    "group bg-surface rounded-xl border border-border px-3.5 py-3 shadow-sm hover:shadow-md hover:border-border-strong hover:-translate-y-0.5 transition-all text-text-primary";
+    "group bg-white rounded-xl border border-slate-200 ring-1 ring-slate-900/5 px-3.5 py-3 shadow-[0_4px_18px_rgb(0,0,0,0.03)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.05)] hover:-translate-y-0.5 transition-all";
 
   if (to) {
     return (

@@ -33,7 +33,6 @@ import type { AdminRecord } from '@/modules/admin/types';
 import { readRecordPath } from '@/modules/admin/record-utils';
 import { useAuthStore } from '@/store/auth-store';
 import { compactNumber, formatDate, titleCase } from '@/utils/format';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -217,7 +216,7 @@ export default function AdminHome() {
             title={schoolName}
             showMenu={true}
             onMenuPress={openSidebar}
-            right={<ThemeToggle />}
+            right={<NotificationBell />}
           />
 
           {dashboardQuery.isError ? (

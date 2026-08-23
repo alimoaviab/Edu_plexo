@@ -4,27 +4,6 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script>
-      (function() {
-        try {
-          var saved = localStorage.getItem('eduplexo-theme') || 'system';
-          var resolved = saved;
-          if (saved === 'system') {
-            resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          }
-          var root = document.documentElement;
-          if (resolved === 'dark') {
-            root.classList.add('dark');
-            root.classList.remove('light');
-            root.setAttribute('data-theme', 'dark');
-          } else {
-            root.classList.add('light');
-            root.classList.remove('dark');
-            root.setAttribute('data-theme', 'light');
-          }
-        } catch (e) {}
-      })();
-    </script>
     <title>Eduplexo — Super Admin</title>
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased">

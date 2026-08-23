@@ -20,33 +20,30 @@ import { BlogIndexPage } from './pages/BlogIndexPage';
 import { BlogPostPage } from './pages/BlogPostPage';
 import { ChatWidget } from './components/ChatWidget';
 
-import { ThemeProvider } from './contexts/ThemeContext';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/features" element={<FeaturesPage />} />
-          <Route path="/platform" element={<PlatformPage />} />
-          <Route path="/security" element={<SecurityPage />} />
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/book-demo" element={<BookDemoPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/blog" element={<BlogIndexPage />} />
-          <Route path="/blog/:slug" element={<BlogPostPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/careers" element={<CareersPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/cookies" element={<CookiesPage />} />
-          <Route path="/seo-engine" element={<SeoEnginePage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-        <ChatWidget />
-      </BrowserRouter>
-    </ThemeProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/platform" element={<PlatformPage />} />
+        <Route path="/security" element={<SecurityPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/book-demo" element={<BookDemoPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/blog" element={<BlogIndexPage />} />
+        <Route path="/blog/:slug" element={<BlogPostPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/careers" element={<CareersPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/cookies" element={<CookiesPage />} />
+        <Route path="/seo-engine" element={<SeoEnginePage />} />
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+      <ChatWidget />
+    </BrowserRouter>
   </React.StrictMode>,
 );

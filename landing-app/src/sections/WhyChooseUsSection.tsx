@@ -9,28 +9,28 @@ export const WhyChooseUsSection = () => {
       title: "Lightning Fast School Management Software",
       description: "Built on modern web technologies, EduPlexo guarantees sub-second load times. No more waiting for reports to generate or pages to load in your school ERP.",
       color: "text-amber-500",
-      bg: "bg-amber-50 dark:bg-amber-950/40 border border-amber-200/50 dark:border-amber-900/40"
+      bg: "bg-amber-50"
     },
     {
       icon: "ShieldCheck",
       title: "Enterprise-Grade School Data Security",
       description: "Role-based access control, strict data isolation, and end-to-end encryption ensure your school data is always protected in EduPlexo school management system.",
       color: "text-emerald-500",
-      bg: "bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-900/40"
+      bg: "bg-emerald-50"
     },
     {
       icon: "Smartphone",
       title: "Mobile-First Parent & Teacher Experience",
       description: "A fully responsive design means teachers can grade on tablets, and parents can check updates on their phones seamlessly through the EduPlexo mobile app.",
-      color: "text-blue-500 dark:text-sky-400",
-      bg: "bg-blue-50 dark:bg-blue-950/40 border border-blue-200/50 dark:border-blue-900/40"
+      color: "text-blue-500",
+      bg: "bg-blue-50"
     }
   ];
 
   return (
-    <section id="security" className="py-24 bg-white dark:bg-slate-950 relative overflow-hidden transition-colors duration-300" aria-labelledby="why-choose-heading">
+    <section id="security" className="py-24 bg-white relative overflow-hidden" aria-labelledby="why-choose-heading">
       {/* Decorative background element - simplified for performance */}
-      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-50 dark:from-blue-900/10 to-transparent opacity-60 -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-50 to-transparent opacity-60 -translate-y-1/2 translate-x-1/3 pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="flex flex-col lg:flex-row gap-16 items-center">
@@ -41,16 +41,16 @@ export const WhyChooseUsSection = () => {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
-              className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight"
+              className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight"
             >
-              Why Modern Schools Choose <span className="text-blue-600 dark:text-sky-400">EduPlexo</span>
+              Why Modern Schools Choose <span className="text-blue-600">EduPlexo</span>
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ delay: 0.1 }}
-              className="text-lg text-slate-600 dark:text-slate-300 mb-10 font-medium"
+              className="text-lg text-slate-600 mb-10 font-medium"
             >
               We believe school software should not look like it was built in 2005. EduPlexo combines consumer-grade UX with enterprise-grade school ERP power.
             </motion.p>
@@ -69,8 +69,8 @@ export const WhyChooseUsSection = () => {
                     <AppIcon name={point.icon} className={`w-6 h-6 ${point.color}`} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{point.title}</h3>
-                    <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium">{point.description}</p>
+                    <h3 className="text-xl font-bold text-slate-900 mb-2">{point.title}</h3>
+                    <p className="text-slate-600 leading-relaxed font-medium">{point.description}</p>
                   </div>
                 </motion.div>
               ))}
@@ -85,8 +85,8 @@ export const WhyChooseUsSection = () => {
                 transition={{ duration: 0.5 }}
                 className="relative"
              >
-                <div className="absolute inset-0 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-3xl transform rotate-3 scale-105 opacity-10 dark:opacity-20" />
-                <div className="bg-slate-900 dark:bg-slate-900/90 rounded-3xl p-8 md:p-12 relative shadow-2xl overflow-hidden border border-slate-800">
+                <div className="absolute inset-0 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-3xl transform rotate-3 scale-105 opacity-10" />
+                <div className="bg-slate-900 rounded-3xl p-8 md:p-12 relative shadow-2xl overflow-hidden">
                    <h3 className="text-3xl font-extrabold text-white mb-8">The EduPlexo Difference</h3>
 
                    <ul className="space-y-6">
@@ -107,12 +107,12 @@ export const WhyChooseUsSection = () => {
                    <div className="mt-12 pt-8 border-t border-white/10 flex items-center justify-between">
                      <div>
                        <div className="text-white text-4xl font-extrabold">100%</div>
-                       <div className="text-slate-400 text-sm font-semibold normal-case mt-1">Satisfaction Rate</div>
+                       <div className="text-slate-400 text-sm font-semibold normal-case  mt-1">Satisfaction Rate</div>
                      </div>
                      <div className="h-12 w-px bg-white/10" />
                      <div>
                        <div className="text-white text-4xl font-extrabold">&lt; 1hr</div>
-                       <div className="text-slate-400 text-sm font-semibold normal-case mt-1">Support Response</div>
+                       <div className="text-slate-400 text-sm font-semibold normal-case  mt-1">Support Response</div>
                      </div>
                    </div>
                 </div>

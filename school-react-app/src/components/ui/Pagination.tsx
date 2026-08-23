@@ -52,12 +52,12 @@ export const Pagination = memo(function Pagination({
     <div
       className={`flex flex-wrap items-center justify-between gap-3 px-2 py-3 text-[11px] ${className}`}
     >
-      <div className="flex items-center gap-2 text-text-muted font-medium">
+      <div className="flex items-center gap-2 text-slate-500 font-medium">
         <span>
-          {startRow}-{endRow} of <span className="font-bold text-text-primary">{total}</span>
+          {startRow}-{endRow} of <span className="font-bold text-slate-700">{total}</span>
         </span>
         {isFetching && (
-          <span className="inline-flex items-center gap-1 text-primary">
+          <span className="inline-flex items-center gap-1 text-blue-600">
             <AppIcon name="Loader2" size={12} className="animate-spin" />
             updating
           </span>
@@ -66,12 +66,12 @@ export const Pagination = memo(function Pagination({
 
       <div className="flex items-center gap-3">
         {!hideLimit && onLimitChange && (
-          <label className="flex items-center gap-1 text-text-muted">
+          <label className="flex items-center gap-1 text-slate-500">
             Rows
             <select
               value={limit}
               onChange={(e) => onLimitChange(Number(e.target.value))}
-              className="bg-surface border border-border rounded px-1.5 py-0.5 text-[11px] font-bold text-text-primary focus:outline-none focus:border-primary"
+              className="bg-white border border-slate-200 rounded px-1.5 py-0.5 text-[11px] font-bold text-slate-700 focus:outline-none focus:border-blue-400"
             >
               {pageSizeOptions.map((s) => (
                 <option key={s} value={s}>
@@ -87,7 +87,7 @@ export const Pagination = memo(function Pagination({
             type="button"
             disabled={page <= 1}
             onClick={() => onPageChange(Math.max(1, page - 1))}
-            className="h-7 w-7 flex items-center justify-center rounded border border-border bg-surface text-text-muted hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="h-7 w-7 flex items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:border-blue-300 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             aria-label="Previous page"
           >
             <AppIcon name="ChevronLeft" size={14} />
@@ -95,7 +95,7 @@ export const Pagination = memo(function Pagination({
 
           {sequence.map((p, idx) =>
             p === "…" ? (
-              <span key={`gap-${idx}`} className="px-1 text-text-muted">
+              <span key={`gap-${idx}`} className="px-1 text-slate-400">
                 …
               </span>
             ) : (
@@ -105,8 +105,8 @@ export const Pagination = memo(function Pagination({
                 onClick={() => onPageChange(p)}
                 className={`h-7 min-w-[28px] px-1.5 rounded text-[11px] font-bold transition-colors ${
                   p === page
-                    ? "bg-primary text-white border border-primary font-bold shadow-sm"
-                    : "bg-surface border border-border text-text-secondary hover:border-primary hover:text-primary"
+                    ? "bg-blue-600 text-white border border-blue-600"
+                    : "bg-white border border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600"
                 }`}
               >
                 {p}
@@ -118,7 +118,7 @@ export const Pagination = memo(function Pagination({
             type="button"
             disabled={page >= pages}
             onClick={() => onPageChange(Math.min(pages, page + 1))}
-            className="h-7 w-7 flex items-center justify-center rounded border border-border bg-surface text-text-muted hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="h-7 w-7 flex items-center justify-center rounded border border-slate-200 bg-white text-slate-500 hover:border-blue-300 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             aria-label="Next page"
           >
             <AppIcon name="ChevronRight" size={14} />

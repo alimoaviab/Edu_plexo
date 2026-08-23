@@ -41,22 +41,22 @@ export function CareersPage() {
           {CULTURE.map((c) => (
             <div
               key={c.title}
-              className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-7 shadow-sm"
+              className="rounded-2xl bg-white border border-slate-200/60 p-7 shadow-sm"
             >
-              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
+              <h3 className="text-base font-bold text-slate-900 mb-2 tracking-tight">
                 {c.title}
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{c.body}</p>
+              <p className="text-sm text-slate-600 leading-relaxed">{c.body}</p>
             </div>
           ))}
         </section>
 
-        <section className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-10 md:p-14 text-center shadow-sm">
-          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            We’re not hiring publicly today — but we’re always reading.
+        <section className="rounded-3xl bg-white border border-slate-200/60 p-10 md:p-14 text-center shadow-sm">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+            We\u2019re not hiring publicly today &mdash; but we\u2019re always reading.
           </h2>
-          <p className="mt-4 text-slate-600 dark:text-slate-300 max-w-xl mx-auto leading-relaxed">
-            If you’re a designer, engineer, or product thinker who wants to
+          <p className="mt-4 text-slate-600 max-w-xl mx-auto leading-relaxed">
+            If you\u2019re a designer, engineer, or product thinker who wants to
             shape education for the next generation, send a short note and a
             link to your work.
           </p>
@@ -64,7 +64,7 @@ export function CareersPage() {
           <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
             <a
               href="mailto:plexotecnologies@gmail.com"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-blue-600 dark:bg-sky-500 text-white font-semibold shadow-md hover:bg-blue-700 dark:hover:bg-sky-400 hover:shadow-lg transition-all"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-blue-600 text-white font-semibold shadow-md hover:bg-blue-700 hover:shadow-lg transition-all"
             >
               <AppIcon name="Mail" className="w-4 h-4" />
               Email the team
@@ -73,7 +73,7 @@ export function CareersPage() {
               href="https://wa.me/923064944326"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold hover:border-blue-200 dark:hover:border-sky-500/40 hover:text-blue-600 dark:hover:text-sky-400 transition-all"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-white border border-slate-200 text-slate-700 font-semibold hover:border-blue-200 hover:text-blue-600 transition-all"
             >
               <AppIcon name="MessageCircle" className="w-4 h-4" />
               Message on WhatsApp

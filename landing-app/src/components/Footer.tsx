@@ -43,13 +43,13 @@ export const Footer = () => {
   const navigate = useNavigate();
 
   return (
-    <footer className="bg-slate-50 dark:bg-slate-950 border-t border-slate-200/60 dark:border-slate-850 transition-colors duration-300">
+    <footer className="bg-slate-50 border-t border-slate-200/60">
       <div className="max-w-7xl mx-auto px-6 pt-20 pb-10">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-10 lg:gap-12 mb-16">
           {/* ── Brand area ─────────────────────────────────────────────── */}
           <div className="col-span-2 lg:col-span-5">
             <Link to="/" className="inline-flex items-center gap-2.5 group mb-5">
-              <span className="w-9 h-9 rounded-xl overflow-hidden ring-1 ring-slate-200 dark:ring-slate-800 bg-white dark:bg-slate-900 shadow-sm flex-shrink-0">
+              <span className="w-9 h-9 rounded-xl overflow-hidden ring-1 ring-slate-200 bg-white shadow-sm flex-shrink-0">
                 <img
                   src="/logo.jpeg"
                   alt="EduPlexo — School Management System Logo"
@@ -59,12 +59,12 @@ export const Footer = () => {
                   height="36"
                 />
               </span>
-              <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+              <span className="text-xl font-bold tracking-tight text-slate-900">
                 EduPlexo
               </span>
             </Link>
 
-            <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-sm mb-7 font-medium">
+            <p className="text-slate-500 text-sm leading-relaxed max-w-sm mb-7">
               EduPlexo is the AI-powered school management system and school ERP
               platform trusted by 50+ schools in Pakistan and worldwide. Unify
               admin, academics, and parent communication into one premium platform.
@@ -86,7 +86,7 @@ export const Footer = () => {
 
           {/* ── Product links ──────────────────────────────────────────── */}
           <div className="lg:col-span-2">
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm tracking-wide">
+            <h3 className="font-semibold text-slate-900 mb-4 text-sm tracking-wide">
               Product
             </h3>
             <ul className="space-y-3">
@@ -95,7 +95,7 @@ export const Footer = () => {
                   <a
                     href={link.hash}
                     onClick={makeAnchorClickHandler(link.hash, navigate)}
-                    className="text-sm text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 transition-colors"
+                    className="text-sm text-slate-500 hover:text-blue-600 transition-colors"
                   >
                     {link.label}
                   </a>
@@ -106,7 +106,7 @@ export const Footer = () => {
 
           {/* ── Company links ─────────────────────────────────────────── */}
           <div className="lg:col-span-2">
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm tracking-wide">
+            <h3 className="font-semibold text-slate-900 mb-4 text-sm tracking-wide">
               Company
             </h3>
             <ul className="space-y-3">
@@ -114,7 +114,7 @@ export const Footer = () => {
                 <li key={link.label}>
                   <Link
                     to={link.to}
-                    className="text-sm text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 transition-colors"
+                    className="text-sm text-slate-500 hover:text-blue-600 transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -125,7 +125,7 @@ export const Footer = () => {
 
           {/* ── Legal links ───────────────────────────────────────────── */}
           <div className="lg:col-span-3">
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-4 text-sm tracking-wide">
+            <h3 className="font-semibold text-slate-900 mb-4 text-sm tracking-wide">
               Legal
             </h3>
             <ul className="space-y-3">
@@ -133,7 +133,7 @@ export const Footer = () => {
                 <li key={link.label}>
                   <Link
                     to={link.to}
-                    className="text-sm text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 transition-colors"
+                    className="text-sm text-slate-500 hover:text-blue-600 transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -144,12 +144,12 @@ export const Footer = () => {
         </div>
 
         {/* ── Bottom bar ──────────────────────────────────────────────── */}
-        <div className="pt-8 border-t border-slate-200/60 dark:border-slate-850 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+        <div className="pt-8 border-t border-slate-200/60 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-slate-500">
             © {new Date().getFullYear()} EduPlexo Technologies. All rights reserved.
           </p>
-          <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
-            <Link to="/sitemap.xml" className="hover:text-blue-600 dark:hover:text-sky-400 transition-colors">
+          <div className="flex items-center gap-6 text-sm text-slate-500">
+            <Link to="/sitemap.xml" className="hover:text-blue-600 transition-colors">
               Sitemap
             </Link>
             <span>EduPlexo — School ERP Pakistan</span>
@@ -173,7 +173,7 @@ function SocialIconLink({ href, label, icon }: SocialIconLinkProps) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
-      className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 shadow-sm hover:text-blue-600 dark:hover:text-sky-400 hover:ring-blue-200 dark:hover:ring-sky-500/40 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+      className="w-9 h-9 rounded-xl bg-white ring-1 ring-slate-200 flex items-center justify-center text-slate-500 shadow-sm hover:text-blue-600 hover:ring-blue-200 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
     >
       {icon}
     </a>

@@ -25,7 +25,7 @@ const testimonials = [
 
 export const TestimonialSection = () => {
   return (
-    <section id="testimonials" className="py-24 bg-slate-50 dark:bg-slate-950 border-y border-slate-200/60 dark:border-slate-800 transition-colors duration-300" aria-labelledby="testimonials-heading">
+    <section id="testimonials" className="py-24 bg-slate-50 border-y border-slate-200/60" aria-labelledby="testimonials-heading">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <motion.h2
@@ -33,7 +33,7 @@ export const TestimonialSection = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
-            className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-4 tracking-tight"
+            className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight"
           >
             Schools Love Using EduPlexo
           </motion.h2>
@@ -42,7 +42,7 @@ export const TestimonialSection = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ delay: 0.1 }}
-            className="text-lg text-slate-600 dark:text-slate-300 font-medium"
+            className="text-lg text-slate-600 font-medium"
           >
             Do not just take our word for it. Hear from the administrators and teachers who use EduPlexo school management system every day.
           </motion.p>
@@ -56,7 +56,7 @@ export const TestimonialSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.4, delay: index * 0.1 }}
-              className="relative z-10 bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-800 hover:shadow-2xl hover:-translate-y-2 hover:border-blue-500/30 dark:hover:border-sky-500/30 transition-all duration-300 flex flex-col justify-between"
+              className="relative z-10 bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex gap-1 mb-6" aria-label="5 out of 5 stars">
@@ -64,17 +64,17 @@ export const TestimonialSection = () => {
                     <AppIcon name="Star" key={star} className="w-5 h-5 fill-amber-400 text-amber-400" />
                   ))}
                 </div>
-                <p className="text-slate-700 dark:text-slate-300 text-lg leading-relaxed mb-8 font-medium">
+                <p className="text-slate-700 text-lg leading-relaxed mb-8 font-medium">
                   &ldquo;{t.content}&rdquo;
                 </p>
               </div>
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-950 dark:to-indigo-950 border border-blue-200 dark:border-blue-800 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold shadow-sm">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 border border-blue-200 flex items-center justify-center text-blue-700 font-bold shadow-sm">
                   {t.avatar}
                 </div>
                 <div>
-                  <div className="font-bold text-slate-900 dark:text-white">{t.author}</div>
-                  <div className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t.role}</div>
+                  <div className="font-bold text-slate-900">{t.author}</div>
+                  <div className="text-sm text-slate-500 font-medium">{t.role}</div>
                 </div>
               </div>
             </motion.article>

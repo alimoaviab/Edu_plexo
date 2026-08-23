@@ -49,7 +49,7 @@ export function BookDemoPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 font-sans">
       <Seo
         title="Book a Demo — EduPlexo School Management System Demo"
         description="Book a free personalized demo of EduPlexo school management system. See how our AI-powered school ERP can transform your institution. 30-minute session with our experts."
@@ -61,15 +61,15 @@ export function BookDemoPage() {
       <Navbar />
 
       <header className="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden">
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-100/60 dark:from-sky-950/40 via-slate-50 dark:via-slate-950 to-slate-50 dark:to-slate-950" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-100/60 via-slate-50 to-slate-50" />
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-blue-600 dark:text-sky-400 mb-5">
+          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-blue-600 mb-5">
             Free Personalized Demo
           </p>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
-            See EduPlexo <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400">In Action</span>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+            See EduPlexo <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">In Action</span>
           </h1>
-          <p className="mt-6 text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-6 text-lg md:text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto">
             Book a free 30-minute demo with our education technology specialists. We will show you exactly how EduPlexo can transform your school operations.
           </p>
         </div>
@@ -78,7 +78,7 @@ export function BookDemoPage() {
       <main className="max-w-7xl mx-auto px-6 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">What You Will Get</h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-8">What You Will Get</h2>
             <div className="space-y-6 mb-12">
               {benefits.map((benefit, index) => (
                 <motion.div
@@ -87,20 +87,20 @@ export function BookDemoPage() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  className="flex gap-4 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm"
+                  className="flex gap-4 p-6 bg-white rounded-2xl border border-slate-200/60 shadow-sm"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-sky-950/50 flex items-center justify-center flex-shrink-0">
-                    <AppIcon name={benefit.icon} className="w-6 h-6 text-blue-600 dark:text-sky-400" />
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <AppIcon name={benefit.icon} className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">{benefit.title}</h3>
-                    <p className="text-slate-600 dark:text-slate-400">{benefit.description}</p>
+                    <h3 className="text-lg font-bold text-slate-900 mb-1">{benefit.title}</h3>
+                    <p className="text-slate-600">{benefit.description}</p>
                   </div>
                 </motion.div>
               ))}
             </div>
 
-            <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 rounded-2xl p-8 border border-slate-800">
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8">
               <h2 className="text-xl font-bold text-white mb-6">Frequently Asked Questions</h2>
               <div className="space-y-4">
                 {faqs.map((faq, index) => (
@@ -118,51 +118,51 @@ export function BookDemoPage() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-lg p-8 sticky top-28"
+              className="bg-white rounded-2xl border border-slate-200/60 shadow-lg p-8 sticky top-28"
             >
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Book Your Demo</h2>
-              <p className="text-slate-600 dark:text-slate-400 mb-8">Choose your preferred way to connect with us.</p>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Book Your Demo</h2>
+              <p className="text-slate-600 mb-8">Choose your preferred way to connect with us.</p>
 
               <div className="space-y-4">
                 <a
                   href={whatsappUrl(WhatsappMessages.bookDemo())}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-4 w-full p-5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/40 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors group"
+                  className="flex items-center gap-4 w-full p-5 bg-emerald-50 border border-emerald-200 rounded-xl hover:bg-emerald-100 transition-colors group"
                 >
                   <div className="w-12 h-12 rounded-xl bg-emerald-500 flex items-center justify-center">
                     <AppIcon name="MessageCircle" className="w-6 h-6 text-white" />
                   </div>
                   <div className="text-left">
-                    <div className="font-bold text-slate-900 dark:text-white">WhatsApp</div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400">Quick response, chat anytime</div>
+                    <div className="font-bold text-slate-900">WhatsApp</div>
+                    <div className="text-sm text-slate-600">Quick response, chat anytime</div>
                   </div>
                 </a>
 
                 <a
                   href="mailto:plexotecnologies@gmail.com?subject=Demo Request - EduPlexo"
-                  className="flex items-center gap-4 w-full p-5 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/40 rounded-xl hover:bg-blue-100 dark:hover:bg-blue-950/50 transition-colors group"
+                  className="flex items-center gap-4 w-full p-5 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors group"
                 >
                   <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
                     <AppIcon name="Mail" className="w-6 h-6 text-white" />
                   </div>
                   <div className="text-left">
-                    <div className="font-bold text-slate-900 dark:text-white">Email</div>
-                    <div className="text-sm text-slate-600 dark:text-slate-400">plexotecnologies@gmail.com</div>
+                    <div className="font-bold text-slate-900">Email</div>
+                    <div className="text-sm text-slate-600">plexotecnologies@gmail.com</div>
                   </div>
                 </a>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
+              <div className="mt-8 pt-6 border-t border-slate-200">
+                <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
                   <AppIcon name="CheckCircle2" className="w-4 h-4 text-emerald-500" />
                   Free 30-minute session
                 </div>
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mb-2">
+                <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
                   <AppIcon name="CheckCircle2" className="w-4 h-4 text-emerald-500" />
                   No obligation or commitment
                 </div>
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-2 text-sm text-slate-500">
                   <AppIcon name="CheckCircle2" className="w-4 h-4 text-emerald-500" />
                   Free trial account included
                 </div>

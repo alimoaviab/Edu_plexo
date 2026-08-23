@@ -7,11 +7,11 @@ const variantTokens: Record<
   DataStateVariant,
   { icon: string; iconColor: string; iconBg: string; titleColor: string }
 > = {
-  loading: { icon: "progress_activity", iconColor: "text-primary", iconBg: "bg-primary/10", titleColor: "text-text-primary" },
-  empty: { icon: "inbox", iconColor: "text-text-muted", iconBg: "bg-surface-muted", titleColor: "text-text-primary" },
-  error: { icon: "error", iconColor: "text-error", iconBg: "bg-error/10", titleColor: "text-error" },
-  success: { icon: "check_circle", iconColor: "text-success", iconBg: "bg-success/10", titleColor: "text-success" },
-  info: { icon: "info", iconColor: "text-primary", iconBg: "bg-primary/10", titleColor: "text-text-primary" },
+  loading: { icon: "progress_activity", iconColor: "text-blue-600", iconBg: "bg-blue-50", titleColor: "text-slate-900" },
+  empty: { icon: "inbox", iconColor: "text-slate-500", iconBg: "bg-slate-100", titleColor: "text-slate-900" },
+  error: { icon: "error", iconColor: "text-red-600", iconBg: "bg-red-50", titleColor: "text-red-700" },
+  success: { icon: "check_circle", iconColor: "text-emerald-600", iconBg: "bg-emerald-50", titleColor: "text-emerald-700" },
+  info: { icon: "info", iconColor: "text-blue-600", iconBg: "bg-blue-50", titleColor: "text-slate-900" },
 };
 
 export interface DataStateProps {
@@ -38,7 +38,7 @@ export function DataState({
   const isSpinning = variant === "loading";
 
   const inner = (
-    <div className="flex flex-col items-center justify-center gap-4 px-4 py-8 text-center md:px-6 md:py-10 text-text-primary">
+    <div className="flex flex-col items-center justify-center gap-4 px-4 py-8 text-center md:px-6 md:py-10">
       <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${tokens.iconBg}`}>
         <AppIcon name={iconName} size={26} className={` text-[26px] ${tokens.iconColor} ${isSpinning ? "animate-spin" : ""}`}
           aria-hidden="true" />
@@ -46,14 +46,14 @@ export function DataState({
       <div className="space-y-1.5">
         <h3 className={`text-base font-bold tracking-tight ${tokens.titleColor}`}>{title}</h3>
         {message && (
-          <p className="mx-auto max-w-md text-sm leading-relaxed text-text-secondary">{message}</p>
+          <p className="mx-auto max-w-md text-sm leading-relaxed text-slate-500">{message}</p>
         )}
       </div>
       {variant === "error" && onRetry && (
         <button
           type="button"
           onClick={onRetry}
-          className="inline-flex items-center gap-2 rounded-xl bg-error/10 px-4 py-2 text-sm font-semibold text-error transition-colors hover:bg-error/20"
+          className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
         >
           <AppIcon name="RefreshCw" size={18} />
           {retryLabel}

@@ -32,7 +32,6 @@ import { OwnerSchoolSwitcher } from "@/components/owner/OwnerSchoolSwitcher";
 import { GlobalSearch } from "shared/components/GlobalSearch";
 import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
 import { toRolePath, getRolePrefix } from "@/hooks/useRolePath";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { serviceRequest } from "@/services/service-client";
 import { resetTenantCache } from "@/lib/query-client";
 
@@ -781,10 +780,6 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
               </select>
             </div>
             )}
-
-            <div className="mx-0.5 hidden h-3 w-px bg-border sm:block" />
-
-            <ThemeToggle />
 
             <div className="flex items-center gap-2">
               {(user.role === "admin" || user.role === "owner") && (
