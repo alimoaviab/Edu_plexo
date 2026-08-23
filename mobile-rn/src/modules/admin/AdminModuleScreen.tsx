@@ -1096,6 +1096,20 @@ function RelationSelector({
             <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: spacing.lg }} />
           ) : (
             <View style={styles.selectorList}>
+              {!field.required && !isMultiSelect && (
+                <Pressable
+                  onPress={() => {
+                    onChange('');
+                    setModalVisible(false);
+                  }}
+                  style={[styles.selectorItem, !value && styles.selectorItemActive]}
+                >
+                  <Text style={[styles.selectorItemText, !value && styles.selectorItemTextActive]}>
+                    (Unassigned / None)
+                  </Text>
+                  {!value && <Icon name="check-circle" size={18} color={colors.primary} />}
+                </Pressable>
+              )}
               {records.map((record) => {
                 const id = getRecordId(record);
                 const label = getRecordLabel(record);
