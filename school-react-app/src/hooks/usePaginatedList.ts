@@ -3,6 +3,8 @@ import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { serviceRequest } from "@/services/service-client";
 import { useTenantContext } from "./useTenantContext";
 import { useDebouncedValue } from "./useDebouncedValue";
+import { buildQueryKey } from "@/lib/query-keys";
+
 
 export type Paginated<T> = {
   items: T[];
@@ -80,17 +82,18 @@ export function usePaginatedList<T = unknown>(opts: {
   const fullUrl = `${opts.url}?${params.toString()}`;
 
   const query = useQuery({
-    queryKey: [
+    queryKey: buildQueryKey(
       opts.resource,
-      schoolId,
-      academicYearId,
-      role,
-      page,
-      limit,
-      debouncedSearch,
-      filters,
-      opts.extraParams ?? null,
-    ],
+      { schoolId, academicYearId },
+      {
+        page,
+        limit,
+        search: debouncedSearch,
+        role,
+        ...filters,
+        ...(opts.extraParams ?? {}),
+      }
+    ),
     queryFn: async () => {
       const result = await serviceRequest<Paginated<T> | T[]>(fullUrl);
       if (!result.ok)
@@ -111,9 +114,10 @@ export function usePaginatedList<T = unknown>(opts: {
     },
     placeholderData: keepPreviousData,
     staleTime: opts.staleTime ?? 30 * 1000,
-    gcTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
     enabled: (opts.enabled ?? true) && !!schoolId,
   });
+
 
   const data = query.data;
 

@@ -87,11 +87,13 @@ export const STALE_TIME_FEES = 15 * 60 * 1000;
  * switches automatically miss cached results from the previous context.
  */
 export function tenantQueryKey(parts: unknown[]): unknown[] {
-  if (typeof window === "undefined") return parts;
+  if (typeof window === "undefined" || !parts.length) return parts;
   const schoolId = localStorage.getItem("last_school_id") || "anon";
   const academicYearId = localStorage.getItem("academic_year_id") || "all";
-  return [`tenant:${schoolId}`, `ay:${academicYearId}`, ...parts];
+  const [resource, ...rest] = parts;
+  return [resource, schoolId, academicYearId, ...rest];
 }
+
 
 /**
  * Clear all cached queries. Call on logout or tenant switch.
@@ -105,7 +107,62 @@ export function resetTenantCache() {
   }
 }
 
+// ─── Targeted Invalidation Helpers ───────────────────────────────────────
+// Use these in mutation callbacks instead of clearing the entire cache.
+
+/** Invalidate dashboard composite and summary queries */
+export function invalidateDashboardQueries(): Promise<unknown> {
+  return queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+}
+
+/** Invalidate student queries and affected dashboards */
+export function invalidateStudentQueries(): Promise<unknown> {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["students"] }),
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+  ]);
+}
+
+/** Invalidate attendance queries, parent attendance, and dashboard */
+export function invalidateAttendanceQueries(): Promise<unknown> {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["attendance"] }),
+    queryClient.invalidateQueries({ queryKey: ["parent-attendance"] }),
+    queryClient.invalidateQueries({ queryKey: ["parent-student-attendance"] }),
+    queryClient.invalidateQueries({ queryKey: ["attendance-summary"] }),
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+  ]);
+}
+
+/** Invalidate fee queries and affected dashboards */
+export function invalidateFeeQueries(): Promise<unknown> {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["fees"] }),
+    queryClient.invalidateQueries({ queryKey: ["parent-fees"] }),
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+  ]);
+}
+
+/** Invalidate class/section queries and affected dashboards */
+export function invalidateClassQueries(): Promise<unknown> {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["classes"] }),
+    queryClient.invalidateQueries({ queryKey: ["sections"] }),
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+  ]);
+}
+
+/** Invalidate teacher and timetable queries */
+export function invalidateTimetableQueries(): Promise<unknown> {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["timetable"] }),
+    queryClient.invalidateQueries({ queryKey: ["teacher-schedule"] }),
+  ]);
+}
+
+
 // Expose for debugging in dev tools
 if (typeof window !== "undefined") {
   (window as unknown as { queryClient: QueryClient }).queryClient = queryClient;
 }
+

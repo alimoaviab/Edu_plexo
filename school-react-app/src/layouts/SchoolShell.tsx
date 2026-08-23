@@ -33,6 +33,9 @@ import { GlobalSearch } from "shared/components/GlobalSearch";
 import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
 import { toRolePath, getRolePrefix } from "@/hooks/useRolePath";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { serviceRequest } from "@/services/service-client";
+import { resetTenantCache } from "@/lib/query-client";
+
 
 type NavItem = {
   label: string;
@@ -483,12 +486,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
 
   useEffect(() => {
     if (user && user.role !== "super_admin") {
-      fetch("/api/subscription/current", {
-        headers: {
-          authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
-        },
-      })
-        .then((res) => res.json())
+      serviceRequest<any>("/api/subscription/current")
         .then((payload) => {
           if (payload?.ok && payload?.data) {
             const data = payload.data;
@@ -509,6 +507,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
         .catch(() => {});
     }
   }, [user]);
+
 
 
 
@@ -567,13 +566,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
     let ignore = false;
     void (async () => {
       try {
-        const response = await fetch("/api/academic-years", {
-          credentials: "include",
-          headers: {
-            authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
-          },
-        });
-        const payload = await response.json();
+        const payload = await serviceRequest<any>("/api/academic-years");
         if (ignore || !payload?.ok) return;
 
         const data = payload?.data;
@@ -584,6 +577,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
             : Array.isArray(data?.data)
               ? data.data
               : [];
+
         if (!Array.isArray(rows) || !rows.length) return;
 
         setAcademyYears(rows);
@@ -759,26 +753,23 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
                   const nextId = event.target.value;
                   setSelectedAcademicYearIdState(nextId);
                   setSelectedAcademicYearId(nextId);
-                  // CRITICAL: Re-issue JWT with the new active_academic_year_id
+                  // CRITICAL: Reset memory query cache on academic year switch to prevent cross-year leakage
+                  resetTenantCache();
+                  // Re-issue JWT with the new active_academic_year_id
                   // so the server (not the client) controls the active year.
                   try {
-                    const response = await fetch("/api/academic-years/switch", {
+                    const response = await serviceRequest<any>("/api/academic-years/switch", {
                       method: "POST",
-                      credentials: "include",
-                      headers: {
-                        "Content-Type": "application/json",
-                        authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
-                      },
                       body: JSON.stringify({ academic_year_id: nextId }),
                     });
-                    const result = await response.json();
-                    if (result?.ok && result?.data?.token) {
-                      localStorage.setItem("token", result.data.token);
+                    if (response?.ok && response?.data?.token) {
+                      localStorage.setItem("token", response.data.token);
                     }
                   } catch (err) {
                     console.warn("[AcademicYear] switch failed", err);
                   }
                   window.location.reload();
+
                 }}
                 className="bg-transparent text-[10px] font-black tracking-widest text-text-secondary focus:outline-none cursor-pointer"
               >

@@ -4,7 +4,9 @@ import { showToast } from "@/utils/toast";
 import { setSelectedAcademicYearId } from "@/services/academic-year-context";
 import { ClassFormInput } from "../types/class.types";
 import { bindRefresh, publish } from "@/services/data-bus";
+import { invalidateClassQueries } from "@/lib/query-client";
 import * as service from "../services/class.service";
+
 
 /**
  * Classes list hook.
@@ -52,6 +54,7 @@ export function useClasses(params?: { page?: number; limit?: number }) {
 
             showToast("Class created.", "success");
             await loadClasses();
+            invalidateClassQueries();
             // Notify every other useClasses() instance and every dropdown
             // (timetable, homework, exams, etc.) to re-fetch.
             publish("classes");
@@ -70,6 +73,7 @@ export function useClasses(params?: { page?: number; limit?: number }) {
 
             showToast("Class updated.", "success");
             await loadClasses();
+            invalidateClassQueries();
             publish("classes");
             return result;
         },
@@ -86,11 +90,13 @@ export function useClasses(params?: { page?: number; limit?: number }) {
 
             showToast("Class deleted.", "success");
             await loadClasses();
+            invalidateClassQueries();
             publish("classes");
             return result;
         },
         [loadClasses]
     );
+
 
     useEffect(() => {
         void loadClasses().catch(() => {});

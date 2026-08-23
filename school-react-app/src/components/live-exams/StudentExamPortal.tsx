@@ -2,6 +2,7 @@ import { showToast } from "@/utils/toast";
 import { AppIcon } from "shared/ui/AppIcon";
 import { useState, useEffect } from "react";
 import { useDialog } from "@/components/ui/DialogContext";
+import { serviceRequest } from "@/services/service-client";
 
 export function StudentExamPortal({ examId }: { examId: string }) {
   const { confirm } = useDialog();
@@ -15,16 +16,15 @@ export function StudentExamPortal({ examId }: { examId: string }) {
     // Fetch exam details and current submission status
     const loadExam = async () => {
       try {
-        const res = await fetch(`/api/live-exams/${examId}`);
-        const data = await res.json();
-        if (data.ok) {
-          setExam(data.data);
+        const res = await serviceRequest<any>(`/api/live-exams/${examId}`);
+        if (res.ok) {
+          setExam(res.data);
           // Set initial time if not started yet, or remaining time if started
         } else {
-          setError(data.error.message || "Failed to load exam");
+          setError(res.error?.message || res.message || "Failed to load exam");
         }
       } catch (err: any) {
-        setError(err.message);
+        setError(err.message || "Failed to load exam");
       } finally {
         setLoading(false);
       }
@@ -34,23 +34,24 @@ export function StudentExamPortal({ examId }: { examId: string }) {
 
   const handleStart = async () => {
     try {
-      const res = await fetch(`/api/live-exams/${examId}/start`, { method: "POST" });
-      const data = await res.json();
-      if (data.ok) {
-        setSubmission(data.data);
-        setRemainingTime(data.data.remaining_time);
+      const res = await serviceRequest<any>(`/api/live-exams/${examId}/start`, { method: "POST" });
+      if (res.ok) {
+        setSubmission(res.data);
+        setRemainingTime(res.data?.remaining_time || 0);
 
         // Enter fullscreen when exam starts
         if (document.documentElement.requestFullscreen) {
             document.documentElement.requestFullscreen().catch(e => console.error("Could not enter fullscreen", e));
         }
       } else {
-        setError(data.error.message || "Failed to start exam");
+        setError(res.error?.message || res.message || "Failed to start exam");
       }
+
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || "Failed to start exam");
     }
   };
+
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -73,9 +74,8 @@ export function StudentExamPortal({ examId }: { examId: string }) {
     let saveTimer: NodeJS.Timeout;
     if (submission && submission.status === "in_progress") {
         saveTimer = setInterval(() => {
-            fetch(`/api/live-exams/submissions/${submission._id}/save`, {
+            void serviceRequest(`/api/live-exams/submissions/${submission._id}/save`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ answers: submission.answers || [], remainingTime })
             });
         }, 30000);
@@ -86,13 +86,11 @@ export function StudentExamPortal({ examId }: { examId: string }) {
 
   const handleAutoSubmit = async () => {
     try {
-       const res = await fetch(`/api/live-exams/submissions/${submission._id}/submit`, {
+       const res = await serviceRequest<any>(`/api/live-exams/submissions/${submission._id}/submit`, {
            method: "POST",
-           headers: { "Content-Type": "application/json" },
            body: JSON.stringify({ isAutoSubmit: true })
        });
-       const data = await res.json();
-       if (data.ok) setSubmission(data.data);
+       if (res.ok && res.data) setSubmission(res.data);
     } catch (err) {
        console.error("Auto submit failed", err);
     }
@@ -101,13 +99,11 @@ export function StudentExamPortal({ examId }: { examId: string }) {
   const handleSubmit = async () => {
     if (!(await confirm("Submit Exam", "Are you sure you want to submit your exam?"))) return;
     try {
-       const res = await fetch(`/api/live-exams/submissions/${submission._id}/submit`, {
+       const res = await serviceRequest<any>(`/api/live-exams/submissions/${submission._id}/submit`, {
            method: "POST",
-           headers: { "Content-Type": "application/json" },
            body: JSON.stringify({ isAutoSubmit: false })
        });
-       const data = await res.json();
-       if (data.ok) setSubmission(data.data);
+       if (res.ok && res.data) setSubmission(res.data);
 
        if (document.fullscreenElement) {
            document.exitFullscreen().catch(err => console.error("Error exiting fullscreen:", err));
@@ -121,9 +117,8 @@ export function StudentExamPortal({ examId }: { examId: string }) {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && submission && submission.status === "in_progress") {
-         fetch(`/api/live-exams/violations`, {
+         void serviceRequest(`/api/live-exams/violations`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 exam_id: examId,
                 student_id: submission.student_id,
@@ -137,9 +132,8 @@ export function StudentExamPortal({ examId }: { examId: string }) {
 
     const handleFullscreenChange = () => {
         if (!document.fullscreenElement && submission && submission.status === "in_progress") {
-           fetch(`/api/live-exams/violations`, {
+           void serviceRequest(`/api/live-exams/violations`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                   exam_id: examId,
                   student_id: submission.student_id,
@@ -150,6 +144,7 @@ export function StudentExamPortal({ examId }: { examId: string }) {
            showToast("Warning: Exiting fullscreen is recorded as an exam violation.", "info");
         }
     }
+
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     document.addEventListener("fullscreenchange", handleFullscreenChange);

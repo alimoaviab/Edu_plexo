@@ -8,8 +8,18 @@ import './index.css'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+      refetchOnReconnect: 'always',
+    },
+  },
 })
+
 
 function AppRoot() {
   useEffect(() => {

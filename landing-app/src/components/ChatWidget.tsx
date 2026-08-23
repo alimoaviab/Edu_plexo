@@ -227,7 +227,7 @@ export function ChatWidget() {
 
       {/* Chat Panel */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-3rem)] bg-white rounded-2xl shadow-2xl shadow-slate-900/20 border border-slate-200 flex flex-col overflow-hidden">
+        <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-3rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl shadow-slate-900/30 border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden transition-colors duration-300">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
             <div className="flex items-center gap-3">
@@ -253,14 +253,14 @@ export function ChatWidget() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-slate-50">
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-slate-50 dark:bg-slate-950">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
                   className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed ${
                     msg.role === "user"
                       ? "bg-blue-600 text-white rounded-br-md"
-                      : "bg-white text-slate-700 border border-slate-100 shadow-sm rounded-bl-md"
+                      : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-800 shadow-sm rounded-bl-md"
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{msg.text}</p>
@@ -272,7 +272,7 @@ export function ChatWidget() {
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="bg-white border border-slate-100 shadow-sm px-4 py-3 rounded-2xl rounded-bl-md">
+                <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm px-4 py-3 rounded-2xl rounded-bl-md">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2 w-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: "0ms" }} />
                     <span className="h-2 w-2 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -285,14 +285,14 @@ export function ChatWidget() {
           </div>
 
           {/* Input */}
-          <form onSubmit={handleSend} className="px-3 py-3 border-t border-slate-100 bg-white">
+          <form onSubmit={handleSend} className="px-3 py-3 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about EduPlexo..."
-                className="flex-1 h-10 px-4 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white transition-colors"
+                className="flex-1 h-10 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:bg-white dark:focus:bg-slate-900 transition-colors"
                 disabled={loading}
               />
               <button

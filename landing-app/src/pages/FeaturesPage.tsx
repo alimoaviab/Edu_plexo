@@ -80,7 +80,7 @@ export function FeaturesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
       <Seo
         title="EduPlexo Features — Complete School Management System Features"
         description="Explore all features of EduPlexo school management system: student management, attendance tracking, fee management, parent portal, teacher dashboard, exam management, analytics & more."
@@ -92,15 +92,15 @@ export function FeaturesPage() {
       <Navbar />
 
       <header className="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden">
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-100/60 via-slate-50 to-slate-50" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-100/60 dark:from-sky-950/40 via-slate-50 dark:via-slate-950 to-slate-50 dark:to-slate-950" />
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-blue-600 mb-5">
+          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-blue-600 dark:text-sky-400 mb-5">
             School Management System Features
           </p>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
-            Everything You Need to Run a <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Modern School</span>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Everything You Need to Run a <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400">Modern School</span>
           </h1>
-          <p className="mt-6 text-lg md:text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-6 text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto">
             EduPlexo brings all your core school operations into one beautifully designed platform. From admissions to report cards, every feature is built for efficiency.
           </p>
         </div>
@@ -115,17 +115,17 @@ export function FeaturesPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-50px' }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
-              className="bg-white rounded-2xl p-8 border border-slate-200/60 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
             >
               <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 shadow-sm`}>
                 <AppIcon name={feature.icon} className="w-7 h-7 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-3">{feature.title}</h2>
-              <p className="text-slate-600 leading-relaxed mb-6">{feature.description}</p>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">{feature.title}</h2>
+              <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-6">{feature.description}</p>
               <ul className="space-y-2">
                 {feature.details.map((detail, i) => (
-                  <li key={i} className="flex items-center gap-2 text-sm text-slate-700">
-                    <AppIcon name="CheckCircle2" className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                  <li key={i} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                    <AppIcon name="CheckCircle2" className="w-4 h-4 text-blue-500 dark:text-sky-400 flex-shrink-0" />
                     {detail}
                   </li>
                 ))}
@@ -138,7 +138,7 @@ export function FeaturesPage() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-16 text-center bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-12 md:p-16"
+          className="mt-16 text-center bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 rounded-3xl p-12 md:p-16 border border-slate-800"
         >
           <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
             Ready to Transform Your School?
@@ -149,7 +149,7 @@ export function FeaturesPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
               href={SIGNUP_URL}
-              className="px-8 py-4 bg-blue-600 text-white rounded-full font-semibold shadow-lg hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center gap-2"
+              className="px-8 py-4 bg-blue-600 dark:bg-sky-500 text-white rounded-full font-semibold shadow-lg hover:bg-blue-700 dark:hover:bg-sky-400 hover:-translate-y-1 transition-all flex items-center gap-2"
             >
               Start Free Trial <AppIcon name="ArrowRight" className="w-4 h-4" />
             </a>

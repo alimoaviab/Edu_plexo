@@ -118,7 +118,34 @@ function fallbackForStatus(status: number): string {
   return "The request couldn't be completed. Please try again.";
 }
 
+// In-flight request deduplication map for idempotent GET requests.
+const inFlightRequests = new Map<string, Promise<ServiceResult<any>>>();
+
 async function request<TData, TBody = unknown>(
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  url: string,
+  options: RequestOptions<TBody> = {},
+): Promise<ServiceResult<TData>> {
+  const isGet = method === 'GET';
+  const dedupKey = isGet ? `GET:${url}${buildQuery(options.query)}` : null;
+
+  if (dedupKey && inFlightRequests.has(dedupKey)) {
+    return inFlightRequests.get(dedupKey)! as Promise<ServiceResult<TData>>;
+  }
+
+  const executionPromise = executeRequest<TData, TBody>(method, url, options);
+
+  if (dedupKey) {
+    inFlightRequests.set(dedupKey, executionPromise);
+    executionPromise.finally(() => {
+      inFlightRequests.delete(dedupKey);
+    });
+  }
+
+  return executionPromise;
+}
+
+async function executeRequest<TData, TBody = unknown>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   url: string,
   options: RequestOptions<TBody> = {},
@@ -129,6 +156,7 @@ async function request<TData, TBody = unknown>(
     data: options.body,
     signal: options.signal,
   };
+
 
   const fullUrl = `${http.defaults.baseURL ?? ''}${config.url}`;
   console.log(`[HTTP REQUEST] ${method} ${fullUrl}`);

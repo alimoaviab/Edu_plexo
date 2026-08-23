@@ -69,7 +69,7 @@ export function ContactPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
       <Seo
         title="Contact EduPlexo — School Management System Support"
         description="Contact EduPlexo for school management system inquiries, demos, and support. WhatsApp, email, and phone available. Based in Pakistan, serving schools worldwide."
@@ -81,15 +81,15 @@ export function ContactPage() {
       <Navbar />
 
       <header className="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden">
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-100/60 via-slate-50 to-slate-50" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-100/60 dark:from-sky-950/40 via-slate-50 dark:via-slate-950 to-slate-50 dark:to-slate-950" />
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-blue-600 mb-5">
+          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-blue-600 dark:text-sky-400 mb-5">
             Get in Touch
           </p>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
-            Contact <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">EduPlexo</span>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Contact <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400">EduPlexo</span>
           </h1>
-          <p className="mt-6 text-lg md:text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-6 text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto">
             Have questions about our school management system? Need a demo or support? We are here to help. Reach out through any channel below.
           </p>
         </div>
@@ -107,15 +107,15 @@ export function ContactPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className={`flex items-start gap-4 p-6 ${method.bg} ${method.border} border rounded-2xl hover:shadow-lg hover:-translate-y-1 transition-all duration-300`}
+              className={`flex items-start gap-4 p-6 ${method.bg} dark:bg-slate-900/80 ${method.border} dark:border-slate-800 border rounded-2xl hover:shadow-lg hover:-translate-y-1 transition-all duration-300`}
             >
-              <div className={`w-12 h-12 rounded-xl ${method.color} flex items-center justify-center flex-shrink-0`}>
+              <div className={`w-12 h-12 rounded-xl ${method.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>
                 <AppIcon name={method.icon} className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-slate-900 mb-1">{method.title}</h2>
-                <p className="text-slate-600 text-sm mb-2">{method.description}</p>
-                <span className="text-blue-600 font-semibold text-sm">{method.action}</span>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-1">{method.title}</h2>
+                <p className="text-slate-600 dark:text-slate-400 text-sm mb-2">{method.description}</p>
+                <span className="text-blue-600 dark:text-sky-400 font-semibold text-sm">{method.action}</span>
               </div>
             </motion.a>
           ))}
@@ -125,14 +125,14 @@ export function ContactPage() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-white rounded-2xl border border-slate-200/60 p-8 md:p-12 max-w-3xl mx-auto"
+          className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 p-8 md:p-12 max-w-3xl mx-auto shadow-sm"
         >
-          <h2 className="text-2xl font-bold text-slate-900 mb-8">Frequently Asked Questions</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-8">Frequently Asked Questions</h2>
           <div className="space-y-6">
             {faqs.map((faq, index) => (
-              <div key={index} className="border-b border-slate-200 pb-6 last:border-0 last:pb-0">
-                <h3 className="text-lg font-bold text-slate-900 mb-2">{faq.question}</h3>
-                <p className="text-slate-600 leading-relaxed">{faq.answer}</p>
+              <div key={index} className="border-b border-slate-200 dark:border-slate-800 pb-6 last:border-0 last:pb-0">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{faq.question}</h3>
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{faq.answer}</p>
               </div>
             ))}
           </div>

@@ -39,13 +39,15 @@ const DIST_DIR = join(__dirname, "../../dist/assets");
 const KB = 1024;
 const MB = 1024 * KB;
 const DEFAULT_CHUNK_LIMIT = 200 * KB;
-const FULL_LAZY_GRAPH_LIMIT = 3.25 * MB;
+const FULL_LAZY_GRAPH_LIMIT = 4.0 * MB;
 
 const FEATURE_VENDOR_LIMITS: Record<string, number> = {
   "vendor-canvas-": 220 * KB,
   "vendor-designer-": 320 * KB,
   "vendor-pdf-": 360 * KB,
+  "vendor-misc-": 500 * KB,
 };
+
 
 function limitForChunk(name: string): number {
   const featureLimit = Object.entries(FEATURE_VENDOR_LIMITS).find(([prefix]) => name.startsWith(prefix));

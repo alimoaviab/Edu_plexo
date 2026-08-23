@@ -41,7 +41,7 @@ export function HomePage() {
   }, [location]);
 
   return (
-    <div className="min-h-screen bg-slate-50 selection:bg-blue-100 selection:text-blue-900 font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-blue-100 dark:selection:bg-sky-900/60 selection:text-blue-900 dark:selection:text-sky-200 font-sans transition-colors duration-300">
       <Seo
         title="EduPlexo — #1 AI School Management System & School ERP Pakistan"
         description="EduPlexo is the #1 AI-powered school management system and school ERP in Pakistan. Automate attendance, fees, exams, parent communication & more. Trusted by 50+ schools. Start free trial."

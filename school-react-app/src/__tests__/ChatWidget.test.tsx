@@ -76,7 +76,7 @@ function renderWidget() {
 }
 
 function openWidget() {
-  fireEvent.click(screen.getByLabelText(/open ai assistant/i));
+  fireEvent.click(screen.getByLabelText(/open plexa|open ai assistant/i));
 }
 
 function getInput() {
@@ -103,9 +103,10 @@ afterEach(() => {
 describe("ChatWidget — rendering", () => {
   it("R1: renders the floating button when closed", () => {
     renderWidget();
-    expect(screen.getByLabelText(/open ai assistant/i)).toBeTruthy();
+    expect(screen.getByLabelText(/open plexa|open ai assistant/i)).toBeTruthy();
     expect(screen.queryByPlaceholderText(/type your message/i)).toBeNull();
   });
+
 
   it("R2: opens the panel on click", () => {
     renderWidget();
@@ -491,3 +492,4 @@ describe("ChatWidget — language picker", () => {
     expect(body.language).toBe("urdu");
   });
 });
+

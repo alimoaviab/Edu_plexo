@@ -55,7 +55,7 @@ const features = [
 
 export const FeaturesSection = () => {
   return (
-    <section id="features" className="py-24 bg-slate-50" aria-labelledby="features-heading">
+    <section id="features" className="py-24 bg-slate-50 dark:bg-slate-950 transition-colors duration-300" aria-labelledby="features-heading">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center max-w-3xl mx-auto mb-20">
           <motion.h2
@@ -63,16 +63,16 @@ export const FeaturesSection = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
-            className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight"
+            className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight"
           >
-            Complete School Management System <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Features</span>
+            Complete School Management System <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-500 dark:from-sky-400 dark:via-blue-400 dark:to-indigo-300">Features</span>
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ delay: 0.1 }}
-            className="text-lg text-slate-600 font-medium"
+            className="text-lg text-slate-600 dark:text-slate-300 font-medium"
           >
             EduPlexo school ERP brings all your core operations into one beautifully designed platform. Say goodbye to fragmented systems.
           </motion.p>
@@ -86,15 +86,15 @@ export const FeaturesSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
-              className="bg-white rounded-2xl p-6 border border-slate-200/60 shadow-sm hover:shadow-2xl hover:-translate-y-2 group-hover:bg-gradient-to-br group-hover:from-white group-hover:to-slate-50 transition-all duration-300 group"
+              className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-2xl hover:-translate-y-2 group-hover:bg-gradient-to-br group-hover:from-white dark:group-hover:from-slate-900 group-hover:to-slate-50 dark:group-hover:to-slate-850 hover:border-blue-500/30 dark:hover:border-sky-500/30 transition-all duration-300 group"
             >
               <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform duration-300`}>
                 <AppIcon name={feature.icon} className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors">
                 {feature.title}
               </h3>
-              <p className="text-slate-500 text-sm leading-relaxed font-medium">
+              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed font-medium">
                 {feature.description}
               </p>
             </motion.article>

@@ -13,7 +13,9 @@ import { create } from 'zustand';
 
 import { authApi } from '@/api/auth';
 import { onUnauthorized } from '@/api/client';
+import { resetMobileQueryCache } from '@/api/query-client';
 import type { AuthUser, LoginRequest, LoginResponse, Role } from '@/types/auth';
+
 import { decodeJwtPayload, isTokenExpired } from '@/utils/jwt';
 import { prefStorage, secureStorage, StorageKeys } from '@/utils/secure-storage';
 
@@ -163,6 +165,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Best-effort server logout — don't block the UI on it.
     authApi.logout().catch(() => {});
 
+    resetMobileQueryCache();
+
     await Promise.all([
       secureStorage.remove(StorageKeys.token),
       prefStorage.remove(StorageKeys.profileId),
@@ -177,6 +181,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   setActiveSchool: async (schoolId: string) => {
+    resetMobileQueryCache();
     await prefStorage.set(StorageKeys.activeSchoolId, schoolId);
     await prefStorage.remove(StorageKeys.activeBranchId);
     const user = get().user;
@@ -203,7 +208,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 // Wire the 401 listener once at module load. Any expired/invalid token will
 // fire this and force the user back to /login.
 onUnauthorized(() => {
+  resetMobileQueryCache();
   if (useAuthStore.getState().user) {
     useAuthStore.setState({ user: null });
   }
 });
+

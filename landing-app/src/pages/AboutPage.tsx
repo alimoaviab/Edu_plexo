@@ -74,12 +74,12 @@ export function AboutPage() {
           {STATS.map((s) => (
             <div
               key={s.label}
-              className="rounded-2xl bg-white border border-slate-200/60 p-5 text-center shadow-sm"
+              className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-5 text-center shadow-sm"
             >
-              <div className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+              <div className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                 {s.value}
               </div>
-              <div className="mt-1 text-xs font-semibold tracking-wide uppercase text-slate-500">
+              <div className="mt-1 text-xs font-semibold tracking-wide uppercase text-slate-500 dark:text-slate-400">
                 {s.label}
               </div>
             </div>
@@ -88,16 +88,15 @@ export function AboutPage() {
 
         {/* Pillars */}
         <section>
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3 tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-3 tracking-tight">
             What We Stand For
           </h2>
-          <p className="text-slate-600 max-w-2xl mb-10">
+          <p className="text-slate-600 dark:text-slate-300 max-w-2xl mb-10">
             Six principles guide every screen, API, and decision we ship.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {PILLARS.map((p, idx) => {
-              // Removed Icon variable
               return (
                 <motion.article
                   key={p.title}
@@ -105,15 +104,15 @@ export function AboutPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.4 }}
                   transition={{ duration: 0.45, delay: idx * 0.05 }}
-                  className="rounded-2xl bg-white border border-slate-200/60 p-7 hover:border-blue-200 hover:shadow-md transition-all"
+                  className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-7 hover:border-blue-200 dark:hover:border-sky-500/30 hover:shadow-md transition-all"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-5">
-                    <AppIcon name={p.icon} className="w-5 h-5"  />
+                  <div className="w-11 h-11 rounded-xl bg-blue-50 dark:bg-sky-950/50 text-blue-600 dark:text-sky-400 flex items-center justify-center mb-5">
+                    <AppIcon name={p.icon} className="w-5 h-5" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2 tracking-tight">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
                     {p.title}
                   </h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                     {p.description}
                   </p>
                 </motion.article>
@@ -123,7 +122,7 @@ export function AboutPage() {
         </section>
 
         {/* Closing statement */}
-        <section className="rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 p-10 md:p-14 text-center">
+        <section className="rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 p-10 md:p-14 text-center border border-slate-800">
           <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
             One Platform. Every School. Built for the Next Decade.
           </h2>

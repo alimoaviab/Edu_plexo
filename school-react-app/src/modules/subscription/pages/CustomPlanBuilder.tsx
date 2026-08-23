@@ -1,8 +1,12 @@
 import { showToast } from "@/utils/toast";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppIcon } from "shared/ui/AppIcon";
 import { useAuth } from "@/hooks/useAuth";
+import { serviceRequest } from "@/services/service-client";
+import { tenantQueryKey } from "@/lib/query-client";
+
 
 const MODULE_NAMES: Record<string, string> = {
   "academic-years": "Academic Years Setup",
@@ -32,6 +36,7 @@ const MODULE_NAMES: Record<string, string> = {
 
 export function CustomPlanBuilder() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [availablePackages, setAvailablePackages] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -39,12 +44,7 @@ export function CustomPlanBuilder() {
   const [studentLimit, setStudentLimit] = useState<number>(100);
 
   useEffect(() => {
-    fetch("/api/subscription/current", {
-      headers: {
-        authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
-      },
-    })
-      .then((res) => res.json())
+    serviceRequest<any>("/api/subscription/current")
       .then((payload) => {
         if (payload?.ok && payload?.data) {
           const data = payload.data;
@@ -61,6 +61,7 @@ export function CustomPlanBuilder() {
       })
       .catch(() => {});
   }, []);
+
 
   const handleToggleModule = (pkgId: string, moduleId: string, mandatory: boolean) => {
     if (mandatory) return;
@@ -167,20 +168,17 @@ export function CustomPlanBuilder() {
   const handleSavePlan = async () => {
     setSavingPlan(true);
     try {
-      const response = await fetch("/api/subscription/packages", {
+      const payload = await serviceRequest<any>("/api/subscription/packages", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
-        },
         body: JSON.stringify({
           selected_packages: selectedItems,
           student_limit: studentLimit,
         }),
       });
-      const payload = await response.json();
       if (payload?.ok) {
         showToast("Custom plan saved successfully!", "success");
+        void queryClient.invalidateQueries({ queryKey: ["subscription"] });
+        void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
         navigate(`${rolePrefix}/subscription`);
       } else {
         showToast("Failed to save plan. Please try again.", "info");
@@ -191,6 +189,7 @@ export function CustomPlanBuilder() {
       setSavingPlan(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-start justify-center p-4 py-12">

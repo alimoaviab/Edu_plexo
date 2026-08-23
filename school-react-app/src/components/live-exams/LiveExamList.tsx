@@ -1,6 +1,7 @@
 import { AppIcon } from "shared/ui/AppIcon";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { serviceRequest } from "@/services/service-client";
 
 interface LiveExamListProps {
   role: "TEACHER" | "STUDENT" | "ADMIN";
@@ -12,10 +13,9 @@ export const LiveExamList: React.FC<LiveExamListProps> = ({ role }) => {
 
   const fetchExams = async () => {
     try {
-      const res = await fetch("/api/live-exams");
-      const json = await res.json();
-      if (json.ok) {
-        setExams(json.data);
+      const res = await serviceRequest<any[]>("/api/live-exams");
+      if (res.ok && res.data) {
+        setExams(Array.isArray(res.data) ? res.data : []);
       }
     } catch (error) {
       console.error("Failed to fetch live exams", error);
@@ -23,6 +23,7 @@ export const LiveExamList: React.FC<LiveExamListProps> = ({ role }) => {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchExams();
