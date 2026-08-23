@@ -8,17 +8,20 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { Icon, type IconName } from '@/components/ui/Icon';
-import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
+import { useColors } from '@/theme/ThemeContext';
+import { radius, shadows, spacing, typography, type ThemeColors } from '@/theme/tokens';
 
 export type Accent = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
 
-const tint: Record<Accent, { bg: string; fg: string }> = {
-  primary: { bg: colors.primaryLight, fg: colors.primary },
-  success: { bg: colors.successLight, fg: colors.success },
-  warning: { bg: colors.warningLight, fg: colors.warning },
-  error: { bg: colors.errorLight, fg: colors.error },
-  neutral: { bg: colors.gray100, fg: colors.gray700 },
-};
+function getTintMap(colors: ThemeColors): Record<Accent, { bg: string; fg: string }> {
+  return {
+    primary: { bg: colors.primaryLight, fg: colors.primary },
+    success: { bg: colors.successLight, fg: colors.success },
+    warning: { bg: colors.warningLight, fg: colors.warning },
+    error: { bg: colors.errorLight, fg: colors.error },
+    neutral: { bg: colors.surfaceDim, fg: colors.textSecondary },
+  };
+}
 
 // ─── Section header ─────────────────────────────────────────────────────────
 
@@ -33,15 +36,16 @@ export function SectionHeader({
   actionLabel?: string;
   onAction?: () => void;
 }) {
+  const colors = useColors();
   return (
     <View style={styles.sectionHeader}>
       <View style={styles.sectionText}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
+        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{title}</Text>
+        {subtitle ? <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text> : null}
       </View>
       {actionLabel && onAction ? (
         <Pressable onPress={onAction} hitSlop={8}>
-          <Text style={styles.sectionAction}>{actionLabel}</Text>
+          <Text style={[styles.sectionAction, { color: colors.primary }]}>{actionLabel}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -63,6 +67,9 @@ export interface ModuleGridItem {
 
 export function ModuleGrid({ items }: { items: ModuleGridItem[] }) {
   const router = useRouter();
+  const colors = useColors();
+  const tint = getTintMap(colors);
+
   return (
     <View style={styles.grid}>
       {items.map((item) => {
@@ -74,22 +81,30 @@ export function ModuleGrid({ items }: { items: ModuleGridItem[] }) {
             key={item.key}
             onPress={onPress}
             disabled={!onPress}
-            style={({ pressed }) => [styles.moduleCard, shadows.card, pressed && styles.pressed]}
-            android_ripple={{ color: colors.gray100 }}
+            style={({ pressed }) => [
+              styles.moduleCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+              shadows.card,
+              pressed && styles.pressed,
+            ]}
+            android_ripple={{ color: colors.surfaceHover }}
           >
             <View style={[styles.moduleIcon, { backgroundColor: palette.bg }]}>
               <Icon name={item.icon} size={22} color={palette.fg} />
             </View>
             {item.badge !== undefined && item.badge !== 0 && item.badge !== '' ? (
-              <View style={styles.badge}>
+              <View style={[styles.badge, { backgroundColor: colors.error }]}>
                 <Text style={styles.badgeText}>{item.badge}</Text>
               </View>
             ) : null}
-            <Text style={styles.moduleLabel} numberOfLines={1}>
+            <Text style={[styles.moduleLabel, { color: colors.textPrimary }]} numberOfLines={1}>
               {item.label}
             </Text>
             {item.description ? (
-              <Text style={styles.moduleDescription} numberOfLines={1}>
+              <Text style={[styles.moduleDescription, { color: colors.textSecondary }]} numberOfLines={1}>
                 {item.description}
               </Text>
             ) : null}
@@ -109,9 +124,11 @@ export function ProgressBar({
   value: number;
   accent?: Accent;
 }) {
+  const colors = useColors();
+  const tint = getTintMap(colors);
   const clamped = Math.max(0, Math.min(100, Math.round(value)));
   return (
-    <View style={styles.progressTrack}>
+    <View style={[styles.progressTrack, { backgroundColor: colors.surfaceDim }]}>
       <View
         style={[styles.progressFill, { width: `${clamped}%`, backgroundColor: tint[accent].fg }]}
       />
@@ -127,6 +144,8 @@ export function QuickActions({
   actions: { key: string; label: string; icon: IconName; href?: string; onPress?: () => void }[];
 }) {
   const router = useRouter();
+  const colors = useColors();
+
   return (
     <View style={styles.quickRow}>
       {actions.map((action) => {
@@ -136,11 +155,19 @@ export function QuickActions({
           <Pressable
             key={action.key}
             onPress={onPress}
-            style={({ pressed }) => [styles.pill, shadows.card, pressed && styles.pressed]}
-            android_ripple={{ color: colors.gray100 }}
+            style={({ pressed }) => [
+              styles.pill,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+              shadows.card,
+              pressed && styles.pressed,
+            ]}
+            android_ripple={{ color: colors.surfaceHover }}
           >
             <Icon name={action.icon} size={16} color={colors.primary} />
-            <Text style={styles.pillLabel} numberOfLines={1}>
+            <Text style={[styles.pillLabel, { color: colors.textPrimary }]} numberOfLines={1}>
               {action.label}
             </Text>
           </Pressable>
@@ -170,15 +197,18 @@ export function ListCard({
   emptyText?: string;
   onRowPress?: (key: string) => void;
 }) {
+  const colors = useColors();
+  const tint = getTintMap(colors);
+
   if (rows.length === 0) {
     return (
-      <View style={styles.listCard}>
-        <Text style={styles.emptyText}>{emptyText}</Text>
+      <View style={[styles.listCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>{emptyText}</Text>
       </View>
     );
   }
   return (
-    <View style={styles.listCard}>
+    <View style={[styles.listCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {rows.map((row, index) => {
         const palette = tint[row.accent ?? 'primary'];
         return (
@@ -186,7 +216,10 @@ export function ListCard({
             key={row.key}
             onPress={onRowPress ? () => onRowPress(row.key) : undefined}
             disabled={!onRowPress}
-            style={[styles.listRow, index < rows.length - 1 && styles.listRowDivider]}
+            style={[
+              styles.listRow,
+              index < rows.length - 1 && [styles.listRowDivider, { borderBottomColor: colors.border }],
+            ]}
           >
             {row.icon ? (
               <View style={[styles.listIcon, { backgroundColor: palette.bg }]}>
@@ -194,16 +227,16 @@ export function ListCard({
               </View>
             ) : null}
             <View style={styles.listRowText}>
-              <Text style={styles.listTitle} numberOfLines={1}>
+              <Text style={[styles.listTitle, { color: colors.textPrimary }]} numberOfLines={1}>
                 {row.title}
               </Text>
               {row.subtitle ? (
-                <Text style={styles.listSubtitle} numberOfLines={1}>
+                <Text style={[styles.listSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
                   {row.subtitle}
                 </Text>
               ) : null}
             </View>
-            {row.meta ? <Text style={styles.listMeta}>{row.meta}</Text> : null}
+            {row.meta ? <Text style={[styles.listMeta, { color: colors.textSecondary }]}>{row.meta}</Text> : null}
           </Pressable>
         );
       })}
@@ -221,19 +254,17 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   sectionText: { flex: 1, gap: 2 },
-  sectionTitle: { ...typography.h4, color: colors.gray900 },
-  sectionSubtitle: { ...typography.bodySm, color: colors.gray500 },
-  sectionAction: { ...typography.bodySm, color: colors.primary, fontWeight: '700' },
+  sectionTitle: { ...typography.h4 },
+  sectionSubtitle: { ...typography.bodySm },
+  sectionAction: { ...typography.bodySm, fontWeight: '700' },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   moduleCard: {
     width: '47%',
     flexGrow: 1,
     padding: spacing.md,
-    backgroundColor: colors.white,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.cardBorder,
     gap: 6,
   },
   moduleIcon: {
@@ -243,8 +274,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  moduleLabel: { ...typography.bodyMd, fontWeight: '700', color: colors.gray900 },
-  moduleDescription: { ...typography.bodySm, color: colors.gray500 },
+  moduleLabel: { ...typography.bodyMd, fontWeight: '700' },
+  moduleDescription: { ...typography.bodySm },
   badge: {
     position: 'absolute',
     top: spacing.md,
@@ -253,17 +284,15 @@ const styles = StyleSheet.create({
     height: 22,
     paddingHorizontal: 6,
     borderRadius: radius.full,
-    backgroundColor: colors.error,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { ...typography.labelXs, color: colors.white },
+  badgeText: { ...typography.labelXs, color: '#FFFFFF' },
   pressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
 
   progressTrack: {
     height: 8,
     borderRadius: radius.full,
-    backgroundColor: colors.gray100,
     overflow: 'hidden',
   },
   progressFill: { height: 8, borderRadius: radius.full },
@@ -275,22 +304,18 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: colors.white,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.cardBorder,
   },
-  pillLabel: { ...typography.bodySm, fontWeight: '700', color: colors.gray800 },
+  pillLabel: { ...typography.bodySm, fontWeight: '700' },
 
   listCard: {
-    backgroundColor: colors.white,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.cardBorder,
     paddingHorizontal: spacing.md,
   },
   listRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
-  listRowDivider: { borderBottomWidth: 1, borderBottomColor: colors.gray100 },
+  listRowDivider: { borderBottomWidth: 1 },
   listIcon: {
     width: 32,
     height: 32,
@@ -299,8 +324,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   listRowText: { flex: 1, gap: 2 },
-  listTitle: { ...typography.bodyMd, fontWeight: '600', color: colors.gray900 },
-  listSubtitle: { ...typography.bodySm, color: colors.gray500 },
-  listMeta: { ...typography.bodySm, color: colors.gray500, fontWeight: '600' },
-  emptyText: { ...typography.bodySm, color: colors.gray400, textAlign: 'center', paddingVertical: spacing.lg },
+  listTitle: { ...typography.bodyMd, fontWeight: '600' },
+  listSubtitle: { ...typography.bodySm },
+  listMeta: { ...typography.bodySm, fontWeight: '600' },
+  emptyText: { ...typography.bodySm, textAlign: 'center', paddingVertical: spacing.lg },
 });

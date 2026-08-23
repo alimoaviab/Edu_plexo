@@ -1,19 +1,22 @@
 import { Tabs } from 'expo-router';
 
 import { Icon, type IconName } from '@/components/ui/Icon';
-import { colors, typography } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeContext';
+import { typography } from '@/theme/tokens';
 
 export default function TeacherLayout() {
+  const { colors } = useTheme();
+
   return (
     <Tabs
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.gray400,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: { ...typography.caption, fontWeight: '700', marginBottom: 4 },
         tabBarStyle: {
-          backgroundColor: colors.white,
-          borderTopColor: colors.gray100,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
           height: 64,
           paddingTop: 8,
         },

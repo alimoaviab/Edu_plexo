@@ -34,7 +34,8 @@ import { useAuthStore } from '@/store/auth-store';
 import { compactNumber, formatDate, titleCase } from '@/utils/format';
 import { TrialBanner } from '@/components/subscription/TrialBanner';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
+import { useColors } from '@/theme/ThemeContext';
+import { radius, shadows, spacing, typography, type ThemeColors } from '@/theme/tokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.78;
@@ -46,7 +47,7 @@ const QUICK_ACTIONS: { key: string; label: string; icon: IconName; href: string 
   { key: 'announce', label: 'Announcements', icon: 'megaphone', href: '/(owner)/module/announcements' },
 ];
 
-type Accent = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
+type Accent = 'primary' | 'success' | 'warning' | 'error' | 'neutral' | 'info';
 
 interface ProfileItem {
   key: string;
@@ -63,8 +64,20 @@ interface ProfileSection {
   items: ProfileItem[];
 }
 
+function getTintMap(c: ThemeColors): Record<Accent, { bg: string; fg: string }> {
+  return {
+    primary: { bg: c.primaryLight, fg: c.primary },
+    success: { bg: c.successLight, fg: c.success },
+    warning: { bg: c.warningLight, fg: c.warning },
+    error: { bg: c.errorLight, fg: c.error },
+    neutral: { bg: c.surfaceDim, fg: c.textSecondary },
+    info: { bg: c.surfaceDim, fg: c.textSecondary },
+  };
+}
+
 export default function AdminHome() {
   const router = useRouter();
+  const colors = useColors();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
   const dashboardQuery = useQuery({ queryKey: ['admin-composite'], queryFn: fetchAdminComposite });
@@ -100,99 +113,75 @@ export default function AdminHome() {
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: -SIDEBAR_WIDTH,
-        duration: 220,
+        duration: 200,
         useNativeDriver: true,
       }),
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 220,
+        duration: 200,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      setSidebarVisible(false);
-    });
+    ]).start(() => setSidebarVisible(false));
   };
 
-  function confirmLogout() {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+  const handleLogout = () => {
+    closeSidebar();
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => {
-        closeSidebar();
-        logout();
-      }},
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: () => {
+          logout();
+          router.replace('/(auth)/login');
+        },
+      },
     ]);
-  }
+  };
 
   const sections: ProfileSection[] = [
     {
-      title: 'Owner Portal',
+      title: 'Academics & Structure',
       items: [
-        { key: 'schools', label: 'My Schools', description: 'Portfolio and branch switcher', icon: 'building', accent: 'primary', href: '/(owner)/schools' },
+        { key: 'academicYears', label: 'Academic Years', icon: 'calendar', accent: 'primary', href: '/(owner)/module/academic-years' },
+        { key: 'classes', label: 'Classes & Sections', icon: 'book', accent: 'primary', href: '/(owner)/module/classes' },
+        { key: 'timetable', label: 'Timetable', icon: 'calendar', accent: 'primary', href: '/(owner)/module/timetables' },
+        { key: 'exams', label: 'Exams & Schedules', icon: 'clipboard', accent: 'primary', href: '/(owner)/module/exams' },
+        { key: 'results', label: 'Exam Results', icon: 'award', accent: 'primary', href: '/(owner)/module/results' },
+        { key: 'liveClasses', label: 'Live Classes', icon: 'video', accent: 'primary', href: '/(owner)/module/live-classes' },
       ],
     },
     {
-      title: 'Academic Setup',
+      title: 'People & Operations',
       items: [
-        { key: 'academic-years', label: 'Academic years', description: 'School sessions', icon: 'calendar', accent: 'success', href: '/(owner)/module/academic-years' },
-        { key: 'classes', label: 'Classes', description: 'Sections and classroom setup', icon: 'graduation', accent: 'primary', href: '/(owner)/module/classes' },
+        { key: 'students', label: 'Students Directory', icon: 'graduation', accent: 'success', href: '/(owner)/module/students' },
+        { key: 'teachers', label: 'Teachers Directory', icon: 'users', accent: 'success', href: '/(owner)/module/teachers' },
+        { key: 'attendance', label: 'Daily Attendance', icon: 'check-circle', accent: 'success', href: '/(owner)/attendance' },
+        { key: 'teacherAttendance', label: 'Teacher Attendance', icon: 'check-circle', accent: 'success', href: '/(owner)/teacher-attendance' },
+        { key: 'leave', label: 'Leave Requests', icon: 'clock', accent: 'success', href: '/(owner)/module/leave-requests' },
+        { key: 'behavior', label: 'Behavior Log', icon: 'shield', accent: 'success', href: '/(owner)/module/behavior' },
       ],
     },
     {
-      title: 'Staff',
+      title: 'Finance & Accounts',
       items: [
-        { key: 'leave', label: 'Leave', description: 'Teacher leave applications', icon: 'clock', accent: 'warning', href: '/(owner)/module/leave' },
+        { key: 'fees', label: 'Fee Management', icon: 'wallet', accent: 'warning', href: '/(owner)/module/fees' },
+        { key: 'subscription', label: 'Campus Subscription', icon: 'credit-card', accent: 'warning', href: '/(owner)/subscription' },
       ],
     },
     {
-      title: 'Students',
+      title: 'Tools & Communication',
       items: [
-        { key: 'behavior', label: 'Behavior', description: 'Discipline and merit notes', icon: 'shield', accent: 'warning', href: '/(owner)/module/behavior' },
+        { key: 'announcements', label: 'Announcements', icon: 'megaphone', accent: 'info' as Accent, href: '/(owner)/module/announcements' },
+        { key: 'certificates', label: 'Certificate Generator', icon: 'award', accent: 'info' as Accent, href: '/(owner)/module/certificates' },
+        { key: 'templateDesigner', label: 'Template Designer', icon: 'sparkles', accent: 'info' as Accent, href: '/(owner)/module/template-designer' },
       ],
     },
     {
-      title: 'Academics',
+      title: 'Account',
       items: [
-        { key: 'timetable', label: 'Timetable', description: 'Class and teacher schedules', icon: 'calendar', accent: 'success', href: '/(owner)/module/timetable' },
-        { key: 'homework', label: 'Homework', description: 'Assignments and submissions', icon: 'book', accent: 'primary', href: '/(owner)/module/homework' },
-        { key: 'exams', label: 'Exams', description: 'Term exams and schedules', icon: 'clipboard', accent: 'warning', href: '/(owner)/module/exams' },
-        { key: 'tests', label: 'Tests', description: 'Class tests and quizzes', icon: 'clipboard', accent: 'warning', href: '/(owner)/module/tests' },
-        { key: 'results', label: 'Results', description: 'Marks and transcripts', icon: 'star', accent: 'success', href: '/(owner)/module/results' },
-        { key: 'question-papers', label: 'Question Papers', description: 'Generated question papers', icon: 'clipboard', accent: 'warning', href: '/(owner)/module/question-papers' },
-        { key: 'live-classes', label: 'Live classes', description: 'Online sessions', icon: 'video', accent: 'primary', href: '/(owner)/module/live-classes' },
-      ],
-    },
-    {
-      title: 'Operations',
-      items: [
-        { key: 'announcements', label: 'Announcements', description: 'School notices', icon: 'megaphone', accent: 'primary', href: '/(owner)/module/announcements' },
-        { key: 'certificates', label: 'Certificates', description: 'Issued certificates', icon: 'star', accent: 'success', href: '/(owner)/module/certificates' },
-        { key: 'certificate-templates', label: 'Template Designer', description: 'Certificate layout designer', icon: 'sparkles', accent: 'success', href: '/(owner)/module/certificate-templates' },
-      ],
-    },
-    {
-      title: 'Finance',
-      items: [
-        { key: 'fees', label: 'Fee', description: 'Vouchers and student fees', icon: 'wallet', accent: 'success', href: '/(owner)/module/fees' },
-      ],
-    },
-    {
-      title: 'Subscription',
-      items: [
-        { key: 'subscription', label: 'Subscription', description: 'Plan limits and billing', icon: 'wallet', accent: 'primary', href: '/(owner)/subscription' },
-      ],
-    },
-    {
-      title: 'Settings',
-      items: [
-        { key: 'schedules', label: 'Schedule', description: 'Reminders and meetings', icon: 'calendar', accent: 'success', href: '/(owner)/module/schedules' },
-        { key: 'messages', label: 'Conversations', description: 'Conversations', icon: 'mail', accent: 'primary', href: '/(owner)/module/messages' },
-        { key: 'settings', label: 'Settings', description: 'System configuration', icon: 'settings', accent: 'neutral', href: '/(owner)/settings' },
-      ],
-    },
-    {
-      title: 'Session',
-      items: [
-        { key: 'logout', label: 'Sign Out', description: 'End this session', icon: 'logout', accent: 'error', onPress: confirmLogout },
+        { key: 'settings', label: 'School Settings', icon: 'settings', accent: 'neutral', href: '/(owner)/settings' },
+        { key: 'logout', label: 'Sign Out', icon: 'log-out', accent: 'error', onPress: handleLogout },
       ],
     },
   ];
@@ -265,16 +254,17 @@ export default function AdminHome() {
             style={[
               styles.sidebarPanel,
               {
+                backgroundColor: colors.surface,
                 transform: [{ translateX: slideAnim }],
               },
             ]}
           >
             <SafeAreaView style={styles.sidebarInner} edges={['top', 'left', 'bottom']}>
               {/* Sidebar Profile Card Header */}
-              <View style={styles.sidebarHeader}>
+              <View style={[styles.sidebarHeader, { backgroundColor: colors.primary }]}>
                 <View style={styles.sidebarUserSection}>
-                  <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarText}>
+                  <View style={[styles.avatarCircle, { backgroundColor: colors.primaryLight }]}>
+                    <Text style={[styles.avatarText, { color: colors.primary }]}>
                       {user?.email ? user.email.charAt(0).toUpperCase() : 'A'}
                     </Text>
                   </View>
@@ -288,19 +278,19 @@ export default function AdminHome() {
                   </View>
                 </View>
                 <Pressable onPress={closeSidebar} style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
-                  <Icon name="chevron-right" size={22} color={colors.primary} />
+                  <Icon name="chevron-right" size={22} color="#FFFFFF" />
                 </Pressable>
               </View>
 
               {/* Scrollable List of Admin Modules */}
               <ScrollView
-                style={styles.sidebarScroll}
+                style={[styles.sidebarScroll, { backgroundColor: colors.background }]}
                 contentContainerStyle={styles.sidebarScrollContent}
                 showsVerticalScrollIndicator={false}
               >
                 {sections.map((section) => (
                   <View key={section.title} style={styles.sidebarSection}>
-                    <Text style={styles.sidebarSectionTitle}>{section.title}</Text>
+                    <Text style={[styles.sidebarSectionTitle, { color: colors.textMuted }]}>{section.title}</Text>
                     <View style={styles.sidebarList}>
                       {section.items.map((item) => (
                         <SidebarRow
@@ -334,41 +324,44 @@ export default function AdminHome() {
 }
 
 function SidebarRow({ item, onPress }: { item: ProfileItem; onPress?: () => void }) {
-  const palette = tintMap[item.accent];
+  const colors = useColors();
+  const tint = getTintMap(colors);
+  const palette = tint[item.accent];
   return (
     <Pressable
       onPress={onPress}
       disabled={!onPress}
-      style={({ pressed }) => [styles.sidebarRow, shadows.card, pressed && styles.pressed]}
-      android_ripple={{ color: colors.gray100 }}
+      style={({ pressed }) => [
+        styles.sidebarRow,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+        },
+        shadows.card,
+        pressed && styles.pressed,
+      ]}
+      android_ripple={{ color: colors.surfaceHover }}
     >
       <View style={[styles.sidebarIconWrap, { backgroundColor: palette.bg }]}>
         <Icon name={item.icon} size={18} color={palette.fg} />
       </View>
       <View style={styles.sidebarRowText}>
-        <Text style={styles.sidebarRowTitle} numberOfLines={1}>
+        <Text style={[styles.sidebarRowTitle, { color: colors.textPrimary }]} numberOfLines={1}>
           {item.label}
         </Text>
         {item.description ? (
-          <Text style={styles.sidebarRowDescription} numberOfLines={1}>
+          <Text style={[styles.sidebarRowDescription, { color: colors.textSecondary }]} numberOfLines={1}>
             {item.description}
           </Text>
         ) : null}
       </View>
-      <Icon name="chevron-right" size={16} color={colors.gray400} />
+      <Icon name="chevron-right" size={16} color={colors.textMuted} />
     </Pressable>
   );
 }
 
-const tintMap = {
-  primary: { bg: colors.primaryLight, fg: colors.primary },
-  success: { bg: colors.successLight, fg: colors.success },
-  warning: { bg: colors.warningLight, fg: colors.warning },
-  error: { bg: colors.errorLight, fg: colors.error },
-  neutral: { bg: colors.gray100, fg: colors.gray700 },
-} as const;
-
 function CompactStats({ data, loading }: { data?: AdminComposite; loading: boolean }) {
+  const colors = useColors();
   const overview = data?.overview;
   const attendance = data?.attendance;
   const fees = data?.fees;
@@ -412,15 +405,16 @@ interface StatMetric {
 
 function MetricTile({ metric }: { metric: StatMetric }) {
   const router = useRouter();
+  const colors = useColors();
   const content = (
     <>
-      <View style={[styles.metricIcon, { backgroundColor: tint(metric.accent) }]}>
+      <View style={[styles.metricIcon, { backgroundColor: tint(metric.accent, colors) }]}>
         <Icon name={metric.icon} size={15} color={metric.accent} />
       </View>
-      <Text style={styles.metricValue} numberOfLines={1}>
+      <Text style={[styles.metricValue, { color: colors.textPrimary }]} numberOfLines={1}>
         {metric.value}
       </Text>
-      <Text style={styles.metricLabel} numberOfLines={1}>
+      <Text style={[styles.metricLabel, { color: colors.textSecondary }]} numberOfLines={1}>
         {metric.label}
       </Text>
     </>
@@ -430,8 +424,16 @@ function MetricTile({ metric }: { metric: StatMetric }) {
     return (
       <Pressable
         onPress={() => router.push(metric.href as never)}
-        style={({ pressed }) => [styles.metric, shadows.card, pressed && styles.pressed]}
-        android_ripple={{ color: colors.gray100 }}
+        style={({ pressed }) => [
+          styles.metric,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          },
+          shadows.card,
+          pressed && styles.pressed,
+        ]}
+        android_ripple={{ color: colors.surfaceHover }}
       >
         {content}
       </Pressable>
@@ -439,7 +441,7 @@ function MetricTile({ metric }: { metric: StatMetric }) {
   }
 
   return (
-    <View style={[styles.metric, shadows.card]}>
+    <View style={[styles.metric, { backgroundColor: colors.surface, borderColor: colors.border }, shadows.card]}>
       {content}
     </View>
   );
@@ -507,12 +509,12 @@ function activityIcon(type: string): IconName {
   return 'sparkles';
 }
 
-function tint(color: string): string {
-  if (color === colors.success) return colors.successLight;
-  if (color === colors.warning) return colors.warningLight;
-  if (color === colors.error) return colors.errorLight;
-  if (color === colors.primary) return colors.primaryLight;
-  return colors.gray100;
+function tint(color: string, c: ThemeColors): string {
+  if (color === c.success) return c.successLight;
+  if (color === c.warning) return c.warningLight;
+  if (color === c.error) return c.errorLight;
+  if (color === c.primary) return c.primaryLight;
+  return c.surfaceDim;
 }
 
 const styles = StyleSheet.create({
