@@ -33,7 +33,6 @@ import { readRecordPath } from '@/modules/admin/record-utils';
 import { useAuthStore } from '@/store/auth-store';
 import { compactNumber, formatDate, titleCase } from '@/utils/format';
 import { TrialBanner } from '@/components/subscription/TrialBanner';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -225,7 +224,7 @@ export default function AdminHome() {
             subtitle="Executive Campus Dashboard"
             showMenu={true}
             onMenuPress={openSidebar}
-            right={<ThemeToggle />}
+            right={<NotificationBell />}
           />
 
           <TrialBanner />

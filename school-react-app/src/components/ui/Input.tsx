@@ -50,11 +50,11 @@ export function Input({
       {label && (
         <label
           htmlFor={inputId}
-          className="text-[11px] font-bold text-text-muted normal-case mb-1 px-1"
+          className="text-[11px] font-bold text-slate-500 normal-case mb-1 px-1"
         >
           {label}
           {props.required && (
-            <span className="text-error ml-0.5" aria-hidden="true">
+            <span className="text-rose-500 ml-0.5" aria-hidden="true">
               *
             </span>
           )}
@@ -62,7 +62,7 @@ export function Input({
       )}
       <div className="relative flex items-center">
         {leftIcon && (
-          <div className="absolute left-3.5 flex items-center justify-center text-text-muted pointer-events-none">
+          <div className="absolute left-3.5 flex items-center justify-center text-slate-400 pointer-events-none">
             {leftIcon}
           </div>
         )}
@@ -74,10 +74,10 @@ export function Input({
           {...props}
           aria-describedby={describedBy}
           aria-invalid={!!error}
-          className={`w-full h-11 ${leftIcon ? "pl-10" : "px-3.5"} ${rightIcon ? "pr-10" : ""} text-[13px] font-medium text-text-primary bg-surface border rounded-xl outline-none transition-all placeholder:text-text-muted/60 disabled:opacity-50 disabled:bg-surface-muted ${
+          className={`w-full h-11 ${leftIcon ? "pl-10" : "px-3.5"} ${rightIcon ? "pr-10" : ""} text-[13px] font-medium text-slate-700 bg-white border rounded-xl outline-none transition-all placeholder:text-slate-400 ${
             error
-              ? "border-error focus:border-error focus:ring-4 focus:ring-error/10"
-              : "border-border focus:border-primary focus:ring-4 focus:ring-primary/10"
+              ? "border-rose-400 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10"
+              : "border-slate-200 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/5"
           } ${className}`}
         />
         {rightIcon && (
@@ -87,12 +87,12 @@ export function Input({
         )}
       </div>
       {helperText && !error && (
-        <span id={helperId} className="text-[10px] font-medium text-text-muted mt-0.5 px-1">
+        <span id={helperId} className="text-[10px] font-medium text-slate-400 mt-0.5 px-1">
           {helperText}
         </span>
       )}
       {error && (
-        <span id={errorId} className="text-[10px] font-bold text-error mt-0.5 px-1" role="alert">
+        <span id={errorId} className="text-[10px] font-bold text-rose-600 mt-0.5 px-1" role="alert">
           {error}
         </span>
       )}

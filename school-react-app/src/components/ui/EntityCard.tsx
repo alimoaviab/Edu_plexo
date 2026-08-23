@@ -48,14 +48,14 @@ export type EntityCardAccent =
   | "purple";
 
 const accentMap: Record<EntityCardAccent, { bar: string; chip: string; bg: string; text: string }> = {
-  blue: { bar: "bg-primary", chip: "bg-primary/10 text-primary border-primary/20", bg: "bg-primary", text: "text-primary" },
-  emerald: { bar: "bg-emerald-500", chip: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", bg: "bg-emerald-500", text: "text-emerald-500" },
-  violet: { bar: "bg-violet-500", chip: "bg-violet-500/10 text-violet-500 border-violet-500/20", bg: "bg-violet-500", text: "text-violet-500" },
-  amber: { bar: "bg-amber-500", chip: "bg-amber-500/10 text-amber-500 border-amber-500/20", bg: "bg-amber-500", text: "text-amber-500" },
-  rose: { bar: "bg-rose-500", chip: "bg-rose-500/10 text-rose-500 border-rose-500/20", bg: "bg-rose-500", text: "text-rose-500" },
-  slate: { bar: "bg-border-strong", chip: "bg-surface-muted text-text-secondary border-border", bg: "bg-surface-muted", text: "text-text-muted" },
-  indigo: { bar: "bg-indigo-500", chip: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20", bg: "bg-indigo-500", text: "text-indigo-500" },
-  purple: { bar: "bg-purple-500", chip: "bg-purple-500/10 text-purple-500 border-purple-500/20", bg: "bg-purple-500", text: "text-purple-500" },
+  blue: { bar: "bg-blue-500", chip: "bg-blue-50 text-blue-700 border-blue-200", bg: "bg-blue-600", text: "text-blue-600" },
+  emerald: { bar: "bg-emerald-500", chip: "bg-emerald-50 text-emerald-700 border-emerald-200", bg: "bg-emerald-600", text: "text-emerald-600" },
+  violet: { bar: "bg-violet-500", chip: "bg-violet-50 text-violet-700 border-violet-200", bg: "bg-violet-600", text: "text-violet-600" },
+  amber: { bar: "bg-amber-500", chip: "bg-amber-50 text-amber-700 border-amber-200", bg: "bg-amber-600", text: "text-amber-600" },
+  rose: { bar: "bg-rose-500", chip: "bg-rose-50 text-rose-700 border-rose-200", bg: "bg-rose-600", text: "text-rose-600" },
+  slate: { bar: "bg-slate-300", chip: "bg-slate-50 text-slate-600 border-slate-200", bg: "bg-slate-600", text: "text-slate-600" },
+  indigo: { bar: "bg-indigo-500", chip: "bg-indigo-50 text-indigo-700 border-indigo-200", bg: "bg-indigo-600", text: "text-indigo-600" },
+  purple: { bar: "bg-purple-500", chip: "bg-purple-50 text-purple-700 border-purple-200", bg: "bg-purple-600", text: "text-purple-600" },
 };
 
 export interface EntityCardMetric {
@@ -157,7 +157,7 @@ export function EntityCard({
 
   return (
     <div
-      className={`group relative bg-surface rounded-xl border border-border shadow-sm hover:shadow-md hover:border-border-strong transition-all text-text-primary ${className}`}
+      className={`group relative bg-white rounded-xl border border-slate-200 ring-1 ring-slate-900/5 shadow-[0_2px_8px_rgb(0,0,0,0.02)] hover:shadow-[0_4px_14px_rgb(0,0,0,0.05)] transition-shadow ${className}`}
     >
       {/* Left status accent bar — shared with timetable/homework cards. */}
       <div className={`absolute left-0 top-0 bottom-0 w-0.5 ${accentTone.bar}`} />
@@ -179,7 +179,7 @@ export function EntityCard({
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
-                <h3 className="text-[13px] font-bold text-text-primary tracking-tight truncate">
+                <h3 className="text-[13px] font-bold text-slate-900 tracking-tight truncate">
                   {title}
                 </h3>
                 {status && (
@@ -202,7 +202,7 @@ export function EntityCard({
 
           {/* Hover actions (edit/delete pills) */}
           {hoverActions && hoverActions.length > 0 && (
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-3 shrink-0">
               {hoverActions.map((a, i) => (
                 <button
                   key={i}
@@ -213,14 +213,16 @@ export function EntityCard({
                   }}
                   title={a.label}
                   aria-label={a.label}
-                  className={`h-7 w-7 inline-flex items-center justify-center rounded-md bg-surface border border-border text-text-muted hover:text-primary hover:border-primary shadow-sm transition-colors ${
+                  className={`h-7 w-7 inline-flex items-center justify-center rounded-md bg-white border border-slate-200 shadow-sm ${
                     a.accent === "rose"
-                      ? "hover:text-rose-500 hover:border-rose-500/40"
+                      ? "text-slate-500 hover:text-rose-600"
                       : a.accent === "emerald"
-                        ? "hover:text-emerald-500 hover:border-emerald-500/40"
+                        ? "text-slate-500 hover:text-emerald-600"
                         : a.accent === "amber"
-                          ? "hover:text-amber-500 hover:border-amber-500/40"
-                          : ""
+                          ? "text-slate-500 hover:text-amber-600"
+                          : a.accent === "slate"
+                            ? "text-slate-500 hover:text-slate-900"
+                            : "text-slate-500 hover:text-blue-600"
                   }`}
                 >
                   <AppIcon name={a.icon} size={14} />
@@ -244,13 +246,13 @@ export function EntityCard({
             {metrics.map((m, i) => (
               <div
                 key={i}
-                className="px-2 py-1.5 rounded-lg bg-surface-muted border border-border text-center"
+                className="px-2 py-1.5 rounded-lg bg-slate-50/70 border border-slate-100/80 text-center"
               >
-                <p className="text-[8px] font-bold text-text-muted uppercase tracking-widest mb-0.5">
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">
                   {m.label}
                 </p>
                 <p
-                  className={`text-[11px] font-bold truncate ${m.tone ?? "text-text-primary"}`}
+                  className={`text-[11px] font-bold truncate ${m.tone ?? "text-slate-800"}`}
                 >
                   {m.value}
                 </p>
@@ -276,7 +278,7 @@ export function EntityCard({
         {visibleActions.length > 0 && (
           <div
             className={`mt-auto pt-3 ${
-              context ? "" : "border-t border-border"
+              context ? "" : "border-t border-slate-100"
             } grid ${gridColsClass} gap-1.5`}
           >
             {visibleActions.map((a, i) => (
@@ -306,17 +308,17 @@ function ContextRow({
     <>
       <div className="flex items-center gap-2 min-w-0">
         {icon}
-        <span className="text-[10px] font-bold text-text-primary truncate">{label}</span>
+        <span className="text-[10px] font-bold text-slate-700 truncate">{label}</span>
       </div>
       {(to || onClick) && (
-        <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest shrink-0 group-hover:text-primary transition-colors">
+        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest shrink-0 group-hover:text-blue-600 transition-colors">
           View →
         </span>
       )}
     </>
   );
   const cls =
-    "flex items-center justify-between border-t border-border pt-3 mb-3";
+    "flex items-center justify-between border-t border-slate-100 pt-3 mb-3";
   if (to) {
     return (
       <Link to={to} className={cls}>
@@ -341,7 +343,7 @@ function ActionButton({ action }: { action: EntityCardAction }) {
   // Primary: filled colored background. Subtle: soft tinted background.
   const variantClass = action.primary
     ? `${accent.bg} text-white shadow-sm hover:opacity-90`
-    : `bg-surface-muted border border-border ${accent.text} hover:bg-surface hover:border-border-strong`;
+    : `bg-slate-50 border border-slate-200 ${accent.text} hover:bg-white hover:border-slate-300`;
 
   const iconNode = action.icon && (
     <AppIcon name={action.icon} size={13} />

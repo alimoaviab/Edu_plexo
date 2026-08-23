@@ -844,7 +844,7 @@ export function BlogPostPage() {
   const relatedPosts = relatedPostsMap[article.slug] || [];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 font-sans">
       <Seo
         title={`${article.title} — EduPlexo Blog`}
         description={article.description}
@@ -859,7 +859,7 @@ export function BlogPostPage() {
       <main className="max-w-4xl mx-auto px-6 pt-32 pb-24">
         <button
           onClick={() => navigate('/blog')}
-          className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 transition-colors mb-8"
+          className="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors mb-8"
         >
           <AppIcon name="ArrowLeft" className="w-4 h-4" />
           Back to Blog
@@ -867,13 +867,13 @@ export function BlogPostPage() {
 
         <article>
           <header className="mb-10">
-            <span className="text-xs font-semibold text-blue-600 dark:text-sky-400 bg-blue-50 dark:bg-sky-950/50 px-3 py-1 rounded-full">
+            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
               {article.category}
             </span>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mt-4 mb-4 leading-tight">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mt-4 mb-4 leading-tight">
               {article.title}
             </h1>
-            <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-4 text-sm text-slate-500">
               <div className="flex items-center gap-1">
                 <AppIcon name="Calendar" className="w-4 h-4" />
                 {article.date}
@@ -882,42 +882,42 @@ export function BlogPostPage() {
                 <AppIcon name="Clock" className="w-4 h-4" />
                 {article.readTime}
               </div>
-              <button className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-sky-400 transition-colors">
+              <button className="flex items-center gap-1 hover:text-blue-600 transition-colors">
                 <AppIcon name="Share2" className="w-4 h-4" />
                 Share
               </button>
             </div>
           </header>
 
-          <div className="prose prose-slate dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
+          <div className="prose prose-slate max-w-none">
             {article.content}
           </div>
 
-          <div className="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800">
-            <div className="flex items-center gap-4 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm">
-              <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-sky-950 flex items-center justify-center text-blue-700 dark:text-sky-300 font-bold">
+          <div className="mt-12 pt-8 border-t border-slate-200">
+            <div className="flex items-center gap-4 p-6 bg-white rounded-2xl border border-slate-200/60">
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold">
                 {article.author.split(' ').map(n => n[0]).join('')}
               </div>
               <div>
-                <div className="font-bold text-slate-900 dark:text-white">{article.author}</div>
-                <div className="text-sm text-slate-500 dark:text-slate-400">{article.authorRole}</div>
+                <div className="font-bold text-slate-900">{article.author}</div>
+                <div className="text-sm text-slate-500">{article.authorRole}</div>
               </div>
             </div>
           </div>
 
           <div className="mt-12">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Frequently Asked Questions</h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Frequently Asked Questions</h2>
             <div className="space-y-4">
               {article.faqSchema.map((faq, index) => (
-                <div key={index} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 p-6 shadow-sm">
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{faq.question}</h3>
-                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{faq.answer}</p>
+                <div key={index} className="bg-white rounded-2xl border border-slate-200/60 p-6">
+                  <h3 className="text-lg font-bold text-slate-900 mb-2">{faq.question}</h3>
+                  <p className="text-slate-600 leading-relaxed">{faq.answer}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="mt-12 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 rounded-3xl p-10 md:p-14 text-center border border-slate-800">
+          <div className="mt-12 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-10 md:p-14 text-center">
             <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-4">
               Ready to Transform Your School?
             </h2>
@@ -927,7 +927,7 @@ export function BlogPostPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <a
                 href="/book-demo"
-                className="px-8 py-4 bg-blue-600 dark:bg-sky-500 text-white rounded-full font-semibold shadow-lg hover:bg-blue-700 dark:hover:bg-sky-400 hover:-translate-y-1 transition-all flex items-center gap-2"
+                className="px-8 py-4 bg-blue-600 text-white rounded-full font-semibold shadow-lg hover:bg-blue-700 hover:-translate-y-1 transition-all flex items-center gap-2"
               >
                 Book a Demo <AppIcon name="ArrowRight" className="w-4 h-4" />
               </a>
@@ -945,15 +945,15 @@ export function BlogPostPage() {
 
         {relatedPosts.length > 0 && (
           <aside className="mt-16">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Related Articles</h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Related Articles</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedPosts.map((post) => (
                 <Link
                   key={post.slug}
                   to={`/blog/${post.slug}`}
-                  className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/60 dark:border-slate-800 p-5 hover:shadow-lg hover:-translate-y-1 transition-all"
+                  className="bg-white rounded-xl border border-slate-200/60 p-5 hover:shadow-lg hover:-translate-y-1 transition-all"
                 >
-                  <h3 className="font-bold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-sky-400 transition-colors line-clamp-2">
+                  <h3 className="font-bold text-slate-900 hover:text-blue-600 transition-colors line-clamp-2">
                     {post.title}
                   </h3>
                 </Link>

@@ -22,25 +22,25 @@ const variantTokens: Record<
   { iconBg: string; iconColor: string; iconName: string; button: string }
 > = {
   danger: {
-    iconBg: "bg-error/10",
-    iconColor: "text-error",
+    iconBg: "bg-red-50",
+    iconColor: "text-red-600",
     iconName: "delete_forever",
     button:
-      "bg-error hover:opacity-90 hover:shadow-lg hover:shadow-error/20 focus-visible:ring-2 focus-visible:ring-error/30 text-white",
+      "bg-red-600 hover:bg-red-700 hover:shadow-lg hover:shadow-red-600/20 focus-visible:ring-2 focus-visible:ring-red-300",
   },
   primary: {
-    iconBg: "bg-primary/10",
-    iconColor: "text-primary",
+    iconBg: "bg-blue-50",
+    iconColor: "text-blue-600",
     iconName: "help",
     button:
-      "bg-primary hover:bg-primary-hover hover:shadow-lg hover:shadow-primary/20 focus-visible:ring-2 focus-visible:ring-primary/30 text-white",
+      "bg-blue-600 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20 focus-visible:ring-2 focus-visible:ring-blue-300",
   },
   warning: {
-    iconBg: "bg-warning/10",
-    iconColor: "text-warning",
+    iconBg: "bg-amber-50",
+    iconColor: "text-amber-600",
     iconName: "warning",
     button:
-      "bg-warning hover:opacity-90 hover:shadow-lg hover:shadow-warning/20 focus-visible:ring-2 focus-visible:ring-warning/30 text-white",
+      "bg-amber-600 hover:bg-amber-700 hover:shadow-lg hover:shadow-amber-600/20 focus-visible:ring-2 focus-visible:ring-amber-300",
   },
 };
 
@@ -100,13 +100,13 @@ export function ConfirmModal({
       aria-describedby="confirm-modal-description"
     >
       <div
-        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${
+        className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-200 ${
           show ? "opacity-100" : "opacity-0"
         }`}
         onClick={() => !isLoading && onCancel()}
       />
       <div
-        className={`relative bg-surface border border-border text-text-primary rounded-2xl shadow-2xl w-full max-w-md p-6 transform transition-all duration-200 ${
+        className={`relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 transform transition-all duration-200 ${
           show ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-2"
         }`}
       >
@@ -117,39 +117,39 @@ export function ConfirmModal({
             <AppIcon name={tokens.iconName} size={24} className={` ${tokens.iconColor} `} />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 id="confirm-modal-title" className="text-lg font-bold text-text-primary leading-tight">
+            <h3 id="confirm-modal-title" className="text-lg font-bold text-slate-900 leading-tight">
               {title}
             </h3>
             <p
               id="confirm-modal-description"
-              className="text-sm text-text-secondary mt-1.5 leading-relaxed break-words"
+              className="text-sm text-slate-600 mt-1.5 leading-relaxed break-words"
             >
               {message}
             </p>
             {itemName && (
-              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-lg border border-border bg-surface-muted px-3 py-1.5">
-                <AppIcon name="Label" size={15} className="text-text-muted" />
-                <span className="text-[13px] font-semibold text-text-primary truncate">{itemName}</span>
+              <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5">
+                <AppIcon name="Label" size={15} className="text-slate-400" />
+                <span className="text-[13px] font-semibold text-slate-700 truncate">{itemName}</span>
               </div>
             )}
             {note && (
-              <p className="mt-3 text-xs text-text-muted leading-relaxed">{note}</p>
+              <p className="mt-3 text-xs text-slate-400 leading-relaxed">{note}</p>
             )}
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-border">
+        <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-slate-100">
           <button
             onClick={onCancel}
             disabled={isLoading}
-            className="px-4 py-2.5 text-sm font-semibold text-text-secondary bg-surface-muted hover:bg-surface-hover hover:text-text-primary rounded-xl transition-colors disabled:opacity-50 border border-border/60"
+            className="px-4 py-2.5 text-sm font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors disabled:opacity-50"
           >
             {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed ${tokens.button}`}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed ${tokens.button}`}
           >
             {isLoading && (
               <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />

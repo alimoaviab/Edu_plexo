@@ -26,38 +26,10 @@ export function clearStoredSession() {
   localStorage.removeItem('sa_user')
 }
 
-// In-flight request deduplication map for idempotent GET requests.
-const inFlightRequests = new Map<string, Promise<{ ok: boolean; data?: any; message?: string; error?: any }>>();
-
 export async function apiRequest<T = any>(
   url: string,
   options: RequestInit = {}
 ): Promise<{ ok: boolean; data?: T; message?: string; error?: any }> {
-  const method = (options.method || 'GET').toUpperCase();
-  const isGet = method === 'GET' || method === 'HEAD';
-  const dedupKey = isGet ? `${method}:${resolveUrl(url)}` : null;
-
-  if (dedupKey && inFlightRequests.has(dedupKey)) {
-    return inFlightRequests.get(dedupKey)! as Promise<{ ok: boolean; data?: T; message?: string; error?: any }>;
-  }
-
-  const executionPromise = executeApiRequest<T>(url, options);
-
-  if (dedupKey) {
-    inFlightRequests.set(dedupKey, executionPromise);
-    executionPromise.finally(() => {
-      inFlightRequests.delete(dedupKey);
-    });
-  }
-
-  return executionPromise;
-}
-
-async function executeApiRequest<T = any>(
-  url: string,
-  options: RequestInit = {}
-): Promise<{ ok: boolean; data?: T; message?: string; error?: any }> {
-
   try {
     const res = await fetch(resolveUrl(url), {
       ...options,
