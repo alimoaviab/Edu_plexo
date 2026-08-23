@@ -1,8 +1,7 @@
 /**
- * Mobile signup — sends the same JSON body shape as the web signup so the
- * Go backend handler stays unchanged. Mobile keeps the form lighter than
- * desktop: account fields up front, institution profile only when the
- * Admin tab is selected.
+ * Mobile signup — streamlined owner account / institution registration.
+ * Role selection bar is removed; account creation registers the school owner
+ * and institution directly.
  */
 
 import { useState } from 'react';
@@ -19,40 +18,34 @@ import {
 import { useRouter } from 'expo-router';
 
 import { api } from '@/api/client';
-import { RoleTabs } from '@/components/auth/RoleTabs';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Input';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
-import type { LoginRole } from '@/types/auth';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
 interface SignupForm {
   fullName: string;
   email: string;
+  phone: string;
+  schoolName: string;
   password: string;
   confirmPassword: string;
-  phone: string;
-  schoolCode: string;
-  schoolName: string;
-  principalName: string;
-  city: string;
 }
 
 const initial: SignupForm = {
   fullName: '',
   email: '',
+  phone: '',
+  schoolName: '',
   password: '',
   confirmPassword: '',
-  phone: '',
-  schoolCode: '',
-  schoolName: '',
-  principalName: '',
-  city: '',
 };
 
 export default function SignupScreen() {
   const router = useRouter();
-  const [role, setRole] = useState<LoginRole>('admin');
   const [form, setForm] = useState<SignupForm>(initial);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -62,57 +55,50 @@ export default function SignupScreen() {
     if (error) setError(null);
   }
 
-  async function handleSubmit() {
+  function validate(): string | null {
+    if (!form.fullName.trim()) return 'Full legal name is required.';
+    if (!form.email.trim()) return 'Email address is required.';
+    if (!EMAIL_REGEX.test(form.email.trim())) return 'Please enter a valid email address.';
+    if (!form.phone.trim()) return 'Phone number is required.';
+    if (!form.password) return 'Password is required.';
+    if (!PASSWORD_REGEX.test(form.password)) {
+      return 'Password must be at least 8 characters long with uppercase, lowercase, number, and special character (@$!%*?&).';
+    }
     if (form.password !== form.confirmPassword) {
-      setError('Passwords do not match.');
-      return;
+      return 'Passwords do not match.';
     }
-    if (role === 'admin' && (!form.schoolName || !form.principalName || !form.city)) {
-      setError('School name, principal, and city are required for admin signup.');
-      return;
-    }
-    if (role !== 'admin' && !form.schoolCode) {
-      setError('Enter the access code your school provided.');
+    return null;
+  }
+
+  async function handleSubmit() {
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
     setLoading(true);
     setError(null);
 
-    const body =
-      role === 'admin'
-        ? {
-            fullName: form.fullName,
-            email: form.email,
-            password: form.password,
-            confirmPassword: form.confirmPassword,
-            phone: form.phone,
-            role,
-            schoolName: form.schoolName,
-            principalName: form.principalName,
-            city: form.city,
-          }
-        : {
-            fullName: form.fullName,
-            email: form.email,
-            password: form.password,
-            confirmPassword: form.confirmPassword,
-            phone: form.phone,
-            role,
-            schoolCode: form.schoolCode,
-          };
+    const body = {
+      fullName: form.fullName.trim(),
+      email: form.email.trim().toLowerCase(),
+      phone: form.phone.trim(),
+      schoolName: form.schoolName.trim() || `${form.fullName.trim()}'s Institution`,
+      password: form.password,
+      confirmPassword: form.confirmPassword,
+      role: 'owner',
+    };
 
     const result = await api.post<{ ok: boolean }>('/auth/signup', body);
     setLoading(false);
 
     if (!result.ok) {
-      setError(result.message ?? "We couldn't create your account.");
+      setError(result.message ?? "We couldn't create your account. Please check your details.");
       return;
     }
     router.replace('/(auth)/login');
   }
-
-  const isAdmin = role === 'admin';
 
   return (
     <KeyboardAvoidingView
@@ -134,26 +120,28 @@ export default function SignupScreen() {
               />
             </View>
             <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>JOIN THE EDUPLEXO NETWORK</Text>
+            <Text style={styles.subtitle}>REGISTER YOUR INSTITUTION</Text>
           </View>
-
-          <RoleTabs value={role} onChange={setRole} />
 
           <View style={styles.form}>
             <Input
               label="FULL LEGAL NAME"
-              placeholder="Johnathan Doe"
+              placeholder="Aisha Khan"
               value={form.fullName}
               onChangeText={(v) => update('fullName', v)}
               autoCapitalize="words"
+              autoComplete="name"
+              textContentType="name"
             />
             <Input
               label="WORK EMAIL"
-              placeholder="name@school.com"
+              placeholder="owner@school.com"
               value={form.email}
               onChangeText={(v) => update('email', v)}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
+              textContentType="emailAddress"
             />
             <Input
               label="PHONE NUMBER"
@@ -161,6 +149,14 @@ export default function SignupScreen() {
               value={form.phone}
               onChangeText={(v) => update('phone', v)}
               keyboardType="phone-pad"
+              autoComplete="tel"
+              textContentType="telephoneNumber"
+            />
+            <Input
+              label="SCHOOL / INSTITUTION NAME"
+              placeholder="Eduplexo Academy (Optional)"
+              value={form.schoolName}
+              onChangeText={(v) => update('schoolName', v)}
             />
             <Input
               label="PASSWORD"
@@ -168,6 +164,8 @@ export default function SignupScreen() {
               value={form.password}
               onChangeText={(v) => update('password', v)}
               passwordToggle
+              autoComplete="password-new"
+              textContentType="newPassword"
             />
             <Input
               label="CONFIRM PASSWORD"
@@ -175,38 +173,9 @@ export default function SignupScreen() {
               value={form.confirmPassword}
               onChangeText={(v) => update('confirmPassword', v)}
               passwordToggle
+              autoComplete="password-new"
+              textContentType="newPassword"
             />
-
-            {!isAdmin ? (
-              <Input
-                label="ACCESS CODE"
-                placeholder="SCH-XXXX"
-                value={form.schoolCode}
-                onChangeText={(v) => update('schoolCode', v.toUpperCase())}
-                autoCapitalize="characters"
-              />
-            ) : (
-              <>
-                <Input
-                  label="SCHOOL / INSTITUTION NAME"
-                  placeholder="Eduplexo Academy"
-                  value={form.schoolName}
-                  onChangeText={(v) => update('schoolName', v)}
-                />
-                <Input
-                  label="PRINCIPAL NAME"
-                  placeholder="Dr. Aisha Khan"
-                  value={form.principalName}
-                  onChangeText={(v) => update('principalName', v)}
-                />
-                <Input
-                  label="CITY"
-                  placeholder="Karachi"
-                  value={form.city}
-                  onChangeText={(v) => update('city', v)}
-                />
-              </>
-            )}
 
             {error ? (
               <View style={styles.errorBox}>
@@ -216,7 +185,7 @@ export default function SignupScreen() {
             ) : null}
 
             <Button
-              label={loading ? 'Creating…' : 'Register Profile'}
+              label={loading ? 'Creating Account…' : 'Create Account'}
               onPress={handleSubmit}
               loading={loading}
               size="lg"
