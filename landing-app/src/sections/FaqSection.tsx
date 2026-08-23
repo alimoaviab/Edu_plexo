@@ -57,7 +57,7 @@ export const FaqSection = () => {
   ];
 
   return (
-    <section id="faq" className="py-24 bg-white" aria-labelledby="faq-heading">
+    <section id="faq" className="py-24 bg-white dark:bg-slate-900/40 transition-colors duration-300" aria-labelledby="faq-heading">
       <div className="max-w-4xl mx-auto px-6">
         <div className="text-center mb-16">
           <motion.h2
@@ -65,7 +65,7 @@ export const FaqSection = () => {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
-            className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight"
+            className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-4 tracking-tight"
           >
             Frequently Asked Questions About EduPlexo
           </motion.h2>
@@ -74,7 +74,7 @@ export const FaqSection = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ delay: 0.1 }}
-            className="text-lg text-slate-600 font-medium"
+            className="text-lg text-slate-600 dark:text-slate-300 font-medium"
           >
             Everything you need to know about our school management system and school ERP platform.
           </motion.p>
@@ -90,15 +90,15 @@ export const FaqSection = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ delay: index * 0.05 }}
-                className="bg-slate-50 rounded-2xl border border-slate-200/60 overflow-hidden"
+                className="bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 overflow-hidden"
               >
                 <button
                   onClick={() => setExpandedIndex(isExpanded ? null : index)}
                   className="w-full flex items-center justify-between p-6 text-left"
                   aria-expanded={isExpanded}
                 >
-                  <span className="text-lg font-bold text-slate-900 pr-4">{faq.question}</span>
-                  <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-colors duration-300 ${isExpanded ? 'bg-slate-900 text-white' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                  <span className="text-lg font-bold text-slate-900 dark:text-white pr-4">{faq.question}</span>
+                  <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full transition-colors duration-300 ${isExpanded ? 'bg-slate-900 dark:bg-sky-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
                      <AppIcon name="ChevronDown" className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
@@ -110,7 +110,7 @@ export const FaqSection = () => {
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }}
                     >
-                      <div className="px-6 pb-6 pt-2 text-slate-600 leading-relaxed font-medium">
+                      <div className="px-6 pb-6 pt-2 text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                         {faq.answer}
                       </div>
                     </motion.div>

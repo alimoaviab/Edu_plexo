@@ -7,7 +7,7 @@ import { SIGNUP_URL } from "@/lib/config";
 
 export const CtaSection = () => {
   return (
-    <section className="py-24 bg-white relative overflow-hidden" aria-labelledby="cta-heading">
+    <section className="py-24 bg-white dark:bg-slate-950 relative overflow-hidden transition-colors duration-300" aria-labelledby="cta-heading">
       <div className="max-w-6xl mx-auto px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}

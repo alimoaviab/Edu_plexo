@@ -96,7 +96,7 @@ export function BlogIndexPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans transition-colors duration-300">
       <Seo
         title="EduPlexo Blog — School Management System Insights & Guides"
         description="Read the latest insights, guides, and trends about school management systems, school ERP, education technology, and AI in education from EduPlexo experts."
@@ -108,15 +108,15 @@ export function BlogIndexPage() {
       <Navbar />
 
       <header className="relative pt-32 pb-16 md:pt-40 md:pb-24 overflow-hidden">
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-100/60 via-slate-50 to-slate-50" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-100/60 dark:from-sky-950/40 via-slate-50 dark:via-slate-950 to-slate-50 dark:to-slate-950" />
         <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-blue-600 mb-5">
+          <p className="text-xs font-semibold tracking-[0.2em] uppercase text-blue-600 dark:text-sky-400 mb-5">
             EduPlexo Blog
           </p>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
-            Insights for <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Modern Schools</span>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Insights for <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400">Modern Schools</span>
           </h1>
-          <p className="mt-6 text-lg md:text-xl text-slate-600 leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-6 text-lg md:text-xl text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl mx-auto">
             Expert guides, industry insights, and practical tips for school administrators, teachers, and education technology leaders.
           </p>
         </div>
@@ -131,9 +131,9 @@ export function BlogIndexPage() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-50px' }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
-              className="bg-white rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col"
             >
-              <div className="h-48 bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center overflow-hidden">
+              <div className="h-48 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center overflow-hidden">
                 <img
                   src={`/blog/${post.slug}.png`}
                   alt={post.title}
@@ -143,26 +143,26 @@ export function BlogIndexPage() {
               </div>
               <div className="p-6 flex flex-col flex-1">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                  <span className="text-xs font-semibold text-blue-600 dark:text-sky-400 bg-blue-50 dark:bg-sky-950/50 px-2 py-1 rounded-full">
                     {post.category}
                   </span>
                 </div>
                 <Link to={`/blog/${post.slug}`} className="block">
-                  <h2 className="text-xl font-bold text-slate-900 mb-3 hover:text-blue-600 transition-colors line-clamp-2">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-3 hover:text-blue-600 dark:hover:text-sky-400 transition-colors line-clamp-2">
                     {post.title}
                   </h2>
                 </Link>
-                <p className="text-slate-600 text-sm leading-relaxed mb-4 flex-1 line-clamp-3">
+                <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4 flex-1 line-clamp-3">
                   {post.excerpt}
                 </p>
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-sky-950 flex items-center justify-center text-blue-700 dark:text-sky-300 text-xs font-bold">
                       {post.author.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div>
-                      <div className="text-xs font-semibold text-slate-900">{post.author}</div>
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <div className="text-xs font-semibold text-slate-900 dark:text-white">{post.author}</div>
+                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                         <AppIcon name="Calendar" className="w-3 h-3" />
                         {post.date}
                       </div>
@@ -170,7 +170,7 @@ export function BlogIndexPage() {
                   </div>
                   <Link
                     to={`/blog/${post.slug}`}
-                    className="text-blue-600 hover:text-blue-700 transition-colors"
+                    className="text-blue-600 dark:text-sky-400 hover:text-blue-700 dark:hover:text-sky-300 transition-colors"
                   >
                     <AppIcon name="ArrowRight" className="w-4 h-4" />
                   </Link>
@@ -184,7 +184,7 @@ export function BlogIndexPage() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-16 text-center bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-12 md:p-16"
+          className="mt-16 text-center bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 dark:from-slate-900 dark:to-slate-950 rounded-3xl p-12 md:p-16 border border-slate-800"
         >
           <h2 className="text-3xl font-extrabold text-white mb-4">Ready to Transform Your School?</h2>
           <p className="text-slate-400 text-lg mb-8 max-w-xl mx-auto">
@@ -192,7 +192,7 @@ export function BlogIndexPage() {
           </p>
           <a
             href="/book-demo"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-full font-semibold shadow-lg hover:bg-blue-700 hover:-translate-y-1 transition-all"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 dark:bg-sky-500 text-white rounded-full font-semibold shadow-lg hover:bg-blue-700 dark:hover:bg-sky-400 hover:-translate-y-1 transition-all"
           >
             Book a Demo <AppIcon name="ArrowRight" className="w-4 h-4" />
           </a>
