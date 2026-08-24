@@ -39,6 +39,7 @@ func EnsureSchoolDefaults(s *MemStore) {
 	var created int
 
 	// Run all feature provisioners
+	created += ensureDefaultCampus(s, schoolIDs)
 	created += ensureSchoolSettings(s, schoolIDs)
 	created += ensureDefaultAcademicYear(s, schoolIDs)
 	created += ensureGlobalBoards(s)
@@ -49,6 +50,37 @@ func EnsureSchoolDefaults(s *MemStore) {
 	if created > 0 {
 		log.Printf("[defaults] provisioned %d default records for %d schools", created, len(schoolIDs))
 	}
+}
+
+// ensureDefaultCampus ensures every school has at least one campus. Schools
+// created before campuses were auto-provisioned (old signup flow) may have
+// none, which breaks campus-scoped forms and queries.
+func ensureDefaultCampus(s *MemStore, schoolIDs []string) int {
+	existing := make(map[string]bool, len(s.Campuses))
+	for _, c := range s.Campuses {
+		existing[c.SchoolID] = true
+	}
+
+	created := 0
+	now := time.Now()
+	for _, sid := range schoolIDs {
+		if existing[sid] {
+			continue
+		}
+		s.Campuses = append(s.Campuses, &Campus{
+			ID:        NewID("cmp"),
+			SchoolID:  sid,
+			Name:      "Main Campus",
+			Code:      "MAIN",
+			Status:    "active",
+			Timezone:  "Asia/Karachi",
+			Currency:  "PKR",
+			CreatedAt: now,
+			UpdatedAt: now,
+		})
+		created++
+	}
+	return created
 }
 
 // ensureSchoolSettings ensures every school has a SchoolSettings record.

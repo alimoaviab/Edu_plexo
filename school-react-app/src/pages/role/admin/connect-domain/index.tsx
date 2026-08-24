@@ -5,7 +5,6 @@ import { SchoolShell } from "@/layouts/SchoolShell";
 export function ConnectDomainPage() {
   const [formData, setFormData] = useState({
     domain: "",
-    serverIP: "",
     email: "",
   });
   const [loading, setLoading] = useState(false);
@@ -36,7 +35,6 @@ export function ConnectDomainPage() {
         // Reset form on success
         setFormData({
           domain: "",
-          serverIP: "",
           email: "",
         });
       }
@@ -130,30 +128,6 @@ export function ConnectDomainPage() {
                 Enter your domain without http:// or https:// (e.g., myschool.com)
               </p>
             </div>
-
-            {/* Server IP Input - Commented out as requested
-            <div>
-              <label htmlFor="serverIP" className="block text-sm font-semibold text-slate-700 mb-2">
-                Server IP Address <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <AppIcon name="Database" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  id="serverIP"
-                  name="serverIP"
-                  value={formData.serverIP}
-                  onChange={handleChange}
-                  placeholder="192.168.1.1"
-                  required
-                  className="w-full rounded-lg border border-slate-300 bg-white px-10 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
-              <p className="mt-1.5 text-xs text-slate-500">
-                The IP address where your application is hosted
-              </p>
-            </div>
-            */}
 
             {/* Email Input */}
             <div>

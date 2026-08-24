@@ -25,7 +25,7 @@ ENV VITE_APP_URL=$APP_URL
 RUN npm run build
 
 # ──────────────────────────────────────────────────────────────────────────
-FROM nginx:1.27-alpine
+FROM public.ecr.aws/docker/library/nginx:1.27-alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf

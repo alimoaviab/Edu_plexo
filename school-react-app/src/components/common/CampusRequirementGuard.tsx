@@ -64,12 +64,34 @@ export function CampusRequirementGuard({
     );
   }
 
-  // The Campus Check block has been removed as per user request.
+  // The hard Campus Check block was removed as per user request.
+  // Legacy schools created before campuses were auto-provisioned may still
+  // have none — show a non-blocking warning instead of blocking the page.
 
   const effectiveCampusId = selectedCampusId || activeCampusId;
 
   return (
     <div className="space-y-4">
+      {showCampusSelect && campuses.length === 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <AppIcon name="GitBranch" size={16} className="text-amber-600" />
+            <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wide">
+              No campus configured
+            </span>
+          </div>
+          <p className="text-xs font-medium text-amber-800/90">
+            This school has no campus yet. New records may fail to save until a campus is added.
+          </p>
+          <Button
+            variant="secondary"
+            className="mt-3"
+            onClick={() => navigate(rolePath("/admin/connect-domain") || "/owner/schools")}
+          >
+            Manage / Add Campus
+          </Button>
+        </div>
+      )}
       {showCampusSelect && campuses.length > 1 && (
         <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

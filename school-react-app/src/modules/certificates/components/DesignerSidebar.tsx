@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { fabric } from "fabric";
 import { useTemplateStore } from "../store/templateStore";
 import { TEMPLATE_LIBRARY } from "../utils/templatesLibrary";
 import { CERTIFICATE_VARIABLES } from "../types/certificate.types";
@@ -10,7 +11,6 @@ export function DesignerSidebar() {
 
   const handleAddText = (content: string = "Heading Text", options: any = {}) => {
     if (!canvas) return;
-    // @ts-ignore
     const text = new fabric.IText(content, {
       left: 100,
       top: 100,

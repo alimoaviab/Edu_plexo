@@ -20,6 +20,7 @@ import {
   BookOpen,
   Bot,
   Brain,
+  Braces,
   Building,
   Building2,
   Calendar,
@@ -45,6 +46,7 @@ import {
   Coffee,
   Copy,
   CreditCard,
+  Crown,
   Database,
   DoorOpen,
   Download,
@@ -59,6 +61,7 @@ import {
   Filter,
   FilterX,
   FlaskConical,
+  FolderEdit,
   Gauge,
   Gavel,
   GitBranch,
@@ -77,6 +80,7 @@ import {
   Layers,
   LayoutDashboard,
   LayoutGrid,
+  LayoutTemplate,
   Library,
   Lightbulb,
   Link,
@@ -89,6 +93,7 @@ import {
   LogIn,
   LogOut,
   Mail,
+  Magnet,
   MapPin,
   Megaphone,
   Menu,
@@ -124,6 +129,7 @@ import {
   Send,
   Settings,
   Settings2,
+  Shapes,
   Shield,
   ShieldAlert,
   ShieldCheck,
@@ -194,6 +200,7 @@ const iconRegistry = {
   BookOpen,
   Bot,
   Brain,
+  Braces,
   Building,
   Building2,
   Calendar,
@@ -219,6 +226,7 @@ const iconRegistry = {
   Coffee,
   Copy,
   CreditCard,
+  Crown,
   Database,
   DoorOpen,
   Download,
@@ -233,6 +241,7 @@ const iconRegistry = {
   Filter,
   FilterX,
   FlaskConical,
+  FolderEdit,
   Gauge,
   Gavel,
   GitBranch,
@@ -251,6 +260,7 @@ const iconRegistry = {
   Layers,
   LayoutDashboard,
   LayoutGrid,
+  LayoutTemplate,
   Library,
   Lightbulb,
   Link,
@@ -263,6 +273,7 @@ const iconRegistry = {
   LogIn,
   LogOut,
   Mail,
+  Magnet,
   MapPin,
   Megaphone,
   Menu,
@@ -298,6 +309,7 @@ const iconRegistry = {
   Send,
   Settings,
   Settings2,
+  Shapes,
   Shield,
   ShieldAlert,
   ShieldCheck,
@@ -675,7 +687,7 @@ const getIconTheme = (name: string): IconColorTheme => {
   if (n.includes("fee") || n.includes("receipt") || n.includes("payment") || n.includes("wallet") || n.includes("bank") || n.includes("landmark")) return colorThemes.purple;
   if (n.includes("conversation") || n.includes("message") || n.includes("chat") || n.includes("mail")) return colorThemes.cyan;
   if (n.includes("setting") || n.includes("slider") || n.includes("cog")) return colorThemes.slate;
-  if (n.includes("delete") || n.includes("trash") || n.includes("x")) return colorThemes.red;
+  if (n.includes("delete") || n.includes("trash") || n === "x" || n === "xcircle") return colorThemes.red;
   if (n.includes("edit") || n.includes("pen") || n.includes("update")) return colorThemes.amber;
   if (n.includes("add") || n.includes("plus") || n.includes("new")) return colorThemes.emerald;
   if (n.includes("search") || n.includes("filter")) return colorThemes.slate;
@@ -708,7 +720,8 @@ export function AppIcon({
   }
 
   const isExplicitlyWhite = className.includes("text-white") || className.includes("text-slate-50") || className.includes("text-[#");
-  const isExplicitlyColored = className.includes("text-blue-") || className.includes("text-green-") || className.includes("text-red-") || className.includes("text-amber-") || className.includes("text-indigo-") || className.includes("text-emerald-") || className.includes("text-rose-");
+  // Any explicit Tailwind text color (e.g. text-purple-600, text-cyan-400) opts out of auto-theming.
+  const isExplicitlyColored = /\btext-(?:blue|green|red|amber|indigo|emerald|rose|purple|pink|cyan|teal|orange|yellow|fuchsia|violet|slate)-[0-9]{2,3}\b/.test(className);
 
   let activeClassName = className;
 

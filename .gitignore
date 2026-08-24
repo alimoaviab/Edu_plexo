@@ -48,3 +48,9 @@ yarn-error.log*
 # Docker
 .docker/
 
+# Large binaries / release artifacts (keep locally, don't commit)
+*.apk
+
+# Build artifacts
+*.tsbuildinfo
+

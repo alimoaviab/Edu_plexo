@@ -448,7 +448,12 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 
 		h.Persist("users", newUser)
 
-		message := "Your owner account is active. Redirecting to dashboard..."
+		var message string
+		if role == "owner" {
+			message = "Your owner account is active. Redirecting to dashboard..."
+		} else {
+			message = "Your admin account is active. Redirecting to dashboard..."
+		}
 
 		claims := authpkg.Claims{
 			SchoolID:             "system",
