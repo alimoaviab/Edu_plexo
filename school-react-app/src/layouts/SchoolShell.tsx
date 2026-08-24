@@ -679,7 +679,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
                     to={item.href}
                     className={`group flex h-7 items-center gap-2.5 px-2.5 py-1 text-[10px] font-extrabold transition-all duration-200 rounded-lg ${isActive ? "bg-primary !text-white shadow-md shadow-primary/20" : "text-text-secondary hover:bg-surface-hover hover:text-primary"}`}
                   >
-                    <AppIcon name={item.icon} size={16} className={` text-[16px] transition-colors ${isActive ? "text-white" : "text-text-muted group-hover:text-primary"} `} />
+                    <AppIcon name={item.icon} size={16} className={` text-[16px] transition-colors ${isActive ? "text-white" : ""} `} />
                     <span className="truncate tracking-tight font-extrabold">{item.label}</span>
                     {isActive && !isCollapsed && <span className="ml-auto h-1 w-1 rounded-full bg-white/60" />}
                   </Link>

@@ -4,7 +4,9 @@ import { AppIcon } from "shared/ui/AppIcon";
 import { StatCardCompact, Skeleton, DataState, EntityCard, EntityGrid, ConfirmModal } from "@/components/ui";
 import { useCertificateTemplates } from "@/modules/certificates/hooks/useCertificates";
 import { CERTIFICATE_TYPE_LABELS, type CertificateTemplate } from "@/modules/certificates/types/certificate.types";
-import { FileText, Plus, Search, Sparkles, Layers, CreditCard, Award, HelpCircle } from "lucide-react";
+import { TEMPLATE_LIBRARY } from "@/modules/certificates/utils/templatesLibrary";
+import { TemplateThumbnail } from "@/modules/certificates/components/TemplateThumbnail";
+
 import { useRolePath } from "@/hooks/useRolePath";
 
 type TemplateFilterTab = "all" | "certificates" | "fees" | "results" | "admission";
@@ -71,7 +73,7 @@ export function TemplateHubPage() {
           onClick={() => roleNavigate("/admin/templates/create")}
           className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-blue-600 text-white text-xs font-bold shadow-md shadow-blue-600/10 hover:bg-blue-700 transition-colors"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <AppIcon name="Plus" className="w-3.5 h-3.5" />
           Create Template
         </button>
       </div>
@@ -91,7 +93,7 @@ export function TemplateHubPage() {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shrink-0 shadow-md shadow-blue-600/10">
-            <Sparkles className="w-5 h-5" />
+            <AppIcon name="Sparkles" className="w-5 h-5" />
           </div>
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -106,7 +108,7 @@ export function TemplateHubPage() {
         <div className="flex items-center gap-2 flex-wrap">
           {/* Search bar */}
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <AppIcon name="Search" className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -150,6 +152,50 @@ export function TemplateHubPage() {
           ))}
         </div>
       )}
+
+      {/* Premium Pre-built Templates */}
+      <div className="mt-8 mb-6">
+        <div className="flex items-center gap-2 mb-4">
+          <AppIcon name="Crown" className="text-amber-500" size={20} />
+          <h2 className="text-lg font-bold text-slate-900">Premium Pre-built Templates</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {TEMPLATE_LIBRARY.filter(t => 
+             (tab === "all") || 
+             (tab === "certificates" && t.category === "Certificates") ||
+             (tab === "fees" && t.category === "Fee Challans") ||
+             (tab === "results" && t.category === "Result Cards") ||
+             (tab === "admission" && t.category === "Admission Forms")
+          ).map(template => (
+            <div key={template.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md hover:border-blue-400 transition-all group flex flex-col">
+              <div className="aspect-[1.414] bg-slate-50 border-b border-slate-200 relative overflow-hidden flex items-center justify-center p-3">
+                <div className="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors z-10" />
+                
+                {/* Live scaled render of the template */}
+                <TemplateThumbnail fabricData={template.fabricData} category={template.category} />
+
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity z-20 flex flex-col items-center justify-center gap-2 backdrop-blur-sm">
+                  <button 
+                    onClick={() => roleNavigate(`/admin/templates/create?preset=${template.id}`)}
+                    className="px-3 py-1.5 bg-white text-slate-900 text-xs font-bold rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors shadow-sm"
+                  >
+                    Use Template
+                  </button>
+                </div>
+              </div>
+              <div className="p-3">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block mb-1">{template.category}</span>
+                <h3 className="text-xs font-bold text-slate-800 line-clamp-1">{template.name}</h3>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 mb-4 mt-8">
+        <AppIcon name="FolderEdit" className="text-blue-500" size={20} />
+        <h2 className="text-lg font-bold text-slate-900">Your Custom Templates</h2>
+      </div>
 
       {/* Templates List */}
       {!isLoading && (

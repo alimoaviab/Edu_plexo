@@ -4,6 +4,8 @@ import { useTemplateStore, type TemplateType } from "../store/templateStore";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { BulkGeneratorModal } from "./BulkGeneratorModal";
 import { ASSETS_CATALOG, type AssetMetadata } from "../utils/assetsLibrary";
+import { DesignerSidebar } from "./DesignerSidebar";
+import { DesignerToolbar } from "./DesignerToolbar";
 import {
   Undo,
   Redo,

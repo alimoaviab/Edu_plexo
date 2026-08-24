@@ -162,11 +162,13 @@ export default function OwnerSchoolsPage() {
       </div>
 
       {/* ────────────────────────────────────────────────────────────────────────── */}
-      {/* CAMPUS DETAILS MODAL */}
+      {/* CAMPUS DETAILS DRAWER */}
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {selectedSchool && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-6 md:p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100 space-y-6">
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md md:max-w-2xl h-full shadow-2xl border-l border-slate-100 flex flex-col animate-in slide-in-from-right duration-300">
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
             
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-4">
@@ -211,72 +213,78 @@ export default function OwnerSchoolsPage() {
               </div>
             </div>
 
-            {/* Admin Credentials Card */}
-            <div className="p-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl shadow-md space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-blue-600/30 flex items-center justify-center text-blue-400">
-                    <AppIcon name="Key" size={18} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white">School Admin Login Credentials</h3>
-                    <p className="text-[11px] text-slate-400">Use these credentials to sign in as Administrator for this campus.</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleImpersonate(selectedSchool.school_id)}
-                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5"
-                >
-                  <AppIcon name="Login" size={14} />
-                  Login as Admin
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                {/* Email Box */}
-                <div className="bg-slate-800/90 border border-slate-700 p-3 rounded-xl flex items-center justify-between">
-                  <div>
-                    <span className="text-slate-400 block font-medium">Admin Email</span>
-                    <span className="font-bold text-white text-sm select-all mt-0.5 block">
-                      {selectedSchool.admin_email || selectedSchool.email || "admin@school.com"}
-                    </span>
-                  </div>
-                  <button 
-                    onClick={() => copyToClipboard(selectedSchool.admin_email || selectedSchool.email || "admin@school.com", "Admin Email")}
-                    className="p-2 text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
-                    title="Copy Email"
-                  >
-                    <AppIcon name="Copy" size={16} />
-                  </button>
-                </div>
-
-                {/* Password Box */}
-                <div className="bg-slate-800/90 border border-slate-700 p-3 rounded-xl flex items-center justify-between">
-                  <div>
-                    <span className="text-slate-400 block font-medium">Admin Password</span>
-                    <span className="font-mono font-bold text-emerald-400 text-sm select-all mt-0.5 block">
-                      {showPassword ? (selectedSchool.admin_password || "Test@123") : "••••••••••••"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button 
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="p-2 text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
-                      title={showPassword ? "Hide Password" : "Show Password"}
+            {/* Credentials Card */}
+            {(() => {
+              const credRole = selectedSchool.admin_role || "admin";
+              const credRoleLabel = credRole === "super_admin" ? "Super Admin" : credRole === "school_admin" ? "School Admin" : credRole.charAt(0).toUpperCase() + credRole.slice(1);
+              return (
+                <div className="p-5 bg-white border border-slate-200 text-slate-900 rounded-2xl shadow-sm space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+                        <AppIcon name="Key" size={18} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900">{credRoleLabel} Login Credentials</h3>
+                        <p className="text-[11px] text-slate-500">Use these credentials to sign in as {credRoleLabel} for this campus.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleImpersonate(selectedSchool.school_id)}
+                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5"
                     >
-                      <AppIcon name={showPassword ? "EyeOff" : "Eye"} size={16} />
-                    </button>
-                    <button 
-                      onClick={() => copyToClipboard(selectedSchool.admin_password || "Test@123", "Admin Password")}
-                      className="p-2 text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors"
-                      title="Copy Password"
-                    >
-                      <AppIcon name="Copy" size={16} />
+                      <AppIcon name="Login" size={14} className="text-white" />
+                      Login as {credRoleLabel}
                     </button>
                   </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    {/* Email Box */}
+                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between">
+                      <div>
+                        <span className="text-slate-500 block font-medium">{credRoleLabel} Email</span>
+                        <span className="font-bold text-slate-900 text-sm select-all mt-0.5 block">
+                          {selectedSchool.admin_email || selectedSchool.email || "owner@school.com"}
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => copyToClipboard(selectedSchool.admin_email || selectedSchool.email || "owner@school.com", `${credRoleLabel} Email`)}
+                        className="p-2 text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
+                        title="Copy Email"
+                      >
+                        <AppIcon name="Copy" size={16} />
+                      </button>
+                    </div>
+
+                    {/* Password Box */}
+                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between">
+                      <div>
+                        <span className="text-slate-500 block font-medium">{credRoleLabel} Password</span>
+                        <span className="font-mono font-bold text-emerald-600 text-sm select-all mt-0.5 block">
+                          {showPassword ? (selectedSchool.admin_password || "Test@123") : "••••••••••••"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button 
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="p-2 text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
+                          title={showPassword ? "Hide Password" : "Show Password"}
+                        >
+                          <AppIcon name={showPassword ? "EyeOff" : "Eye"} size={16} />
+                        </button>
+                        <button 
+                          onClick={() => copyToClipboard(selectedSchool.admin_password || "Test@123", `${credRoleLabel} Password`)}
+                          className="p-2 text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
+                          title="Copy Password"
+                        >
+                          <AppIcon name="Copy" size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
 
             {/* Class Breakdown Table */}
             <div className="space-y-3">
@@ -319,11 +327,12 @@ export default function OwnerSchoolsPage() {
               </div>
             </div>
 
+            </div>
             {/* Footer */}
-            <div className="pt-4 border-t border-slate-100 flex justify-end">
+            <div className="p-4 md:p-6 border-t border-slate-100 flex justify-end bg-white">
               <button 
                 onClick={() => setSelectedSchool(null)}
-                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors"
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-colors"
               >
                 Close
               </button>

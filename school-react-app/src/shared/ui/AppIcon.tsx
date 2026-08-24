@@ -167,6 +167,8 @@ interface Props extends Omit<React.SVGProps<SVGSVGElement>, "name"> {
   name: string;
   size?: number;
   strokeWidth?: number;
+  colorful?: boolean;
+  withContainer?: boolean;
 }
 
 const iconRegistry = {
@@ -621,11 +623,67 @@ export const resolveAppIconName = (name: string): keyof typeof iconRegistry | un
   return undefined;
 };
 
+type IconColorTheme = { text: string; bg: string };
+
+const colorThemes: Record<string, IconColorTheme> = {
+  blue: { text: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/30" },
+  indigo: { text: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-900/30" },
+  purple: { text: "text-purple-600 dark:text-purple-400", bg: "bg-purple-50 dark:bg-purple-900/30" },
+  violet: { text: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-violet-900/30" },
+  pink: { text: "text-pink-600 dark:text-pink-400", bg: "bg-pink-50 dark:bg-pink-900/30" },
+  rose: { text: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/30" },
+  red: { text: "text-red-600 dark:text-red-400", bg: "bg-red-50 dark:bg-red-900/30" },
+  orange: { text: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-orange-900/30" },
+  amber: { text: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/30" },
+  yellow: { text: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50 dark:bg-yellow-900/30" },
+  emerald: { text: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/30" },
+  green: { text: "text-green-600 dark:text-green-400", bg: "bg-green-50 dark:bg-green-900/30" },
+  teal: { text: "text-teal-600 dark:text-teal-400", bg: "bg-teal-50 dark:bg-teal-900/30" },
+  cyan: { text: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-50 dark:bg-cyan-900/30" },
+  slate: { text: "text-slate-600 dark:text-slate-400", bg: "bg-slate-50 dark:bg-slate-900/30" },
+  multicolor: { text: "text-fuchsia-600 dark:text-fuchsia-400", bg: "bg-fuchsia-50 dark:bg-fuchsia-900/30" },
+};
+
+const getIconTheme = (name: string): IconColorTheme => {
+  const n = name.toLowerCase();
+  
+  if (n.includes("dashboard") || n.includes("layout")) return colorThemes.indigo;
+  if (n.includes("school") || n.includes("building") || n.includes("domain") || n.includes("globe")) return colorThemes.cyan;
+  if (n.includes("subscription") || n.includes("card") || n.includes("credit")) return colorThemes.purple;
+  if (n.includes("academic") || n.includes("year")) return colorThemes.violet;
+  if (n.includes("class") || n.includes("book") || n.includes("library") || n.includes("cap")) return colorThemes.orange;
+  if (n.includes("teacher") || n.includes("chalkboard")) return colorThemes.emerald;
+  if (n.includes("student") || n.includes("user")) return colorThemes.blue;
+  if (n.includes("leave") || n.includes("busy") || n.includes("off") || n.includes("minus")) return colorThemes.rose;
+  if (n.includes("behavior") || n.includes("gavel") || n.includes("alert")) return colorThemes.pink;
+  if (n.includes("timetable") || n.includes("schedule") || n.includes("clock") || n.includes("calendar")) return colorThemes.cyan;
+  if (n.includes("attendance") || n.includes("check") || n.includes("fact")) return colorThemes.green;
+  if (n.includes("homework") || n.includes("assignment") || n.includes("file")) return colorThemes.amber;
+  if (n.includes("exam") || n.includes("quiz") || n.includes("help") || n.includes("question")) return colorThemes.purple;
+  if (n.includes("test")) return colorThemes.blue;
+  if (n.includes("result") || n.includes("trophy") || n.includes("award") || n.includes("leaderboard")) return colorThemes.teal;
+  if (n.includes("live") || n.includes("video") || n.includes("cam") || n.includes("tv")) return colorThemes.blue;
+  if (n.includes("announcement") || n.includes("campaign") || n.includes("megaphone") || n.includes("bell") || n.includes("horn")) return colorThemes.orange;
+  if (n.includes("certificate") || n.includes("premium")) return colorThemes.yellow;
+  if (n.includes("template") || n.includes("design") || n.includes("palette") || n.includes("sparkles")) return colorThemes.multicolor;
+  if (n.includes("fee") || n.includes("receipt") || n.includes("payment") || n.includes("wallet") || n.includes("bank") || n.includes("landmark")) return colorThemes.purple;
+  if (n.includes("conversation") || n.includes("message") || n.includes("chat") || n.includes("mail")) return colorThemes.cyan;
+  if (n.includes("setting") || n.includes("slider") || n.includes("cog")) return colorThemes.slate;
+  if (n.includes("delete") || n.includes("trash") || n.includes("x")) return colorThemes.red;
+  if (n.includes("edit") || n.includes("pen") || n.includes("update")) return colorThemes.amber;
+  if (n.includes("add") || n.includes("plus") || n.includes("new")) return colorThemes.emerald;
+  if (n.includes("search") || n.includes("filter")) return colorThemes.slate;
+
+  return colorThemes.slate;
+};
+
 export function AppIcon({
   name,
   size = 20,
   className = "",
   strokeWidth = 2,
+  colorful = true,
+  withContainer = false,
   ...props
 }: Props) {
   if (!name) {
@@ -639,15 +697,39 @@ export function AppIcon({
     if (import.meta.env.DEV) {
       console.warn("Missing icon mapping or Lucide icon:", name);
     }
-    // Render a fallback icon instead of crashing or showing text
     const FallbackIcon = HelpCircle;
     return <FallbackIcon size={size} className={className} strokeWidth={strokeWidth} />;
+  }
+
+  const isExplicitlyWhite = className.includes("text-white") || className.includes("text-slate-50") || className.includes("text-[#");
+  const isExplicitlyColored = className.includes("text-blue-") || className.includes("text-green-") || className.includes("text-red-") || className.includes("text-amber-") || className.includes("text-indigo-") || className.includes("text-emerald-") || className.includes("text-rose-");
+
+  let activeClassName = className;
+
+  if (colorful && !isExplicitlyWhite && !isExplicitlyColored) {
+    const theme = getIconTheme(resolvedName || name);
+    
+    activeClassName = activeClassName
+      .replace(/\btext-slate-[0-9]{3}\b/g, "")
+      .replace(/\btext-text-(muted|secondary|primary)\b/g, "")
+      .replace(/\btext-gray-[0-9]{3}\b/g, "")
+      .trim();
+
+    activeClassName = `${theme.text} ${activeClassName}`.trim();
+    
+    if (withContainer) {
+      return (
+        <div className={`inline-flex items-center justify-center p-2 rounded-lg ${theme.bg}`}>
+          <Icon size={size} className={activeClassName} strokeWidth={strokeWidth} {...props} />
+        </div>
+      );
+    }
   }
 
   return (
     <Icon
       size={size}
-      className={className}
+      className={activeClassName}
       strokeWidth={strokeWidth}
       {...props}
     />

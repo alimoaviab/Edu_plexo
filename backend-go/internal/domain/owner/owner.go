@@ -155,6 +155,7 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 		SubStatus         string      `json:"subscription_status"`
 		AdminEmail        string      `json:"admin_email"`
 		AdminPassword     string      `json:"admin_password"`
+		AdminRole         string      `json:"admin_role"`
 	}
 
 	result := make([]schoolWithStats, 0)
@@ -188,9 +189,11 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 
 		adminEmail := s.Email
 		adminPass := "Test@123"
+		adminRole := "admin"
 		for _, u := range h.Store.Users {
-			if u.SchoolID == s.SchoolID && (u.Role == "admin" || u.Role == "school_admin") {
+			if u.SchoolID == s.SchoolID && (u.Role == "admin" || u.Role == "school_admin" || u.Role == "owner") {
 				adminEmail = u.Email
+				adminRole = u.Role
 				if u.Password != "" {
 					adminPass = u.Password
 				}
@@ -260,6 +263,7 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 			SubStatus:         subStatus,
 			AdminEmail:        adminEmail,
 			AdminPassword:     adminPass,
+			AdminRole:         adminRole,
 		})
 	}
 

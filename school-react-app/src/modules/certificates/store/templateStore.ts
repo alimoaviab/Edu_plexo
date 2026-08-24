@@ -37,6 +37,8 @@ export interface TemplateStore {
   undo: () => void;
   redo: () => void;
   resetHistory: () => void;
+  isPreviewMode: boolean;
+  setIsPreviewMode: (mode: boolean) => void;
 }
 
 export const useTemplateStore = create<TemplateStore>((set, get) => ({
@@ -52,6 +54,8 @@ export const useTemplateStore = create<TemplateStore>((set, get) => ({
   redoStack: [],
   favorites: [],
   recentAssets: [],
+  isPreviewMode: false,
+  setIsPreviewMode: (mode) => set({ isPreviewMode: mode }),
 
   setCanvas: (canvas) => set({ canvas }),
   setZoom: (zoom) => {

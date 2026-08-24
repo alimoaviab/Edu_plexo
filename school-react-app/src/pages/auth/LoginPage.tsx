@@ -11,7 +11,7 @@ import { decodeJwtPayload } from "@/utils/jwt";
 type Role = "owner" | "admin" | "teacher" | "student";
 
 const ROLE_ICONS: Record<Role, React.ReactNode> = {
-  owner: <AppIcon name="Building" size={20} />,
+  owner: <AppIcon name="Building2" size={20} />,
   admin: <AppIcon name="ShieldCheck" size={20} />,
   teacher: <AppIcon name="BookOpen" size={20} />,
   student: <AppIcon name="GraduationCap" size={20} />,

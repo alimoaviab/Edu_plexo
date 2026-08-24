@@ -6,9 +6,13 @@ import { useCertificateTemplates } from "@/modules/certificates/hooks/useCertifi
 import { TemplateDesigner } from "@/modules/certificates/components/TemplateDesigner";
 import { type CertificateTemplate } from "@/modules/certificates/types/certificate.types";
 import { Skeleton } from "@/components/ui";
+import { useSearchParams } from "react-router-dom";
+import { TEMPLATE_LIBRARY } from "@/modules/certificates/utils/templatesLibrary";
 
 export function TemplateDesignerPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const presetId = searchParams.get("preset");
   const navigate = useNavigate();
   const { createTemplate, updateTemplate } = useCertificateTemplates();
   const [saving, setSaving] = useState(false);
@@ -23,6 +27,16 @@ export function TemplateDesignerPage() {
       return result.data;
     });
   }, [id, runTemplate]);
+
+  // Handle Preset Loading
+  const presetTemplate = TEMPLATE_LIBRARY.find(t => t.id === presetId);
+  const synthesizedInitialData = presetTemplate ? {
+    name: presetTemplate.name,
+    type: presetTemplate.type,
+    border_style: JSON.stringify({ canvasJSON: presetTemplate.fabricData })
+  } : undefined;
+
+  const actualInitialData = id ? templateState.data : synthesizedInitialData;
 
   const handleSave = async (data: {
     name: string;
@@ -89,7 +103,7 @@ export function TemplateDesignerPage() {
   return (
     <div className="w-full min-h-screen bg-slate-100">
       <TemplateDesigner
-        initialData={id ? templateState.data : undefined}
+        initialData={actualInitialData}
         onSave={handleSave}
         saving={saving}
       />
