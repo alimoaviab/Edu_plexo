@@ -131,7 +131,7 @@ export function ConnectDomainPage() {
               </p>
             </div>
 
-            {/* Server IP Input */}
+            {/* Server IP Input - Commented out as requested
             <div>
               <label htmlFor="serverIP" className="block text-sm font-semibold text-slate-700 mb-2">
                 Server IP Address <span className="text-red-500">*</span>
@@ -153,6 +153,7 @@ export function ConnectDomainPage() {
                 The IP address where your application is hosted
               </p>
             </div>
+            */}
 
             {/* Email Input */}
             <div>

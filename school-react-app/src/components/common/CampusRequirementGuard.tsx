@@ -64,42 +64,13 @@ export function CampusRequirementGuard({
     );
   }
 
-  // 2. Campus Check: School must have at least 1 campus
-  if (!hasCampuses) {
-    return (
-      <div className="rounded-3xl border border-amber-200 bg-amber-50/50 p-8 shadow-sm text-center max-w-2xl mx-auto my-6">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 mb-4 shadow-sm">
-          <AppIcon name="GitBranch" size={28} />
-        </div>
-        <h3 className="text-lg font-bold text-amber-950 tracking-tight">
-          Campus Required Before Creating {entityName.toUpperCase()}
-        </h3>
-        <p className="mt-2 text-xs font-medium text-amber-800/90 leading-relaxed max-w-md mx-auto">
-          Jab tak school ka campus add na ho, tab tak koi bhi {entityName}, class, ya academic year add nahi kiya ja sakta. Pehle apni school ke liye campus create karein.
-        </p>
-        <div className="mt-6 flex items-center justify-center gap-3">
-          <Button
-            variant="secondary"
-            onClick={() => navigate(-1)}
-          >
-            Go Back
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => navigate(rolePath("/admin/connect-domain") || "/owner/schools")}
-          >
-            Manage / Add Campus
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // The Campus Check block has been removed as per user request.
 
   const effectiveCampusId = selectedCampusId || activeCampusId;
 
   return (
     <div className="space-y-4">
-      {showCampusSelect && campuses.length > 0 && (
+      {showCampusSelect && campuses.length > 1 && (
         <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">

@@ -374,6 +374,33 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:   now,
 	}
 
+	// Create default campus
+	campusID := store.NewID("cmp")
+	newCampus := &store.Campus{
+		ID:        campusID,
+		SchoolID:  schoolID,
+		Name:      "Main Campus",
+		Code:      "MAIN",
+		Status:    "active",
+		Timezone:  "Asia/Karachi",
+		Currency:  "PKR",
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+
+	// Create default school settings
+	newSettings := &store.SchoolSettings{
+		SchoolID: schoolID,
+		Profile: map[string]any{
+			"schoolName":    body.Name,
+			"email":         body.Email,
+			"principalName": body.PrincipalName,
+		},
+		Branding:  map[string]any{},
+		Academic:  map[string]any{"institutionalLevel": "K-12"},
+		UpdatedAt: now,
+	}
+
 	// Create subscription (default 14-day free trial for onboarded campus)
 	trialExpiry := now.AddDate(0, 0, 14)
 	newSub := &store.Subscription{
@@ -390,6 +417,8 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 	h.Store.Schools = append(h.Store.Schools, newSchool)
 	h.Store.AcademicYears = append(h.Store.AcademicYears, newYear)
 	h.Store.OwnerSchools = append(h.Store.OwnerSchools, ownerSchool)
+	h.Store.Campuses = append(h.Store.Campuses, newCampus)
+	h.Store.SchoolSettings = append(h.Store.SchoolSettings, newSettings)
 	h.Store.Subscriptions = append(h.Store.Subscriptions, newSub)
 
 	// Create principal/admin user if credentials provided
@@ -433,6 +462,8 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 		h.Persist("schools", newSchool)
 		h.Persist("academic_years", newYear)
 		h.Persist("owner_schools", ownerSchool)
+		h.Persist("campuses", newCampus)
+		h.Persist("school_settings", newSettings)
 		h.Persist("subscriptions", newSub)
 		if adminUser != nil {
 			h.Persist("users", adminUser)

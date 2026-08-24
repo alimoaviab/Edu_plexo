@@ -49,7 +49,18 @@ export function OwnerSchoolSwitcher() {
       try {
         const res = await serviceRequest<any[]>(`/api/owner/campuses?school_id=${activeSchoolId}`);
         if (res.ok && Array.isArray(res.data)) {
-          setCampuses(res.data);
+          const list = res.data;
+          setCampuses(list);
+          
+          let curBranch = window.localStorage.getItem("active_branch_id") || "";
+          if (!curBranch && list.length > 0) {
+            const first = list[0];
+            curBranch = String(first._id || first.id || "");
+            if (curBranch) {
+              window.localStorage.setItem("active_branch_id", curBranch);
+              setActiveBranchId(curBranch);
+            }
+          }
         } else {
           setCampuses([]);
         }
@@ -101,21 +112,23 @@ export function OwnerSchoolSwitcher() {
       </div>
 
       {/* Branch Selector */}
-      <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 shadow-sm">
-        <AppIcon name="GitBranch" size={14} className="text-emerald-600" />
-        <select
-          value={activeBranchId}
-          onChange={handleBranchSwitch}
-          className="bg-transparent text-[11px] font-bold text-slate-800 outline-none cursor-pointer max-w-[140px] truncate"
-        >
-          <option value="">All Branches</option>
-          {campuses.map((c) => (
-            <option key={c._id || c.id} value={c._id || c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      {campuses.length > 1 && (
+        <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 shadow-sm">
+          <AppIcon name="GitBranch" size={14} className="text-emerald-600" />
+          <select
+            value={activeBranchId}
+            onChange={handleBranchSwitch}
+            className="bg-transparent text-[11px] font-bold text-slate-800 outline-none cursor-pointer max-w-[140px] truncate"
+          >
+            <option value="">All Campuses</option>
+            {campuses.map((c) => (
+              <option key={c._id || c.id} value={c._id || c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }

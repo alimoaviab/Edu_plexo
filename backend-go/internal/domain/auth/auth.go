@@ -16,7 +16,6 @@ import (
 	"github.com/eduplexo/backend-go/internal/api"
 	authpkg "github.com/eduplexo/backend-go/internal/auth"
 	"github.com/eduplexo/backend-go/internal/config"
-	"github.com/eduplexo/backend-go/internal/domain/superadmin"
 	"github.com/eduplexo/backend-go/internal/store"
 )
 
@@ -376,7 +375,6 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	email := strings.ToLower(strings.TrimSpace(body.Email))
 	password := body.Password
 	fullName := strings.TrimSpace(firstNonEmpty(body.AdminName, body.FullName))
-	schoolName := strings.TrimSpace(firstNonEmpty(body.SchoolName, body.SchoolName2))
 	schoolCode := strings.ToUpper(strings.TrimSpace(firstNonEmpty(body.SchoolCode, body.SchoolCode2)))
 
 	if role != "teacher" && role != "student" && role != "parent" && role != "admin" && role != "owner" {
@@ -424,51 +422,12 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 
 	if role == "admin" || role == "owner" {
-		if schoolName == "" {
-			schoolName = fullName + "'s Institution"
-		}
-		schoolID := "SCH-" + strings.ToUpper(randomID()[:8])
-		uniqueCode := h.uniqueSchoolCode(schoolName)
-
-		yearID := store.NewID("ay")
-		year := time.Now().Year()
-
-		campusID := store.NewID("cmp")
-		newCampus := &store.Campus{
-			ID:        campusID,
-			SchoolID:  schoolID,
-			Name:      "Main Campus",
-			Code:      "MAIN",
-			Status:    "active",
-			Timezone:  "Asia/Karachi",
-			Currency:  "PKR",
-			CreatedAt: now,
-			UpdatedAt: now,
-		}
-
-		// Check platform settings for auto-approve behavior
-		settings := superadmin.GetPlatformSettings()
-		var schoolStatus string
-		var approvalStatus string
-		var approvedAt *time.Time
-		var approvedBy string
-
-		if settings.AutoApproveSchools || role == "owner" {
-			schoolStatus = "active"
-			approvalStatus = "approved"
-			approvedAt = &now
-			approvedBy = "auto"
-		} else {
-			schoolStatus = "pending"
-			approvalStatus = "pending"
-			approvedAt = nil
-			approvedBy = ""
-		}
-
+		userID := store.NewID("usr")
+		
 		newUser := &store.User{
-			ID:           store.NewID("usr"),
-			SchoolID:     schoolID,
-			CampusID:     campusID,
+			ID:           userID,
+			SchoolID:     "system",
+			CampusID:     "",
 			Email:        email,
 			PasswordHash: hash,
 			Role:         role,
@@ -483,97 +442,19 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			UpdatedAt: now,
 		}
 
-		newSchool := &store.School{
-			ID:             store.NewID("sch"),
-			SchoolID:       schoolID,
-			OwnerEmail:     email,
-			OwnerUserID:    newUser.ID,
-			Name:           schoolName,
-			Code:           uniqueCode,
-			Email:          email,
-			Phone:          body.Phone,
-			PrincipalName:  fullName,
-			Status:         schoolStatus,
-			ApprovalStatus: approvalStatus,
-			ApprovedAt:     approvedAt,
-			ApprovedBy:     approvedBy,
-			CreatedAt:      now,
-			UpdatedAt:      now,
-		}
-
-		ownerSchool := &store.OwnerSchool{
-			ID:          store.NewID("os"),
-			OwnerUserID: newUser.ID,
-			SchoolID:    schoolID,
-			Role:        "owner",
-			CreatedAt:   now,
-		}
-
-		newYear := &store.AcademicYear{
-			ID:          yearID,
-			SchoolID:    schoolID,
-			Year:        formatYearRange(year),
-			StartDate:   time.Date(year, 4, 1, 0, 0, 0, 0, time.UTC),
-			EndDate:     time.Date(year+1, 3, 31, 0, 0, 0, 0, time.UTC),
-			IsActive:    true,
-			Status:      "active",
-			Description: "Default academic year",
-			CreatedAt:   now,
-			UpdatedAt:   now,
-		}
-
-		newSettings := &store.SchoolSettings{
-			SchoolID: schoolID,
-			Profile: map[string]any{
-				"schoolName":    schoolName,
-				"email":         email,
-				"principalName": fullName,
-			},
-			Branding:  map[string]any{},
-			Academic:  map[string]any{"institutionalLevel": "K-12"},
-			UpdatedAt: now,
-		}
-		trialExpiry := now.AddDate(0, 0, 14)
-		newSub := &store.Subscription{
-			ID:           store.NewID("sub"),
-			SchoolID:     schoolID,
-			PackageID:    "growth",
-			StudentLimit: 500,
-			Status:       "active",
-			NextRenewal:  trialExpiry,
-			CreatedAt:    now,
-			UpdatedAt:    now,
-		}
-
 		h.Store.Lock()
-		h.Store.Schools = append(h.Store.Schools, newSchool)
-		h.Store.Campuses = append(h.Store.Campuses, newCampus)
-		h.Store.AcademicYears = append(h.Store.AcademicYears, newYear)
 		h.Store.Users = append(h.Store.Users, newUser)
-		h.Store.OwnerSchools = append(h.Store.OwnerSchools, ownerSchool)
-		h.Store.SchoolSettings = append(h.Store.SchoolSettings, newSettings)
-		h.Store.Subscriptions = append(h.Store.Subscriptions, newSub)
 		h.Store.Unlock()
 
-		h.Persist("schools", newSchool)
-		h.Persist("academic_years", newYear)
 		h.Persist("users", newUser)
-		h.Persist("owner_schools", ownerSchool)
-		h.Persist("school_settings", newSettings)
-		h.Persist("subscriptions", newSub)
 
-		var message string
-		if schoolStatus == "active" {
-			message = "Your owner account is active. Redirecting to dashboard..."
-		} else {
-			message = "Your account registration is pending approval."
-		}
+		message := "Your owner account is active. Redirecting to dashboard..."
 
 		claims := authpkg.Claims{
-			SchoolID:             schoolID,
+			SchoolID:             "system",
 			Role:                 role,
 			Permissions:          newUser.Permissions,
-			ActiveAcademicYearID: yearID,
+			ActiveAcademicYearID: "",
 			SessionID:            "sess_" + randomID(),
 			App:                  h.Cfg.AppName,
 			ActorEmail:           email,
@@ -589,11 +470,11 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			"success": true,
 			"message": message,
 			"data": map[string]any{
-				"status":                  schoolStatus,
-				"school_id":               schoolID,
+				"status":                  "active",
+				"school_id":               "system",
 				"token":                   token,
 				"role":                    role,
-				"active_academic_year_id": yearID,
+				"active_academic_year_id": "",
 			},
 		})
 		return
