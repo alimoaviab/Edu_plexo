@@ -120,8 +120,34 @@ func upsertRow(ctx context.Context, tx pgx.Tx, table string, doc any) error {
 		return upsertImportLog(ctx, tx, v)
 	case *store.DummyDataBatch:
 		return upsertDummyDataBatch(ctx, tx, v)
+	case *store.SchoolExpense:
+		return upsertSchoolExpense(ctx, tx, v)
 	}
 	return fmt.Errorf("upsert: unknown document type for table %s", table)
+}
+
+func upsertSchoolExpense(ctx context.Context, tx pgx.Tx, v *store.SchoolExpense) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO expenses (
+			id, school_id, campus_id, academic_year_id, name, category, amount,
+			currency, expense_date, payment_method, description, reference_number,
+			created_by, created_by_name, created_at, updated_at
+		)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+		ON CONFLICT (id) DO UPDATE SET
+			school_id=EXCLUDED.school_id, campus_id=EXCLUDED.campus_id,
+			academic_year_id=EXCLUDED.academic_year_id, name=EXCLUDED.name,
+			category=EXCLUDED.category, amount=EXCLUDED.amount,
+			currency=EXCLUDED.currency, expense_date=EXCLUDED.expense_date,
+			payment_method=EXCLUDED.payment_method, description=EXCLUDED.description,
+			reference_number=EXCLUDED.reference_number, created_by=EXCLUDED.created_by,
+			created_by_name=EXCLUDED.created_by_name, updated_at=EXCLUDED.updated_at
+	`, v.ID, v.SchoolID, defaultStr(v.CampusID, ""), v.AcademicYearID, v.Name,
+		v.Category, v.Amount, defaultStr(v.Currency, "PKR"), v.ExpenseDate,
+		defaultStr(v.PaymentMethod, "Cash"), defaultStr(v.Description, ""),
+		defaultStr(v.ReferenceNumber, ""), v.CreatedBy, defaultStr(v.CreatedByName, ""),
+		v.CreatedAt, v.UpdatedAt)
+	return err
 }
 
 func upsertCampus(ctx context.Context, tx pgx.Tx, v *store.Campus) error {

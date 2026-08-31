@@ -70,6 +70,8 @@ type compositeOverview struct {
 	PresentToday       int            `json:"presentToday"`
 	PendingFees        float64        `json:"pendingFees"`
 	CollectedFees      float64        `json:"collectedFees"`
+	TotalExpenses      float64        `json:"totalExpenses"`
+	NetProfit          float64        `json:"netProfit"`
 }
 
 type attendanceSummary struct {
@@ -291,6 +293,15 @@ func (h *CompositeHandler) compute(ctx *api.RequestContext, yearID string) Compo
 		feePercent = int((feePaid / feeTotal) * 100)
 	}
 
+	// Total Expenses & Net Profit
+	var totalExpenses float64
+	for _, exp := range h.Store.SchoolExpenses {
+		if exp.SchoolID == ctx.SchoolID && (yearID == "" || exp.AcademicYearID == yearID) {
+			totalExpenses += exp.Amount
+		}
+	}
+	netProfit := feePaid - totalExpenses
+
 	// Active exams
 	activeExams := 0
 	for _, e := range h.Store.Exams {
@@ -414,6 +425,8 @@ func (h *CompositeHandler) compute(ctx *api.RequestContext, yearID string) Compo
 			PresentToday:       tPresent,
 			PendingFees:        feeTotal - feePaid,
 			CollectedFees:      feePaid,
+			TotalExpenses:      totalExpenses,
+			NetProfit:          netProfit,
 		},
 		Attendance: attendanceSummary{
 			Present:  present,

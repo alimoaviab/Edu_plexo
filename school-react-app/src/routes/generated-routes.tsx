@@ -108,8 +108,9 @@ export const adminRoutes: RouteObject[] = [
   { path: "/admin/exams/edit/:id", element: lazyPage(() => import("@/pages/role/admin/exams/edit/Param_id"), "AdminExamEditPage") },
   { path: "/admin/exams/marks", element: lazyPage(() => import("@/pages/role/admin/exams/marks"), "AdminExamMarksPage") },
 
-  // Fees
+  // Fees & Expenses
   { path: "/admin/fee", element: lazyPage(() => import("@/pages/role/admin/fee"), "StudentFeeDashboard") },
+  { path: "/admin/expense-manager", element: lazyPage(() => import("@/pages/role/admin/expense-manager"), "ExpenseManagerPage") },
 
   // Homework
   { path: "/admin/homework", element: lazyPage(() => import("@/pages/role/admin/homework"), "AdminHomeworkPage") },

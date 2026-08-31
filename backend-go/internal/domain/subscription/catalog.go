@@ -78,6 +78,8 @@ var packageModules = map[string][]string{
 	},
 	PackageFinance: {
 		"fee",
+		"expenses",
+		"expense-manager",
 	},
 	PackageCommunication: {
 		"announcements",
@@ -399,6 +401,7 @@ func PackageForAPIPath(path string) (string, string) {
 		{"/behavior", PackageAdministration, "behavior"},
 		{"/school/fees", PackageFinance, "fee"},
 		{"/fees", PackageFinance, "fee"},
+		{"/expenses", PackageFinance, "fee"},
 		{"/scholarships", PackageFinance, "fee"},
 		{"/fee-discounts", PackageFinance, "fee"},
 		{"/wallet", PackageFinance, "fee"},

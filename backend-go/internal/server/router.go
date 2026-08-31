@@ -22,6 +22,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/events"
 	"github.com/eduplexo/backend-go/internal/domain/exams"
 	"github.com/eduplexo/backend-go/internal/domain/examsecurity"
+	"github.com/eduplexo/backend-go/internal/domain/expenses"
 	"github.com/eduplexo/backend-go/internal/domain/fees"
 	"github.com/eduplexo/backend-go/internal/domain/homework"
 	"github.com/eduplexo/backend-go/internal/domain/leave"
@@ -449,6 +450,15 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 
 			r.Get("/school/fees/dashboard-stats", fH.DashboardStats)
 			r.Get("/school/fees/classes-summary", fH.ClassesSummary)
+
+			// ─── Expenses domain (Expense Manager) ────────────────────────
+			expH := expenses.New(s, pg.Pool(), rdb)
+			r.Get("/expenses", expH.List)
+			r.Get("/expenses/stats", expH.GetStats)
+			r.Get("/expenses/{id}", expH.GetByID)
+			r.Post("/expenses", expH.Create)
+			r.Patch("/expenses/{id}", expH.Update)
+			r.Delete("/expenses/{id}", expH.Delete)
 
 			// Domain
 			r.Get("/domain/status", stubs.DomainStatus)

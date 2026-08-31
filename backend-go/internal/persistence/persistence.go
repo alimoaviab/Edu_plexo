@@ -561,6 +561,9 @@ func (p *Persister) FullSnapshot(ctx context.Context, s *store.MemStore) error {
 	for _, v := range s.FeePayments {
 		plan = append(plan, write{table: "fee_payments", doc: v})
 	}
+	for _, v := range s.SchoolExpenses {
+		plan = append(plan, write{table: "expenses", doc: v})
+	}
 	for _, v := range s.SchoolSettings {
 		plan = append(plan, write{table: "school_settings", doc: v})
 	}

@@ -89,6 +89,7 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 		{"student_wallets", p.loadStudentWallets},
 		{"wallet_transactions", p.loadWalletTransactions},
 		{"dummy_data_batches", p.loadDummyDataBatches},
+		{"expenses", p.loadExpenses},
 	}
 
 	s.Lock()
@@ -127,6 +128,7 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 	s.Fees = nil
 	s.FeeAdjustments = nil
 	s.FeePayments = nil
+	s.SchoolExpenses = nil
 	s.SchoolSettings = nil
 	s.AuditLogs = nil
 	s.CertificateTemplates = nil
@@ -1568,3 +1570,32 @@ func (p *Persister) loadImportLogs(ctx context.Context, s *store.MemStore) error
 	}
 	return rows.Err()
 }
+
+func (p *Persister) loadExpenses(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, school_id, COALESCE(campus_id, ''), academic_year_id, name, category,
+		       amount, currency, expense_date, payment_method, COALESCE(description, ''),
+		       COALESCE(reference_number, ''), created_by, COALESCE(created_by_name, ''),
+		       created_at, updated_at
+		FROM expenses ORDER BY expense_date DESC, created_at DESC`)
+	if err != nil {
+		log.Printf("[persistence] loadExpenses: %v (table may not exist yet)", err)
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		v := &store.SchoolExpense{}
+		var expDate time.Time
+		if err := rows.Scan(
+			&v.ID, &v.SchoolID, &v.CampusID, &v.AcademicYearID, &v.Name, &v.Category,
+			&v.Amount, &v.Currency, &expDate, &v.PaymentMethod, &v.Description,
+			&v.ReferenceNumber, &v.CreatedBy, &v.CreatedByName, &v.CreatedAt, &v.UpdatedAt,
+		); err != nil {
+			return err
+		}
+		v.ExpenseDate = expDate
+		s.SchoolExpenses = append(s.SchoolExpenses, v)
+	}
+	return rows.Err()
+}
+

@@ -70,6 +70,7 @@ type MemStore struct {
 	SchoolPackages []*SchoolPackage
 	Packages       []*Package
 	Expenses       []*Expense
+	SchoolExpenses []*SchoolExpense
 	RevenueRecords []*RevenueRecord
 
 	// Certificate collections.

@@ -71,6 +71,26 @@ type Expense struct {
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
+// SchoolExpense represents a school-level expense record in the Expense Manager.
+type SchoolExpense struct {
+	ID              string    `json:"_id"`
+	SchoolID        string    `json:"school_id"`
+	CampusID        string    `json:"campus_id"`
+	AcademicYearID  string    `json:"academic_year_id"`
+	Name            string    `json:"name"`
+	Category        string    `json:"category"`
+	Amount          float64   `json:"amount"`
+	Currency        string    `json:"currency"`
+	ExpenseDate     time.Time `json:"expense_date"`
+	PaymentMethod   string    `json:"payment_method"`
+	Description     string    `json:"description"`
+	ReferenceNumber string    `json:"reference_number"`
+	CreatedBy       string    `json:"created_by"`
+	CreatedByName   string    `json:"created_by_name"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
 // RevenueRecord tracks revenue from school packages and other sources.
 type RevenueRecord struct {
 	ID         string    `json:"_id"`

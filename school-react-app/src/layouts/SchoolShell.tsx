@@ -109,7 +109,10 @@ const adminNavGroups: NavGroup[] = [
   },
   {
     label: "Finance",
-    items: [{ label: "Fee", href: "/admin/fee", icon: "payments" }],
+    items: [
+      { label: "Fee", href: "/admin/fee", icon: "payments" },
+      { label: "Expense Manager", href: "/admin/expense-manager", icon: "receipt_long" },
+    ],
   },
   {
     label: "Settings",
