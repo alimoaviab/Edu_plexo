@@ -211,11 +211,22 @@ func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Calculate total revenue from FeePayments in the same context
+	// Calculate total revenue from student fee collections in the same academic year
 	var totalRevenue float64
-	for _, fp := range h.Store.FeePayments {
-		if fp.SchoolID == ctx.SchoolID {
-			totalRevenue += fp.Amount
+	for _, f := range h.Store.Fees {
+		if f.SchoolID != ctx.SchoolID {
+			continue
+		}
+		if yearID != "" && f.AcademicYearID != "" && f.AcademicYearID != yearID {
+			continue
+		}
+		totalRevenue += f.PaidAmount
+	}
+	if totalRevenue == 0 {
+		for _, fp := range h.Store.FeePayments {
+			if fp.SchoolID == ctx.SchoolID {
+				totalRevenue += fp.Amount
+			}
 		}
 	}
 	h.Store.RUnlock()

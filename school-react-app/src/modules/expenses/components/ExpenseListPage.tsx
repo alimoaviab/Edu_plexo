@@ -90,6 +90,9 @@ export function ExpenseListPage() {
   });
 
   const statItems: StatCardGridItem[] = useMemo(() => {
+    const netProfit = stats?.net_profit ?? 0;
+    const isProfitable = netProfit >= 0;
+
     return [
       {
         label: "Total Expenses",
@@ -110,16 +113,22 @@ export function ExpenseListPage() {
         accent: "amber",
       },
       {
-        label: "Expense Entries",
-        value: String(stats?.total_entries ?? 0),
-        icon: "assignment",
+        label: "Fee Collection (Revenue)",
+        value: `PKR ${(stats?.total_revenue ?? 0).toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`,
+        icon: "payments",
         accent: "blue",
       },
       {
-        label: "This Month Entries",
-        value: String(stats?.this_month_entries ?? 0),
-        icon: "event_available",
-        accent: "emerald",
+        label: isProfitable ? "Net Profit" : "Net Deficit",
+        value: `PKR ${Math.abs(netProfit).toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}${netProfit < 0 ? " (Deficit)" : ""}`,
+        icon: isProfitable ? "trending_up" : "trending_down",
+        accent: isProfitable ? "emerald" : "rose",
       },
     ];
   }, [stats]);

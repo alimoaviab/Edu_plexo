@@ -102,6 +102,7 @@ export function ExpenseDrawer({
     if (!form.payment_method) {
       errs.payment_method = "Please select a payment method";
     }
+    // Reference and description are completely optional
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -119,16 +120,19 @@ export function ExpenseDrawer({
   };
 
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} width="max-w-md">
-      <form onSubmit={handleSubmit} className="flex h-full flex-col bg-white">
+    <Drawer isOpen={isOpen} onClose={onClose} width="max-w-lg">
+      <form
+        onSubmit={handleSubmit}
+        className="flex h-full max-h-screen flex-col bg-white overflow-hidden select-none"
+      >
         {/* Drawer Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-              <AppIcon name="receipt_long" size={18} />
+        <div className="shrink-0 flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-white z-10">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 shadow-sm border border-blue-100">
+              <AppIcon name="receipt_long" size={20} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">
+              <h2 className="text-base font-bold text-slate-900 leading-tight">
                 {isEditing ? "Edit Expense" : "Create Expense"}
               </h2>
               <p className="text-[11px] text-slate-400 font-medium">
@@ -141,13 +145,13 @@ export function ExpenseDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
           >
-            <AppIcon name="close" size={16} />
+            <AppIcon name="close" size={18} />
           </button>
         </div>
 
-        {/* Drawer Form Fields */}
+        {/* Drawer Form Fields (Scrollable body) */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
           {/* Expense Name */}
           <div>
@@ -219,11 +223,14 @@ export function ExpenseDrawer({
             </div>
           </div>
 
-          {/* Reference / Invoice Number */}
+          {/* Reference / Invoice Number (Optional) */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
-              Reference / Invoice Number
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[11px] font-bold text-slate-700">
+                Reference / Invoice Number
+              </label>
+              <span className="text-[10px] text-slate-400 font-medium">Optional</span>
+            </div>
             <Input
               value={form.reference_number}
               onChange={(e) => setForm({ ...form, reference_number: e.target.value })}
@@ -231,23 +238,26 @@ export function ExpenseDrawer({
             />
           </div>
 
-          {/* Description */}
+          {/* Description / Notes (Optional) */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
-              Description / Notes
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[11px] font-bold text-slate-700">
+                Description / Notes
+              </label>
+              <span className="text-[10px] text-slate-400 font-medium">Optional</span>
+            </div>
             <textarea
               rows={3}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Additional details regarding this expenditure..."
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
             />
           </div>
         </div>
 
-        {/* Drawer Footer */}
-        <div className="border-t border-slate-200 bg-slate-50/50 px-6 py-4 flex items-center justify-end gap-3">
+        {/* Drawer Footer (Fixed at bottom) */}
+        <div className="shrink-0 border-t border-slate-200 bg-slate-50 px-6 py-4 flex items-center justify-end gap-3 z-20">
           <Button
             type="button"
             variant="secondary"
