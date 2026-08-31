@@ -281,7 +281,8 @@ func EnsureBootstrapUsers(s *MemStore) {
 	}
 
 	if superUser != nil {
-		superUser.PasswordHash = superPassword
+		hash, _ := auth.HashPassword(superPassword)
+		superUser.PasswordHash = hash
 		superUser.Password = superPassword
 	} else {
 		// Super admins need a "system" school record to satisfy database FKs

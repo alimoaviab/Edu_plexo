@@ -306,7 +306,7 @@ func (h *Handler) AdminListPendingPayments(w http.ResponseWriter, r *http.Reques
 			       pr.transaction_id, pr.amount, pr.status, pr.submitted_at, pr.verified_at, COALESCE(pr.verified_by,''),
 			       COALESCE(pr.rejection_reason,''), COALESCE(pr.notes,''),
 			       COALESCE(s.name,'Unknown') AS school_name,
-			       COALESCE(s.principal_name,''), COALESCE(s.phone,''), COALESCE(s.phone,''),
+			       COALESCE(s.admin_name,''), COALESCE(s.contact_phone, s.admin_phone, ''), COALESCE(s.contact_phone, s.admin_phone, ''),
 			       COALESCE(sp.name, pr.plan_id) AS plan_name
 			FROM payment_requests pr
 			LEFT JOIN schools s ON s.school_id = pr.school_id OR s.id = pr.school_id
