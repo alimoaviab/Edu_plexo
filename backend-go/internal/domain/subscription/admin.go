@@ -368,21 +368,31 @@ func (h *Handler) AdminGetSchoolPayments(w http.ResponseWriter, r *http.Request)
 	}
 	schoolID := chi.URLParam(r, "id")
 
+	statusFilter := r.URL.Query().Get("status")
+	ownerEmail := r.URL.Query().Get("owner_email")
+
 	api.WriteResult(w, api.ServiceTry(func() ([]PaymentRequest, error) {
 		if h.Pool == nil {
 			return []PaymentRequest{}, nil
 		}
-		rows, err := h.Pool.Query(r.Context(), `
+		query := `
 			SELECT pr.id, pr.school_id, pr.plan_id, COALESCE(pr.payment_method_id,''), COALESCE(pr.screenshot_url,''),
 			       pr.transaction_id, pr.amount, pr.status, pr.submitted_at, pr.verified_at, COALESCE(pr.verified_by,''),
 			       COALESCE(pr.rejection_reason,''), COALESCE(pr.notes,''),
 			       COALESCE(sp.name, pr.plan_id) AS plan_name
 			FROM payment_requests pr
 			LEFT JOIN subscription_plans sp ON sp.id = pr.plan_id
-			WHERE pr.school_id = $1 OR pr.school_id IN (SELECT id FROM users WHERE school_id = $1)
+			WHERE (
+				pr.school_id = $1
+				OR pr.school_id IN (SELECT school_id FROM schools WHERE owner_email = $1 OR owner_user_id = $1 OR id = $1)
+				OR pr.school_id IN (SELECT id FROM users WHERE email = $1 OR id = $1)
+				OR ($2 <> '' AND (pr.school_id IN (SELECT school_id FROM users WHERE email = $2) OR pr.school_id IN (SELECT school_id FROM schools WHERE owner_email = $2)))
+			)
+			AND ($3 = '' OR pr.status = $3)
 			ORDER BY pr.submitted_at DESC
 			LIMIT 50
-		`, schoolID)
+		`
+		rows, err := h.Pool.Query(r.Context(), query, schoolID, ownerEmail, statusFilter)
 		if err != nil {
 			return nil, fmt.Errorf("get school payments: %w", err)
 		}

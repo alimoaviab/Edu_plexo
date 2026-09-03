@@ -83,8 +83,8 @@ export function SchoolsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Schools</h1>
-          <p className="text-xs text-slate-500 mt-0.5">{schools.length} schools on the platform</p>
+          <h1 className="text-xl font-bold text-slate-900">Registered Owners & Institutions</h1>
+          <p className="text-xs text-slate-500 mt-0.5">{schools.length} registered owners & subscriber accounts</p>
         </div>
       </div>
 
@@ -96,7 +96,7 @@ export function SchoolsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && loadSchools()}
-            placeholder="Search schools..."
+            placeholder="Search owners or schools..."
             className="w-full h-8 pl-9 pr-3 rounded-lg border border-slate-200 text-[12px] outline-none focus:border-blue-500"
           />
         </div>
@@ -117,98 +117,111 @@ export function SchoolsPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         {loading ? (
-          <div className="p-12 text-center text-sm text-slate-400">Loading schools...</div>
+          <div className="p-12 text-center text-sm text-slate-400">Loading registered owners...</div>
         ) : schools.length === 0 ? (
           <div className="p-16 text-center">
-            <AppIcon name="Building2" size={36} className="text-slate-200 mb-3" />
-            <p className="text-sm font-medium text-slate-500">No schools found</p>
+            <AppIcon name="Users" size={36} className="text-slate-200 mb-3" />
+            <p className="text-sm font-medium text-slate-500">No registered owners found</p>
           </div>
         ) : (
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-100">
               <tr>
-                <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">School</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Owner & Institution</th>
                 <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Plan</th>
-                <th className="text-center px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Students</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">License / Trial Remaining</th>
                 <th className="text-center px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
                 <th className="text-right px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Revenue</th>
-                <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Expiry</th>
+                <th className="text-left px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Joined Date</th>
                 <th className="text-right px-4 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {schools.map((school) => (
-                <tr key={school._id} className="hover:bg-blue-50/30 transition-colors">
-                  <td className="px-4 py-3">
-                    <Link to={`/schools/${school._id}`} className="flex items-center gap-3 group">
-                      <div className="h-8 w-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-[11px] font-bold shrink-0">
-                        {initials(school.name)}
-                      </div>
-                      <div>
-                        <p className="text-[12px] font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{school.name}</p>
-                        <p className="text-[10px] text-slate-400 font-mono">{school.code}</p>
-                      </div>
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={planBadge(school.plan)}>{school.plan || 'Free'}</span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="text-[11px] font-semibold text-slate-700">{school.student_count}</span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={statusBadge(school.status)}>{school.status}</span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <span className="text-[11px] font-bold text-slate-900">{formatCurrency(school.revenue || 0)}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {school.expiry ? (
-                      <div>
-                        <p className="text-[11px] font-semibold text-slate-700">
-                          {new Date(school.expiry).toLocaleDateString()}
-                        </p>
-                        {(() => {
-                          const diff = new Date(school.expiry).getTime() - Date.now();
-                          const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                          if (days <= 0) return <span className="text-[10px] font-bold text-rose-600">Expired</span>;
-                          if (days <= 3) return <span className="text-[10px] font-bold text-amber-600">{days}d left (Trial Ending)</span>;
-                          return <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">{days} days trial left</span>;
-                        })()}
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-slate-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Link to={`/schools/${school._id}`} className="h-6 px-2.5 text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-100 rounded-lg hover:bg-blue-100 transition-colors">
-                        View
+              {schools.map((school) => {
+                const diff = school.expiry ? new Date(school.expiry).getTime() - Date.now() : 0
+                const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
+                const isPaidPlan = school.plan && !school.plan.toLowerCase().includes('trial') && school.plan !== 'Free'
+                return (
+                  <tr key={school._id} className="hover:bg-blue-50/30 transition-colors">
+                    <td className="px-4 py-3">
+                      <Link to={`/schools/${school._id}`} className="flex items-center gap-3 group">
+                        <div className="h-9 w-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-[12px] font-black shrink-0 shadow-sm">
+                          {initials(school.name)}
+                        </div>
+                        <div>
+                          <p className="text-[13px] font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                            {school.name}
+                          </p>
+                          <p className="text-[11px] text-slate-500 font-medium">
+                            {school.owner_email || school.code}
+                          </p>
+                        </div>
                       </Link>
-                      {school.status === 'pending' && (
-                        <button onClick={() => handleAction(school._id, 'approve')} className="h-6 px-2.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg hover:bg-emerald-100 transition-colors">
-                          Approve
-                        </button>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${
+                        isPaidPlan
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                      }`}>
+                        {school.plan || '14-Day Free Trial'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {school.expiry ? (
+                        <div>
+                          {days <= 0 ? (
+                            <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                              Expired
+                            </span>
+                          ) : isPaidPlan ? (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              {days} days remaining (Paid)
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                              {days} days trial left
+                            </span>
+                          )}
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            Expires {new Date(school.expiry).toLocaleDateString()}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-400">—</span>
                       )}
-                      {school.status === 'active' && (
-                        <button onClick={() => handleAction(school._id, 'suspend')} className="h-6 px-2.5 text-[10px] font-semibold text-red-700 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors">
-                          Suspend
-                        </button>
-                      )}
-                      {(school.status === 'suspended' || school.status === 'expired') && (
-                        <button onClick={() => handleAction(school._id, 'approve')} className="h-6 px-2.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg hover:bg-emerald-100 transition-colors">
-                          Activate
-                        </button>
-                      )}
-                      <button onClick={() => handleDelete(school._id, school.name)} className="h-6 px-2.5 text-[10px] font-semibold text-red-700 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors">
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={statusBadge(school.status)}>{school.status}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className="text-[12px] font-black text-slate-900">{formatCurrency(school.revenue || 0)}</span>
+                    </td>
+                    <td className="px-4 py-3 text-slate-500 text-[11px] font-medium">
+                      {new Date(school.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Link to={`/schools/${school._id}`} className="h-7 px-3 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-100 transition-colors flex items-center justify-center shadow-sm">
+                          View
+                        </Link>
+                        {school.status === 'pending' && (
+                          <button onClick={() => handleAction(school._id, 'approve')} className="h-7 px-2.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl hover:bg-emerald-100 transition-colors">
+                            Approve
+                          </button>
+                        )}
+                        {school.status === 'active' && (
+                          <button onClick={() => handleAction(school._id, 'suspend')} className="h-7 px-2.5 text-[10px] font-bold text-red-700 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors">
+                            Suspend
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}

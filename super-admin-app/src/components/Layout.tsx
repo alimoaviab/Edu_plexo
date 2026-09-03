@@ -5,7 +5,7 @@ import { apiRequest, clearStoredSession } from '@/lib/api'
 
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard' },
-  { label: 'Schools', href: '/schools', icon: 'Building2' },
+  { label: 'Owners & Schools', href: '/schools', icon: 'Building2' },
   { label: 'Payments', href: '/payments', icon: 'CreditCard' },
   { label: 'Subscriptions', href: '/subscriptions', icon: 'Award' },
   { label: 'Packages', href: '/packages', icon: 'Package' },

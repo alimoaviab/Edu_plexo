@@ -115,11 +115,15 @@ export function SubscriptionsPage() {
     }
   }
 
-  const openPaymentHistory = async (schoolId: string, schoolName: string) => {
+  const [paymentTab, setPaymentTab] = useState<'approved' | 'all'>('approved')
+
+  const openPaymentHistory = async (schoolId: string, schoolName: string, ownerEmail?: string) => {
     setHistorySchool({ id: schoolId, name: schoolName })
+    setPaymentTab('approved')
     setLoadingPayments(true)
     try {
-      const res = await apiRequest(`/api/super-admin/schools/${schoolId}/payments`)
+      const q = ownerEmail ? `?owner_email=${encodeURIComponent(ownerEmail)}` : ''
+      const res = await apiRequest(`/api/super-admin/schools/${schoolId}/payments${q}`)
       if (res.ok && res.data) {
         const items = Array.isArray(res.data) ? res.data : (res.data as any).items || []
         setSchoolPayments(items)
@@ -415,7 +419,7 @@ export function SubscriptionsPage() {
                             <span>+Days</span>
                           </button>
                           <button
-                            onClick={() => openPaymentHistory(sub.school_id, sub.school_name)}
+                            onClick={() => openPaymentHistory(sub.school_id, sub.school_name, sub.owner_email)}
                             className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition-all flex items-center gap-1 shadow-sm"
                             title="View all receipts"
                           >
@@ -531,29 +535,59 @@ export function SubscriptionsPage() {
             onClick={(e) => e.stopPropagation()}
             className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden"
           >
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-              <div>
-                <h3 className="text-base font-black text-slate-900">Payment Approval History</h3>
-                <p className="text-xs text-slate-500">{historySchool.name}</p>
+            <div className="p-5 border-b border-slate-100 bg-slate-50/70">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Payment Approval History</h3>
+                  <p className="text-xs text-slate-500">{historySchool.name}</p>
+                </div>
+                <button
+                  onClick={() => setHistorySchool(null)}
+                  className="p-1 rounded-xl text-slate-400 hover:text-slate-700 transition-colors"
+                >
+                  <AppIcon name="X" size={18} />
+                </button>
               </div>
-              <button
-                onClick={() => setHistorySchool(null)}
-                className="p-1 rounded-xl text-slate-400 hover:text-slate-700 transition-colors"
-              >
-                <AppIcon name="X" size={18} />
-              </button>
+
+              {/* Tabs: Verified Receipts vs All Submissions */}
+              <div className="flex items-center gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentTab('approved')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    paymentTab === 'approved'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'bg-slate-200/80 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  Verified Receipts ({schoolPayments.filter(p => p.status === 'verified').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentTab('all')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    paymentTab === 'all'
+                      ? 'bg-slate-800 text-white shadow-sm'
+                      : 'bg-slate-200/80 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  All Submissions ({schoolPayments.length})
+                </button>
+              </div>
             </div>
 
             <div className="p-5 overflow-y-auto flex-1 space-y-3">
               {loadingPayments ? (
                 <div className="p-12 text-center text-xs text-slate-400">Loading payment receipts...</div>
-              ) : schoolPayments.length === 0 ? (
+              ) : (paymentTab === 'approved' ? schoolPayments.filter(p => p.status === 'verified') : schoolPayments).length === 0 ? (
                 <div className="p-12 text-center text-xs text-slate-400 font-medium">
-                  No payment records found for this institution.
+                  {paymentTab === 'approved' 
+                    ? 'No verified payment receipts found for this institution.' 
+                    : 'No payment records found for this institution.'}
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100 border border-slate-100 rounded-2xl overflow-hidden">
-                  {schoolPayments.map((p, idx) => (
+                  {(paymentTab === 'approved' ? schoolPayments.filter(p => p.status === 'verified') : schoolPayments).map((p, idx) => (
                     <div key={p.id} className="p-4 bg-white flex items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">

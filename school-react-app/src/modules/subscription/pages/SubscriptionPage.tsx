@@ -311,14 +311,29 @@ export function SubscriptionPage() {
                   key={plan.id || plan.name}
                   plan={plan}
                   isCurrentPlan={
-                    sub?.status === "active" &&
-                    !sub?.is_trial &&
-                    sub?.plan_name !== "trial" &&
-                    (sub?.plan_name === plan.name ||
-                      sub?.plan_name === plan.id ||
-                      (sub?.plan_name === "growth" && plan.name === "plan_growth") ||
-                      (sub?.plan_name === "starter" && plan.name === "plan_starter") ||
-                      (sub?.plan_name === "premium" && plan.name === "plan_premium"))
+                    Boolean(
+                      sub &&
+                      (sub.status === "active" || (!sub.is_trial && sub.status !== "expired")) &&
+                      !sub.is_trial &&
+                      sub.plan_name !== "trial" &&
+                      (() => {
+                        const s = (sub.plan_name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+                        const pName = (plan.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+                        const pId = (plan.id || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+                        const pDisplay = (plan.display_name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+                        return (
+                          s === pName ||
+                          s === pId ||
+                          s === pDisplay ||
+                          s.replace(/^plan/, "") === pName.replace(/^plan/, "") ||
+                          s.replace(/^plan/, "") === pId.replace(/^plan/, "") ||
+                          s.replace(/^plan/, "") === pDisplay.replace(/^plan/, "") ||
+                          (s.includes("premium") && (pName.includes("premium") || pDisplay.includes("premium"))) ||
+                          (s.includes("growth") && (pName.includes("growth") || pDisplay.includes("growth"))) ||
+                          (s.includes("starter") && (pName.includes("starter") || pDisplay.includes("starter")))
+                        );
+                      })()
+                    )
                   }
                   canTrial={false}
                   onStartTrial={async () => {

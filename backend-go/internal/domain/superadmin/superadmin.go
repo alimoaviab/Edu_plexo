@@ -15,10 +15,12 @@ import (
 	"github.com/eduplexo/backend-go/internal/auth"
 	"github.com/eduplexo/backend-go/internal/store"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Handler struct {
 	Store   *store.MemStore
+	Pool    *pgxpool.Pool
 	Persist func(table string, doc any)
 }
 
@@ -28,6 +30,12 @@ func NewWithPersist(s *store.MemStore, save func(string, any)) *Handler {
 		save = func(string, any) {}
 	}
 	return &Handler{Store: s, Persist: save}
+}
+func NewPG(s *store.MemStore, save func(string, any), pool *pgxpool.Pool) *Handler {
+	if save == nil {
+		save = func(string, any) {}
+	}
+	return &Handler{Store: s, Persist: save, Pool: pool}
 }
 
 func requireSuperAdmin(w http.ResponseWriter, r *http.Request) (*api.RequestContext, bool) {
@@ -439,71 +447,113 @@ func (h *Handler) ListSchools(w http.ResponseWriter, r *http.Request) {
 	}
 
 	schools := make([]schoolView, 0)
-	for _, s := range h.Store.Schools {
-		if statusFilter != "" && s.Status != statusFilter {
+
+	if h.Pool != nil {
+		query := `
+			SELECT 
+				COALESCE(s.id, u.id) AS id,
+				COALESCE(s.school_id, u.school_id, u.id) AS school_id,
+				COALESCE(s.name, NULLIF(TRIM(u.profile_first || ' ' || u.profile_last), '') || '''s Institution', 'Owner Campus') AS name,
+				COALESCE(s.code, 'EP-' || UPPER(SUBSTR(MD5(u.email), 1, 6))) AS code,
+				u.email AS email,
+				COALESCE(u.profile_phone, s.contact_phone, '') AS phone,
+				COALESCE(s.address, '') AS address,
+				COALESCE(s.city, '') AS city,
+				COALESCE(NULLIF(TRIM(u.profile_first || ' ' || u.profile_last), ''), 'School Owner') AS principal_name,
+				COALESCE(u.status, s.status, 'active') AS status,
+				u.email AS owner_email,
+				COALESCE((SELECT COUNT(*) FROM students st WHERE st.school_id = s.school_id), 0) AS student_count,
+				COALESCE((SELECT COUNT(*) FROM teachers tc WHERE tc.school_id = s.school_id), 0) AS teacher_count,
+				COALESCE((SELECT COUNT(*) FROM classes cl WHERE cl.school_id = s.school_id), 0) AS class_count,
+				COALESCE(sub.plan_name, s.plan_key, '14-Day Free Trial') AS plan,
+				COALESCE(pay.total_paid, 0)::float8 AS revenue,
+				COALESCE(sub.end_date, s.plan_expires_at, u.created_at + INTERVAL '14 days') AS expiry,
+				u.created_at,
+				u.updated_at
+			FROM users u
+			LEFT JOIN LATERAL (
+				SELECT * FROM schools s 
+				WHERE (s.owner_email = u.email OR s.school_id = u.school_id OR s.owner_user_id = u.id)
+				  AND s.school_id NOT IN ('system', '__global__')
+				ORDER BY s.created_at ASC
+				LIMIT 1
+			) s ON true
+			LEFT JOIN LATERAL (
+				SELECT sub.plan_name, sub.end_date, sub.status, sub.is_trial
+				FROM subscriptions sub
+				WHERE (sub.school_id = s.school_id OR sub.school_id = u.school_id OR sub.school_id = u.id OR sub.school_id = 'system')
+				  AND sub.status IN ('active', 'trial')
+				ORDER BY sub.created_at DESC
+				LIMIT 1
+			) sub ON true
+			LEFT JOIN LATERAL (
+				SELECT COALESCE(SUM(amount) FILTER (WHERE status = 'verified'), 0) AS total_paid
+				FROM payment_requests pr
+				WHERE pr.school_id = s.school_id OR pr.school_id = u.school_id OR pr.school_id = u.id OR (pr.school_id = 'system' AND sub.plan_name IS NOT NULL)
+			) pay ON true
+			WHERE u.role = 'owner'
+			ORDER BY u.created_at DESC
+		`
+		rows, err := h.Pool.Query(r.Context(), query)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var sv schoolView
+				var exp time.Time
+				if err := rows.Scan(
+					&sv.ID, &sv.SchoolID, &sv.Name, &sv.Code, &sv.Email, &sv.Phone,
+					&sv.Address, &sv.City, &sv.PrincipalName, &sv.Status, &sv.OwnerEmail,
+					&sv.StudentCount, &sv.TeacherCount, &sv.ClassCount,
+					&sv.Plan, &sv.Revenue, &exp, &sv.CreatedAt, &sv.UpdatedAt,
+				); err == nil {
+					sv.Expiry = exp
+					if statusFilter != "" && sv.Status != statusFilter {
+						continue
+					}
+					if search != "" && !strings.Contains(strings.ToLower(sv.Name), search) && !strings.Contains(strings.ToLower(sv.PrincipalName), search) && !strings.Contains(strings.ToLower(sv.OwnerEmail), search) {
+						continue
+					}
+					schools = append(schools, sv)
+				}
+			}
+			api.WriteResult(w, api.Ok(map[string]any{
+				"items": schools,
+				"total": len(schools),
+			}))
+			return
+		}
+	}
+
+	for _, u := range h.Store.Users {
+		if u.Role != "owner" {
 			continue
 		}
-		if search != "" && !strings.Contains(strings.ToLower(s.Name), search) && !strings.Contains(strings.ToLower(s.Code), search) {
+		name := strings.TrimSpace(u.Profile.FirstName + " " + u.Profile.LastName)
+		if name == "" {
+			name = "School Owner"
+		}
+		if statusFilter != "" && u.Status != statusFilter {
 			continue
 		}
-
-		studentCount, teacherCount, classCount := 0, 0, 0
-		for _, st := range h.Store.Students {
-			if st.SchoolID == s.SchoolID {
-				studentCount++
-			}
-		}
-		for _, t := range h.Store.Teachers {
-			if t.SchoolID == s.SchoolID {
-				teacherCount++
-			}
-		}
-		for _, c := range h.Store.Classes {
-			if c.SchoolID == s.SchoolID {
-				classCount++
-			}
-		}
-
-		ownerEmail := ""
-		for _, u := range h.Store.Users {
-			if u.SchoolID == s.SchoolID && u.Role == "admin" {
-				ownerEmail = u.Email
-				break
-			}
-		}
-
-		plan := "Free"
-		revenue := 0.0
-		expiry := time.Time{}
-		for _, pkg := range h.Store.SchoolPackages {
-			if pkg.SchoolID == s.SchoolID && pkg.IsActive {
-				plan = pkg.PackageName
-				revenue = pkg.Price
-				expiry = pkg.ExpiryDate
-				break
-			}
+		if search != "" && !strings.Contains(strings.ToLower(name), search) && !strings.Contains(strings.ToLower(u.Email), search) {
+			continue
 		}
 
 		schools = append(schools, schoolView{
-			ID:            s.ID,
-			SchoolID:      s.SchoolID,
-			Name:          s.Name,
-			Code:          s.Code,
-			Email:         s.Email,
-			Phone:         s.Phone,
-			Address:       s.Address,
-			City:          s.City,
-			PrincipalName: s.PrincipalName,
-			Status:        s.Status,
-			OwnerEmail:    ownerEmail,
-			StudentCount:  studentCount,
-			TeacherCount:  teacherCount,
-			ClassCount:    classCount,
-			Plan:          plan,
-			Revenue:       revenue,
-			Expiry:        expiry,
-			CreatedAt:     s.CreatedAt,
-			UpdatedAt:     s.UpdatedAt,
+			ID:            u.ID,
+			SchoolID:      u.SchoolID,
+			Name:          name + "'s Institution",
+			Code:          "EP-OWNER",
+			Email:         u.Email,
+			Phone:         u.Profile.Phone,
+			PrincipalName: name,
+			Status:        u.Status,
+			OwnerEmail:    u.Email,
+			Plan:          "14-Day Free Trial",
+			Revenue:       0,
+			Expiry:        u.CreatedAt.AddDate(0, 0, 14),
+			CreatedAt:     u.CreatedAt,
+			UpdatedAt:     u.UpdatedAt,
 		})
 	}
 
