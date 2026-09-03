@@ -33,6 +33,7 @@ NC='\033[0m'
 
 FORCE=false
 SKIP_BACKUP=false
+DELETE_BACKUPS=false
 RESTART=true
 
 # Parse arguments
@@ -44,6 +45,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-backup)
       SKIP_BACKUP=true
+      shift
+      ;;
+    --delete-backups|--purge-backups)
+      SKIP_BACKUP=true
+      DELETE_BACKUPS=true
       shift
       ;;
     --no-restart)
@@ -58,10 +64,11 @@ while [[ $# -gt 0 ]]; do
       echo "Usage: $0 [OPTIONS]"
       echo ""
       echo "Options:"
-      echo "  -f, --force       Skip interactive confirmation prompt"
-      echo "  --no-backup       Skip creating a pre-wipe safety backup"
-      echo "  --no-restart      Only purge volumes without restarting"
-      echo "  -h, --help        Show this help message"
+      echo "  -f, --force          Skip interactive confirmation prompt"
+      echo "  --no-backup          Skip creating a pre-wipe safety backup"
+      echo "  --delete-backups     Skip backup AND permanently delete all existing backup files"
+      echo "  --no-restart         Only purge volumes without restarting"
+      echo "  -h, --help           Show this help message"
       exit 0
       ;;
     *)
@@ -109,6 +116,13 @@ if [[ "${SKIP_BACKUP}" != true ]]; then
       echo -e "${YELLOW}  Backup script skipped or PostgreSQL was stopped. Proceeding...${NC}"
     fi
   fi
+fi
+
+# Delete all existing backup archives if requested
+if [[ "${DELETE_BACKUPS}" == true ]]; then
+  echo -e "\n${BLUE}>> Purging all existing database backups from disk...${NC}"
+  rm -rf /var/backups/eduplexo "${ROOT_DIR}/backups" 2>/dev/null || true
+  echo -e "${GREEN}  All historical backup archives purged.${NC}"
 fi
 
 # Stop and remove database & backend containers
