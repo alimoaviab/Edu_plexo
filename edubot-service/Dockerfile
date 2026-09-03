@@ -8,12 +8,20 @@ WORKDIR /app
 ENV PIP_DEFAULT_TIMEOUT=120 \
     PIP_RETRIES=10 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONUNBUFFERED=1
+
+# Create unprivileged application user and group
+RUN groupadd -g 10001 appuser && \
+    useradd -u 10001 -g appuser -s /bin/bash -m appuser
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy source code with unprivileged ownership
+COPY --chown=appuser:appuser . .
+
+USER appuser
 
 EXPOSE 8001
 

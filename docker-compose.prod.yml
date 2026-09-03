@@ -1,24 +1,22 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# Eduplexo — Production Docker Compose
+# Eduplexo — Hardened Production Docker Compose
 # ═══════════════════════════════════════════════════════════════════════════
-#
-# Deploy with:
-#   docker compose -f docker-compose.prod.yml up -d --build
-#
-# Services:
-#   nginx       — Reverse proxy, TLS termination, static assets, rate limiting
-#   backend-go  — Go API (2 replicas behind nginx load balancer)
-#   worker      — Background job processor (matview refresh, notifications)
-#   postgres    — PostgreSQL 16 with tuned settings
-#   redis       — Cache + pub/sub + job queue
-#   migrate     — One-shot migration runner
-#
 # Architecture:
-#   Client → Nginx (443) → backend-go-1/backend-go-2 (8080) → PostgreSQL + Redis
-#                                                            → Worker (background)
+#   Internet → Nginx (80/443) → api.eduplexo.com → backend-go (8080)
+#                             → bot.eduplexo.com → edubot (8001)
+#   backend-go → PostgreSQL (5432) + Redis DB 0 (6379)
+#   edubot     → backend-go (8080) + Redis DB 1 (6379)
+#
+# Constraints Enforced:
+#   - PostgreSQL (5432) & Redis (6379) are NEVER published to the host
+#   - backend-go (8080) & edubot (8001) are NEVER published to the host
+#   - Exactly ONE backend-go instance (MemStore in-memory state cannot be replicated)
+#   - All background jobs run in-process inside backend-go
+#   - Frontend apps (school, super-admin, landing) run on Vercel
+# ═══════════════════════════════════════════════════════════════════════════
 
 services:
-  # ─── Nginx Reverse Proxy ──────────────────────────────────────────────
+  # ─── Nginx Reverse Proxy & TLS Termination ───────────────────────────
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped
@@ -27,16 +25,15 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./school-react-app/dist:/usr/share/nginx/html/school:ro
-      - ./super-admin-app/dist:/usr/share/nginx/html/admin:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./nginx/cache:/var/cache/nginx
       - certbot_webroot:/var/www/certbot:ro
+      - certbot_certs:/etc/letsencrypt:ro
     depends_on:
-      backend-go-1:
+      backend-go:
         condition: service_started
-      super-admin-build:
-        condition: service_completed_successfully
+      edubot:
+        condition: service_started
     deploy:
       resources:
         limits:
@@ -45,7 +42,7 @@ services:
         reservations:
           memory: 64M
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-check-certificate --no-verbose --tries=1 --spider http://localhost:80/ || exit 1"]
+      test: ["CMD-SHELL", "wget --no-check-certificate --no-verbose --tries=1 --spider http://127.0.0.1:80/healthz || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -56,8 +53,8 @@ services:
         max-size: "50m"
         max-file: "5"
 
-  # ─── Go Backend (Replica 1) ──────────────────────────────────────────
-  backend-go-1:
+  # ─── Go Backend API Service (Single Instance) ─────────────────────────
+  backend-go:
     build:
       context: ./backend-go
       dockerfile: Dockerfile
@@ -70,13 +67,20 @@ services:
     environment:
       PORT: "8080"
       APP_NAME: school
+      APP_ENV: production
+      ENV: production
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
       COOKIE_SECURE: "true"
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY is required}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY is required}
       GOMAXPROCS: "4"
       GOMEMLIMIT: "900MiB"
+    volumes:
+      - backend_uploads:/app/uploads
     expose:
       - "8080"
     deploy:
@@ -90,8 +94,9 @@ services:
       driver: "json-file"
       options:
         max-size: "50m"
+        max-file: "5"
 
-  # ─── PostgreSQL ──────────────────────────────────────────────────────
+  # ─── PostgreSQL 16 Alpine Database ───────────────────────────────────
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -101,7 +106,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # Do NOT expose port externally in production
     expose:
       - "5432"
     command: >
@@ -126,6 +130,7 @@ services:
       -c track_activities=on
       -c track_counts=on
       -c track_io_timing=on
+      -c "app.current_school_id="
     deploy:
       resources:
         limits:
@@ -145,7 +150,7 @@ services:
         max-size: "50m"
         max-file: "5"
 
-  # ─── Redis ───────────────────────────────────────────────────────────
+  # ─── Redis 7 Alpine Cache & Job Queue ─────────────────────────────────
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -173,7 +178,7 @@ services:
         reservations:
           memory: 256M
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -184,7 +189,7 @@ services:
         max-size: "50m"
         max-file: "5"
 
-  # ─── Database Migrations ─────────────────────────────────────────────
+  # ─── Database Migrations (One-shot Runner) ────────────────────────────
   migrate:
     image: migrate/migrate:v4.18.1
     depends_on:
@@ -205,24 +210,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # ─── Super Admin App (builds dist for nginx) ──────────────────────────
-  super-admin-build:
-    build:
-      context: ./super-admin-app
-      dockerfile: Dockerfile
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-    volumes:
-      - ./super-admin-app/dist:/app/dist:ro
-    command: sh -c "echo 'Build complete'"
-    restart: "no"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "2"
-
   # ─── EduBot AI Chatbot Service ─────────────────────────────────────────
   edubot:
     build:
@@ -232,11 +219,16 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      backend-go:
+        condition: service_started
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY is required}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-google/gemini-2.0-flash-lite-001}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
-      GO_BACKEND_URL: http://backend-go-1:8080
+      GO_BACKEND_URL: http://backend-go:8080
       GO_BACKEND_TIMEOUT: "8"
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
@@ -244,7 +236,7 @@ services:
       LOG_LEVEL: INFO
       SESSION_TTL_SECONDS: "1800"
       MAX_HISTORY_PAIRS: "10"
-      GEMINI_TIMEOUT_SECONDS: "10"
+      GEMINI_TIMEOUT_SECONDS: "30"
       RATE_LIMIT_PER_MINUTE: "20"
     expose:
       - "8001"
@@ -273,4 +265,8 @@ volumes:
   redis_data:
     name: eduplexo_prod_redis
   certbot_webroot:
-    name: eduplexo_certbot
+    name: eduplexo_certbot_webroot
+  certbot_certs:
+    name: eduplexo_certbot_certs
+  backend_uploads:
+    name: eduplexo_backend_uploads
