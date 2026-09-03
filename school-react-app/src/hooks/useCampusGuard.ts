@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { serviceRequest } from "@/services/service-client";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Campus {
   _id?: string;
@@ -10,6 +11,7 @@ export interface Campus {
 }
 
 export function useCampusGuard() {
+  const { user, loading: authLoading } = useAuth();
   const [schools, setSchools] = useState<any[]>([]);
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -23,29 +25,64 @@ export function useCampusGuard() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // 1. Load Schools for owner
-      const schoolRes = await serviceRequest<any[]>("/api/owner/schools");
-      let schoolList: any[] = [];
-      if (schoolRes.ok && Array.isArray(schoolRes.data)) {
-        schoolList = schoolRes.data;
-        setSchools(schoolList);
-      } else {
-        setSchools([]);
-      }
+      const isOwner = user?.role === "owner";
+      const boundSchoolId = user?.schoolId || window.localStorage.getItem("active_school_id") || "";
 
-      const schId = window.localStorage.getItem("active_school_id") || (schoolList[0]?.school_id || schoolList[0]?._id || "");
-      if (schId) {
-        setActiveSchoolId(schId);
-        window.localStorage.setItem("active_school_id", schId);
-      }
+      if (isOwner) {
+        // 1. Load Schools for owner
+        const schoolRes = await serviceRequest<any[]>("/api/owner/schools");
+        let schoolList: any[] = [];
+        if (schoolRes.ok && Array.isArray(schoolRes.data)) {
+          schoolList = schoolRes.data;
+          setSchools(schoolList);
+        } else {
+          setSchools([]);
+        }
 
-      // 2. Load Campuses for active school
-      const url = schId ? `/api/owner/campuses?school_id=${encodeURIComponent(schId)}` : "/api/owner/campuses";
-      const res = await serviceRequest<Campus[]>(url);
-      if (res.ok && Array.isArray(res.data)) {
-        setCampuses(res.data);
+        const schId = window.localStorage.getItem("active_school_id") || (schoolList[0]?.school_id || schoolList[0]?._id || "");
+        if (schId) {
+          setActiveSchoolId(schId);
+          window.localStorage.setItem("active_school_id", schId);
+        }
+
+        // 2. Load Campuses for active school
+        const url = schId ? `/api/campuses?school_id=${encodeURIComponent(schId)}` : "/api/campuses";
+        const res = await serviceRequest<Campus[]>(url);
+        if (res.ok && Array.isArray(res.data)) {
+          setCampuses(res.data);
+          if (res.data.length > 0 && !window.localStorage.getItem("active_branch_id")) {
+            const firstBranch = res.data[0]._id || res.data[0].id || "";
+            setActiveCampusId(firstBranch);
+            window.localStorage.setItem("active_branch_id", firstBranch);
+          }
+        } else {
+          setCampuses([]);
+        }
       } else {
-        setCampuses([]);
+        // Non-owner role (admin, teacher, staff) — bound to their assigned school
+        const schId = boundSchoolId;
+        if (schId) {
+          setActiveSchoolId(schId);
+          window.localStorage.setItem("active_school_id", schId);
+          setSchools([{ school_id: schId, name: "Current Campus / School" }]);
+        }
+
+        // Load campuses for this school
+        const url = schId ? `/api/campuses?school_id=${encodeURIComponent(schId)}` : "/api/campuses";
+        const res = await serviceRequest<Campus[]>(url);
+        if (res.ok && Array.isArray(res.data)) {
+          setCampuses(res.data);
+          if (res.data.length > 0) {
+            const currentBranch = window.localStorage.getItem("active_branch_id");
+            if (!currentBranch || !res.data.some(c => (c._id || c.id) === currentBranch)) {
+              const firstBranch = res.data[0]._id || res.data[0].id || "";
+              setActiveCampusId(firstBranch);
+              window.localStorage.setItem("active_branch_id", firstBranch);
+            }
+          }
+        } else {
+          setCampuses([]);
+        }
       }
     } catch {
       setSchools([]);
@@ -53,21 +90,28 @@ export function useCampusGuard() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user?.role, user?.schoolId]);
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    if (!authLoading) {
+      void loadData();
+    }
+  }, [authLoading, loadData]);
 
   const selectBranch = (branchId: string) => {
     window.localStorage.setItem("active_branch_id", branchId);
     setActiveCampusId(branchId);
   };
 
+  const isOwner = user?.role === "owner";
+  const hasSchools = isOwner
+    ? (schools.length > 0 || Boolean(activeSchoolId))
+    : Boolean(user?.schoolId || activeSchoolId || schools.length > 0);
+
   return {
-    isLoading,
+    isLoading: authLoading || isLoading,
     schools,
-    hasSchools: schools.length > 0 || Boolean(activeSchoolId),
+    hasSchools,
     campuses,
     hasCampuses: campuses.length > 0,
     activeSchoolId,

@@ -161,6 +161,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Delete("/owner/schools/{id}", owH.DeleteSchool)
 			r.Post("/owner/schools/{id}/{action}", owH.SchoolAction)
 			r.Get("/owner/campuses", owH.ListCampuses)
+			r.Get("/campuses", owH.ListCampuses)
 			r.Post("/owner/campuses", owH.CreateCampus)
 			r.Patch("/owner/campuses/{id}", owH.UpdateCampus)
 			r.Delete("/owner/campuses/{id}", owH.DeleteCampus)

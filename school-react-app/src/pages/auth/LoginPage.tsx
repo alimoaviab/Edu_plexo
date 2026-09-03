@@ -191,6 +191,9 @@ export function LoginPage() {
       setSuccess(true);
       if (payload?.token) {
         localStorage.setItem("token", payload.token);
+        if (payload?.school_id) {
+          localStorage.setItem("active_school_id", payload.school_id);
+        }
         window.dispatchEvent(new Event("auth-changed"));
       }
 

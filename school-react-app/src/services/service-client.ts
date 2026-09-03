@@ -21,6 +21,7 @@
  */
 
 import type { ServiceResult } from "@/types/core";
+import { decodeJwtPayload } from "@/utils/jwt";
 
 // Base URL for the backend API. Set VITE_API_URL in production (e.g. Vercel)
 // to point at the deployed Go backend. Leave empty in development to use
@@ -70,7 +71,17 @@ function readAcademicYearId(): string {
 
 function readActiveSchoolId(): string {
   if (typeof window === "undefined") return "";
-  return window.localStorage.getItem("active_school_id") ?? "";
+  const stored = window.localStorage.getItem("active_school_id");
+  if (stored) return stored;
+  const token = readToken();
+  if (token) {
+    const payload = decodeJwtPayload(token);
+    if (payload?.school_id) {
+      window.localStorage.setItem("active_school_id", payload.school_id);
+      return payload.school_id;
+    }
+  }
+  return "";
 }
 
 function readActiveBranchId(): string {

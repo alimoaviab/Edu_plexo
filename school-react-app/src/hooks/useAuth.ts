@@ -64,6 +64,9 @@ export function useAuth() {
         }
 
         enforceSchoolBoundary(payload.school_id);
+        if (payload.school_id) {
+          localStorage.setItem("active_school_id", payload.school_id);
+        }
 
         const scopedKey = `academic_year_id:${payload.school_id}`;
         const scopedYear = localStorage.getItem(scopedKey);

@@ -635,10 +635,11 @@ func (h *Handler) DeleteSchool(w http.ResponseWriter, r *http.Request) {
 // CAMPUS MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════════
 
-// ListCampuses — GET /api/owner/campuses
+// ListCampuses — GET /api/owner/campuses and GET /api/campuses
 func (h *Handler) ListCampuses(w http.ResponseWriter, r *http.Request) {
-	ctx := ownerOnly(w, r)
+	ctx := api.FromRequest(r)
 	if ctx == nil {
+		api.WriteJSON(w, http.StatusUnauthorized, map[string]any{"ok": false, "message": "Authentication required."})
 		return
 	}
 
@@ -647,17 +648,34 @@ func (h *Handler) ListCampuses(w http.ResponseWriter, r *http.Request) {
 	h.Store.RLock()
 	defer h.Store.RUnlock()
 
-	ownerSchoolIDs := h.ownerSchoolIDs(ctx.ActorEmail, ctx.UserID)
-
 	var campuses []*store.Campus
-	for _, c := range h.Store.Campuses {
-		if !containsStr(ownerSchoolIDs, c.SchoolID) {
-			continue
+
+	if ctx.Role == "owner" {
+		ownerSchoolIDs := h.ownerSchoolIDs(ctx.ActorEmail, ctx.UserID)
+		for _, c := range h.Store.Campuses {
+			if !containsStr(ownerSchoolIDs, c.SchoolID) {
+				continue
+			}
+			if schoolFilter != "" && c.SchoolID != schoolFilter {
+				continue
+			}
+			campuses = append(campuses, c)
 		}
-		if schoolFilter != "" && c.SchoolID != schoolFilter {
-			continue
+	} else {
+		// Admin, teacher, etc. — restricted to their assigned school
+		targetSchoolID := ctx.SchoolID
+		if targetSchoolID == "" {
+			targetSchoolID = schoolFilter
 		}
-		campuses = append(campuses, c)
+		for _, c := range h.Store.Campuses {
+			if c.SchoolID == targetSchoolID {
+				campuses = append(campuses, c)
+			}
+		}
+	}
+
+	if campuses == nil {
+		campuses = make([]*store.Campus, 0)
 	}
 
 	api.WriteJSON(w, http.StatusOK, map[string]any{

@@ -4,6 +4,7 @@ import { AppIcon } from "shared/ui/AppIcon";
 import { Button, Select, Skeleton } from "@/components/ui";
 import { useCampusGuard, Campus } from "@/hooks/useCampusGuard";
 import { useRolePath } from "@/hooks/useRolePath";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   children: ReactNode;
@@ -22,7 +23,8 @@ export function CampusRequirementGuard({
 }: Props) {
   const navigate = useNavigate();
   const { rolePath } = useRolePath();
-  const { isLoading, hasSchools, campuses, hasCampuses, activeCampusId, selectBranch } = useCampusGuard();
+  const { user } = useAuth();
+  const { isLoading, hasSchools, campuses, activeCampusId, selectBranch } = useCampusGuard();
 
   if (isLoading) {
     return (
@@ -33,8 +35,11 @@ export function CampusRequirementGuard({
     );
   }
 
-  // 1. School Check: Owner must have created at least 1 school
-  if (!hasSchools) {
+  // 1. School Check: ONLY the owner can and must create schools.
+  // Admins, teachers, and school staff already belong to an owner's provisioned school.
+  // They must NEVER be blocked by the owner onboarding screen.
+  const isOwner = user?.role === "owner";
+  if (isOwner && !hasSchools) {
     return (
       <div className="rounded-3xl border border-rose-200 bg-rose-50/50 p-8 shadow-sm text-center max-w-2xl mx-auto my-6">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-700 mb-4 shadow-sm">
@@ -64,15 +69,11 @@ export function CampusRequirementGuard({
     );
   }
 
-  // The hard Campus Check block was removed as per user request.
-  // Legacy schools created before campuses were auto-provisioned may still
-  // have none — show a non-blocking warning instead of blocking the page.
-
   const effectiveCampusId = selectedCampusId || activeCampusId;
 
   return (
     <div className="space-y-4">
-      {showCampusSelect && campuses.length === 0 && (
+      {isOwner && showCampusSelect && campuses.length === 0 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4">
           <div className="flex items-center gap-2 mb-1">
             <AppIcon name="GitBranch" size={16} className="text-amber-600" />
