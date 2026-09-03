@@ -477,7 +477,7 @@ function PricingCard({
         isPopular
           ? "bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white border-2 border-blue-500 shadow-2xl shadow-blue-950/40 lg:-translate-y-2.5 ring-2 ring-blue-500/40 z-10"
           : "bg-white border border-slate-200/90 text-slate-900 shadow-sm hover:border-slate-300 hover:-translate-y-1"
-      } ${isCurrentPlan ? "ring-2 ring-emerald-500" : ""}`}
+      } ${isCurrentPlan ? "ring-2 ring-emerald-500 border-emerald-500 shadow-xl shadow-emerald-500/10" : ""}`}
     >
       {/* Popular Badge */}
       {isPopular && (
@@ -491,10 +491,10 @@ function PricingCard({
 
       {/* Current Plan Badge */}
       {isCurrentPlan && (
-        <div className="absolute -top-3 right-4 z-20">
-          <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
-            <AppIcon name="Check" size={11} />
-            <span>Current</span>
+        <div className="absolute -top-3.5 right-4 z-20">
+          <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wider px-3.5 py-1 rounded-full shadow-lg shadow-emerald-600/30 border border-emerald-400">
+            <AppIcon name="Check" size={12} />
+            <span>Active Plan</span>
           </span>
         </div>
       )}
@@ -598,13 +598,10 @@ function PricingCard({
         ) : isCurrentPlan ? (
           <button
             disabled
-            className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm cursor-not-allowed border ${
-              isPopular
-                ? "bg-white/10 text-slate-400 border-white/10"
-                : "bg-slate-100 text-slate-400 border-slate-200"
-            }`}
+            className="w-full py-3.5 px-4 rounded-xl font-black text-xs sm:text-sm cursor-default border-2 border-emerald-500 bg-emerald-50 text-emerald-700 flex items-center justify-center gap-2 shadow-sm"
           >
-            Active Plan
+            <AppIcon name="CheckCircle" size={16} className="text-emerald-600" />
+            <span>Active Plan</span>
           </button>
         ) : canTrial && !plan.is_custom ? (
           <button
