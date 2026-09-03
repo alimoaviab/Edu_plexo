@@ -437,25 +437,6 @@ export function SignupPage() {
                   />
                 </div>
 
-                {/* Password Criteria Hint */}
-                <div className="text-[11px] text-slate-500 bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 space-y-1">
-                  <span className="font-semibold text-slate-700 block">Password Requirements:</span>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px]">
-                    <span className={formData.password.length >= 8 ? "text-emerald-600 font-semibold" : "text-slate-400"}>
-                      • 8+ characters
-                    </span>
-                    <span className={/[A-Z]/.test(formData.password) ? "text-emerald-600 font-semibold" : "text-slate-400"}>
-                      • Uppercase (A-Z)
-                    </span>
-                    <span className={/[a-z]/.test(formData.password) ? "text-emerald-600 font-semibold" : "text-slate-400"}>
-                      • Lowercase (a-z)
-                    </span>
-                    <span className={/[\d]/.test(formData.password) && /[^A-Za-z0-9\s]/.test(formData.password) ? "text-emerald-600 font-semibold" : "text-slate-400"}>
-                      • Number & symbol (!@#)
-                    </span>
-                  </div>
-                </div>
-
                 <div className="flex items-start gap-3 pt-1">
                   <input
                     id="acceptTerms"

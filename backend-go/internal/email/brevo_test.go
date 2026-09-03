@@ -42,8 +42,11 @@ func TestBrevoClient_SendOTP_Success(t *testing.T) {
 	if len(capturedPayload.To) != 1 || capturedPayload.To[0].Email != "owner@example.com" {
 		t.Fatalf("unexpected recipient: %+v", capturedPayload.To)
 	}
-	if capturedPayload.TemplateID != 42 {
-		t.Fatalf("expected TemplateID 42, got %d", capturedPayload.TemplateID)
+	if capturedPayload.HTMLContent == "" {
+		t.Fatal("expected HTMLContent to be populated")
+	}
+	if capturedPayload.TextContent == "" {
+		t.Fatal("expected TextContent to be populated")
 	}
 	if capturedPayload.Params["otp"] != "004821" {
 		t.Fatalf("expected OTP '004821', got %v", capturedPayload.Params["otp"])

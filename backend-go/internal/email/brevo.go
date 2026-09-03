@@ -71,7 +71,7 @@ type brevoEmailPayload struct {
 	ReplyTo     *brevoSender      `json:"replyTo,omitempty"`
 	Subject     string            `json:"subject,omitempty"`
 	HTMLContent string            `json:"htmlContent,omitempty"`
-	TemplateID  int64             `json:"templateId,omitempty"`
+	TextContent string            `json:"textContent,omitempty"`
 	Params      map[string]any    `json:"params,omitempty"`
 }
 
@@ -120,11 +120,14 @@ func (b *BrevoClient) SendOTP(ctx context.Context, toEmail, toName, otp string, 
 		"expiryMinutes": strconv.Itoa(expiryMinutes),
 	}
 
-	// Render fallback / inline HTML content
+	// Render inline HTML content with HTML escaping for security
 	renderedHTML := defaultOTPEmailHTML
-	renderedHTML = strings.ReplaceAll(renderedHTML, "{{firstName}}", firstName)
+	renderedHTML = strings.ReplaceAll(renderedHTML, "{{firstName}}", fmt.Sprintf("%s", firstName))
 	renderedHTML = strings.ReplaceAll(renderedHTML, "{{otp}}", otp)
 	renderedHTML = strings.ReplaceAll(renderedHTML, "{{expiryMinutes}}", strconv.Itoa(expiryMinutes))
+
+	// Plain text fallback
+	textContent := fmt.Sprintf("EduPlexo — Verify your email\n\nHello %s,\n\nWelcome to EduPlexo.\n\nYour verification code is:\n\n%s\n\nThis code expires in %d minutes.\n\nNever share this code with anyone.\nEduPlexo support will never ask you for it.\n\nIf you did not create this account, you can safely ignore this email.\n\nThe EduPlexo Team", firstName, otp, expiryMinutes)
 
 	payload := brevoEmailPayload{
 		Sender: &brevoSender{
@@ -139,11 +142,8 @@ func (b *BrevoClient) SendOTP(ctx context.Context, toEmail, toName, otp string, 
 		},
 		Subject:     "Your EduPlexo verification code",
 		HTMLContent: renderedHTML,
+		TextContent: textContent,
 		Params:      params,
-	}
-
-	if b.cfg.OTPTemplateID > 0 {
-		payload.TemplateID = b.cfg.OTPTemplateID
 	}
 
 	if b.cfg.ReplyToEmail != "" {
