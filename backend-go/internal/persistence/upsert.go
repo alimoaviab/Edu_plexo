@@ -24,6 +24,8 @@ func upsertRow(ctx context.Context, tx pgx.Tx, table string, doc any) error {
 		return upsertCampus(ctx, tx, v)
 	case *store.User:
 		return upsertUser(ctx, tx, v)
+	case *store.PendingSignup:
+		return upsertPendingSignup(ctx, tx, v)
 	case *store.AcademicYear:
 		return upsertAcademicYear(ctx, tx, v)
 	case *store.Subject:
@@ -275,6 +277,26 @@ func upsertUser(ctx context.Context, tx pgx.Tx, v *store.User) error {
 	`, v.ID, v.SchoolID, v.Email, v.PasswordHash, v.Role, v.Permissions,
 		v.Profile.FirstName, v.Profile.LastName, v.Profile.Phone, v.Profile.AvatarURL,
 		v.Status, v.LastLoginAt, v.CreatedAt, v.UpdatedAt)
+	return err
+}
+
+func upsertPendingSignup(ctx context.Context, tx pgx.Tx, v *store.PendingSignup) error {
+	_, err := tx.Exec(ctx, `
+		INSERT INTO pending_signups (id, email, full_name, phone, role, password_hash,
+			otp_hash, created_at, expires_at, last_sent_at, attempts, max_attempts,
+			send_count_hour, status, verified_at, consumed_at, ip_address)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+		ON CONFLICT (id) DO UPDATE SET
+			email=EXCLUDED.email, full_name=EXCLUDED.full_name, phone=EXCLUDED.phone,
+			role=EXCLUDED.role, password_hash=EXCLUDED.password_hash,
+			otp_hash=EXCLUDED.otp_hash, expires_at=EXCLUDED.expires_at,
+			last_sent_at=EXCLUDED.last_sent_at, attempts=EXCLUDED.attempts,
+			max_attempts=EXCLUDED.max_attempts, send_count_hour=EXCLUDED.send_count_hour,
+			status=EXCLUDED.status, verified_at=EXCLUDED.verified_at,
+			consumed_at=EXCLUDED.consumed_at, ip_address=EXCLUDED.ip_address
+	`, v.ID, v.Email, v.FullName, v.Phone, v.Role, v.PasswordHash,
+		v.OTPHash, v.CreatedAt, v.ExpiresAt, v.LastSentAt, v.Attempts, v.MaxAttempts,
+		v.SendCountHour, v.Status, v.VerifiedAt, v.ConsumedAt, v.IPAddress)
 	return err
 }
 

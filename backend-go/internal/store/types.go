@@ -55,6 +55,26 @@ type User struct {
 	UpdatedAt    time.Time   `json:"updated_at"`
 }
 
+type PendingSignup struct {
+	ID            string     `json:"id"`
+	Email         string     `json:"email"`
+	FullName      string     `json:"full_name"`
+	Phone         string     `json:"phone,omitempty"`
+	Role          string     `json:"role"`
+	PasswordHash  string     `json:"-"`
+	OTPHash       string     `json:"-"`
+	CreatedAt     time.Time  `json:"created_at"`
+	ExpiresAt     time.Time  `json:"expires_at"`
+	LastSentAt    time.Time  `json:"last_sent_at"`
+	Attempts      int        `json:"attempts"`
+	MaxAttempts   int        `json:"max_attempts"`
+	SendCountHour int        `json:"send_count_hour"`
+	Status        string     `json:"status"` // pending, verified, expired, consumed
+	VerifiedAt    *time.Time `json:"verified_at,omitempty"`
+	ConsumedAt    *time.Time `json:"consumed_at,omitempty"`
+	IPAddress     string     `json:"ip_address,omitempty"`
+}
+
 type AcademicYear struct {
 	ID          string    `json:"_id"`
 	SchoolID    string    `json:"school_id"`

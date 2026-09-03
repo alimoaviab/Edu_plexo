@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -57,6 +58,21 @@ type Config struct {
 
 	// AnthropicAPIKey for the SEO Engine (Claude).
 	AnthropicAPIKey string
+
+	// Brevo Transactional Email Configuration
+	BrevoAPIKey        string
+	BrevoSenderEmail   string
+	BrevoSenderName    string
+	BrevoOTPTemplateID int64
+	BrevoReplyToEmail  string
+	BrevoReplyToName   string
+
+	// Email OTP Configuration
+	EmailOTPLength                 int
+	EmailOTPExpirySeconds          int
+	EmailOTPResendCooldownSeconds  int
+	EmailOTPMaxVerifyAttempts      int
+	EmailOTPMaxSendAttemptsPerHour int
 }
 
 // Load reads env vars, applies local-development defaults, and validates
@@ -72,11 +88,22 @@ func Load() (Config, error) {
 		CookieSecure:    os.Getenv("COOKIE_SECURE") == "true",
 		DatabaseURL:     os.Getenv("DATABASE_URL"),
 		RedisURL:        os.Getenv("REDIS_URL"),
-		UseDirectPG:     os.Getenv("USE_DIRECT_PG") == "true",
-		GeminiAPIKey:    os.Getenv("GEMINI_API_KEY"),
-		GeminiModel:     getenv("GEMINI_MODEL", "gemini-2.0-flash"),
-		GeminiTimeoutMs: 2500,
-		AnthropicAPIKey: os.Getenv("ANTHROPIC_API_KEY"),
+		UseDirectPG:                    os.Getenv("USE_DIRECT_PG") == "true",
+		GeminiAPIKey:                   os.Getenv("GEMINI_API_KEY"),
+		GeminiModel:                    getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+		GeminiTimeoutMs:                2500,
+		AnthropicAPIKey:                os.Getenv("ANTHROPIC_API_KEY"),
+		BrevoAPIKey:                    os.Getenv("BREVO_API_KEY"),
+		BrevoSenderEmail:               getenv("BREVO_SENDER_EMAIL", "verify@eduplexo.com"),
+		BrevoSenderName:                getenv("BREVO_SENDER_NAME", "EduPlexo"),
+		BrevoOTPTemplateID:             parseInt64(os.Getenv("BREVO_OTP_TEMPLATE_ID")),
+		BrevoReplyToEmail:              os.Getenv("BREVO_REPLY_TO_EMAIL"),
+		BrevoReplyToName:               getenv("BREVO_REPLY_TO_NAME", "EduPlexo Support"),
+		EmailOTPLength:                 parseIntDefault(os.Getenv("EMAIL_OTP_LENGTH"), 6),
+		EmailOTPExpirySeconds:          parseIntDefault(os.Getenv("EMAIL_OTP_EXPIRY_SECONDS"), 300),
+		EmailOTPResendCooldownSeconds:  parseIntDefault(os.Getenv("EMAIL_OTP_RESEND_COOLDOWN_SECONDS"), 60),
+		EmailOTPMaxVerifyAttempts:      parseIntDefault(os.Getenv("EMAIL_OTP_MAX_VERIFY_ATTEMPTS"), 5),
+		EmailOTPMaxSendAttemptsPerHour: parseIntDefault(os.Getenv("EMAIL_OTP_MAX_SEND_ATTEMPTS_PER_HOUR"), 5),
 	}
 
 	if err := cfg.Validate(allowedOriginsEnv); err != nil {
@@ -108,10 +135,17 @@ func (cfg Config) Validate(allowedOriginsEnv string) error {
 	if strings.TrimSpace(allowedOriginsEnv) == "" {
 		missing = append(missing, "ALLOWED_ORIGINS")
 	}
-	// AI credentials (GEMINI_API_KEY, ANTHROPIC_API_KEY) are optional for non-AI production
-	// deployments and will be utilized when AI features are actively enabled.
+	if strings.TrimSpace(cfg.BrevoAPIKey) == "" {
+		missing = append(missing, "BREVO_API_KEY")
+	}
+	if strings.TrimSpace(cfg.BrevoSenderEmail) == "" {
+		missing = append(missing, "BREVO_SENDER_EMAIL")
+	}
 	if len(missing) > 0 {
 		return fmt.Errorf("production config missing required env vars: %s", strings.Join(missing, ", "))
+	}
+	if cfg.EmailOTPExpirySeconds != 300 {
+		return fmt.Errorf("production EMAIL_OTP_EXPIRY_SECONDS must be exactly 300 (got %d)", cfg.EmailOTPExpirySeconds)
 	}
 	if !cfg.CookieSecure {
 		return errors.New("production config requires COOKIE_SECURE=true")
@@ -154,3 +188,16 @@ func splitCSV(s string) []string {
 	}
 	return out
 }
+
+func parseIntDefault(v string, fallback int) int {
+	if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 {
+		return n
+	}
+	return fallback
+}
+
+func parseInt64(v string) int64 {
+	n, _ := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
+	return n
+}
+

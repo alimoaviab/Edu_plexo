@@ -43,6 +43,7 @@ func (p *Persister) Load(ctx context.Context, s *store.MemStore) error {
 		{"packages", p.loadPackages},
 		{"subscriptions", p.loadSubscriptions},
 		{"users", p.loadUsers},
+		{"pending_signups", p.loadPendingSignups},
 		{"academic_years", p.loadAcademicYears},
 		{"subjects", p.loadSubjects},
 		{"teachers", p.loadTeachers},
@@ -345,6 +346,30 @@ func (p *Persister) loadUsers(ctx context.Context, s *store.MemStore) error {
 		}
 		v.LastLoginAt = lastLogin
 		s.Users = append(s.Users, v)
+	}
+	return rows.Err()
+}
+
+func (p *Persister) loadPendingSignups(ctx context.Context, s *store.MemStore) error {
+	rows, err := p.pool.Query(ctx, `
+		SELECT id, email, full_name, phone, role, password_hash,
+			otp_hash, created_at, expires_at, last_sent_at, attempts, max_attempts,
+			send_count_hour, status, verified_at, consumed_at, ip_address
+		FROM pending_signups
+		WHERE status = 'pending' AND expires_at > NOW()`)
+	if err != nil {
+		// Table may not exist yet on unmigrated instances
+		return nil
+	}
+	defer rows.Close()
+	for rows.Next() {
+		v := &store.PendingSignup{}
+		if err := rows.Scan(&v.ID, &v.Email, &v.FullName, &v.Phone, &v.Role, &v.PasswordHash,
+			&v.OTPHash, &v.CreatedAt, &v.ExpiresAt, &v.LastSentAt, &v.Attempts, &v.MaxAttempts,
+			&v.SendCountHour, &v.Status, &v.VerifiedAt, &v.ConsumedAt, &v.IPAddress); err != nil {
+			return err
+		}
+		s.PendingSignups = append(s.PendingSignups, v)
 	}
 	return rows.Err()
 }
