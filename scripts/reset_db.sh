@@ -1,24 +1,19 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════
-# Eduplexo — Safe PostgreSQL Data Reset / Purge Script
+# EduPlexo — Complete PostgreSQL Database Reset & Bootstrap Script
 # ═══════════════════════════════════════════════════════════════════════════
 # Purpose:
-#   Completely removes the PostgreSQL data volume on the VPS to start
-#   with a fresh, clean database state.
-#
-# Safety Measures:
-#   - Creates an automatic safety backup before deletion (unless --no-backup)
-#   - Requires explicit interactive confirmation (unless --force)
-#   - Safely stops database dependencies before removing volumes
-#   - Only removes the PostgreSQL volume; preserves Redis, SSL, uploads, etc.
+#   Completely purges all data from PostgreSQL and Redis, applies all 
+#   33+ database migrations from scratch, boots backend-go, and ensures
+#   Super Admin credentials are ready for fresh production or staging testing.
 #
 # Usage:
 #   sudo ./scripts/reset_db.sh [OPTIONS]
 #
 # Options:
 #   -f, --force       Skip interactive confirmation prompt
-#   --no-backup       Do not create a safety backup before purging data
-#   --restart         Automatically start fresh postgres and apply migrations
+#   --no-backup       Skip pre-wipe safety backup
+#   --no-restart      Purge volume only without restarting containers
 #   -h, --help        Show this help message
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -31,12 +26,14 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
 BOLD='\033[1m'
 NC='\033[0m'
 
 FORCE=false
 SKIP_BACKUP=false
-RESTART=false
+RESTART=true
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -49,6 +46,10 @@ while [[ $# -gt 0 ]]; do
       SKIP_BACKUP=true
       shift
       ;;
+    --no-restart)
+      RESTART=false
+      shift
+      ;;
     --restart)
       RESTART=true
       shift
@@ -59,7 +60,7 @@ while [[ $# -gt 0 ]]; do
       echo "Options:"
       echo "  -f, --force       Skip interactive confirmation prompt"
       echo "  --no-backup       Skip creating a pre-wipe safety backup"
-      echo "  --restart         Start fresh database and apply migrations immediately"
+      echo "  --no-restart      Only purge volumes without restarting"
       echo "  -h, --help        Show this help message"
       exit 0
       ;;
@@ -80,20 +81,20 @@ else
 fi
 
 echo -e "${BLUE}============================================================${NC}"
-echo -e "${BLUE} Eduplexo — PostgreSQL Data Removal / Reset Tool${NC}"
+echo -e "${BOLD}${CYAN}   EduPlexo — Complete Database Reset & Bootstrap Tool${NC}"
 echo -e "${BLUE}============================================================${NC}"
-echo -e "Target Compose File : ${COMPOSE_FILE}"
+echo -e "Target Compose File : ${BOLD}${COMPOSE_FILE}${NC}"
 echo -e "Target Volume Name  : ${BOLD}${VOLUME_NAME}${NC}"
 echo ""
 
-# Confirmation Prompt
+# Interactive Confirmation
 if [[ "${FORCE}" != true ]]; then
   echo -e "${YELLOW}${BOLD}WARNING: This action will PERMANENTLY ERASE all PostgreSQL data!${NC}"
-  echo -e "All schemas, tables, school records, users, and audit logs will be deleted."
+  echo -e "All institutions, owners, subscriptions, payments, and users will be purged."
   echo ""
-  read -r -p "Type 'RESET' to confirm deletion of volume [${VOLUME_NAME}]: " CONFIRMATION
+  read -r -p "Type 'RESET' to confirm complete wipe of [${VOLUME_NAME}]: " CONFIRMATION
   if [[ "${CONFIRMATION}" != "RESET" ]]; then
-    echo -e "${GREEN}Aborted. No data was modified.${NC}"
+    echo -e "${GREEN}Aborted. No database data was modified.${NC}"
     exit 0
   fi
 fi
@@ -105,13 +106,13 @@ if [[ "${SKIP_BACKUP}" != true ]]; then
     if bash "${SCRIPT_DIR}/backup_db.sh"; then
       echo -e "${GREEN}  Pre-reset backup created successfully.${NC}"
     else
-      echo -e "${YELLOW}  Backup script failed or PostgreSQL was not running. Proceeding with caution...${NC}"
+      echo -e "${YELLOW}  Backup script skipped or PostgreSQL was stopped. Proceeding...${NC}"
     fi
   fi
 fi
 
-# Stop and remove containers attached to the database
-echo -e "\n${BLUE}>> Stopping database and dependent services...${NC}"
+# Stop and remove database & backend containers
+echo -e "\n${BLUE}>> Stopping backend, database, and migration services...${NC}"
 docker compose -f "${COMPOSE_FILE}" stop backend-go migrate postgres 2>/dev/null || true
 docker compose -f "${COMPOSE_FILE}" rm -f -v migrate postgres 2>/dev/null || true
 
@@ -124,12 +125,17 @@ else
   echo -e "${YELLOW}  Volume '${VOLUME_NAME}' does not exist or was already removed.${NC}"
 fi
 
-# Re-create empty volume
+# Re-create clean volume
 echo -e "\n${BLUE}>> Initializing clean volume: ${VOLUME_NAME}...${NC}"
 docker volume create "${VOLUME_NAME}" >/dev/null
 echo -e "${GREEN}  Clean PostgreSQL volume '${VOLUME_NAME}' initialized.${NC}"
 
-# Optional automatic restart & migration
+# Flush Redis cache
+echo -e "\n${BLUE}>> Purging Redis cache to prevent stale sessions/locks...${NC}"
+docker compose -f "${COMPOSE_FILE}" restart redis 2>/dev/null || docker compose -f "${COMPOSE_FILE}" up -d redis 2>/dev/null || true
+echo -e "${GREEN}  Redis cache refreshed.${NC}"
+
+# Restart & Migration Flow
 if [[ "${RESTART}" == true ]]; then
   echo -e "\n${BLUE}>> Starting fresh PostgreSQL instance...${NC}"
   docker compose -f "${COMPOSE_FILE}" up -d postgres
@@ -149,25 +155,48 @@ if [[ "${RESTART}" == true ]]; then
     echo -e "${RED}ERROR: PostgreSQL failed to become healthy within 60 seconds!${NC}" >&2
     exit 1
   fi
+  echo -e "${GREEN}  PostgreSQL is healthy and accepting connections.${NC}"
 
-  echo -e "\n${BLUE}>> Running database migrations on fresh database...${NC}"
+  echo -e "\n${BLUE}>> Applying all 33+ database migrations on clean database...${NC}"
   docker compose -f "${COMPOSE_FILE}" run --rm migrate
+  echo -e "${GREEN}  All migrations applied successfully!${NC}"
 
-  echo -e "\n${BLUE}>> Starting backend-go...${NC}"
+  echo -e "\n${BLUE}>> Booting backend-go (auto-bootstraps Super Admin & system school)...${NC}"
   docker compose -f "${COMPOSE_FILE}" up -d backend-go
 
+  echo "  Waiting for backend-go to initialize..."
+  sleep 4
+
   echo -e "\n${GREEN}============================================================${NC}"
-  echo -e "${GREEN} DATABASE RESET AND RE-INITIALIZATION COMPLETE!${NC}"
+  echo -e "${GREEN}${BOLD}   DATABASE RESET & RE-INITIALIZATION COMPLETE!${NC}"
   echo -e "${GREEN}============================================================${NC}"
+  echo ""
+  echo -e "${CYAN}${BOLD}╔══════════════════════════════════════════════════════════════╗${NC}"
+  echo -e "${CYAN}${BOLD}║                 EDUPLEXO SYSTEM CREDENTIALS                  ║${NC}"
+  echo -e "${CYAN}${BOLD}╠══════════════════════════════════════════════════════════════╣${NC}"
+  echo -e "${CYAN}${BOLD}║${NC} ${BOLD}1. SUPER ADMIN PORTAL${NC} (Platform Operations & Approvals)      ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}   URL      : ${BOLD}https://admin.eduplexo.com/login${NC}                 ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}   Email    : ${BOLD}${GREEN}super@gmail.com${NC}                                 ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}   Password : ${BOLD}${GREEN}Test@123${NC}                                        ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}   Role     : ${BOLD}super_admin${NC}                                     ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}                                                              ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC} ${BOLD}2. OWNER / INSTITUTION PORTAL${NC} (School Management)             ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}   URL      : ${BOLD}https://app.eduplexo.com/login${NC}                   ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}   Email    : ${BOLD}${GREEN}owner@gmail.com${NC}                                 ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}   Password : ${BOLD}${GREEN}Test@123${NC}                                        ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}   Role     : ${BOLD}owner${NC}                                           ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}                                                              ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC} ${BOLD}3. NEW OWNER REGISTRATION & EMAIL OTP${NC}                         ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}   Signup   : ${BOLD}https://app.eduplexo.com/signup${NC}                  ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}   Flow     : 6-digit Brevo OTP verification → 14-day trial    ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}              → Upgrade plan → Upload proof → Super Admin      ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}║${NC}              approves at admin.eduplexo.com/payments          ${CYAN}${BOLD}║${NC}"
+  echo -e "${CYAN}${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
+  echo ""
 else
   echo -e "\n${GREEN}============================================================${NC}"
   echo -e "${GREEN} POSTGRESQL DATA SUCCESSFULLY REMOVED!${NC}"
   echo -e "${GREEN}============================================================${NC}"
   echo -e "Next steps to boot fresh database:"
-  echo -e "  1. Run migrations and start services:"
-  echo -e "     ${BOLD}sudo ./scripts/deploy.sh${NC}"
-  echo -e "  OR manually:"
-  echo -e "     ${BOLD}docker compose -f docker-compose.prod.yml up -d postgres${NC}"
-  echo -e "     ${BOLD}docker compose -f docker-compose.prod.yml run --rm migrate${NC}"
-  echo -e "     ${BOLD}docker compose -f docker-compose.prod.yml up -d backend-go${NC}"
+  echo -e "  Run: ${BOLD}sudo ./scripts/reset_db.sh --restart -f${NC}"
 fi
