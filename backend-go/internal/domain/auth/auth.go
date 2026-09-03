@@ -397,7 +397,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	hasUpper := strings.ContainsAny(password, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 	hasLower := strings.ContainsAny(password, "abcdefghijklmnopqrstuvwxyz")
 	hasNumber := strings.ContainsAny(password, "0123456789")
-	hasSpecial := strings.ContainsAny(password, "@$!%*?&")
+	hasSpecial := strings.ContainsAny(password, "!@#$%^&*()_+-=[]{}|;':\",./<>?~`")
 	if len(password) < 8 || !hasUpper || !hasLower || !hasNumber || !hasSpecial {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("Password must be at least 8 characters long, and include an uppercase letter, a lowercase letter, a number, and a special character."))
 		return
