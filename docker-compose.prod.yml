@@ -75,6 +75,18 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      # Brevo Transactional Email & Email OTP Verification
+      BREVO_API_KEY: ${BREVO_API_KEY:?BREVO_API_KEY is required}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-verify@eduplexo.com}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME:-EduPlexo}
+      BREVO_OTP_TEMPLATE_ID: ${BREVO_OTP_TEMPLATE_ID:-}
+      BREVO_REPLY_TO_EMAIL: ${BREVO_REPLY_TO_EMAIL:-support@eduplexo.com}
+      BREVO_REPLY_TO_NAME: ${BREVO_REPLY_TO_NAME:-EduPlexo Support}
+      EMAIL_OTP_LENGTH: ${EMAIL_OTP_LENGTH:-6}
+      EMAIL_OTP_EXPIRY_SECONDS: ${EMAIL_OTP_EXPIRY_SECONDS:-300}
+      EMAIL_OTP_RESEND_COOLDOWN_SECONDS: ${EMAIL_OTP_RESEND_COOLDOWN_SECONDS:-60}
+      EMAIL_OTP_MAX_VERIFY_ATTEMPTS: ${EMAIL_OTP_MAX_VERIFY_ATTEMPTS:-5}
+      EMAIL_OTP_MAX_SEND_ATTEMPTS_PER_HOUR: ${EMAIL_OTP_MAX_SEND_ATTEMPTS_PER_HOUR:-5}
       # Optional AI Integrations — active when credentials are provided
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
