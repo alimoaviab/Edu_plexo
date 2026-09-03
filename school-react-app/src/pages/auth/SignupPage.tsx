@@ -88,12 +88,24 @@ export function SignupPage() {
       setResendCooldown(resendLeft);
 
       if (secondsLeft === 0) {
-        setError("This verification code has expired. Please request a new code.");
+        if (!isResending) {
+          setError((prev) => {
+            if (prev && prev !== "This verification code has expired. Please request a new code.") {
+              return prev;
+            }
+            return "This verification code has expired. Please request a new code.";
+          });
+        }
+      } else {
+        // As long as there is time remaining, clear any stale expiration error
+        setError((prev) =>
+          prev === "This verification code has expired. Please request a new code." ? "" : prev
+        );
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [stage, pendingSession]);
+  }, [stage, pendingSession, isResending]);
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
@@ -163,6 +175,7 @@ export function SignupPage() {
       setTimeRemaining(expirySeconds);
       setResendCooldown(cooldownSeconds);
       setOtpValue("");
+      setError("");
       setStage("verify");
       setSuccessMessage("We sent a 6-digit verification code to your email address.");
     } catch (err: unknown) {
@@ -247,6 +260,8 @@ export function SignupPage() {
     setIsResending(true);
     setError("");
     setSuccessMessage("");
+    // Optimistically reset time remaining so expiration error disappears instantly
+    setTimeRemaining(300);
 
     try {
       const response = await fetch("/api/auth/resend-otp", {
@@ -277,6 +292,7 @@ export function SignupPage() {
       setTimeRemaining(expirySeconds);
       setResendCooldown(cooldownSeconds);
       setOtpValue("");
+      setError("");
       setSuccessMessage("A fresh verification code has been dispatched to your email.");
     } catch (err: unknown) {
       setError((err as Error).message || "Failed to resend code.");
@@ -329,6 +345,7 @@ export function SignupPage() {
       setTimeRemaining(expirySeconds);
       setResendCooldown(cooldownSeconds);
       setOtpValue("");
+      setError("");
       setShowChangeEmail(false);
       setSuccessMessage(`Email updated! We sent a new verification code to ${cleanEmail}.`);
     } catch (err: unknown) {
@@ -523,7 +540,7 @@ export function SignupPage() {
                 className="space-y-5"
               >
                 {/* Status Messages */}
-                {successMessage && (
+                {!error && successMessage && (
                   <div className="text-xs text-emerald-700 font-semibold bg-emerald-50 p-3.5 rounded-2xl border border-emerald-200 flex items-center gap-2">
                     <AppIcon name="CheckCircle" size={16} className="flex-shrink-0 text-emerald-600" />
                     <span>{successMessage}</span>
@@ -547,7 +564,7 @@ export function SignupPage() {
                       setError("");
                     }}
                     onComplete={(code: string) => handleVerifyOTP(code)}
-                    disabled={isVerifying || timeRemaining === 0}
+                    disabled={isVerifying}
                     hasError={Boolean(error)}
                     autoFocus
                   />
@@ -612,7 +629,7 @@ export function SignupPage() {
                 <button
                   type="button"
                   onClick={() => handleVerifyOTP()}
-                  disabled={isVerifying || otpValue.length !== 6 || timeRemaining === 0}
+                  disabled={isVerifying || otpValue.length !== 6}
                   className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 >
                   {isVerifying ? (
