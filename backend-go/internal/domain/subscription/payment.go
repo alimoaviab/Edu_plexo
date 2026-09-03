@@ -306,9 +306,9 @@ func (h *Handler) AdminListPendingPayments(w http.ResponseWriter, r *http.Reques
 			       pr.transaction_id, pr.amount, pr.status, pr.submitted_at, pr.verified_at, COALESCE(pr.verified_by,''),
 			       COALESCE(pr.rejection_reason,''), COALESCE(pr.notes,''),
 			       COALESCE(s.name, u.email, 'Owner Account') AS school_name,
-			       COALESCE(s.owner_email, u.email, '') AS owner_name,
-			       COALESCE(s.contact_phone, u.phone, '') AS phone,
-			       COALESCE(s.contact_phone, u.phone, '') AS whatsapp,
+			       COALESCE(NULLIF(TRIM(u.profile_first || ' ' || u.profile_last), ''), s.admin_name, u.email, '') AS owner_name,
+			       COALESCE(s.contact_phone, u.profile_phone, '') AS phone,
+			       COALESCE(s.contact_phone, u.profile_phone, '') AS whatsapp,
 			       COALESCE(sp.name, pr.plan_id) AS plan_name
 			FROM payment_requests pr
 			LEFT JOIN schools s ON s.school_id = pr.school_id OR s.id = pr.school_id

@@ -252,9 +252,9 @@ func (h *Handler) AdminListSubscriptions(w http.ResponseWriter, r *http.Request)
 			SELECT 
 				s.id, s.school_id, 
 				COALESCE(sc.name, u.email, 'Owner Account') AS school_name,
-				COALESCE(sc.owner_email, u.email, '') AS owner_name,
+				COALESCE(NULLIF(TRIM(u.profile_first || ' ' || u.profile_last), ''), sc.admin_name, u.email, '') AS owner_name,
 				COALESCE(u.email, '') AS owner_email,
-				COALESCE(sc.contact_phone, u.phone, '') AS phone,
+				COALESCE(sc.contact_phone, u.profile_phone, '') AS phone,
 				COALESCE(s.plan_name, 'starter') AS plan_name,
 				COALESCE(s.student_limit, 200) AS student_limit,
 				COALESCE(s.price, 0) AS price,
