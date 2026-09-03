@@ -190,8 +190,17 @@ export function LoginPage() {
 
       setSuccess(true);
       if (payload?.token) {
+        // Clear prior session tokens to prevent bleed
+        localStorage.removeItem("active_school_id");
+        localStorage.removeItem("active_branch_id");
+        localStorage.removeItem("academic_year_id");
+        localStorage.removeItem("last_school_id");
+        localStorage.removeItem("profile_id");
+        localStorage.removeItem("class_id");
+        localStorage.removeItem("student_id");
+
         localStorage.setItem("token", payload.token);
-        if (payload?.school_id) {
+        if (payload?.role !== "owner" && payload?.school_id && payload.school_id !== "system") {
           localStorage.setItem("active_school_id", payload.school_id);
         }
         window.dispatchEvent(new Event("auth-changed"));

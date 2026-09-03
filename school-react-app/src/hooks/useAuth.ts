@@ -63,12 +63,30 @@ export function useAuth() {
           throw new Error("Token expired");
         }
 
-        enforceSchoolBoundary(payload.school_id);
-        if (payload.school_id) {
-          localStorage.setItem("active_school_id", payload.school_id);
+        const lastUserId = localStorage.getItem("last_user_id");
+        if (lastUserId && lastUserId !== payload.sub) {
+          localStorage.removeItem("active_school_id");
+          localStorage.removeItem("active_branch_id");
+          localStorage.removeItem("academic_year_id");
+          localStorage.removeItem("profile_id");
+          localStorage.removeItem("class_id");
+          localStorage.removeItem("student_id");
+          resetTenantCache();
+        }
+        localStorage.setItem("last_user_id", payload.sub);
+
+        if (payload.role !== "owner") {
+          enforceSchoolBoundary(payload.school_id);
+          if (payload.school_id && payload.school_id !== "system") {
+            localStorage.setItem("active_school_id", payload.school_id);
+          }
         }
 
-        const scopedKey = `academic_year_id:${payload.school_id}`;
+        const effectiveSchoolId = payload.role === "owner" 
+          ? (localStorage.getItem("active_school_id") || payload.school_id)
+          : payload.school_id;
+
+        const scopedKey = `academic_year_id:${effectiveSchoolId}`;
         const scopedYear = localStorage.getItem(scopedKey);
         if (!scopedYear && payload.active_academic_year_id) {
           localStorage.setItem(scopedKey, payload.active_academic_year_id);
@@ -77,7 +95,7 @@ export function useAuth() {
           scopedYear || payload.active_academic_year_id || "";
         if (effectiveYear) {
           localStorage.setItem("academic_year_id", effectiveYear);
-        } else {
+        } else if (payload.role !== "owner") {
           localStorage.removeItem("academic_year_id");
         }
 
@@ -89,7 +107,7 @@ export function useAuth() {
           id: payload.sub,
           email,
           role: payload.role,
-          schoolId: payload.school_id,
+          schoolId: effectiveSchoolId,
           activeAcademicYearId:
             effectiveYear || payload.active_academic_year_id,
           profileId,
@@ -107,10 +125,13 @@ export function useAuth() {
 
     loadUser();
 
-    // Re-check auth state when token changes (e.g. after login navigates here)
-    const handleAuthChange = () => loadUser();
+    const handleAuthChange = () => {
+      loadUser();
+    };
+
     window.addEventListener("auth-changed", handleAuthChange);
     window.addEventListener("storage", handleAuthChange);
+
     return () => {
       window.removeEventListener("auth-changed", handleAuthChange);
       window.removeEventListener("storage", handleAuthChange);
@@ -119,6 +140,12 @@ export function useAuth() {
 
   const logout = () => {
     resetTenantCache();
+
+    try {
+      fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
+    } catch {
+      // ignore
+    }
 
     const keysToKeep = ["theme", "language"];
     const preserved: Record<string, string> = {};

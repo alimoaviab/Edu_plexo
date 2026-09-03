@@ -374,18 +374,24 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:   now,
 	}
 
-	// Create default campus
+	// Create default campus with matching details
 	campusID := store.NewID("cmp")
 	newCampus := &store.Campus{
-		ID:        campusID,
-		SchoolID:  schoolID,
-		Name:      "Main Campus",
-		Code:      "MAIN",
-		Status:    "active",
-		Timezone:  "Asia/Karachi",
-		Currency:  "PKR",
-		CreatedAt: now,
-		UpdatedAt: now,
+		ID:             campusID,
+		SchoolID:       schoolID,
+		OwnerUserID:    ctx.UserID,
+		Name:           body.Name,
+		Code:           code,
+		Address:        body.Address,
+		City:           body.City,
+		Phone:          body.Phone,
+		Email:          body.Email,
+		PrincipalName:  body.PrincipalName,
+		Status:         "active",
+		Timezone:       "Asia/Karachi",
+		Currency:       "PKR",
+		CreatedAt:      now,
+		UpdatedAt:      now,
 	}
 
 	// Create default school settings
@@ -450,6 +456,7 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 				LastName:  lastName,
 			},
 			SchoolID:     schoolID,
+			CampusID:     campusID,
 			CreatedAt:    now,
 			UpdatedAt:    now,
 		}
@@ -674,6 +681,33 @@ func (h *Handler) ListCampuses(w http.ResponseWriter, r *http.Request) {
 			}
 			campuses = append(campuses, c)
 		}
+
+		// Fallback: If no campuses were found for owned schools, synthesize from school records
+		if len(campuses) == 0 {
+			targetIDs := ownerSchoolIDs
+			if schoolFilter != "" && containsStr(ownerSchoolIDs, schoolFilter) {
+				targetIDs = []string{schoolFilter}
+			}
+			for _, sid := range targetIDs {
+				for _, s := range h.Store.Schools {
+					if s.SchoolID == sid {
+						campuses = append(campuses, &store.Campus{
+							ID:          "cmp_" + s.SchoolID,
+							SchoolID:    s.SchoolID,
+							OwnerUserID: ctx.UserID,
+							Name:        s.Name,
+							Code:        s.Code,
+							City:        s.City,
+							Address:     s.Address,
+							Status:      s.Status,
+							CreatedAt:   s.CreatedAt,
+							UpdatedAt:   s.UpdatedAt,
+						})
+						break
+					}
+				}
+			}
+		}
 	} else {
 		// Admin, teacher, etc. — restricted to their assigned school
 		targetSchoolID := ctx.SchoolID
@@ -683,6 +717,25 @@ func (h *Handler) ListCampuses(w http.ResponseWriter, r *http.Request) {
 		for _, c := range h.Store.Campuses {
 			if c.SchoolID == targetSchoolID {
 				campuses = append(campuses, c)
+			}
+		}
+		// Fallback if no campus row exists for this school
+		if len(campuses) == 0 && targetSchoolID != "" && targetSchoolID != "system" {
+			for _, s := range h.Store.Schools {
+				if s.SchoolID == targetSchoolID {
+					campuses = append(campuses, &store.Campus{
+						ID:        "cmp_" + s.SchoolID,
+						SchoolID:  s.SchoolID,
+						Name:      s.Name,
+						Code:      s.Code,
+						City:      s.City,
+						Address:   s.Address,
+						Status:    s.Status,
+						CreatedAt: s.CreatedAt,
+						UpdatedAt: s.UpdatedAt,
+					})
+					break
+				}
 			}
 		}
 	}

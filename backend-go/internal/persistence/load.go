@@ -239,7 +239,8 @@ func (p *Persister) loadSchools(ctx context.Context, s *store.MemStore) error {
 	rows, err := p.pool.Query(ctx, `
 		SELECT id, school_id, name, code, logo_url, contact_email, contact_phone,
 			address, admin_name, admin_email, admin_phone, status, rejection_reason,
-			approved_by, approved_at, plan_key, created_at, updated_at
+			approved_by, approved_at, plan_key, created_at, updated_at,
+			COALESCE(owner_user_id, ''), COALESCE(owner_email, '')
 		FROM schools ORDER BY created_at`)
 	if err != nil {
 		return err
@@ -250,7 +251,8 @@ func (p *Persister) loadSchools(ctx context.Context, s *store.MemStore) error {
 		var adminEmail, adminPhone string
 		if err := rows.Scan(&v.ID, &v.SchoolID, &v.Name, &v.Code, &v.LogoURL, &v.Email, &v.Phone,
 			&v.Address, &v.PrincipalName, &adminEmail, &adminPhone, &v.Status, &v.RejectionReason,
-			&v.ApprovedBy, &v.ApprovedAt, &v.PackageID, &v.CreatedAt, &v.UpdatedAt); err != nil {
+			&v.ApprovedBy, &v.ApprovedAt, &v.PackageID, &v.CreatedAt, &v.UpdatedAt,
+			&v.OwnerUserID, &v.OwnerEmail); err != nil {
 			return err
 		}
 		if v.Email == "" {

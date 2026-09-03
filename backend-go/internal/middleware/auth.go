@@ -147,15 +147,15 @@ func Authenticator(cfg config.Config, s *store.MemStore) func(http.Handler) http
 }
 
 func readToken(r *http.Request) string {
+	authz := r.Header.Get("Authorization")
+	if authz != "" && strings.HasPrefix(strings.ToLower(authz), "bearer ") {
+		token := strings.TrimSpace(authz[7:])
+		if token != "" {
+			return token
+		}
+	}
 	if c, err := r.Cookie("session"); err == nil && c.Value != "" {
 		return strings.TrimSpace(c.Value)
-	}
-	authz := r.Header.Get("Authorization")
-	if authz == "" {
-		return ""
-	}
-	if strings.HasPrefix(strings.ToLower(authz), "bearer ") {
-		return strings.TrimSpace(authz[7:])
 	}
 	return ""
 }

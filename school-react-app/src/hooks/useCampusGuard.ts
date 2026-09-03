@@ -48,13 +48,25 @@ export function useCampusGuard() {
         // 2. Load Campuses for active school
         const url = schId ? `/api/campuses?school_id=${encodeURIComponent(schId)}` : "/api/campuses";
         const res = await serviceRequest<Campus[]>(url);
-        if (res.ok && Array.isArray(res.data)) {
+        if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
           setCampuses(res.data);
-          if (res.data.length > 0 && !window.localStorage.getItem("active_branch_id")) {
+          if (!window.localStorage.getItem("active_branch_id")) {
             const firstBranch = res.data[0]._id || res.data[0].id || "";
             setActiveCampusId(firstBranch);
             window.localStorage.setItem("active_branch_id", firstBranch);
           }
+        } else if (schId && schoolList.length > 0) {
+          const matchedSchool = schoolList.find(s => s.school_id === schId || s._id === schId) || schoolList[0];
+          const fallbackCampus: Campus = {
+            id: `cmp_${schId}`,
+            _id: `cmp_${schId}`,
+            name: matchedSchool.name || "Main Campus",
+            school_id: schId,
+            code: matchedSchool.code || "MAIN",
+          };
+          setCampuses([fallbackCampus]);
+          setActiveCampusId(fallbackCampus.id!);
+          window.localStorage.setItem("active_branch_id", fallbackCampus.id!);
         } else {
           setCampuses([]);
         }
@@ -70,16 +82,25 @@ export function useCampusGuard() {
         // Load campuses for this school
         const url = schId ? `/api/campuses?school_id=${encodeURIComponent(schId)}` : "/api/campuses";
         const res = await serviceRequest<Campus[]>(url);
-        if (res.ok && Array.isArray(res.data)) {
+        if (res.ok && Array.isArray(res.data) && res.data.length > 0) {
           setCampuses(res.data);
-          if (res.data.length > 0) {
-            const currentBranch = window.localStorage.getItem("active_branch_id");
-            if (!currentBranch || !res.data.some(c => (c._id || c.id) === currentBranch)) {
-              const firstBranch = res.data[0]._id || res.data[0].id || "";
-              setActiveCampusId(firstBranch);
-              window.localStorage.setItem("active_branch_id", firstBranch);
-            }
+          const currentBranch = window.localStorage.getItem("active_branch_id");
+          if (!currentBranch || !res.data.some(c => (c._id || c.id) === currentBranch)) {
+            const firstBranch = res.data[0]._id || res.data[0].id || "";
+            setActiveCampusId(firstBranch);
+            window.localStorage.setItem("active_branch_id", firstBranch);
           }
+        } else if (schId) {
+          const fallbackCampus: Campus = {
+            id: `cmp_${schId}`,
+            _id: `cmp_${schId}`,
+            name: "Main Campus",
+            school_id: schId,
+            code: "MAIN",
+          };
+          setCampuses([fallbackCampus]);
+          setActiveCampusId(fallbackCampus.id!);
+          window.localStorage.setItem("active_branch_id", fallbackCampus.id!);
         } else {
           setCampuses([]);
         }

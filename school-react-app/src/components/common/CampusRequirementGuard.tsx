@@ -73,26 +73,6 @@ export function CampusRequirementGuard({
 
   return (
     <div className="space-y-4">
-      {isOwner && showCampusSelect && campuses.length === 0 && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <AppIcon name="GitBranch" size={16} className="text-amber-600" />
-            <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wide">
-              No campus configured
-            </span>
-          </div>
-          <p className="text-xs font-medium text-amber-800/90">
-            This school has no campus yet. New records may fail to save until a campus is added.
-          </p>
-          <Button
-            variant="secondary"
-            className="mt-3"
-            onClick={() => navigate(rolePath("/admin/connect-domain") || "/owner/schools")}
-          >
-            Manage / Add Campus
-          </Button>
-        </div>
-      )}
       {showCampusSelect && campuses.length > 1 && (
         <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

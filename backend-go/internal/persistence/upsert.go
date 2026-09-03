@@ -235,8 +235,9 @@ func upsertSchool(ctx context.Context, tx pgx.Tx, v *store.School) error {
 	_, err := tx.Exec(ctx, `
 		INSERT INTO schools (id, school_id, name, code, logo_url, contact_email,
 			contact_phone, address, admin_name, admin_email, admin_phone, status,
-			rejection_reason, approved_by, approved_at, plan_key, created_at, updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+			rejection_reason, approved_by, approved_at, plan_key, created_at, updated_at,
+			owner_user_id, owner_email)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
 		ON CONFLICT (id) DO UPDATE SET
 			school_id=EXCLUDED.school_id, name=EXCLUDED.name, code=EXCLUDED.code,
 			logo_url=EXCLUDED.logo_url, contact_email=EXCLUDED.contact_email,
@@ -244,11 +245,13 @@ func upsertSchool(ctx context.Context, tx pgx.Tx, v *store.School) error {
 			admin_name=EXCLUDED.admin_name, admin_email=EXCLUDED.admin_email,
 			admin_phone=EXCLUDED.admin_phone, status=EXCLUDED.status,
 			rejection_reason=EXCLUDED.rejection_reason, approved_by=EXCLUDED.approved_by,
-			approved_at=EXCLUDED.approved_at, updated_at=EXCLUDED.updated_at
+			approved_at=EXCLUDED.approved_at, updated_at=EXCLUDED.updated_at,
+			owner_user_id=EXCLUDED.owner_user_id, owner_email=EXCLUDED.owner_email
 	`, v.ID, v.SchoolID, v.Name, v.Code, v.LogoURL, v.Email,
 		v.Phone, v.Address, v.PrincipalName, v.Email, v.Phone,
 		defaultStr(v.Status, "pending"), v.RejectionReason, v.ApprovedBy, v.ApprovedAt,
-		planKey, v.CreatedAt, v.UpdatedAt)
+		planKey, v.CreatedAt, v.UpdatedAt,
+		defaultStr(v.OwnerUserID, ""), defaultStr(v.OwnerEmail, ""))
 	return err
 }
 

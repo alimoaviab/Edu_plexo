@@ -216,20 +216,36 @@ func (h *Handler) resolveSchoolID(ctx *api.RequestContext) string {
 		if err == nil && sID != "" {
 			return sID
 		}
+		// Also check owner_schools junction
+		err = h.Pool.QueryRow(context.Background(), `
+			SELECT school_id FROM owner_schools
+			WHERE owner_user_id = $1 AND school_id NOT IN ('system', '__global__')
+			ORDER BY created_at ASC LIMIT 1
+		`, ctx.UserID).Scan(&sID)
+		if err == nil && sID != "" {
+			return sID
+		}
 	}
 	if h.Store != nil {
 		h.Store.RLock()
 		defer h.Store.RUnlock()
-		for _, s := range h.Store.Schools {
-			if s.SchoolID != "" && s.SchoolID != "system" && s.SchoolID != "__global__" {
-				if s.OwnerEmail == ctx.ActorEmail || s.OwnerUserID == ctx.UserID || ctx.Role == "owner" || ctx.Role == "super_admin" {
-					return s.SchoolID
-				}
+		for _, os := range h.Store.OwnerSchools {
+			if os.OwnerUserID == ctx.UserID && os.SchoolID != "" && os.SchoolID != "system" && os.SchoolID != "__global__" {
+				return os.SchoolID
 			}
 		}
 		for _, s := range h.Store.Schools {
 			if s.SchoolID != "" && s.SchoolID != "system" && s.SchoolID != "__global__" {
-				return s.SchoolID
+				if (s.OwnerEmail != "" && s.OwnerEmail == ctx.ActorEmail) || (s.OwnerUserID != "" && s.OwnerUserID == ctx.UserID) {
+					return s.SchoolID
+				}
+			}
+		}
+		if ctx.Role == "super_admin" {
+			for _, s := range h.Store.Schools {
+				if s.SchoolID != "" && s.SchoolID != "system" && s.SchoolID != "__global__" {
+					return s.SchoolID
+				}
 			}
 		}
 	}
@@ -812,26 +828,58 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetHistory(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if ctx == nil {
+		api.WriteJSON(w, http.StatusUnauthorized, map[string]any{"ok": false, "message": "Authentication required."})
+		return
+	}
+
 	api.WriteResult(w, api.ServiceTry(func() ([]HistoryEntry, error) {
-		rows, err := h.Pool.Query(r.Context(), `
-			SELECT id, school_id, plan_name, student_limit, amount, payment_status, start_date, end_date, action, created_at
-			FROM subscription_history
-			WHERE school_id = $1
-			ORDER BY created_at DESC
-			LIMIT 50
-		`, ctx.SchoolID)
+		entries := make([]HistoryEntry, 0)
+		if h.Pool == nil {
+			return entries, nil
+		}
+
+		targetSchoolID := h.resolveSchoolID(ctx)
+
+		var rows pgx.Rows
+		var err error
+		if ctx.Role == "owner" {
+			// Query only history for schools that belong to this owner
+			rows, err = h.Pool.Query(r.Context(), `
+				SELECT id, school_id, plan_name, student_limit, amount, payment_status, start_date, end_date, action, created_at
+				FROM subscription_history
+				WHERE school_id IN (
+					SELECT school_id FROM owner_schools WHERE owner_user_id = $1
+					UNION
+					SELECT school_id FROM schools WHERE (owner_user_id = $1 OR owner_email = $2) AND school_id NOT IN ('system', '__global__')
+				) OR (school_id = $3 AND $3 NOT IN ('system', '__global__', ''))
+				ORDER BY created_at DESC
+				LIMIT 50
+			`, ctx.UserID, ctx.ActorEmail, targetSchoolID)
+		} else if targetSchoolID != "" && targetSchoolID != "system" && targetSchoolID != "__global__" {
+			rows, err = h.Pool.Query(r.Context(), `
+				SELECT id, school_id, plan_name, student_limit, amount, payment_status, start_date, end_date, action, created_at
+				FROM subscription_history
+				WHERE school_id = $1
+				ORDER BY created_at DESC
+				LIMIT 50
+			`, targetSchoolID)
+		} else {
+			return entries, nil
+		}
+
 		if err != nil {
 			return nil, fmt.Errorf("query history: %w", err)
 		}
-		defer rows.Close()
-
-		entries := make([]HistoryEntry, 0)
-		for rows.Next() {
-			var e HistoryEntry
-			if err := rows.Scan(&e.ID, &e.SchoolID, &e.PlanName, &e.StudentLimit, &e.Amount, &e.PaymentStatus, &e.StartDate, &e.EndDate, &e.Action, &e.CreatedAt); err != nil {
-				continue
+		if rows != nil {
+			defer rows.Close()
+			for rows.Next() {
+				var e HistoryEntry
+				if err := rows.Scan(&e.ID, &e.SchoolID, &e.PlanName, &e.StudentLimit, &e.Amount, &e.PaymentStatus, &e.StartDate, &e.EndDate, &e.Action, &e.CreatedAt); err != nil {
+					continue
+				}
+				entries = append(entries, e)
 			}
-			entries = append(entries, e)
 		}
 		return entries, nil
 	}))

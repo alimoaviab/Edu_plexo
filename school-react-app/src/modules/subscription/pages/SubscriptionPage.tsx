@@ -92,26 +92,11 @@ export function SubscriptionPage() {
       is_custom: false,
       popular: false,
     },
-    {
-      id: "plan_custom",
-      name: "plan_custom",
-      display_name: "Custom Enterprise",
-      price: 30000,
-      currency: "PKR",
-      student_limit: 2000,
-      features: [
-        "Tailored Student Capacity Limit",
-        "Custom Feature Module Selection",
-        "On-Premise or Dedicated Hosting",
-        "Custom Domain & White-Label Setup",
-        "VIP SLA & Priority Engineering",
-      ],
-      is_custom: true,
-      popular: false,
-    },
   ];
 
-  const displayPlans = plans && plans.length > 0 ? plans : defaultPlans;
+  const displayPlans = (plans && plans.length > 0 ? plans : defaultPlans).filter(
+    (p) => !p.is_custom && p.name !== "plan_custom" && p.id !== "plan_custom"
+  );
 
   const seen = new Set<string>();
   const deduped = history.filter((entry) => {
@@ -304,7 +289,7 @@ export function SubscriptionPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch pt-4 max-w-6xl mx-auto">
             {displayPlans.map((plan) => {
               return (
                 <PricingCard
@@ -341,7 +326,6 @@ export function SubscriptionPage() {
                     navigate(`${rolePrefix}/dashboard`);
                   }}
                   onUpgrade={() => navigate(`${rolePrefix}/subscription/payment`, { state: { plan } })}
-                  onManualSubscribe={() => navigate(`${rolePrefix}/subscription/custom`)}
                   isUpgrading={isUpgrading}
                   isStartingTrial={isStartingTrial}
                   sub={sub}
@@ -419,22 +403,6 @@ export function SubscriptionPage() {
             </div>
           </div>
         )}
-
-        {/* Enterprise Support Callout */}
-        <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-white p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm">
-          <div className="space-y-1.5 text-center sm:text-left">
-            <h3 className="text-lg font-bold text-slate-900">Need Custom Student Limits or On-Premise Deployment?</h3>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-2xl">
-              We provide tailored solutions for educational networks managing more than 2,000 students or demanding bespoke system integration.
-            </p>
-          </div>
-          <button
-            onClick={() => navigate(`${rolePrefix}/subscription/custom`)}
-            className="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shrink-0 shadow-sm"
-          >
-            Configure Custom Plan
-          </button>
-        </div>
       </div>
     </SchoolShell>
   );
@@ -448,7 +416,6 @@ interface PricingCardProps {
   canTrial: boolean;
   onStartTrial: () => void;
   onUpgrade: () => void;
-  onManualSubscribe: () => void;
   isUpgrading: boolean;
   isStartingTrial: boolean;
   sub: any;
@@ -460,7 +427,6 @@ function PricingCard({
   canTrial,
   onStartTrial,
   onUpgrade,
-  onManualSubscribe,
   isUpgrading,
   isStartingTrial,
   sub,
@@ -529,32 +495,20 @@ function PricingCard({
           </h3>
 
           <div className="mt-4 flex items-baseline justify-center">
-            {plan.is_custom ? (
-              <div
-                className={`text-2xl font-black tracking-tight ${
-                  isPopular ? "text-white" : "text-slate-900"
-                }`}
-              >
-                Custom Modules
-              </div>
-            ) : (
-              <>
-                <span
-                  className={`text-4xl font-black tracking-tight ${
-                    isPopular ? "text-white" : "text-slate-900"
-                  }`}
-                >
-                  PKR {plan.price.toLocaleString()}
-                </span>
-                <span
-                  className={`text-xs font-semibold ml-1.5 ${
-                    isPopular ? "text-blue-200/90" : "text-slate-400"
-                  }`}
-                >
-                  /month
-                </span>
-              </>
-            )}
+            <span
+              className={`text-4xl font-black tracking-tight ${
+                isPopular ? "text-white" : "text-slate-900"
+              }`}
+            >
+              PKR {plan.price.toLocaleString()}
+            </span>
+            <span
+              className={`text-xs font-semibold ml-1.5 ${
+                isPopular ? "text-blue-200/90" : "text-slate-400"
+              }`}
+            >
+              /month
+            </span>
           </div>
 
           <div
@@ -600,19 +554,7 @@ function PricingCard({
 
       {/* Action Button */}
       <div className="mt-8 pt-2">
-        {plan.is_custom ? (
-          <button
-            onClick={onManualSubscribe}
-            className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 flex items-center justify-center gap-2 ${
-              isPopular
-                ? "bg-white text-slate-900 hover:bg-slate-100 shadow-md"
-                : "border-2 border-blue-600 text-blue-600 hover:bg-blue-50"
-            }`}
-          >
-            <AppIcon name="Sliders" size={16} />
-            <span>Build Your Own Plan</span>
-          </button>
-        ) : isCurrentPlan ? (
+        {isCurrentPlan ? (
           isRenewalDue ? (
             <button
               onClick={onUpgrade}
@@ -631,7 +573,7 @@ function PricingCard({
               <span>Active Plan</span>
             </button>
           )
-        ) : canTrial && !plan.is_custom ? (
+        ) : canTrial ? (
           <button
             onClick={onStartTrial}
             disabled={isStartingTrial}

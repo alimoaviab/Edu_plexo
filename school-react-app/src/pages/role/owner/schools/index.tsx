@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppIcon } from "shared/ui/AppIcon";
 import { serviceRequest } from "@/services/service-client";
@@ -7,6 +8,7 @@ import { toast } from "@/utils/toast";
 
 export default function OwnerSchoolsPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   
   const { data: schoolsData, isLoading: loading } = useQuery<any[]>({
     queryKey: ["owner-schools"],
@@ -96,6 +98,17 @@ export default function OwnerSchoolsPage() {
     }
   };
 
+  const handleSwitchToCampus = (school: any) => {
+    const sId = school.school_id || school._id || school.id;
+    if (sId) {
+      localStorage.setItem("active_school_id", sId);
+      localStorage.setItem("active_branch_id", `cmp_${sId}`);
+      window.dispatchEvent(new Event("auth-changed"));
+      toast.success(`Active campus switched to ${school.name}`);
+      navigate("/admin/dashboard");
+    }
+  };
+
   if (loading) {
     return (
       <SchoolShell eyebrow="Owner Portal" title="Portfolio">
@@ -167,15 +180,25 @@ export default function OwnerSchoolsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button 
-                        onClick={() => {
-                          setSelectedSchool(school);
-                          setShowPassword(false);
-                        }}
-                        className="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 font-bold px-3.5 py-1.5 rounded-lg border border-blue-200 transition-colors shadow-sm"
-                      >
-                        View Details
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleSwitchToCampus(school)}
+                          className="text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-bold px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors shadow-sm flex items-center gap-1.5"
+                          title="Open campus admin workspace"
+                        >
+                          <AppIcon name="ExternalLink" size={13} />
+                          <span>Switch Context</span>
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setSelectedSchool(school);
+                            setShowPassword(false);
+                          }}
+                          className="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 font-bold px-3.5 py-1.5 rounded-lg border border-blue-200 transition-colors shadow-sm"
+                        >
+                          View Details
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -373,122 +396,204 @@ export default function OwnerSchoolsPage() {
       {/* ────────────────────────────────────────────────────────────────────────── */}
       {/* ONBOARD NEW CAMPUS MODAL */}
       {/* ────────────────────────────────────────────────────────────────────────── */}
+      {/* ────────────────────────────────────────────────────────────────────────── */}
+      {/* ONBOARD NEW CAMPUS SLIDE-OVER DRAWER */}
+      {/* ────────────────────────────────────────────────────────────────────────── */}
       {isOnboardModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-slate-900">Onboard Campus</h2>
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md md:max-w-xl h-full shadow-2xl border-l border-slate-200 flex flex-col animate-in slide-in-from-right duration-300">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/20">
+                    <AppIcon name="Plus" size={20} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Onboard New Campus</h2>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Provision a new educational branch and administrative account.
+                    </p>
+                  </div>
+                </div>
+              </div>
               <button 
                 onClick={() => {
                   setIsOnboardModalOpen(false);
                   setShowModalPassword(false);
                   setNewSchool(INITIAL_SCHOOL_STATE);
                 }} 
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 transition-colors"
+                title="Close"
               >
                 <AppIcon name="X" size={20} />
               </button>
             </div>
 
-            {modalError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-xs font-bold text-red-600 mb-4">
-                <AppIcon name="AlertCircle" size={16} className="flex-shrink-0 text-red-500" />
-                <span>{modalError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleCreateSchool} className="space-y-4" autoComplete="off">
-              {/* Decoy hidden inputs to prevent browser password managers from autofilling owner credentials into admin inputs */}
-              <input type="text" name="decoy_username_prevent_autofill" style={{ display: "none" }} tabIndex={-1} aria-hidden="true" autoComplete="off" />
-              <input type="password" name="decoy_password_prevent_autofill" style={{ display: "none" }} tabIndex={-1} aria-hidden="true" autoComplete="off" />
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Campus Name</label>
-                <input required type="text" autoComplete="off" value={newSchool.name} onChange={e => { setNewSchool({...newSchool, name: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="e.g. City Branch" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Campus Code (Unique)</label>
-                <input required type="text" autoComplete="off" value={newSchool.code} onChange={e => { setNewSchool({...newSchool, code: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="e.g. CITY01" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
-                  <input required type="text" autoComplete="off" value={newSchool.city} onChange={e => { setNewSchool({...newSchool, city: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" />
+            {/* Form & Body */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+              {modalError && (
+                <div className="p-4 bg-red-50/80 border border-red-200 rounded-2xl flex items-center gap-3 text-xs font-bold text-red-600">
+                  <AppIcon name="AlertCircle" size={18} className="flex-shrink-0 text-red-500" />
+                  <span>{modalError}</span>
                 </div>
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-                  <input type="text" autoComplete="off" value={newSchool.address} onChange={e => { setNewSchool({...newSchool, address: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" />
-                </div>
-              </div>
+              )}
 
-              <div className="pt-2 border-t border-slate-100 mt-2">
-                <h3 className="text-sm font-bold text-slate-900 mb-3">Admin Account Details</h3>
+              <form id="onboard-campus-form" onSubmit={handleCreateSchool} className="space-y-6" autoComplete="off">
+                {/* Prevent browser password managers autofill */}
+                <input type="text" name="decoy_username_prevent_autofill" style={{ display: "none" }} tabIndex={-1} aria-hidden="true" autoComplete="off" />
+                <input type="password" name="decoy_password_prevent_autofill" style={{ display: "none" }} tabIndex={-1} aria-hidden="true" autoComplete="off" />
+
+                {/* Section 1: Campus Identification */}
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Principal / Admin Name</label>
-                    <input required type="text" autoComplete="off" value={newSchool.principal_name} onChange={e => { setNewSchool({...newSchool, principal_name: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="e.g. John Doe" />
+                  <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
+                    <AppIcon name="Building2" size={16} className="text-blue-600" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">Campus Identification</h3>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Login Email</label>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Campus / Branch Name *</label>
+                    <input 
+                      required 
+                      type="text" 
+                      autoComplete="off" 
+                      value={newSchool.name} 
+                      onChange={e => { setNewSchool({...newSchool, name: e.target.value}); setModalError(""); }} 
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all placeholder:text-slate-400" 
+                      placeholder="e.g. City Campus (Model Town)" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Branch Code (Unique Identifier) *</label>
+                    <input 
+                      required 
+                      type="text" 
+                      autoComplete="off" 
+                      value={newSchool.code} 
+                      onChange={e => { setNewSchool({...newSchool, code: e.target.value.toUpperCase()}); setModalError(""); }} 
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-mono font-bold text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all placeholder:text-slate-400" 
+                      placeholder="e.g. LHR-MT01" 
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">City *</label>
                       <input 
                         required 
-                        type="email" 
-                        name="campus_admin_email"
-                        id="campus_admin_email"
-                        autoComplete="new-password"
-                        value={newSchool.email} 
-                        onChange={e => { setNewSchool({...newSchool, email: e.target.value}); setModalError(""); }} 
-                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" 
-                        placeholder="admin@school.com" 
+                        type="text" 
+                        autoComplete="off" 
+                        value={newSchool.city} 
+                        onChange={e => { setNewSchool({...newSchool, city: e.target.value}); setModalError(""); }} 
+                        className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all placeholder:text-slate-400" 
+                        placeholder="e.g. Lahore" 
                       />
                     </div>
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Login Password</label>
-                      <div className="relative">
-                        <input 
-                          required 
-                          type={showModalPassword ? "text" : "password"} 
-                          name="campus_admin_password"
-                          id="campus_admin_password"
-                          autoComplete="new-password"
-                          value={newSchool.password} 
-                          onChange={e => { setNewSchool({...newSchool, password: e.target.value}); setModalError(""); }} 
-                          className="w-full rounded-lg border border-slate-200 pl-3 pr-10 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" 
-                          placeholder="••••••••" 
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowModalPassword(prev => !prev)}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 transition-colors"
-                          title={showModalPassword ? "Hide Password" : "Show Password"}
-                          tabIndex={-1}
-                        >
-                          <AppIcon name={showModalPassword ? "EyeOff" : "Eye"} size={16} />
-                        </button>
-                      </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">Campus Address</label>
+                      <input 
+                        type="text" 
+                        autoComplete="off" 
+                        value={newSchool.address} 
+                        onChange={e => { setNewSchool({...newSchool, address: e.target.value}); setModalError(""); }} 
+                        className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all placeholder:text-slate-400" 
+                        placeholder="e.g. Sector B, Block 4" 
+                      />
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="pt-4 flex justify-end gap-3">
-                <button 
-                  type="button" 
-                  onClick={() => { 
-                    setIsOnboardModalOpen(false); 
-                    setShowModalPassword(false); 
-                    setNewSchool(INITIAL_SCHOOL_STATE);
-                  }} 
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg"
-                >
-                  Cancel
-                </button>
-                <button type="submit" disabled={creating} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
-                  {creating && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
-                  {creating ? "Creating..." : "Create Campus"}
-                </button>
-              </div>
-            </form>
+
+                {/* Section 2: Campus Administrator Account */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
+                    <AppIcon name="Shield" size={16} className="text-indigo-600" />
+                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">Campus Administrator</h3>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Principal / Administrator Name *</label>
+                    <input 
+                      required 
+                      type="text" 
+                      autoComplete="off" 
+                      value={newSchool.principal_name} 
+                      onChange={e => { setNewSchool({...newSchool, principal_name: e.target.value}); setModalError(""); }} 
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all placeholder:text-slate-400" 
+                      placeholder="e.g. Muhammad Aslam" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Administrator Login Email *</label>
+                    <input 
+                      required 
+                      type="email" 
+                      name="campus_admin_email"
+                      id="campus_admin_email"
+                      autoComplete="new-password"
+                      value={newSchool.email} 
+                      onChange={e => { setNewSchool({...newSchool, email: e.target.value}); setModalError(""); }} 
+                      className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm font-medium text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all placeholder:text-slate-400" 
+                      placeholder="admin@school.com" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Administrator Login Password *</label>
+                    <div className="relative">
+                      <input 
+                        required 
+                        type={showModalPassword ? "text" : "password"} 
+                        name="campus_admin_password"
+                        id="campus_admin_password"
+                        autoComplete="new-password"
+                        value={newSchool.password} 
+                        onChange={e => { setNewSchool({...newSchool, password: e.target.value}); setModalError(""); }} 
+                        className="w-full rounded-xl border border-slate-200 pl-3.5 pr-11 py-2.5 text-sm font-mono font-medium text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 transition-all placeholder:text-slate-400" 
+                        placeholder="••••••••••••" 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowModalPassword(prev => !prev)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors"
+                        title={showModalPassword ? "Hide Password" : "Show Password"}
+                        tabIndex={-1}
+                      >
+                        <AppIcon name={showModalPassword ? "EyeOff" : "Eye"} size={16} />
+                      </button>
+                    </div>
+                    <span className="text-[11px] text-slate-400 mt-1 block">
+                      The principal will use this to sign in to their administrative portal.
+                    </span>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 md:p-6 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <button 
+                type="button" 
+                onClick={() => { 
+                  setIsOnboardModalOpen(false); 
+                  setShowModalPassword(false); 
+                  setNewSchool(INITIAL_SCHOOL_STATE);
+                }} 
+                className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-200/60 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                form="onboard-campus-form"
+                disabled={creating} 
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-600/20 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+              >
+                {creating && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                <span>{creating ? "Onboarding Campus..." : "Confirm & Onboard"}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
