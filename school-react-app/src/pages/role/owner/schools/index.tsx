@@ -24,9 +24,11 @@ export default function OwnerSchoolsPage() {
 
   const schools = schoolsData || [];
   
+  const INITIAL_SCHOOL_STATE = { name: "", code: "", city: "", address: "", principal_name: "", email: "", password: "" };
+
   // Onboard Modal State
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
-  const [newSchool, setNewSchool] = useState({ name: "", code: "", city: "", address: "", principal_name: "", email: "", password: "" });
+  const [newSchool, setNewSchool] = useState(INITIAL_SCHOOL_STATE);
   const [showModalPassword, setShowModalPassword] = useState(false);
   const [creating, setCreating] = useState(false);
   const [modalError, setModalError] = useState("");
@@ -49,7 +51,7 @@ export default function OwnerSchoolsPage() {
         setIsOnboardModalOpen(false);
         setModalError("");
         setShowModalPassword(false);
-        setNewSchool({ name: "", code: "", city: "", address: "", principal_name: "", email: "", password: "" });
+        setNewSchool(INITIAL_SCHOOL_STATE);
         void queryClient.invalidateQueries({ queryKey: ["owner-schools"] });
         void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       } else {
@@ -93,6 +95,7 @@ export default function OwnerSchoolsPage() {
             onClick={() => {
               setModalError("");
               setShowModalPassword(false);
+              setNewSchool(INITIAL_SCHOOL_STATE);
               setIsOnboardModalOpen(true);
             }}
             className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
@@ -342,6 +345,7 @@ export default function OwnerSchoolsPage() {
                 onClick={() => {
                   setIsOnboardModalOpen(false);
                   setShowModalPassword(false);
+                  setNewSchool(INITIAL_SCHOOL_STATE);
                 }} 
                 className="text-slate-400 hover:text-slate-600"
               >
@@ -356,23 +360,27 @@ export default function OwnerSchoolsPage() {
               </div>
             )}
 
-            <form onSubmit={handleCreateSchool} className="space-y-4">
+            <form onSubmit={handleCreateSchool} className="space-y-4" autoComplete="off">
+              {/* Decoy hidden inputs to prevent browser password managers from autofilling owner credentials into admin inputs */}
+              <input type="text" name="decoy_username_prevent_autofill" style={{ display: "none" }} tabIndex={-1} aria-hidden="true" autoComplete="off" />
+              <input type="password" name="decoy_password_prevent_autofill" style={{ display: "none" }} tabIndex={-1} aria-hidden="true" autoComplete="off" />
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Campus Name</label>
-                <input required type="text" value={newSchool.name} onChange={e => { setNewSchool({...newSchool, name: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="e.g. City Branch" />
+                <input required type="text" autoComplete="off" value={newSchool.name} onChange={e => { setNewSchool({...newSchool, name: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="e.g. City Branch" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Campus Code (Unique)</label>
-                <input required type="text" value={newSchool.code} onChange={e => { setNewSchool({...newSchool, code: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="e.g. CITY01" />
+                <input required type="text" autoComplete="off" value={newSchool.code} onChange={e => { setNewSchool({...newSchool, code: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="e.g. CITY01" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 sm:col-span-1">
                   <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
-                  <input required type="text" value={newSchool.city} onChange={e => { setNewSchool({...newSchool, city: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" />
+                  <input required type="text" autoComplete="off" value={newSchool.city} onChange={e => { setNewSchool({...newSchool, city: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" />
                 </div>
                 <div className="col-span-2 sm:col-span-1">
                   <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-                  <input type="text" value={newSchool.address} onChange={e => { setNewSchool({...newSchool, address: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" />
+                  <input type="text" autoComplete="off" value={newSchool.address} onChange={e => { setNewSchool({...newSchool, address: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" />
                 </div>
               </div>
 
@@ -381,12 +389,22 @@ export default function OwnerSchoolsPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Principal / Admin Name</label>
-                    <input required type="text" value={newSchool.principal_name} onChange={e => { setNewSchool({...newSchool, principal_name: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="e.g. John Doe" />
+                    <input required type="text" autoComplete="off" value={newSchool.principal_name} onChange={e => { setNewSchool({...newSchool, principal_name: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="e.g. John Doe" />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2 sm:col-span-1">
                       <label className="block text-sm font-medium text-slate-700 mb-1">Login Email</label>
-                      <input required type="email" value={newSchool.email} onChange={e => { setNewSchool({...newSchool, email: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="admin@school.com" />
+                      <input 
+                        required 
+                        type="email" 
+                        name="campus_admin_email"
+                        id="campus_admin_email"
+                        autoComplete="new-password"
+                        value={newSchool.email} 
+                        onChange={e => { setNewSchool({...newSchool, email: e.target.value}); setModalError(""); }} 
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" 
+                        placeholder="admin@school.com" 
+                      />
                     </div>
                     <div className="col-span-2 sm:col-span-1">
                       <label className="block text-sm font-medium text-slate-700 mb-1">Login Password</label>
@@ -394,6 +412,9 @@ export default function OwnerSchoolsPage() {
                         <input 
                           required 
                           type={showModalPassword ? "text" : "password"} 
+                          name="campus_admin_password"
+                          id="campus_admin_password"
+                          autoComplete="new-password"
                           value={newSchool.password} 
                           onChange={e => { setNewSchool({...newSchool, password: e.target.value}); setModalError(""); }} 
                           className="w-full rounded-lg border border-slate-200 pl-3 pr-10 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" 
@@ -419,6 +440,7 @@ export default function OwnerSchoolsPage() {
                   onClick={() => { 
                     setIsOnboardModalOpen(false); 
                     setShowModalPassword(false); 
+                    setNewSchool(INITIAL_SCHOOL_STATE);
                   }} 
                   className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg"
                 >
