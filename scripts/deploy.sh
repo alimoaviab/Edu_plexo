@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════
-# Eduplexo — Automated Safe Production Deployment Script
+# Eduplexo — Automated Production Deployment Script
 # ═══════════════════════════════════════════════════════════════════════════
-# Guarantees:
-#   - Fails immediately on any error (set -euo pipefail)
-#   - Validates Compose & Nginx configuration before modifying state
-#   - Creates an automated database snapshot prior to running migrations
-#   - Runs migrations safely with golang-migrate
-#   - Ensures services become healthy before promoting Nginx traffic
-#   - NEVER runs docker compose down -v or deletes persistent volumes
+# Target Host: Contabo VPS (Ubuntu 24.04 LTS — 212.47.79.212)
+# Usage:
+#   cd /opt/eduplexo
+#   sudo ./scripts/deploy.sh
 # ═══════════════════════════════════════════════════════════════════════════
 
 set -euo pipefail
@@ -17,35 +14,48 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 COMPOSE_FILE="${ROOT_DIR}/docker-compose.prod.yml"
 
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
 RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
 log_step() {
-  echo -e "\n${BLUE}==> [$(date -u +"%Y-%m-%dT%H:%M:%SZ")] $1${NC}"
+  echo -e "\n${BLUE}============================================================${NC}"
+  echo -e "${BLUE}>> $1${NC}"
+  echo -e "${BLUE}============================================================${NC}"
 }
 
-# ─── 1. Environment & Prerequisites Verification ────────────────────────
-log_step "1. Verifying environment prerequisites..."
-if [[ ! -f "${ROOT_DIR}/.env" ]]; then
-  echo -e "${RED}ERROR: Production configuration file ${ROOT_DIR}/.env is missing!${NC}" >&2
-  echo "Please copy .env.prod.example to .env and configure your production secrets." >&2
+# ─── 1. Prerequisite Checks ───────────────────────────────────────────────
+log_step "1. Validating deployment prerequisites..."
+
+if ! command -v docker &>/dev/null; then
+  echo -e "${RED}ERROR: Docker is not installed or not in PATH!${NC}" >&2
   exit 1
 fi
 
-# Ensure required host directories exist
-mkdir -p "${ROOT_DIR}/nginx/ssl" "${ROOT_DIR}/nginx/cache" /var/backups/eduplexo
+if ! docker compose version &>/dev/null; then
+  echo -e "${RED}ERROR: Docker Compose v2 is required!${NC}" >&2
+  exit 1
+fi
 
-# ─── 2. Configuration Validation ─────────────────────────────────────────
-log_step "2. Validating Docker Compose configuration..."
+if [[ ! -f "${ROOT_DIR}/.env" ]]; then
+  echo -e "${RED}ERROR: Production environment file ${ROOT_DIR}/.env is missing!${NC}" >&2
+  echo -e "${YELLOW}Copy .env.prod.example to .env and configure all required secrets.${NC}" >&2
+  exit 1
+fi
+
+# Ensure correct file permissions on secrets
+chmod 600 "${ROOT_DIR}/.env"
+
+# ─── 2. Validate Compose Syntax & Environment Variables ───────────────────
+log_step "2. Validating docker-compose.prod.yml configuration..."
 docker compose -f "${COMPOSE_FILE}" --env-file "${ROOT_DIR}/.env" config --quiet
-echo "  Docker Compose configuration syntax is valid."
 
-# ─── 3. Pre-migration Database Backup ────────────────────────────────────
-log_step "3. Checking for running database to perform pre-deployment backup..."
-if docker compose -f "${COMPOSE_FILE}" ps --status running --format '{{.Service}}' | grep -qx "postgres"; then
-  echo "  PostgreSQL is currently running. Creating pre-migration backup snapshot..."
+# ─── 3. Pre-Deployment Database Backup ───────────────────────────────────
+log_step "3. Checking for existing database to backup..."
+if docker compose -f "${COMPOSE_FILE}" ps --status running postgres 2>/dev/null | grep -q postgres; then
+  echo "  Active PostgreSQL container detected. Executing pre-deployment backup..."
   bash "${SCRIPT_DIR}/backup_db.sh"
 else
   echo "  PostgreSQL is not running yet. Skipping pre-deployment backup."
@@ -53,7 +63,8 @@ fi
 
 # ─── 4. Build / Update Application Images ────────────────────────────────
 log_step "4. Building production container images..."
-docker compose -f "${COMPOSE_FILE}" --env-file "${ROOT_DIR}/.env" build backend-go edubot
+docker compose -f "${COMPOSE_FILE}" --env-file "${ROOT_DIR}/.env" build backend-go
+# Future AI: add edubot to build command when activating Edubot
 
 # ─── 5. Start Core Infrastructure (Postgres & Redis) ─────────────────────
 log_step "5. Starting persistent infrastructure services (Postgres & Redis)..."
@@ -103,8 +114,9 @@ docker compose -f "${COMPOSE_FILE}" --env-file "${ROOT_DIR}/.env" run --rm migra
 echo "  Database migrations applied successfully."
 
 # ─── 7. Start Application Services ───────────────────────────────────────
-log_step "7. Starting backend-go and edubot services..."
-docker compose -f "${COMPOSE_FILE}" --env-file "${ROOT_DIR}/.env" up -d backend-go edubot
+log_step "7. Starting backend-go service..."
+docker compose -f "${COMPOSE_FILE}" --env-file "${ROOT_DIR}/.env" up -d backend-go
+# Future AI: add edubot to up command when activating Edubot
 
 # ─── 8. Certificate Webroot & Nginx Reverse Proxy ────────────────────────
 log_step "8. Ensuring TLS certificates and starting Nginx..."

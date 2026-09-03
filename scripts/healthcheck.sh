@@ -7,7 +7,7 @@
 #   2. PostgreSQL database connectivity & readiness
 #   3. Redis 7 cache authentication & pong response
 #   4. Go Backend /health, /health/ready, /health/live
-#   5. Edubot /chat/health endpoint
+#   5. Edubot /chat/health endpoint (if active) or reports dormant state
 #   6. Nginx /healthz local reverse-proxy responder
 #   7. Public HTTPS endpoints (if DNS/TLS are live)
 # ═══════════════════════════════════════════════════════════════════════════
@@ -45,7 +45,7 @@ check_warn() {
 
 # ─── 1. Container Status Check ───────────────────────────────────────────
 echo -e "\n${BLUE}1. Inspecting Docker Container States...${NC}"
-SERVICES=("postgres" "redis" "backend-go" "edubot" "nginx")
+SERVICES=("postgres" "redis" "backend-go" "nginx")
 
 for svc in "${SERVICES[@]}"; do
   STATUS="$(docker compose -f "${COMPOSE_FILE}" ps --format '{{.State}}' "${svc}" 2>/dev/null || echo "not-found")"
@@ -86,7 +86,6 @@ fi
 
 # ─── 4. Go Backend API Endpoints ────────────────────────────────────────
 echo -e "\n${BLUE}4. Validating Go Backend Endpoints...${NC}"
-# Execute curl inside the nginx container to reach backend-go:8080 privately
 BACKEND_HEALTH="$(docker compose -f "${COMPOSE_FILE}" exec -T nginx wget -qO- http://backend-go:8080/health 2>/dev/null || true)"
 if [[ "${BACKEND_HEALTH}" == *"\"ok\":true"* ]]; then
   check_pass "Backend /health reported healthy: ${BACKEND_HEALTH}"
@@ -108,13 +107,18 @@ else
   check_fail "Backend /health/live" "response was: '${BACKEND_LIVE}'"
 fi
 
-# ─── 5. Edubot AI Service Endpoint ──────────────────────────────────────
-echo -e "\n${BLUE}5. Validating Edubot Microservice...${NC}"
-EDUBOT_HEALTH="$(docker compose -f "${COMPOSE_FILE}" exec -T nginx wget -qO- http://edubot:8001/chat/health 2>/dev/null || true)"
-if [[ "${EDUBOT_HEALTH}" == *"\"status\":"* ]]; then
-  check_pass "Edubot /chat/health responded: ${EDUBOT_HEALTH}"
+# ─── 5. Edubot AI Service Endpoint (Optional / Future AI) ────────────────
+echo -e "\n${BLUE}5. Validating Edubot Microservice (Optional)...${NC}"
+EDUBOT_RUNNING="$(docker compose -f "${COMPOSE_FILE}" ps --format '{{.State}}' edubot 2>/dev/null || echo "not-found")"
+if [[ "${EDUBOT_RUNNING}" == "running" ]]; then
+  EDUBOT_HEALTH="$(docker compose -f "${COMPOSE_FILE}" exec -T nginx wget -qO- http://edubot:8001/chat/health 2>/dev/null || true)"
+  if [[ "${EDUBOT_HEALTH}" == *"\"status\":"* ]]; then
+    check_pass "Edubot /chat/health responded: ${EDUBOT_HEALTH}"
+  else
+    check_fail "Edubot /chat/health" "response was: '${EDUBOT_HEALTH}'"
+  fi
 else
-  check_fail "Edubot /chat/health" "response was: '${EDUBOT_HEALTH}'"
+  check_pass "Edubot microservice is dormant (disabled for current non-AI release; ready for activation)"
 fi
 
 # ─── 6. Nginx Local Health Endpoint ─────────────────────────────────────
@@ -134,10 +138,12 @@ else
   check_warn "Public HTTPS api.eduplexo.com" "DNS or TLS certificate may not be provisioned yet"
 fi
 
-if curl -fsSL --connect-timeout 5 https://bot.eduplexo.com/chat/health >/dev/null 2>&1; then
-  check_pass "Public HTTPS https://bot.eduplexo.com/chat/health is reachable and returns 200"
-else
-  check_warn "Public HTTPS bot.eduplexo.com" "DNS or TLS certificate may not be provisioned yet"
+if [[ "${EDUBOT_RUNNING}" == "running" ]]; then
+  if curl -fsSL --connect-timeout 5 https://bot.eduplexo.com/chat/health >/dev/null 2>&1; then
+    check_pass "Public HTTPS https://bot.eduplexo.com/chat/health is reachable and returns 200"
+  else
+    check_warn "Public HTTPS bot.eduplexo.com" "DNS or TLS certificate may not be provisioned yet"
+  fi
 fi
 
 echo -e "\n============================================================"
