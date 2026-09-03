@@ -97,7 +97,7 @@ func Load() (Config, error) {
 		BrevoSenderEmail:               getenv("BREVO_SENDER_EMAIL", "verify@eduplexo.com"),
 		BrevoSenderName:                getenv("BREVO_SENDER_NAME", "EduPlexo"),
 		BrevoOTPTemplateID:             parseInt64(os.Getenv("BREVO_OTP_TEMPLATE_ID")),
-		BrevoReplyToEmail:              os.Getenv("BREVO_REPLY_TO_EMAIL"),
+		BrevoReplyToEmail:              getenv("BREVO_REPLY_TO_EMAIL", "support@eduplexo.com"),
 		BrevoReplyToName:               getenv("BREVO_REPLY_TO_NAME", "EduPlexo Support"),
 		EmailOTPLength:                 parseIntDefault(os.Getenv("EMAIL_OTP_LENGTH"), 6),
 		EmailOTPExpirySeconds:          parseIntDefault(os.Getenv("EMAIL_OTP_EXPIRY_SECONDS"), 300),

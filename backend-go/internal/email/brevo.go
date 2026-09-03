@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"log/slog"
 	"net/http"
@@ -116,23 +117,34 @@ func (b *BrevoClient) SendOTP(ctx context.Context, toEmail, toName, otp string, 
 	// Prepare dynamic template parameters
 	params := map[string]any{
 		"firstName":     firstName,
+		"name":          firstName,
 		"otp":           otp,
 		"expiryMinutes": strconv.Itoa(expiryMinutes),
 	}
 
 	// Render inline HTML content with HTML escaping for security
 	renderedHTML := defaultOTPEmailHTML
-	renderedHTML = strings.ReplaceAll(renderedHTML, "{{firstName}}", fmt.Sprintf("%s", firstName))
-	renderedHTML = strings.ReplaceAll(renderedHTML, "{{otp}}", otp)
+	renderedHTML = strings.ReplaceAll(renderedHTML, "{{name}}", html.EscapeString(firstName))
+	renderedHTML = strings.ReplaceAll(renderedHTML, "{{firstName}}", html.EscapeString(firstName))
+	renderedHTML = strings.ReplaceAll(renderedHTML, "{{otp}}", html.EscapeString(otp))
 	renderedHTML = strings.ReplaceAll(renderedHTML, "{{expiryMinutes}}", strconv.Itoa(expiryMinutes))
 
 	// Plain text fallback
-	textContent := fmt.Sprintf("EduPlexo — Verify your email\n\nHello %s,\n\nWelcome to EduPlexo.\n\nYour verification code is:\n\n%s\n\nThis code expires in %d minutes.\n\nNever share this code with anyone.\nEduPlexo support will never ask you for it.\n\nIf you did not create this account, you can safely ignore this email.\n\nThe EduPlexo Team", firstName, otp, expiryMinutes)
+	textContent := fmt.Sprintf("Verify your email\n\nHello %s,\n\nThanks for signing up for EduPlexo.\nUse the verification code below to confirm your email address and activate your account.\n\n%s\n\nThis code expires in %d minutes.\n\nFor your security, never share this code with anyone.\n\nIf you didn't create an EduPlexo account, you can safely ignore this email.\n\n© EduPlexo", firstName, otp, expiryMinutes)
+
+	senderName := strings.TrimSpace(b.cfg.SenderName)
+	if senderName == "" {
+		senderName = "EduPlexo"
+	}
+	senderEmail := strings.TrimSpace(b.cfg.SenderEmail)
+	if senderEmail == "" {
+		senderEmail = "verify@eduplexo.com"
+	}
 
 	payload := brevoEmailPayload{
 		Sender: &brevoSender{
-			Name:  b.cfg.SenderName,
-			Email: b.cfg.SenderEmail,
+			Name:  senderName,
+			Email: senderEmail,
 		},
 		To: []brevoRecipient{
 			{
@@ -146,10 +158,14 @@ func (b *BrevoClient) SendOTP(ctx context.Context, toEmail, toName, otp string, 
 		Params:      params,
 	}
 
-	if b.cfg.ReplyToEmail != "" {
+	if strings.TrimSpace(b.cfg.ReplyToEmail) != "" {
+		replyName := strings.TrimSpace(b.cfg.ReplyToName)
+		if replyName == "" {
+			replyName = "EduPlexo Support"
+		}
 		payload.ReplyTo = &brevoSender{
-			Name:  b.cfg.ReplyToName,
-			Email: b.cfg.ReplyToEmail,
+			Name:  replyName,
+			Email: strings.TrimSpace(b.cfg.ReplyToEmail),
 		}
 	}
 
