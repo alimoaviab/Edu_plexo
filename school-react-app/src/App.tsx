@@ -60,7 +60,8 @@ function AppContent() {
       <Outlet />
       <ToastProvider />
       <NetworkStatus />
-      {user && <ChatWidget />}
+      {/* AI Bot widget temporarily commented out for current release */}
+      {/* {user && <ChatWidget />} */}
     </>
   );
 }
