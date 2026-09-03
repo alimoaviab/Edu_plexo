@@ -36,6 +36,18 @@ export interface ModulePackage {
   modules: string[];
 }
 
+export interface PendingPayment {
+  id: string;
+  school_id: string;
+  plan_id: string;
+  transaction_id: string;
+  amount: number;
+  status: string;
+  submitted_at: string;
+  notes?: string;
+  screenshot_url?: string;
+}
+
 export interface CurrentSubscription {
   subscription: Subscription | null;
   students_used: number;
@@ -47,6 +59,7 @@ export interface CurrentSubscription {
   available_packages?: ModulePackage[];
   allowed_modules?: Record<string, boolean>;
   package_builder_required?: boolean;
+  pending_payment?: PendingPayment | null;
 }
 
 export interface HistoryEntry {

@@ -165,9 +165,22 @@ export function SchoolsPage() {
                     <span className="text-[11px] font-bold text-slate-900">{formatCurrency(school.revenue || 0)}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-[10px] text-slate-500">
-                      {school.expiry ? new Date(school.expiry).toLocaleDateString() : '—'}
-                    </span>
+                    {school.expiry ? (
+                      <div>
+                        <p className="text-[11px] font-semibold text-slate-700">
+                          {new Date(school.expiry).toLocaleDateString()}
+                        </p>
+                        {(() => {
+                          const diff = new Date(school.expiry).getTime() - Date.now();
+                          const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                          if (days <= 0) return <span className="text-[10px] font-bold text-rose-600">Expired</span>;
+                          if (days <= 3) return <span className="text-[10px] font-bold text-amber-600">{days}d left (Trial Ending)</span>;
+                          return <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">{days} days trial left</span>;
+                        })()}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-slate-400">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1.5">

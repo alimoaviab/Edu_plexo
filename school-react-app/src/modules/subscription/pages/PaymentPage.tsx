@@ -129,18 +129,28 @@ export function PaymentPage() {
 
     setIsSubmitting(true);
     try {
+      let screenshotUrl = "";
+      if (file) {
+        screenshotUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
       const txId = transactionId || smsText.slice(0, 50) || "FILE_" + (file?.name || Date.now());
       const res = await service.submitPaymentProof({
         plan_id: plan.id,
         transaction_id: txId,
         amount: plan.price,
         notes: smsText,
-        screenshot_url: file ? "pending_upload://" + file.name : "",
+        screenshot_url: screenshotUrl,
       });
 
       if (res.ok) {
         showToast(
-          "Payment proof submitted! Our finance team will verify and activate your plan within 2-4 business hours.",
+          "Payment proof submitted! Verification is pending. If your payment is not approved, please contact +92 306 4944326.",
           "success"
         );
         navigate(`${rolePrefix}/subscription`);
@@ -148,7 +158,7 @@ export function PaymentPage() {
         showToast(res.error?.message || "Failed to submit proof. Please try again.", "error");
       }
     } catch {
-      showToast("An unexpected error occurred. Please contact billing support.", "error");
+      showToast("An unexpected error occurred. Please contact billing support at +92 306 4944326.", "error");
     } finally {
       setIsSubmitting(false);
     }

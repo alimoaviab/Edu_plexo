@@ -243,6 +243,56 @@ export function SubscriptionPage() {
           </div>
         </div>
 
+        {/* Pending Payment Verification Banner */}
+        {current?.pending_payment && (
+          <div className="bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/5 border border-amber-300 text-amber-900 rounded-2xl p-5 sm:p-6 shadow-sm space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <AppIcon name="Clock" size={18} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base text-amber-900">
+                    Payment Proof Under Review
+                  </h3>
+                  <p className="text-xs text-amber-700 font-medium">
+                    Reference: <span className="font-mono font-bold select-all bg-white/70 px-1.5 py-0.5 rounded border border-amber-200">{current.pending_payment.transaction_id}</span>
+                  </p>
+                </div>
+              </div>
+              <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-200/80 text-amber-900 border border-amber-300 shrink-0">
+                Pending Approval
+              </span>
+            </div>
+
+            <p className="text-xs text-amber-800 leading-relaxed">
+              Your manual transfer proof for <strong>Rs. {current.pending_payment.amount.toLocaleString()}</strong> has been recorded and queued for finance verification. Once approved by Super Admin, your upgraded plan will become active immediately.
+            </p>
+
+            <div className="pt-2 border-t border-amber-200/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-1.5 text-amber-900 font-medium">
+                <span>Payment not approved yet? Contact official billing support:</span>
+                <a
+                  href="tel:+923064944326"
+                  className="font-bold text-blue-700 hover:text-blue-800 underline flex items-center gap-1"
+                >
+                  <AppIcon name="Phone" size={12} />
+                  <span>+92 306 4944326</span>
+                </a>
+              </div>
+              <a
+                href="https://wa.me/923064944326"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-all active:scale-95"
+              >
+                <AppIcon name="MessageSquare" size={13} />
+                <span>WhatsApp Support</span>
+              </a>
+            </div>
+          </div>
+        )}
+
         {/* Pricing Cards Section */}
         <div id="pricing-cards-section" className="space-y-6 pt-4">
           <div className="text-center max-w-2xl mx-auto space-y-2">
