@@ -30,7 +30,7 @@ export function SubscriptionPage() {
 
   const navigate = useNavigate();
 
-  if (isLoading) {
+  if (isLoading && current === undefined && plans.length === 0) {
     return <SubscriptionSkeleton />;
   }
 
@@ -261,7 +261,7 @@ export function SubscriptionPage() {
                   key={plan.id || plan.name}
                   plan={plan}
                   isCurrentPlan={sub?.plan_name === plan.name || (sub?.plan_name === "growth" && plan.name === "plan_growth")}
-                  canTrial={current?.can_trial ?? false}
+                  canTrial={current?.can_trial ?? (!sub || sub.status === "inactive" || sub.status === "expired")}
                   onStartTrial={async () => {
                     await startTrial(plan.name);
                     navigate(`${rolePrefix}/dashboard`);

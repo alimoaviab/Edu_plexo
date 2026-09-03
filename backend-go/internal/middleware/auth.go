@@ -101,8 +101,8 @@ func Authenticator(cfg config.Config, s *store.MemStore) func(http.Handler) http
 			}
 
 			// Support global school context switching for Owner and Super Admin.
-			if sch := strings.TrimSpace(r.Header.Get("x-school-id")); sch != "" && sch != "undefined" {
-				if ctx.Role == "super_admin" {
+			if sch := strings.TrimSpace(r.Header.Get("x-school-id")); sch != "" && sch != "undefined" && sch != "null" {
+				if ctx.Role == "super_admin" || sch == "system" || sch == "__global__" {
 					ctx.SchoolID = sch
 				} else if ctx.Role == "owner" {
 					s.RLock()

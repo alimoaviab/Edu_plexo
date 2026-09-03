@@ -51,13 +51,23 @@ export function SubscriptionRequired({ current }: SubscriptionRequiredProps) {
         </p>
 
         {isOwner ? (
-          <button
-            onClick={() => navigate("/owner/subscription")}
-            className="w-full h-11 md:h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs md:text-sm tracking-wide shadow-lg shadow-blue-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <span>Manage Subscription</span>
-            <AppIcon name="ChevronRight" size={16} />
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={() => navigate("/owner/subscription")}
+              className="w-full h-11 md:h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs md:text-sm tracking-wide shadow-lg shadow-blue-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <AppIcon name="Zap" size={16} />
+              <span>Choose Subscription Plan / Free Trial</span>
+              <AppIcon name="ChevronRight" size={16} />
+            </button>
+            <button
+              onClick={() => navigate("/owner/schools")}
+              className="w-full h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs tracking-wide transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <AppIcon name="Building" size={14} />
+              <span>Manage / Onboard Campuses</span>
+            </button>
+          </div>
         ) : (
           <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
             <p className="text-xs font-semibold text-slate-600 leading-normal flex items-center gap-2 justify-center">

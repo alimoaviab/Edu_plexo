@@ -666,6 +666,41 @@ func (h *Handler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		permissions = []string{}
 	}
 
+	if pending.Role == "owner" && (schoolID == "" || schoolID == "system") {
+		schoolID = store.NewID("sch")
+		initialSchool := &store.School{
+			ID:             store.NewID("sch_entity"),
+			SchoolID:       schoolID,
+			Name:           pending.FullName + " School",
+			Code:           strings.ToUpper(store.NewID("SCH")[:8]),
+			Status:         "active",
+			ApprovalStatus: "approved",
+			OwnerUserID:    userID,
+			OwnerEmail:     pending.Email,
+			CreatedAt:      now,
+			UpdatedAt:      now,
+		}
+		h.Store.Schools = append(h.Store.Schools, initialSchool)
+		h.Persist("schools", initialSchool)
+
+		// Create 14-day Free Trial of Growth Plan
+		trialEnd := now.AddDate(0, 0, 14)
+		trialSub := &store.Subscription{
+			ID:           store.NewID("sub"),
+			SchoolID:     schoolID,
+			PackageID:    "growth",
+			StudentLimit: 500,
+			Price:        0,
+			Status:       "trial",
+			AutoRenew:    false,
+			NextRenewal:  trialEnd,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		}
+		h.Store.Subscriptions = append(h.Store.Subscriptions, trialSub)
+		h.Persist("subscriptions", trialSub)
+	}
+
 	newUser := &store.User{
 		ID:           userID,
 		SchoolID:     schoolID,

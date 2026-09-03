@@ -10,31 +10,36 @@ export function useSubscription() {
     queryKey: tenantQueryKey(["subscription", "current"]),
     queryFn: async () => {
       const res = await service.getCurrent();
-      if (!res.ok) throw new Error(res.error?.message || "Failed to load subscription");
-      return res.data!;
+      if (!res.ok) return null;
+      return res.data ?? null;
     },
-    staleTime: 0,
+    staleTime: 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   const plansQuery = useQuery({
     queryKey: tenantQueryKey(["subscription", "plans", "v2"]),
     queryFn: async () => {
       const res = await service.getPlans();
-      if (!res.ok) throw new Error(res.error?.message || "Failed to load plans");
-      console.log("Fetched plans from API:", res.data);
-      return res.data!;
+      if (!res.ok) return [];
+      return res.data ?? [];
     },
     staleTime: 60 * 60 * 1000, // Plans rarely change
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   const historyQuery = useQuery({
     queryKey: tenantQueryKey(["subscription", "history"]),
     queryFn: async () => {
       const res = await service.getHistory();
-      if (!res.ok) throw new Error(res.error?.message || "Failed to load history");
-      return res.data!;
+      if (!res.ok) return [];
+      return res.data ?? [];
     },
     staleTime: 5 * 60 * 1000,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   const startTrialMutation = useMutation({

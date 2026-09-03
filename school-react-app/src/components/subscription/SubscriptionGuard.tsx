@@ -13,11 +13,12 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const location = useLocation();
   const pathname = location.pathname;
 
-  // Exempt auth routes and subscription setup page routes
+  // Exempt auth routes, subscription setup routes, and school onboarding routes
   const isExempt = 
     pathname.startsWith("/auth") || 
     pathname.startsWith("/owner/subscription") ||
-    pathname.startsWith("/admin/subscription");
+    pathname.startsWith("/admin/subscription") ||
+    pathname.startsWith("/owner/schools");
 
   const isSuperAdmin = user?.role === "super_admin";
 

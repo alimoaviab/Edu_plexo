@@ -72,11 +72,11 @@ function readAcademicYearId(): string {
 function readActiveSchoolId(): string {
   if (typeof window === "undefined") return "";
   const stored = window.localStorage.getItem("active_school_id");
-  if (stored) return stored;
+  if (stored && stored !== "system" && stored !== "__global__" && stored !== "undefined") return stored;
   const token = readToken();
   if (token) {
     const payload = decodeJwtPayload(token);
-    if (payload?.school_id) {
+    if (payload?.school_id && payload.school_id !== "system" && payload.school_id !== "__global__") {
       window.localStorage.setItem("active_school_id", payload.school_id);
       return payload.school_id;
     }

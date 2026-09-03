@@ -232,6 +232,65 @@ func (h *Handler) resolveSchoolID(ctx *api.RequestContext) string {
 			}
 		}
 	}
+	if ctx.Role == "owner" && (ctx.ActorEmail != "" || ctx.UserID != "") {
+		newSchoolID := store.NewID("sch")
+		now := time.Now()
+		initialSchool := &store.School{
+			ID:             store.NewID("sch_entity"),
+			SchoolID:       newSchoolID,
+			Name:           "Main Campus",
+			Code:           strings.ToUpper(store.NewID("SCH")[:8]),
+			Status:         "active",
+			ApprovalStatus: "approved",
+			OwnerUserID:    ctx.UserID,
+			OwnerEmail:     ctx.ActorEmail,
+			CreatedAt:      now,
+			UpdatedAt:      now,
+		}
+		if h.Store != nil {
+			h.Store.Lock()
+			h.Store.Schools = append(h.Store.Schools, initialSchool)
+			h.Store.Unlock()
+		}
+		if h.Pool != nil {
+			_, _ = h.Pool.Exec(context.Background(), `
+				INSERT INTO schools (id, school_id, name, code, status, approval_status, owner_user_id, owner_email, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+				ON CONFLICT (school_id) DO NOTHING
+			`, initialSchool.ID, initialSchool.SchoolID, initialSchool.Name, initialSchool.Code,
+				initialSchool.Status, initialSchool.ApprovalStatus, initialSchool.OwnerUserID, initialSchool.OwnerEmail,
+				initialSchool.CreatedAt, initialSchool.UpdatedAt)
+		}
+
+		// Also provision 14-day Free Trial of Growth Plan
+		trialEnd := now.AddDate(0, 0, 14)
+		subID := store.NewID("sub")
+		storeSub := &store.Subscription{
+			ID:           subID,
+			SchoolID:     newSchoolID,
+			PackageID:    "growth",
+			StudentLimit: 500,
+			Price:        0,
+			Status:       "trial",
+			AutoRenew:    false,
+			NextRenewal:  trialEnd,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		}
+		if h.Store != nil {
+			h.Store.Lock()
+			h.Store.Subscriptions = append(h.Store.Subscriptions, storeSub)
+			h.Store.Unlock()
+		}
+		if h.Pool != nil {
+			_, _ = h.Pool.Exec(context.Background(), `
+				INSERT INTO subscriptions (id, school_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
+				VALUES ($1, $2, 'growth', 500, 0, 'PKR', $3, $4, 'trial', true, true, $5, $6)
+				ON CONFLICT (id) DO NOTHING
+			`, subID, newSchoolID, now, trialEnd, now, now)
+		}
+		return newSchoolID
+	}
 	return ""
 }
 
