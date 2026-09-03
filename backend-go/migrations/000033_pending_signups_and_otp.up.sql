@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS pending_signups (
     full_name           TEXT        NOT NULL,
     phone               TEXT        NOT NULL DEFAULT '',
     role                TEXT        NOT NULL DEFAULT 'owner',
+    school_id           TEXT        NOT NULL DEFAULT 'system',
     password_hash       TEXT        NOT NULL,
     otp_hash            TEXT        NOT NULL,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),

@@ -61,6 +61,7 @@ type PendingSignup struct {
 	FullName      string     `json:"full_name"`
 	Phone         string     `json:"phone,omitempty"`
 	Role          string     `json:"role"`
+	SchoolID      string     `json:"school_id,omitempty"`
 	PasswordHash  string     `json:"-"`
 	OTPHash       string     `json:"-"`
 	CreatedAt     time.Time  `json:"created_at"`

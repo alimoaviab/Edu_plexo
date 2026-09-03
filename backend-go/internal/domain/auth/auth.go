@@ -16,6 +16,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/api"
 	authpkg "github.com/eduplexo/backend-go/internal/auth"
 	"github.com/eduplexo/backend-go/internal/config"
+	"github.com/eduplexo/backend-go/internal/email"
 	"github.com/eduplexo/backend-go/internal/store"
 )
 
@@ -24,25 +25,47 @@ type Handler struct {
 	Cfg     config.Config
 	Store   *store.MemStore
 	Persist func(table string, doc any)
+	Email   email.Client
+}
+
+func defaultEmailClient(cfg config.Config) email.Client {
+	return email.NewBrevoClient(email.Config{
+		APIKey:        cfg.BrevoAPIKey,
+		SenderEmail:   cfg.BrevoSenderEmail,
+		SenderName:    cfg.BrevoSenderName,
+		ReplyToEmail:  cfg.BrevoReplyToEmail,
+		ReplyToName:   cfg.BrevoReplyToName,
+		OTPTemplateID: cfg.BrevoOTPTemplateID,
+		IsProduction:  cfg.IsProduction(),
+	})
 }
 
 // New returns a configured auth handler.
-//
-// Note: callers should prefer NewWithPersist when a persistence layer
-// is configured — otherwise users created during signup live in
-// memory only and disappear on restart, which surfaces to the user
-// as "Invalid email or password" the next day.
 func New(cfg config.Config, s *store.MemStore) *Handler {
-	return &Handler{Cfg: cfg, Store: s, Persist: func(string, any) {}}
+	return &Handler{
+		Cfg:     cfg,
+		Store:   s,
+		Persist: func(string, any) {},
+		Email:   defaultEmailClient(cfg),
+	}
 }
 
-// NewWithPersist returns a handler that pushes signup writes (school,
-// academic year, user) to PostgreSQL via the provided save function.
+// NewWithPersist returns a handler that pushes signup writes to PostgreSQL.
 func NewWithPersist(cfg config.Config, s *store.MemStore, save func(string, any)) *Handler {
 	if save == nil {
 		save = func(string, any) {}
 	}
-	return &Handler{Cfg: cfg, Store: s, Persist: save}
+	return &Handler{
+		Cfg:     cfg,
+		Store:   s,
+		Persist: save,
+		Email:   defaultEmailClient(cfg),
+	}
+}
+
+// SetEmailClient allows injecting a custom or mock email client for testing.
+func (h *Handler) SetEmailClient(c email.Client) {
+	h.Email = c
 }
 
 // loginRequest mirrors the body the original /api/auth/login endpoint
@@ -356,6 +379,20 @@ type signupRequest struct {
 	SelectedPackages []string `json:"selected_packages,omitempty"`
 }
 
+type verifyOTPRequest struct {
+	PendingID string `json:"pending_id"`
+	OTP       string `json:"otp"`
+}
+
+type resendOTPRequest struct {
+	PendingID string `json:"pending_id"`
+}
+
+type changeEmailRequest struct {
+	PendingID string `json:"pending_id"`
+	NewEmail  string `json:"new_email"`
+}
+
 // Signup implements POST /api/auth/signup. Mirrors the Node route file.
 // For role="admin"/"owner": creates an Owner user with "system" scope (no default school).
 // For other roles: looks up the school by its school_id/code, validates,
@@ -421,142 +458,469 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	now := time.Now()
 
-	if role == "admin" || role == "owner" {
-		userID := store.NewID("usr")
-		
-		newUser := &store.User{
-			ID:           userID,
-			SchoolID:     "system",
-			CampusID:     "",
-			Email:        email,
-			PasswordHash: hash,
-			Role:         role,
-			Permissions:  []string{"*"},
-			Profile: store.UserProfile{
-				FirstName: firstWord(fullName),
-				LastName:  remainingWords(fullName),
-				Phone:     body.Phone,
-			},
-			Status:    "active",
-			CreatedAt: now,
-			UpdatedAt: now,
+	schoolID := "system"
+	if role != "admin" && role != "owner" {
+		h.Store.RLock()
+		var school *store.School
+		for _, s := range h.Store.Schools {
+			if s.SchoolID == schoolCode || s.Code == schoolCode {
+				school = s
+				break
+			}
 		}
-
-		h.Store.Lock()
-		h.Store.Users = append(h.Store.Users, newUser)
-		h.Store.Unlock()
-
-		h.Persist("users", newUser)
-
-		var message string
-		if role == "owner" {
-			message = "Your owner account is active. Redirecting to dashboard..."
-		} else {
-			message = "Your admin account is active. Redirecting to dashboard..."
+		h.Store.RUnlock()
+		if school == nil {
+			api.WriteJSON(w, http.StatusNotFound, signupErr("Invalid school code"))
+			return
 		}
-
-		claims := authpkg.Claims{
-			SchoolID:             "system",
-			Role:                 role,
-			Permissions:          newUser.Permissions,
-			ActiveAcademicYearID: "",
-			SessionID:            "sess_" + randomID(),
-			App:                  h.Cfg.AppName,
-			ActorEmail:           email,
-		}
-		claims.Subject = newUser.ID
-		token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
-		if err == nil {
-			h.setSessionCookie(w, token, true)
-		}
-
-		api.WriteJSON(w, http.StatusCreated, map[string]any{
-			"ok":      true,
-			"success": true,
-			"message": message,
-			"data": map[string]any{
-				"status":                  "active",
-				"school_id":               "system",
-				"token":                   token,
-				"role":                    role,
-				"active_academic_year_id": "",
-			},
-		})
-		return
+		schoolID = school.SchoolID
 	}
 
-	// Non-admin signup: find the existing school by school_id or code.
-	h.Store.RLock()
-	var school *store.School
-	for _, s := range h.Store.Schools {
-		if s.SchoolID == schoolCode || s.Code == schoolCode {
-			school = s
+	// ─── Phase: Secure 6-Digit Email OTP Verification ──────────────────
+	// Email verification via Brevo transactional OTP is required for all
+	// self-serve registrations before account activation.
+	otp, err := authpkg.GenerateCryptoOTP(h.Cfg.EmailOTPLength)
+	if err != nil {
+		api.WriteJSON(w, http.StatusInternalServerError, signupErr("Failed to generate verification code."))
+		return
+	}
+	otpHash := authpkg.HashOTP(otp)
+	expirySec := h.Cfg.EmailOTPExpirySeconds
+	if expirySec <= 0 {
+		expirySec = 300
+	}
+	expiresAt := now.Add(time.Duration(expirySec) * time.Second)
+
+	var pending *store.PendingSignup
+	h.Store.Lock()
+	for _, ps := range h.Store.PendingSignups {
+		if strings.EqualFold(ps.Email, email) && (ps.Status == "pending" || ps.Status == "expired") {
+			pending = ps
 			break
 		}
 	}
-	h.Store.RUnlock()
-	if school == nil {
-		api.WriteJSON(w, http.StatusNotFound, signupErr("Invalid school code"))
+
+	if pending != nil {
+		// Existing pending signup: invalidate old OTP immediately, set new OTP & fresh 5-min window
+		pending.FullName = fullName
+		pending.Phone = body.Phone
+		pending.Role = role
+		pending.SchoolID = schoolID
+		pending.PasswordHash = hash
+		pending.OTPHash = otpHash
+		pending.ExpiresAt = expiresAt
+		pending.LastSentAt = now
+		pending.Attempts = 0
+		pending.MaxAttempts = h.Cfg.EmailOTPMaxVerifyAttempts
+		pending.Status = "pending"
+		pending.SendCountHour++
+	} else {
+		pending = &store.PendingSignup{
+			ID:            store.NewID("psign"),
+			Email:         email,
+			FullName:      fullName,
+			Phone:         body.Phone,
+			Role:          role,
+			SchoolID:      schoolID,
+			PasswordHash:  hash,
+			OTPHash:       otpHash,
+			CreatedAt:     now,
+			ExpiresAt:     expiresAt,
+			LastSentAt:    now,
+			Attempts:      0,
+			MaxAttempts:   h.Cfg.EmailOTPMaxVerifyAttempts,
+			SendCountHour: 1,
+			Status:        "pending",
+			IPAddress:     r.RemoteAddr,
+		}
+		h.Store.PendingSignups = append(h.Store.PendingSignups, pending)
+	}
+	h.Store.Unlock()
+
+	h.Persist("pending_signups", pending)
+
+	// Dispatch Brevo transactional email with 6-digit OTP
+	if h.Email != nil {
+		if err := h.Email.SendOTP(r.Context(), pending.Email, pending.FullName, otp, expirySec/60); err != nil {
+			api.WriteJSON(w, http.StatusInternalServerError, signupErr("Failed to deliver verification email. Please check your email address."))
+			return
+		}
+	}
+
+	cooldownSec := h.Cfg.EmailOTPResendCooldownSeconds
+	if cooldownSec <= 0 {
+		cooldownSec = 60
+	}
+
+	api.WriteJSON(w, http.StatusOK, map[string]any{
+		"ok":      true,
+		"success": true,
+		"message": "A 6-digit verification code has been sent to your email address.",
+		"data": map[string]any{
+			"pending_id":              pending.ID,
+			"email":                   pending.Email,
+			"expires_at":              pending.ExpiresAt.Format(time.RFC3339),
+			"expires_in_seconds":      expirySec,
+			"resend_cooldown_seconds": cooldownSec,
+		},
+	})
+}
+
+// VerifyOTP validates the 6-digit OTP and completes account registration.
+func (h *Handler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
+	var body verifyOTPRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Invalid JSON body."))
 		return
 	}
 
-	activeYearID := h.findActiveAcademicYearID(school.SchoolID)
+	pendingID := strings.TrimSpace(body.PendingID)
+	otp := strings.TrimSpace(body.OTP)
 
+	if pendingID == "" || otp == "" {
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Pending session ID and 6-digit OTP are required."))
+		return
+	}
+
+	if !authpkg.ValidateOTPFormat(otp, 6) {
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Verification code must be exactly 6 digits."))
+		return
+	}
+
+	now := time.Now()
+
+	h.Store.Lock()
+	var pending *store.PendingSignup
+	for _, ps := range h.Store.PendingSignups {
+		if ps.ID == pendingID {
+			pending = ps
+			break
+		}
+	}
+
+	if pending == nil || pending.Status != "pending" {
+		h.Store.Unlock()
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Invalid or expired verification session. Please sign up again."))
+		return
+	}
+
+	// 1. Check expiration (authoritative server-side 5-minute window)
+	if now.After(pending.ExpiresAt) {
+		pending.Status = "expired"
+		h.Store.Unlock()
+		h.Persist("pending_signups", pending)
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("That verification code has expired. Please request a new code."))
+		return
+	}
+
+	// 2. Check maximum verification attempts (max 5)
+	if pending.Attempts >= pending.MaxAttempts {
+		pending.Status = "expired"
+		h.Store.Unlock()
+		h.Persist("pending_signups", pending)
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Maximum verification attempts exceeded. Please request a new code."))
+		return
+	}
+
+	// 3. Constant-time OTP hash verification
+	if !authpkg.VerifyOTPHash(otp, pending.OTPHash) {
+		pending.Attempts++
+		remaining := pending.MaxAttempts - pending.Attempts
+		if remaining <= 0 {
+			pending.Status = "expired"
+		}
+		h.Store.Unlock()
+		h.Persist("pending_signups", pending)
+
+		if remaining <= 0 {
+			api.WriteJSON(w, http.StatusBadRequest, signupErr("Incorrect code. Maximum verification attempts exceeded. Please request a new code."))
+		} else {
+			api.WriteJSON(w, http.StatusBadRequest, signupErr(fmt.Sprintf("Incorrect verification code. %d %s remaining.", remaining, pluralize(remaining, "attempt", "attempts"))))
+		}
+		return
+	}
+
+	// 4. Verification Successful! Atomically consume OTP and activate user
+	pending.Status = "consumed"
+	pending.VerifiedAt = &now
+	pending.ConsumedAt = &now
+	h.Persist("pending_signups", pending)
+
+	// Ensure email is not already taken by race condition
+	for _, u := range h.Store.Users {
+		if strings.EqualFold(u.Email, pending.Email) {
+			h.Store.Unlock()
+			api.WriteJSON(w, http.StatusConflict, signupErr("An account with this email was already registered."))
+			return
+		}
+	}
+
+	// Create active user record
 	userID := store.NewID("usr")
+	schoolID := "system"
+	if pending.SchoolID != "" {
+		schoolID = pending.SchoolID
+	}
+	permissions := []string{"*"}
+	if pending.Role != "admin" && pending.Role != "owner" {
+		permissions = []string{}
+	}
+
 	newUser := &store.User{
 		ID:           userID,
-		SchoolID:     school.SchoolID,
-		Email:        email,
-		PasswordHash: hash,
-		Role:         role,
-		Permissions:  []string{},
+		SchoolID:     schoolID,
+		Email:        pending.Email,
+		PasswordHash: pending.PasswordHash,
+		Role:         pending.Role,
+		Permissions:  permissions,
 		Profile: store.UserProfile{
-			FirstName: firstWord(fullName),
-			LastName:  remainingWords(fullName),
+			FirstName: firstWord(pending.FullName),
+			LastName:  remainingWords(pending.FullName),
+			Phone:     pending.Phone,
 		},
 		Status:    "active",
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	h.Store.Lock()
+
 	h.Store.Users = append(h.Store.Users, newUser)
 	h.Store.Unlock()
 
-	// Persist the user so it survives a server restart. Without this
-	// the account only exists in MemStore — pg.Load on the next boot
-	// wipes the in-memory state and reloads from PG, leaving the
-	// user unable to log in.
 	h.Persist("users", newUser)
 
+	// Generate authenticated JWT session
 	claims := authpkg.Claims{
-		SchoolID:             school.SchoolID,
-		Role:                 role,
-		Permissions:          []string{},
-		ActiveAcademicYearID: activeYearID,
+		SchoolID:             schoolID,
+		Role:                 newUser.Role,
+		Permissions:          newUser.Permissions,
+		ActiveAcademicYearID: "",
 		SessionID:            "sess_" + randomID(),
 		App:                  h.Cfg.AppName,
-		ActorEmail:           email,
+		ActorEmail:           newUser.Email,
 	}
-	claims.Subject = userID
+	claims.Subject = newUser.ID
 	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
-	if err != nil {
-		api.WriteJSON(w, http.StatusInternalServerError, signupErr("Signup failed. Please try again."))
+	if err == nil {
+		h.setSessionCookie(w, token, true)
+	}
+
+	api.WriteJSON(w, http.StatusOK, map[string]any{
+		"ok":      true,
+		"success": true,
+		"message": "Email verified successfully! Welcome to EduPlexo.",
+		"data": map[string]any{
+			"status":                  "active",
+			"school_id":               schoolID,
+			"token":                   token,
+			"role":                    newUser.Role,
+			"email":                   newUser.Email,
+			"user_id":                 newUser.ID,
+			"active_academic_year_id": "",
+		},
+	})
+}
+
+// ResendOTP generates a brand new OTP and invalidates the previous code.
+func (h *Handler) ResendOTP(w http.ResponseWriter, r *http.Request) {
+	var body resendOTPRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Invalid JSON body."))
 		return
 	}
 
-	h.setSessionCookie(w, token, true)
+	pendingID := strings.TrimSpace(body.PendingID)
+	if pendingID == "" {
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Pending session ID is required."))
+		return
+	}
 
-	api.WriteJSON(w, http.StatusCreated, map[string]any{
+	now := time.Now()
+
+	h.Store.Lock()
+	var pending *store.PendingSignup
+	for _, ps := range h.Store.PendingSignups {
+		if ps.ID == pendingID {
+			pending = ps
+			break
+		}
+	}
+
+	if pending == nil || (pending.Status != "pending" && pending.Status != "expired") {
+		h.Store.Unlock()
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Verification session not found or already completed. Please sign up again."))
+		return
+	}
+
+	// 1. Enforce 60-second cooldown
+	cooldownSec := h.Cfg.EmailOTPResendCooldownSeconds
+	if cooldownSec <= 0 {
+		cooldownSec = 60
+	}
+	elapsed := now.Sub(pending.LastSentAt)
+	if elapsed < time.Duration(cooldownSec)*time.Second {
+		h.Store.Unlock()
+		waitRemaining := int((time.Duration(cooldownSec)*time.Second - elapsed).Seconds())
+		api.WriteJSON(w, http.StatusTooManyRequests, signupErr(fmt.Sprintf("Please wait %d seconds before requesting another verification code.", waitRemaining)))
+		return
+	}
+
+	// 2. Enforce max sends per hour
+	maxSendsPerHour := h.Cfg.EmailOTPMaxSendAttemptsPerHour
+	if maxSendsPerHour <= 0 {
+		maxSendsPerHour = 5
+	}
+	if pending.SendCountHour >= maxSendsPerHour && now.Sub(pending.CreatedAt) < time.Hour {
+		h.Store.Unlock()
+		api.WriteJSON(w, http.StatusTooManyRequests, signupErr("Maximum resend attempts reached for this hour. Please try again later."))
+		return
+	}
+
+	// 3. Generate brand new 6-digit OTP & invalidate previous OTP immediately
+	newOTP, err := authpkg.GenerateCryptoOTP(h.Cfg.EmailOTPLength)
+	if err != nil {
+		h.Store.Unlock()
+		api.WriteJSON(w, http.StatusInternalServerError, signupErr("Failed to generate verification code."))
+		return
+	}
+
+	expirySec := h.Cfg.EmailOTPExpirySeconds
+	if expirySec <= 0 {
+		expirySec = 300
+	}
+
+	pending.OTPHash = authpkg.HashOTP(newOTP)
+	pending.Attempts = 0
+	pending.Status = "pending"
+	pending.LastSentAt = now
+	pending.ExpiresAt = now.Add(time.Duration(expirySec) * time.Second) // Fresh 5-minute window!
+	pending.SendCountHour++
+	h.Store.Unlock()
+
+	h.Persist("pending_signups", pending)
+
+	// 4. Send email via Brevo
+	if h.Email != nil {
+		if err := h.Email.SendOTP(r.Context(), pending.Email, pending.FullName, newOTP, expirySec/60); err != nil {
+			api.WriteJSON(w, http.StatusInternalServerError, signupErr("Failed to deliver verification email. Please try again."))
+			return
+		}
+	}
+
+	api.WriteJSON(w, http.StatusOK, map[string]any{
 		"ok":      true,
 		"success": true,
+		"message": "A fresh verification code has been sent to your email address.",
 		"data": map[string]any{
-			"role":                    role,
-			"token":                   token,
-			"email":                   email,
-			"school_id":               school.SchoolID,
-			"active_academic_year_id": activeYearID,
+			"pending_id":              pending.ID,
+			"email":                   pending.Email,
+			"expires_at":              pending.ExpiresAt.Format(time.RFC3339),
+			"expires_in_seconds":      expirySec,
+			"resend_cooldown_seconds": cooldownSec,
 		},
 	})
+}
+
+// ChangeEmail updates the recipient email on a pending signup and sends a new OTP.
+func (h *Handler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
+	var body changeEmailRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Invalid JSON body."))
+		return
+	}
+
+	pendingID := strings.TrimSpace(body.PendingID)
+	newEmail := strings.ToLower(strings.TrimSpace(body.NewEmail))
+
+	if pendingID == "" || newEmail == "" {
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Pending session ID and new email are required."))
+		return
+	}
+
+	emailRegex := regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
+	if !emailRegex.MatchString(newEmail) {
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Invalid email format."))
+		return
+	}
+
+	now := time.Now()
+
+	h.Store.Lock()
+	// Check if new email is already registered
+	for _, u := range h.Store.Users {
+		if strings.EqualFold(u.Email, newEmail) {
+			h.Store.Unlock()
+			api.WriteJSON(w, http.StatusConflict, signupErr("This email is already registered in the system."))
+			return
+		}
+	}
+
+	var pending *store.PendingSignup
+	for _, ps := range h.Store.PendingSignups {
+		if ps.ID == pendingID {
+			pending = ps
+			break
+		}
+	}
+
+	if pending == nil || (pending.Status != "pending" && pending.Status != "expired") {
+		h.Store.Unlock()
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Verification session not found. Please sign up again."))
+		return
+	}
+
+	newOTP, err := authpkg.GenerateCryptoOTP(h.Cfg.EmailOTPLength)
+	if err != nil {
+		h.Store.Unlock()
+		api.WriteJSON(w, http.StatusInternalServerError, signupErr("Failed to generate verification code."))
+		return
+	}
+
+	expirySec := h.Cfg.EmailOTPExpirySeconds
+	if expirySec <= 0 {
+		expirySec = 300
+	}
+
+	pending.Email = newEmail
+	pending.OTPHash = authpkg.HashOTP(newOTP)
+	pending.Attempts = 0
+	pending.Status = "pending"
+	pending.LastSentAt = now
+	pending.ExpiresAt = now.Add(time.Duration(expirySec) * time.Second)
+	h.Store.Unlock()
+
+	h.Persist("pending_signups", pending)
+
+	if h.Email != nil {
+		if err := h.Email.SendOTP(r.Context(), pending.Email, pending.FullName, newOTP, expirySec/60); err != nil {
+			api.WriteJSON(w, http.StatusInternalServerError, signupErr("Failed to deliver verification email to the new address."))
+			return
+		}
+	}
+
+	cooldownSec := h.Cfg.EmailOTPResendCooldownSeconds
+	if cooldownSec <= 0 {
+		cooldownSec = 60
+	}
+
+	api.WriteJSON(w, http.StatusOK, map[string]any{
+		"ok":      true,
+		"success": true,
+		"message": "Verification email updated and new code dispatched.",
+		"data": map[string]any{
+			"pending_id":              pending.ID,
+			"email":                   pending.Email,
+			"expires_at":              pending.ExpiresAt.Format(time.RFC3339),
+			"expires_in_seconds":      expirySec,
+			"resend_cooldown_seconds": cooldownSec,
+		},
+	})
+}
+
+func pluralize(count int, singular, plural string) string {
+	if count == 1 {
+		return singular
+	}
+	return plural
 }
 
 // SwitchAcademicYear implements POST /api/academic-years/switch.

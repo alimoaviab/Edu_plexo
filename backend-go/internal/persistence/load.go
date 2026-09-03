@@ -352,7 +352,7 @@ func (p *Persister) loadUsers(ctx context.Context, s *store.MemStore) error {
 
 func (p *Persister) loadPendingSignups(ctx context.Context, s *store.MemStore) error {
 	rows, err := p.pool.Query(ctx, `
-		SELECT id, email, full_name, phone, role, password_hash,
+		SELECT id, email, full_name, phone, role, school_id, password_hash,
 			otp_hash, created_at, expires_at, last_sent_at, attempts, max_attempts,
 			send_count_hour, status, verified_at, consumed_at, ip_address
 		FROM pending_signups
@@ -364,7 +364,7 @@ func (p *Persister) loadPendingSignups(ctx context.Context, s *store.MemStore) e
 	defer rows.Close()
 	for rows.Next() {
 		v := &store.PendingSignup{}
-		if err := rows.Scan(&v.ID, &v.Email, &v.FullName, &v.Phone, &v.Role, &v.PasswordHash,
+		if err := rows.Scan(&v.ID, &v.Email, &v.FullName, &v.Phone, &v.Role, &v.SchoolID, &v.PasswordHash,
 			&v.OTPHash, &v.CreatedAt, &v.ExpiresAt, &v.LastSentAt, &v.Attempts, &v.MaxAttempts,
 			&v.SendCountHour, &v.Status, &v.VerifiedAt, &v.ConsumedAt, &v.IPAddress); err != nil {
 			return err
