@@ -532,7 +532,9 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Post("/super-admin/packages/{id}/toggle", pkgH.Toggle)
 
 			// Subscriptions
-			r.Get("/super-admin/subscriptions", saH.ListSubscriptions)
+			r.Get("/super-admin/subscriptions", subH.AdminListSubscriptions)
+			r.Patch("/super-admin/subscriptions/{id}/auto-renew", subH.AdminToggleAutoRenew)
+			r.Get("/super-admin/schools/{id}/payments", subH.AdminGetSchoolPayments)
 			r.Post("/super-admin/subscriptions/assign", subH.AdminAssignPlan)
 			r.Post("/super-admin/subscriptions/extend", subH.AdminExtendSubscription)
 

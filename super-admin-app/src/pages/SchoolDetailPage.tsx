@@ -32,7 +32,10 @@ export function SchoolDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [school, setSchool] = useState<SchoolDetail | null>(null)
+  const [payments, setPayments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [extending, setExtending] = useState(false)
+  const [extendDays, setExtendDays] = useState(30)
 
   const loadDetails = async () => {
     setLoading(true)
@@ -40,6 +43,11 @@ export function SchoolDetailPage() {
     if (res.ok && res.data) {
       const s = res.data as SchoolDetail
       setSchool(s)
+    }
+    const payRes = await apiRequest(`/api/super-admin/schools/${id}/payments`)
+    if (payRes.ok && payRes.data) {
+      const pItems = Array.isArray(payRes.data) ? payRes.data : (payRes.data as any).items || []
+      setPayments(pItems)
     }
     setLoading(false)
   }
@@ -52,6 +60,20 @@ export function SchoolDetailPage() {
       body: JSON.stringify({ status: newStatus, reason: 'Admin action' })
     })
     if (res.ok) loadDetails()
+  }
+
+  const handleExtend = async (days: number) => {
+    const res = await apiRequest('/api/super-admin/subscriptions/extend', {
+      method: 'POST',
+      body: JSON.stringify({ school_id: id, days })
+    })
+    if (res.ok) {
+      alert(`Granted +${days} days to ${school?.name}!`)
+      setExtending(false)
+      loadDetails()
+    } else {
+      alert(res.message || 'Failed to extend subscription.')
+    }
   }
 
   const handleDelete = async () => {
@@ -187,6 +209,126 @@ export function SchoolDetailPage() {
                 <div className="w-full h-8 px-3 rounded-lg border border-slate-100 bg-slate-50 text-[12px] font-medium text-slate-900 flex items-center">
                   {school.website || '—'}
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Subscription & Billing Track Record Card */}
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <AppIcon name="CreditCard" size={18} className="text-blue-600" />
+                Subscription & Billing Track Record
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setExtending(!extending)}
+                  className="h-7 px-3 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
+                >
+                  <AppIcon name="CalendarPlus" size={13} />
+                  <span>Grant / Extend Days</span>
+                </button>
+              </div>
+            </div>
+
+            {extending && (
+              <div className="p-4 bg-blue-50/50 border-b border-blue-100 flex items-center gap-3">
+                <span className="text-xs font-bold text-slate-700">Add Days:</span>
+                {[7, 14, 30, 60].map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => handleExtend(d)}
+                    className="px-3 py-1 bg-white hover:bg-blue-600 hover:text-white text-slate-700 text-xs font-bold rounded-lg border border-slate-200 shadow-sm transition-all"
+                  >
+                    +{d} Days
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="p-5 space-y-4">
+              {/* Stats Summary */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Active Plan</span>
+                  <span className="text-sm font-black text-blue-700">{school.plan || '14-Day Free Trial'}</span>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Approved Payments</span>
+                  <span className="text-sm font-black text-emerald-700 flex items-center gap-1">
+                    <AppIcon name="CheckCircle2" size={14} />
+                    <span>{payments.filter(p => p.status === 'verified').length} Times Approved</span>
+                  </span>
+                </div>
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Total Revenue</span>
+                  <span className="text-sm font-black text-slate-900">
+                    Rs {payments.filter(p => p.status === 'verified').reduce((acc, p) => acc + (p.amount || 0), 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Payment Proofs Table */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Payment Receipts & History</h4>
+                {payments.length === 0 ? (
+                  <p className="text-xs text-slate-400 py-3 text-center border border-dashed border-slate-200 rounded-xl">
+                    No payment requests recorded for this campus.
+                  </p>
+                ) : (
+                  <div className="border border-slate-100 rounded-xl overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 text-slate-500 font-bold text-[10px] uppercase">
+                        <tr>
+                          <th className="px-3 py-2">Tx ID</th>
+                          <th className="px-3 py-2">Plan</th>
+                          <th className="px-3 py-2">Amount</th>
+                          <th className="px-3 py-2 text-center">Status</th>
+                          <th className="px-3 py-2">Proof</th>
+                          <th className="px-3 py-2 text-right">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {payments.map((p) => (
+                          <tr key={p.id} className="hover:bg-slate-50">
+                            <td className="px-3 py-2.5 font-mono font-bold text-slate-900">{p.transaction_id}</td>
+                            <td className="px-3 py-2.5 font-medium text-slate-600">{p.plan_name}</td>
+                            <td className="px-3 py-2.5 font-bold text-slate-900">Rs {p.amount?.toLocaleString()}</td>
+                            <td className="px-3 py-2.5 text-center">
+                              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                                p.status === 'verified'
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : p.status === 'pending'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                  : 'bg-rose-50 text-rose-700 border-rose-200'
+                              }`}>
+                                {p.status === 'verified' ? 'Approved' : p.status}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2.5">
+                              {p.screenshot_url ? (
+                                <a
+                                  href={p.screenshot_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[11px] font-bold text-blue-600 hover:underline inline-flex items-center gap-1"
+                                >
+                                  <AppIcon name="ExternalLink" size={12} />
+                                  <span>View</span>
+                                </a>
+                              ) : (
+                                <span className="text-slate-400">—</span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5 text-right text-slate-400 text-[11px]">
+                              {new Date(p.submitted_at).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           </div>

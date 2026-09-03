@@ -164,3 +164,226 @@ func (h *Handler) AdminDeletePlan(w http.ResponseWriter, r *http.Request) {
 		return map[string]any{"id": id, "deleted": true}, nil
 	}))
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUBSCRIPTION & APPROVAL TRACKING (Super Admin)
+// ═══════════════════════════════════════════════════════════════════════════
+
+type AdminSubscriptionView struct {
+	ID                    string     `json:"_id"`
+	SchoolID              string     `json:"school_id"`
+	SchoolName            string     `json:"school_name"`
+	OwnerName             string     `json:"owner_name"`
+	OwnerEmail            string     `json:"owner_email"`
+	Phone                 string     `json:"phone"`
+	PlanName              string     `json:"plan_name"`
+	PackageName           string     `json:"package_name"`
+	StudentLimit          int        `json:"student_limit"`
+	Price                 int        `json:"price"`
+	Currency              string     `json:"currency"`
+	Status                string     `json:"status"`
+	IsTrial               bool       `json:"is_trial"`
+	StartDate             time.Time  `json:"start_date"`
+	EndDate               time.Time  `json:"end_date"`
+	DaysRemaining         int        `json:"days_remaining"`
+	AutoRenew             bool       `json:"auto_renew"`
+	ApprovedPaymentsCount int        `json:"approved_payments_count"`
+	TotalPaid             int        `json:"total_paid"`
+	LastPaymentAt         *time.Time `json:"last_payment_at,omitempty"`
+	CreatedAt             time.Time  `json:"created_at"`
+}
+
+// AdminListSubscriptions returns full subscription view with approved payment counts & renewals.
+func (h *Handler) AdminListSubscriptions(w http.ResponseWriter, r *http.Request) {
+	ctx := api.FromRequest(r)
+	if ctx.Role != "super_admin" {
+		api.WriteResult(w, api.Fail("FORBIDDEN", "Super admin access required.", 403, nil))
+		return
+	}
+
+	api.WriteResult(w, api.ServiceTry(func() (map[string]any, error) {
+		if h.Pool == nil {
+			// Fallback to store
+			h.Store.RLock()
+			defer h.Store.RUnlock()
+			subs := make([]AdminSubscriptionView, 0)
+			for _, s := range h.Store.Subscriptions {
+				schoolName := s.SchoolID
+				ownerName := ""
+				ownerEmail := ""
+				phone := ""
+				for _, sch := range h.Store.Schools {
+					if sch.SchoolID == s.SchoolID || sch.ID == s.SchoolID {
+						schoolName = sch.Name
+						ownerName = sch.PrincipalName
+						ownerEmail = sch.OwnerEmail
+						phone = sch.Phone
+						break
+					}
+				}
+				daysRem := int(time.Until(s.NextRenewal).Hours() / 24)
+				if daysRem < 0 {
+					daysRem = 0
+				}
+				approvedCount := 0
+				totalPaid := 0
+				for _, t := range h.Store.Transactions {
+					if t.SchoolID == s.SchoolID && t.Status == "verified" {
+						approvedCount++
+						totalPaid += int(t.Amount)
+					}
+				}
+				subs = append(subs, AdminSubscriptionView{
+					ID: s.ID, SchoolID: s.SchoolID, SchoolName: schoolName,
+					OwnerName: ownerName, OwnerEmail: ownerEmail, Phone: phone,
+					PlanName: s.PackageID, PackageName: s.PackageID,
+					StudentLimit: 200, Price: 0, Currency: "PKR",
+					Status: s.Status, IsTrial: s.Status == "trial",
+					StartDate: s.CreatedAt, EndDate: s.NextRenewal,
+					DaysRemaining: daysRem, AutoRenew: s.AutoRenew,
+					ApprovedPaymentsCount: approvedCount, TotalPaid: totalPaid,
+					CreatedAt: s.CreatedAt,
+				})
+			}
+			return map[string]any{"items": subs, "total": len(subs)}, nil
+		}
+
+		query := `
+			SELECT 
+				s.id, s.school_id, 
+				COALESCE(sc.name, u.email, 'Owner Account') AS school_name,
+				COALESCE(sc.owner_email, u.email, '') AS owner_name,
+				COALESCE(u.email, '') AS owner_email,
+				COALESCE(sc.contact_phone, u.phone, '') AS phone,
+				COALESCE(s.plan_name, 'starter') AS plan_name,
+				COALESCE(s.student_limit, 200) AS student_limit,
+				COALESCE(s.price, 0) AS price,
+				COALESCE(s.currency, 'PKR') AS currency,
+				COALESCE(s.status, 'active') AS status,
+				COALESCE(s.is_trial, false) AS is_trial,
+				s.start_date, s.end_date,
+				COALESCE(s.auto_renew, true) AS auto_renew,
+				s.created_at,
+				COALESCE(pay.approved_count, 0) AS approved_payments_count,
+				COALESCE(pay.total_amount, 0) AS total_paid,
+				pay.last_verified_at
+			FROM subscriptions s
+			LEFT JOIN schools sc ON sc.school_id = s.school_id OR sc.id = s.school_id
+			LEFT JOIN users u ON u.school_id = s.school_id OR u.id = s.school_id OR u.email = sc.owner_email
+			LEFT JOIN (
+				SELECT school_id, 
+				       COUNT(*) FILTER (WHERE status = 'verified') AS approved_count,
+				       COALESCE(SUM(amount) FILTER (WHERE status = 'verified'), 0) AS total_amount,
+				       MAX(verified_at) AS last_verified_at
+				FROM payment_requests
+				GROUP BY school_id
+			) pay ON pay.school_id = s.school_id OR pay.school_id = u.id
+			ORDER BY s.created_at DESC
+		`
+
+		rows, err := h.Pool.Query(r.Context(), query)
+		if err != nil {
+			return nil, fmt.Errorf("list subscriptions: %w", err)
+		}
+		defer rows.Close()
+
+		subs := make([]AdminSubscriptionView, 0)
+		for rows.Next() {
+			var v AdminSubscriptionView
+			if err := rows.Scan(
+				&v.ID, &v.SchoolID, &v.SchoolName, &v.OwnerName, &v.OwnerEmail, &v.Phone,
+				&v.PlanName, &v.StudentLimit, &v.Price, &v.Currency, &v.Status, &v.IsTrial,
+				&v.StartDate, &v.EndDate, &v.AutoRenew, &v.CreatedAt,
+				&v.ApprovedPaymentsCount, &v.TotalPaid, &v.LastPaymentAt,
+			); err != nil {
+				continue
+			}
+			v.PackageName = v.PlanName
+			diffHours := time.Until(v.EndDate).Hours()
+			if diffHours > 0 {
+				v.DaysRemaining = int(diffHours / 24)
+			} else {
+				v.DaysRemaining = 0
+			}
+			subs = append(subs, v)
+		}
+
+		return map[string]any{"items": subs, "total": len(subs)}, nil
+	}))
+}
+
+// AdminToggleAutoRenew toggles auto_renew on a subscription.
+func (h *Handler) AdminToggleAutoRenew(w http.ResponseWriter, r *http.Request) {
+	ctx := api.FromRequest(r)
+	if ctx.Role != "super_admin" {
+		api.WriteResult(w, api.Fail("FORBIDDEN", "Super admin access required.", 403, nil))
+		return
+	}
+	id := chi.URLParam(r, "id")
+	var body struct {
+		AutoRenew *bool `json:"auto_renew"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	api.WriteResult(w, api.ServiceTry(func() (map[string]any, error) {
+		if h.Pool != nil {
+			var newVal bool
+			if body.AutoRenew != nil {
+				newVal = *body.AutoRenew
+				_, err := h.Pool.Exec(r.Context(), `UPDATE subscriptions SET auto_renew=$1, updated_at=NOW() WHERE id=$2 OR school_id=$2`, newVal, id)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				err := h.Pool.QueryRow(r.Context(), `UPDATE subscriptions SET auto_renew = NOT auto_renew, updated_at=NOW() WHERE id=$1 OR school_id=$1 RETURNING auto_renew`, id).Scan(&newVal)
+				if err != nil {
+					return nil, err
+				}
+			}
+			return map[string]any{"id": id, "auto_renew": newVal}, nil
+		}
+		return map[string]any{"id": id, "auto_renew": true}, nil
+	}))
+}
+
+// AdminGetSchoolPayments returns payment history for a specific school or owner.
+func (h *Handler) AdminGetSchoolPayments(w http.ResponseWriter, r *http.Request) {
+	ctx := api.FromRequest(r)
+	if ctx.Role != "super_admin" {
+		api.WriteResult(w, api.Fail("FORBIDDEN", "Super admin access required.", 403, nil))
+		return
+	}
+	schoolID := chi.URLParam(r, "id")
+
+	api.WriteResult(w, api.ServiceTry(func() ([]PaymentRequest, error) {
+		if h.Pool == nil {
+			return []PaymentRequest{}, nil
+		}
+		rows, err := h.Pool.Query(r.Context(), `
+			SELECT pr.id, pr.school_id, pr.plan_id, COALESCE(pr.payment_method_id,''), COALESCE(pr.screenshot_url,''),
+			       pr.transaction_id, pr.amount, pr.status, pr.submitted_at, pr.verified_at, COALESCE(pr.verified_by,''),
+			       COALESCE(pr.rejection_reason,''), COALESCE(pr.notes,''),
+			       COALESCE(sp.name, pr.plan_id) AS plan_name
+			FROM payment_requests pr
+			LEFT JOIN subscription_plans sp ON sp.id = pr.plan_id
+			WHERE pr.school_id = $1 OR pr.school_id IN (SELECT id FROM users WHERE school_id = $1)
+			ORDER BY pr.submitted_at DESC
+			LIMIT 50
+		`, schoolID)
+		if err != nil {
+			return nil, fmt.Errorf("get school payments: %w", err)
+		}
+		defer rows.Close()
+
+		payments := make([]PaymentRequest, 0)
+		for rows.Next() {
+			var p PaymentRequest
+			rows.Scan(&p.ID, &p.SchoolID, &p.PlanID, &p.PaymentMethodID, &p.ScreenshotURL,
+				&p.TransactionID, &p.Amount, &p.Status, &p.SubmittedAt, &p.VerifiedAt, &p.VerifiedBy,
+				&p.RejectionReason, &p.Notes, &p.PlanName)
+			payments = append(payments, p)
+		}
+		return payments, nil
+	}))
+}
+
