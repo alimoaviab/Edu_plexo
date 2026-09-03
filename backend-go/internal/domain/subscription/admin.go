@@ -268,8 +268,21 @@ func (h *Handler) AdminListSubscriptions(w http.ResponseWriter, r *http.Request)
 				COALESCE(pay.total_amount, 0) AS total_paid,
 				pay.last_verified_at
 			FROM subscriptions s
-			LEFT JOIN schools sc ON sc.school_id = s.school_id OR sc.id = s.school_id
-			LEFT JOIN users u ON u.school_id = s.school_id OR u.id = s.school_id OR u.email = sc.owner_email
+			LEFT JOIN LATERAL (
+				SELECT sch.name, sch.admin_name, sch.contact_phone, sch.owner_email
+				FROM schools sch 
+				WHERE sch.school_id = s.school_id OR sch.id = s.school_id
+				LIMIT 1
+			) sc ON true
+			LEFT JOIN LATERAL (
+				SELECT u.profile_first, u.profile_last, u.profile_phone, u.email
+				FROM users u
+				WHERE u.email = sc.owner_email 
+				   OR (u.school_id = s.school_id AND u.role IN ('owner', 'admin'))
+				   OR u.id = s.school_id
+				ORDER BY CASE WHEN u.role = 'owner' THEN 1 WHEN u.role = 'admin' THEN 2 ELSE 3 END
+				LIMIT 1
+			) u ON true
 			LEFT JOIN (
 				SELECT school_id, 
 				       COUNT(*) FILTER (WHERE status = 'verified') AS approved_count,
@@ -277,7 +290,7 @@ func (h *Handler) AdminListSubscriptions(w http.ResponseWriter, r *http.Request)
 				       MAX(verified_at) AS last_verified_at
 				FROM payment_requests
 				GROUP BY school_id
-			) pay ON pay.school_id = s.school_id OR pay.school_id = u.id
+			) pay ON pay.school_id = s.school_id
 			ORDER BY s.created_at DESC
 		`
 

@@ -35,9 +35,15 @@ export function PaymentsPage() {
     setLoading(true)
     const res = await apiRequest('/api/admin/payments/all')
     if (res.ok && res.data) {
-      const items = Array.isArray(res.data) 
+      const raw = Array.isArray(res.data) 
         ? res.data 
         : (res.data as any).items || (res.data as any).data || []
+      const seen = new Set<string>()
+      const items = raw.filter((p: PaymentRequest) => {
+        if (!p.id || seen.has(p.id)) return false
+        seen.add(p.id)
+        return true
+      })
       setPayments(items)
     }
     setLoading(false)

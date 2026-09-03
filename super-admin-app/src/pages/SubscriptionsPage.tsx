@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { apiRequest } from '@/lib/api'
 
 interface Subscription {
+  id?: string
   _id: string
   school_id: string
   school_name: string
@@ -63,7 +64,14 @@ export function SubscriptionsPage() {
     const res = await apiRequest('/api/super-admin/subscriptions')
     if (res.ok && res.data) {
       const d = res.data as any
-      const items = Array.isArray(d) ? d : d.items || d.data || []
+      const raw = Array.isArray(d) ? d : d.items || d.data || []
+      const seen = new Set<string>()
+      const items = raw.filter((s: Subscription) => {
+        const key = s.id || s._id || s.school_id
+        if (!key || seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
       setSubs(items)
     }
     setLoading(false)

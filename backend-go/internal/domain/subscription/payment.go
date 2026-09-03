@@ -311,8 +311,21 @@ func (h *Handler) AdminListPendingPayments(w http.ResponseWriter, r *http.Reques
 			       COALESCE(s.contact_phone, u.profile_phone, '') AS whatsapp,
 			       COALESCE(sp.name, pr.plan_id) AS plan_name
 			FROM payment_requests pr
-			LEFT JOIN schools s ON s.school_id = pr.school_id OR s.id = pr.school_id
-			LEFT JOIN users u ON u.school_id = pr.school_id OR u.id = pr.school_id OR u.email = s.owner_email
+			LEFT JOIN LATERAL (
+				SELECT sc.name, sc.admin_name, sc.contact_phone, sc.owner_email
+				FROM schools sc 
+				WHERE sc.school_id = pr.school_id OR sc.id = pr.school_id
+				LIMIT 1
+			) s ON true
+			LEFT JOIN LATERAL (
+				SELECT u.profile_first, u.profile_last, u.profile_phone, u.email
+				FROM users u
+				WHERE u.email = s.owner_email 
+				   OR (u.school_id = pr.school_id AND u.role IN ('owner', 'admin'))
+				   OR u.id = pr.school_id
+				ORDER BY CASE WHEN u.role = 'owner' THEN 1 WHEN u.role = 'admin' THEN 2 ELSE 3 END
+				LIMIT 1
+			) u ON true
 			LEFT JOIN subscription_plans sp ON sp.id = pr.plan_id
 			WHERE ($1::text = 'all' OR pr.status = $1)
 			ORDER BY pr.submitted_at DESC
