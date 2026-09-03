@@ -471,13 +471,24 @@ function PricingCard({
     plan.name === "growth" ||
     plan.display_name?.toLowerCase().includes("growth");
 
+  const daysRemaining = sub?.end_date 
+    ? Math.ceil((new Date(sub.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : 14;
+  const isRenewalDue = daysRemaining <= 0;
+
   return (
     <div
       className={`relative rounded-3xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 hover:shadow-xl ${
         isPopular
           ? "bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white border-2 border-blue-500 shadow-2xl shadow-blue-950/40 lg:-translate-y-2.5 ring-2 ring-blue-500/40 z-10"
           : "bg-white border border-slate-200/90 text-slate-900 shadow-sm hover:border-slate-300 hover:-translate-y-1"
-      } ${isCurrentPlan ? "ring-2 ring-emerald-500 border-emerald-500 shadow-xl shadow-emerald-500/10" : ""}`}
+      } ${
+        isCurrentPlan
+          ? isRenewalDue
+            ? "ring-2 ring-rose-500 border-rose-500 shadow-xl shadow-rose-500/10"
+            : "ring-2 ring-emerald-500 border-emerald-500 shadow-xl shadow-emerald-500/10"
+          : ""
+      }`}
     >
       {/* Popular Badge */}
       {isPopular && (
@@ -492,9 +503,15 @@ function PricingCard({
       {/* Current Plan Badge */}
       {isCurrentPlan && (
         <div className="absolute -top-3.5 right-4 z-20">
-          <span className="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wider px-3.5 py-1 rounded-full shadow-lg shadow-emerald-600/30 border border-emerald-400">
-            <AppIcon name="Check" size={12} />
-            <span>Active Plan</span>
+          <span
+            className={`inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider px-3.5 py-1 rounded-full shadow-lg ${
+              isRenewalDue
+                ? "bg-rose-600 text-white shadow-rose-600/30 border border-rose-400"
+                : "bg-emerald-600 text-white shadow-emerald-600/30 border border-emerald-400"
+            }`}
+          >
+            <AppIcon name={isRenewalDue ? "AlertTriangle" : "Check"} size={12} />
+            <span>{isRenewalDue ? "Renewal Due" : `Active Plan (${daysRemaining}d left)`}</span>
           </span>
         </div>
       )}
@@ -596,13 +613,24 @@ function PricingCard({
             <span>Build Your Own Plan</span>
           </button>
         ) : isCurrentPlan ? (
-          <button
-            disabled
-            className="w-full py-3.5 px-4 rounded-xl font-black text-xs sm:text-sm cursor-default border-2 border-emerald-500 bg-emerald-50 text-emerald-700 flex items-center justify-center gap-2 shadow-sm"
-          >
-            <AppIcon name="CheckCircle" size={16} className="text-emerald-600" />
-            <span>Active Plan</span>
-          </button>
+          isRenewalDue ? (
+            <button
+              onClick={onUpgrade}
+              disabled={isUpgrading}
+              className="w-full py-3.5 px-4 rounded-xl font-black text-xs sm:text-sm bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all active:scale-95"
+            >
+              <AppIcon name="RefreshCw" size={16} />
+              <span>Renew Plan Now</span>
+            </button>
+          ) : (
+            <button
+              disabled
+              className="w-full py-3.5 px-4 rounded-xl font-black text-xs sm:text-sm cursor-default border-2 border-emerald-500 bg-emerald-50 text-emerald-700 flex items-center justify-center gap-2 shadow-sm"
+            >
+              <AppIcon name="CheckCircle" size={16} className="text-emerald-600" />
+              <span>Active Plan</span>
+            </button>
+          )
         ) : canTrial && !plan.is_custom ? (
           <button
             onClick={onStartTrial}

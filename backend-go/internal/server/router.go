@@ -109,7 +109,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 		}
 	}
 
-	authH := authdomain.NewWithPersist(cfg, s, saveFn)
+	authH := authdomain.NewPG(cfg, s, saveFn, pg.Pool())
 
 	// ─── WebSocket endpoint (requires auth) ──────────────────────────────
 	r.Group(func(r chi.Router) {

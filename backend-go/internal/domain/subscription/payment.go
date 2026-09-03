@@ -639,12 +639,19 @@ func (h *Handler) AdminExtendSubscription(w http.ResponseWriter, r *http.Request
 			return nil, api.NewControlledError("VALIDATION_ERROR", "school_id and days required.", 400, nil)
 		}
 		_, err := h.Pool.Exec(r.Context(), `
-			UPDATE subscriptions SET end_date = end_date + ($2 || ' days')::interval, updated_at=NOW()
-			WHERE school_id=$1 AND status IN ('active','trial')
+			UPDATE subscriptions 
+			SET end_date = GREATEST(end_date, NOW()) + ($2 || ' days')::interval,
+			    status = 'active',
+			    updated_at = NOW()
+			WHERE (school_id = $1 OR school_id IN (SELECT school_id FROM schools WHERE id = $1 OR school_id = $1))
 		`, body.SchoolID, fmt.Sprintf("%d", body.Days))
 		if err != nil {
 			return nil, fmt.Errorf("extend: %w", err)
 		}
+		// Unsuspend associated users and school
+		_, _ = h.Pool.Exec(r.Context(), `UPDATE users SET status = 'active' WHERE school_id = $1 OR id = $1`, body.SchoolID)
+		_, _ = h.Pool.Exec(r.Context(), `UPDATE schools SET status = 'active' WHERE id = $1 OR school_id = $1`, body.SchoolID)
+
 		return map[string]any{"school_id": body.SchoolID, "extended_days": body.Days}, nil
 	}))
 }

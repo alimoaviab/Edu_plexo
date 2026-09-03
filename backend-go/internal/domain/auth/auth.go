@@ -18,6 +18,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/config"
 	"github.com/eduplexo/backend-go/internal/email"
 	"github.com/eduplexo/backend-go/internal/store"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // Handler bundles dependencies for the auth routes.
@@ -26,6 +27,7 @@ type Handler struct {
 	Store   *store.MemStore
 	Persist func(table string, doc any)
 	Email   email.Client
+	Pool    *pgxpool.Pool
 }
 
 func defaultEmailClient(cfg config.Config) email.Client {
@@ -61,6 +63,13 @@ func NewWithPersist(cfg config.Config, s *store.MemStore, save func(string, any)
 		Persist: save,
 		Email:   defaultEmailClient(cfg),
 	}
+}
+
+// NewPG returns a handler that has access to PostgreSQL for session and subscription checks.
+func NewPG(cfg config.Config, s *store.MemStore, save func(string, any), pool *pgxpool.Pool) *Handler {
+	h := NewWithPersist(cfg, s, save)
+	h.Pool = pool
+	return h
 }
 
 // SetEmailClient allows injecting a custom or mock email client for testing.
@@ -144,9 +153,42 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if user.Status == "locked" || user.Status == "suspended" {
 		api.WriteJSON(w, http.StatusForbidden, map[string]any{
 			"ok":      false,
-			"message": "Your account has been locked. Please contact support.",
+			"message": "Your account has been suspended because subscription payment was not renewed. Please contact Eduplexo support at +92 306 4944326 to reactivate your account.",
+			"error": map[string]any{
+				"code":          "ACCOUNT_SUSPENDED",
+				"support_phone": "+92 306 4944326",
+			},
 		})
 		return
+	}
+
+	// 3-day grace period check for owners and admins
+	if (user.Role == "owner" || user.Role == "admin") && h.Pool != nil {
+		var endDate *time.Time
+		var subStatus string
+		err := h.Pool.QueryRow(r.Context(), `
+			SELECT end_date, status FROM subscriptions 
+			WHERE (school_id = $1 OR school_id IN (SELECT school_id FROM schools WHERE owner_email = $2 OR owner_user_id = $3))
+			  AND status != 'cancelled'
+			ORDER BY created_at DESC LIMIT 1
+		`, user.SchoolID, user.Email, user.ID).Scan(&endDate, &subStatus)
+
+		if err == nil && endDate != nil {
+			daysOverdue := int(time.Since(*endDate).Hours() / 24)
+			// More than 3 days past expiration: suspend login!
+			if daysOverdue > 3 {
+				_, _ = h.Pool.Exec(r.Context(), `UPDATE users SET status = 'suspended' WHERE id = $1`, user.ID)
+				api.WriteJSON(w, http.StatusForbidden, map[string]any{
+					"ok":      false,
+					"message": "Your account has been suspended because subscription payment was not renewed within the 3-day grace period. Please contact Eduplexo support at +92 306 4944326 to reactivate your account.",
+					"error": map[string]any{
+						"code":          "SUBSCRIPTION_SUSPENDED",
+						"support_phone": "+92 306 4944326",
+					},
+				})
+				return
+			}
+		}
 	}
 
 	// Role-tab enforcement: when the frontend sends a role hint (the tab the

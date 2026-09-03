@@ -713,6 +713,19 @@ func (h *Handler) UpdateSchoolStatus(w http.ResponseWriter, r *http.Request) {
 	h.Store.Lock()
 	defer h.Store.Unlock()
 
+	if h.Pool != nil {
+		_, _ = h.Pool.Exec(r.Context(), `UPDATE users SET status = $1 WHERE school_id = $2 OR id = $2`, body.Status, id)
+		_, _ = h.Pool.Exec(r.Context(), `UPDATE schools SET status = $1 WHERE id = $2 OR school_id = $2`, body.Status, id)
+		if body.Status == "active" {
+			_, _ = h.Pool.Exec(r.Context(), `
+				UPDATE subscriptions 
+				SET end_date = GREATEST(end_date, NOW() + INTERVAL '1 day'), status = 'active', updated_at = NOW()
+				WHERE (school_id = $1 OR school_id IN (SELECT school_id FROM schools WHERE id = $1 OR school_id = $1))
+				  AND end_date <= NOW()
+			`, id)
+		}
+	}
+
 	for _, s := range h.Store.Schools {
 		if s.ID == id || s.SchoolID == id {
 			s.Status = body.Status
@@ -721,7 +734,7 @@ func (h *Handler) UpdateSchoolStatus(w http.ResponseWriter, r *http.Request) {
 			targetSchoolID := s.SchoolID
 			newStatus := body.Status
 			for _, u := range h.Store.Users {
-				if u.SchoolID == targetSchoolID {
+				if u.SchoolID == targetSchoolID || u.ID == id {
 					u.Status = newStatus
 					h.Persist("users", u)
 				}

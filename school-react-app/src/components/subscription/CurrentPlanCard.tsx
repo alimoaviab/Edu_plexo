@@ -36,18 +36,22 @@ export function CurrentPlanCard({ subscription, studentsUsed }: CurrentPlanCardP
   }
 
   const daysRemaining = subscription?.end_date 
-    ? Math.max(0, Math.ceil((new Date(subscription.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    ? Math.ceil((new Date(subscription.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : 14;
 
   const isGradient = isTrial || isActive;
+  const isRenewalDue = daysRemaining <= 0;
+  const graceDaysLeft = Math.max(0, 3 + daysRemaining);
 
   return (
     <div
       className={`rounded-2xl border p-6 sm:p-8 flex flex-col sm:flex-row sm:items-start justify-between gap-6 h-full transition-all relative overflow-hidden shadow-sm ${
         isTrial
           ? "bg-gradient-to-br from-blue-600 via-indigo-600 to-indigo-800 border-blue-500 text-white shadow-lg shadow-blue-600/20"
-          : isActive
+          : isActive && !isRenewalDue
           ? "bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 border-slate-700 text-white shadow-xl"
+          : isRenewalDue
+          ? "bg-gradient-to-br from-rose-950 via-slate-900 to-slate-900 border-rose-700/60 text-white shadow-xl"
           : "bg-white border-slate-200/90 text-slate-900"
       }`}
     >
@@ -64,21 +68,31 @@ export function CurrentPlanCard({ subscription, studentsUsed }: CurrentPlanCardP
             </h2>
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm ${
-                isActive
-                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
-                  : isTrial
+                isTrial
                   ? "bg-white/20 text-white border border-white/30 backdrop-blur-sm"
+                  : isRenewalDue
+                  ? "bg-rose-500/25 text-rose-300 border border-rose-400/40"
+                  : isActive
+                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
                   : "bg-rose-100 text-rose-700 border border-rose-200"
               }`}
             >
               {isTrial ? (
                 <AppIcon name="Clock" size={13} className="text-amber-300" />
+              ) : isRenewalDue ? (
+                <AppIcon name="AlertTriangle" size={13} className="text-rose-400" />
               ) : isActive ? (
                 <AppIcon name="CheckCircle" size={13} className="text-emerald-400" />
               ) : (
                 <AppIcon name="AlertCircle" size={13} className="text-rose-500" />
               )}
-              <span>{isTrial ? `${daysRemaining} Days Remaining` : isActive ? "Active License" : "Expired / Suspended"}</span>
+              <span>
+                {isTrial
+                  ? `${daysRemaining} Days Trial Remaining`
+                  : isRenewalDue
+                  ? `Renewal Due · ${graceDaysLeft} Days Grace Left`
+                  : `${daysRemaining} Days Remaining`}
+              </span>
             </span>
           </div>
 
@@ -86,7 +100,7 @@ export function CurrentPlanCard({ subscription, studentsUsed }: CurrentPlanCardP
             <div className="space-y-3">
               <p className="text-blue-100 text-xs font-semibold flex items-center gap-2">
                 <AppIcon name="ShieldCheck" size={14} className="text-blue-300" />
-                <span>Full platform modules unlocked · No paid plan active</span>
+                <span>Full platform modules unlocked · Free evaluation period</span>
               </p>
               {subscription.end_date && (
                 <p className="text-blue-200 text-xs font-medium flex items-center gap-2">
@@ -99,17 +113,6 @@ export function CurrentPlanCard({ subscription, studentsUsed }: CurrentPlanCardP
                   </span>
                 </p>
               )}
-              <div className="flex flex-wrap gap-2 pt-1">
-                {["All Modules Included", "Unlimited Teachers", "Parent Portal App", "Student LMS", "Analytics & Reports"].map((f) => (
-                  <span
-                    key={f}
-                    className="text-[11px] font-semibold bg-white/15 text-white/95 px-3 py-1 rounded-full border border-white/15 flex items-center gap-1.5 shadow-sm"
-                  >
-                    <AppIcon name="Check" size={11} className="text-yellow-300" />
-                    <span>{f}</span>
-                  </span>
-                ))}
-              </div>
             </div>
           ) : isActive ? (
             <div className="space-y-3">
@@ -117,24 +120,29 @@ export function CurrentPlanCard({ subscription, studentsUsed }: CurrentPlanCardP
                 <span className="text-3xl sm:text-4xl font-black text-white tracking-tight">
                   {subscription.price === 0 ? "Free" : `PKR ${subscription.price.toLocaleString()}`}
                 </span>
-                <span className="text-xs sm:text-sm font-semibold text-slate-400">/month · Auto-renews</span>
+                <span className="text-xs sm:text-sm font-semibold text-slate-400">/month</span>
               </div>
               {subscription.end_date && (
                 <p className="text-xs text-slate-300 flex items-center gap-2">
                   <AppIcon name="Calendar" size={14} className="text-indigo-300" />
                   <span>
-                    Next billing date:{" "}
+                    {isRenewalDue ? "Expired on: " : "Next renewal date: "}
                     <strong className="text-white font-bold">
                       {new Date(subscription.end_date).toLocaleDateString("en-PK", { day: "numeric", month: "long", year: "numeric" })}
                     </strong>
+                    {isRenewalDue && (
+                      <span className="text-rose-400 font-bold ml-2">
+                        (Suspension in {graceDaysLeft} days)
+                      </span>
+                    )}
                   </span>
                 </p>
               )}
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="text-xs text-rose-600 font-semibold">
-                Your subscription has lapsed. Please upgrade or renew your plan below to restore uninterrupted school access.
+              <p className="text-xs text-rose-400 font-semibold">
+                Your subscription has lapsed. Please renew your plan below to restore uninterrupted school access.
               </p>
             </div>
           )}

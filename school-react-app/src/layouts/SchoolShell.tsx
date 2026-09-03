@@ -458,6 +458,16 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
   const [availablePackages, setAvailablePackages] = useState<any[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [subscription, setSubscription] = useState<any>(null);
+  const [isRenewalDismissed, setIsRenewalDismissed] = useState(false);
+
+  const subEndDate = subscription?.end_date ? new Date(subscription.end_date) : null;
+  const daysRemaining = subEndDate 
+    ? Math.ceil((subEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
+  const isExpired = daysRemaining !== null && daysRemaining <= 0;
+  const graceDaysRemaining = daysRemaining !== null ? Math.max(0, 3 + daysRemaining) : 0;
+  const showRenewalPopup = !isRenewalDismissed && isExpiringSoon && (user?.role === "owner" || user?.role === "admin");
 
   const navGroups = useMemo(() => navGroupsForRole(user?.role), [user]);
 
@@ -741,6 +751,45 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
               <AppIcon name="Menu" size={18} />
             </button>
             <GlobalSearch />
+            {showRenewalPopup && (
+              <div
+                className={`flex items-center gap-2 px-3 py-1 rounded-xl text-xs border shadow-sm transition-all shrink-0 ${
+                  isExpired
+                    ? "bg-rose-50 border-rose-200 text-rose-800"
+                    : "bg-amber-50 border-amber-200 text-amber-800"
+                }`}
+              >
+                <AppIcon
+                  name={isExpired ? "AlertTriangle" : "Clock"}
+                  size={14}
+                  className={isExpired ? "text-rose-600 animate-pulse shrink-0" : "text-amber-600 shrink-0"}
+                />
+                <span className="font-bold hidden sm:inline">
+                  {isExpired
+                    ? `Subscription Expired (${graceDaysRemaining}d grace left)`
+                    : `Plan expires in ${daysRemaining} ${daysRemaining === 1 ? "day" : "days"}`}
+                </span>
+                <span className="font-bold sm:hidden">
+                  {isExpired ? `${graceDaysRemaining}d grace` : `${daysRemaining}d left`}
+                </span>
+                <Link
+                  to={user?.role === "owner" ? "/owner/subscription" : "/admin/subscription"}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-black text-white shadow-xs transition-transform active:scale-95 ${
+                    isExpired ? "bg-rose-600 hover:bg-rose-700" : "bg-amber-600 hover:bg-amber-700"
+                  }`}
+                >
+                  Renew Plan
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setIsRenewalDismissed(true)}
+                  className="text-slate-400 hover:text-slate-700 p-0.5 rounded-md transition-colors"
+                  title="Dismiss alert for this session"
+                >
+                  <AppIcon name="X" size={13} />
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3 relative z-[100] overflow-visible">
