@@ -1,18 +1,21 @@
 # ═══════════════════════════════════════════════════════════════════════════
 # Eduplexo — Hardened Production Docker Compose
 # ═══════════════════════════════════════════════════════════════════════════
-# Architecture:
+# Current Production Architecture (Non-AI Core Stack):
 #   Internet → Nginx (80/443) → api.eduplexo.com → backend-go (8080)
-#                             → bot.eduplexo.com → edubot (8001)
 #   backend-go → PostgreSQL (5432) + Redis DB 0 (6379)
-#   edubot     → backend-go (8080) + Redis DB 1 (6379)
+#
+# Future AI Architecture (Preserved for activation once keys are provided):
+#   Internet → Nginx (80/443) → bot.eduplexo.com → edubot (8001)
+#   edubot → backend-go (8080) + Redis DB 1 (6379)
 #
 # Constraints Enforced:
 #   - PostgreSQL (5432) & Redis (6379) are NEVER published to the host
-#   - backend-go (8080) & edubot (8001) are NEVER published to the host
+#   - backend-go (8080) is NEVER published to the host
 #   - Exactly ONE backend-go instance (MemStore in-memory state cannot be replicated)
 #   - All background jobs run in-process inside backend-go
 #   - Frontend apps (school, super-admin, landing) run on Vercel
+#   - Edubot microservice is preserved below for seamless future activation
 # ═══════════════════════════════════════════════════════════════════════════
 
 services:
@@ -31,8 +34,6 @@ services:
       - certbot_certs:/etc/letsencrypt:ro
     depends_on:
       backend-go:
-        condition: service_started
-      edubot:
         condition: service_started
     deploy:
       resources:
@@ -74,9 +75,10 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
-      GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY is required}
+      # Optional AI Integrations — active when credentials are provided
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY is required}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       GOMAXPROCS: "4"
       GOMEMLIMIT: "900MiB"
     volumes:
@@ -210,54 +212,60 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # ─── EduBot AI Chatbot Service ─────────────────────────────────────────
-  edubot:
-    build:
-      context: ./edubot-service
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    depends_on:
-      redis:
-        condition: service_healthy
-      backend-go:
-        condition: service_started
-    environment:
-      GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY is required}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-google/gemini-2.0-flash-lite-001}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
-      GO_BACKEND_URL: http://backend-go:8080
-      GO_BACKEND_TIMEOUT: "8"
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
-      ENV: production
-      LOG_LEVEL: INFO
-      SESSION_TTL_SECONDS: "1800"
-      MAX_HISTORY_PAIRS: "10"
-      GEMINI_TIMEOUT_SECONDS: "30"
-      RATE_LIMIT_PER_MINUTE: "20"
-    expose:
-      - "8001"
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.5"
-        reservations:
-          memory: 128M
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/chat/health')\""]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "50m"
-        max-file: "5"
+  # ─── EduBot AI Chatbot Service (Preserved for Future Activation) ──────────
+  # To enable Edubot once real AI credentials (GEMINI_API_KEY) are configured:
+  #   1. Set GEMINI_API_KEY in .env
+  #   2. Uncomment this service block
+  #   3. Add 'edubot: condition: service_started' to nginx.depends_on above
+  #   4. Uncomment bot.eduplexo.com server block in nginx/nginx.conf
+  #
+  # edubot:
+  #   build:
+  #     context: ./edubot-service
+  #     dockerfile: Dockerfile
+  #   restart: unless-stopped
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #     backend-go:
+  #       condition: service_started
+  #   environment:
+  #     GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  #     GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+  #     OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+  #     OPENROUTER_MODEL: ${OPENROUTER_MODEL:-google/gemini-2.0-flash-lite-001}
+  #     GROQ_API_KEY: ${GROQ_API_KEY:-}
+  #     JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+  #     GO_BACKEND_URL: http://backend-go:8080
+  #     GO_BACKEND_TIMEOUT: "8"
+  #     REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+  #     ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+  #     ENV: production
+  #     LOG_LEVEL: INFO
+  #     SESSION_TTL_SECONDS: "1800"
+  #     MAX_HISTORY_PAIRS: "10"
+  #     GEMINI_TIMEOUT_SECONDS: "30"
+  #     RATE_LIMIT_PER_MINUTE: "20"
+  #   expose:
+  #     - "8001"
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 256M
+  #         cpus: "0.5"
+  #       reservations:
+  #         memory: 128M
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/chat/health')\""]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 15s
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "50m"
+  #       max-file: "5"
 
 volumes:
   postgres_data:
