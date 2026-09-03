@@ -260,8 +260,17 @@ export function SubscriptionPage() {
                 <PricingCard
                   key={plan.id || plan.name}
                   plan={plan}
-                  isCurrentPlan={sub?.plan_name === plan.name || (sub?.plan_name === "growth" && plan.name === "plan_growth")}
-                  canTrial={current?.can_trial ?? (!sub || sub.status === "inactive" || sub.status === "expired")}
+                  isCurrentPlan={
+                    sub?.status === "active" &&
+                    !sub?.is_trial &&
+                    sub?.plan_name !== "trial" &&
+                    (sub?.plan_name === plan.name ||
+                      sub?.plan_name === plan.id ||
+                      (sub?.plan_name === "growth" && plan.name === "plan_growth") ||
+                      (sub?.plan_name === "starter" && plan.name === "plan_starter") ||
+                      (sub?.plan_name === "premium" && plan.name === "plan_premium"))
+                  }
+                  canTrial={false}
                   onStartTrial={async () => {
                     await startTrial(plan.name);
                     navigate(`${rolePrefix}/dashboard`);
@@ -598,6 +607,7 @@ function SubscriptionSkeleton() {
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
 function planDisplayName(name: string): string {
+  if (name === "trial" || name === "free_trial") return "14-Day Free Trial";
   const map: Record<string, string> = {
     plan_starter: "Starter Plan",
     starter: "Starter Plan",

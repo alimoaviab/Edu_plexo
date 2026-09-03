@@ -191,9 +191,9 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 		adminPass := ""
 		adminRole := "admin"
 		for _, u := range h.Store.Users {
-			if u.SchoolID == s.SchoolID && (u.Role == "admin" || u.Role == "school_admin" || u.Role == "owner") {
+			if u.SchoolID == s.SchoolID && (u.Role == "admin" || u.Role == "school_admin") {
 				adminEmail = u.Email
-				adminRole = u.Role
+				adminRole = "admin"
 				if u.Password != "" {
 					adminPass = u.Password
 				}
@@ -624,6 +624,18 @@ func (h *Handler) DeleteSchool(w http.ResponseWriter, r *http.Request) {
 
 	if h.Persist != nil {
 		h.Persist("schools:delete", deleted.ID)
+	}
+
+	if h.Pool != nil {
+		_, _ = h.Pool.Exec(r.Context(), `
+			DELETE FROM schools WHERE (id = $1 OR school_id = $1) AND (owner_user_id = $2 OR owner_email = $3)
+		`, sid, ctx.UserID, ctx.ActorEmail)
+		_, _ = h.Pool.Exec(r.Context(), `
+			DELETE FROM subscriptions WHERE school_id = $1
+		`, deleted.SchoolID)
+		_, _ = h.Pool.Exec(r.Context(), `
+			DELETE FROM users WHERE school_id = $1 AND role != 'owner'
+		`, deleted.SchoolID)
 	}
 
 	api.WriteJSON(w, http.StatusOK, map[string]any{

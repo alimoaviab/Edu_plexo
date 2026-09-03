@@ -35,6 +35,10 @@ export function CurrentPlanCard({ subscription, studentsUsed }: CurrentPlanCardP
     return "No Active Plan";
   }
 
+  const daysRemaining = subscription?.end_date 
+    ? Math.max(0, Math.ceil((new Date(subscription.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 14;
+
   const isGradient = isTrial || isActive;
 
   return (
@@ -68,13 +72,13 @@ export function CurrentPlanCard({ subscription, studentsUsed }: CurrentPlanCardP
               }`}
             >
               {isTrial ? (
-                <AppIcon name="Sparkles" size={13} className="text-yellow-300" />
+                <AppIcon name="Clock" size={13} className="text-amber-300" />
               ) : isActive ? (
                 <AppIcon name="CheckCircle" size={13} className="text-emerald-400" />
               ) : (
                 <AppIcon name="AlertCircle" size={13} className="text-rose-500" />
               )}
-              <span>{isTrial ? "Active Free Trial" : isActive ? "Active License" : "Expired / Suspended"}</span>
+              <span>{isTrial ? `${daysRemaining} Days Remaining` : isActive ? "Active License" : "Expired / Suspended"}</span>
             </span>
           </div>
 
@@ -82,7 +86,7 @@ export function CurrentPlanCard({ subscription, studentsUsed }: CurrentPlanCardP
             <div className="space-y-3">
               <p className="text-blue-100 text-xs font-semibold flex items-center gap-2">
                 <AppIcon name="ShieldCheck" size={14} className="text-blue-300" />
-                <span>All platform modules unlocked · Up to <strong className="text-white">200 students</strong></span>
+                <span>Full platform modules unlocked · No paid plan active</span>
               </p>
               {subscription.end_date && (
                 <p className="text-blue-200 text-xs font-medium flex items-center gap-2">

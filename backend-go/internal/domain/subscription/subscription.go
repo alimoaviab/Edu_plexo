@@ -232,65 +232,6 @@ func (h *Handler) resolveSchoolID(ctx *api.RequestContext) string {
 			}
 		}
 	}
-	if ctx.Role == "owner" && (ctx.ActorEmail != "" || ctx.UserID != "") {
-		newSchoolID := store.NewID("sch")
-		now := time.Now()
-		initialSchool := &store.School{
-			ID:             store.NewID("sch_entity"),
-			SchoolID:       newSchoolID,
-			Name:           "Main Campus",
-			Code:           strings.ToUpper(store.NewID("SCH")[:8]),
-			Status:         "active",
-			ApprovalStatus: "approved",
-			OwnerUserID:    ctx.UserID,
-			OwnerEmail:     ctx.ActorEmail,
-			CreatedAt:      now,
-			UpdatedAt:      now,
-		}
-		if h.Store != nil {
-			h.Store.Lock()
-			h.Store.Schools = append(h.Store.Schools, initialSchool)
-			h.Store.Unlock()
-		}
-		if h.Pool != nil {
-			_, _ = h.Pool.Exec(context.Background(), `
-				INSERT INTO schools (id, school_id, name, code, status, approval_status, owner_user_id, owner_email, created_at, updated_at)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-				ON CONFLICT (school_id) DO NOTHING
-			`, initialSchool.ID, initialSchool.SchoolID, initialSchool.Name, initialSchool.Code,
-				initialSchool.Status, initialSchool.ApprovalStatus, initialSchool.OwnerUserID, initialSchool.OwnerEmail,
-				initialSchool.CreatedAt, initialSchool.UpdatedAt)
-		}
-
-		// Also provision 14-day Free Trial of Growth Plan
-		trialEnd := now.AddDate(0, 0, 14)
-		subID := store.NewID("sub")
-		storeSub := &store.Subscription{
-			ID:           subID,
-			SchoolID:     newSchoolID,
-			PackageID:    "growth",
-			StudentLimit: 500,
-			Price:        0,
-			Status:       "trial",
-			AutoRenew:    false,
-			NextRenewal:  trialEnd,
-			CreatedAt:    now,
-			UpdatedAt:    now,
-		}
-		if h.Store != nil {
-			h.Store.Lock()
-			h.Store.Subscriptions = append(h.Store.Subscriptions, storeSub)
-			h.Store.Unlock()
-		}
-		if h.Pool != nil {
-			_, _ = h.Pool.Exec(context.Background(), `
-				INSERT INTO subscriptions (id, school_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
-				VALUES ($1, $2, 'growth', 500, 0, 'PKR', $3, $4, 'trial', true, true, $5, $6)
-				ON CONFLICT (id) DO NOTHING
-			`, subID, newSchoolID, now, trialEnd, now, now)
-		}
-		return newSchoolID
-	}
 	return ""
 }
 
@@ -309,13 +250,75 @@ func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 		trialWarning := ""
 		builderRequired := false
 
+		// If owner does not have a school-level subscription, provide 14-day owner account trial
+		if sub == nil && ctx != nil && ctx.Role == "owner" {
+			var userCreatedAt time.Time
+			if h.Pool != nil {
+				_ = h.Pool.QueryRow(r.Context(), `SELECT created_at FROM users WHERE id = $1`, ctx.UserID).Scan(&userCreatedAt)
+			}
+			if userCreatedAt.IsZero() && h.Store != nil {
+				h.Store.RLock()
+				for _, u := range h.Store.Users {
+					if u.ID == ctx.UserID || u.Email == ctx.ActorEmail {
+						userCreatedAt = u.CreatedAt
+						break
+					}
+				}
+				h.Store.RUnlock()
+			}
+			if userCreatedAt.IsZero() {
+				userCreatedAt = time.Now()
+			}
+
+			trialEnd := userCreatedAt.AddDate(0, 0, 14)
+			remaining := time.Until(trialEnd)
+			if remaining > 0 {
+				sub = &Subscription{
+					ID:           "sub_trial_" + ctx.UserID,
+					SchoolID:     "owner",
+					PlanName:     "trial",
+					StudentLimit: 500,
+					Price:        0,
+					Currency:     "PKR",
+					StartDate:    userCreatedAt,
+					EndDate:      trialEnd,
+					Status:       "trial",
+					IsTrial:      true,
+					TrialUsed:    true,
+					CreatedAt:    userCreatedAt,
+					UpdatedAt:    userCreatedAt,
+				}
+			} else {
+				sub = &Subscription{
+					ID:           "sub_trial_" + ctx.UserID,
+					SchoolID:     "owner",
+					PlanName:     "trial",
+					StudentLimit: 500,
+					Price:        0,
+					Currency:     "PKR",
+					StartDate:    userCreatedAt,
+					EndDate:      trialEnd,
+					Status:       "expired",
+					IsTrial:      true,
+					TrialUsed:    true,
+					CreatedAt:    userCreatedAt,
+					UpdatedAt:    userCreatedAt,
+				}
+			}
+		}
+
+		// Ensure any active trial is strictly named 'trial' so paid plans are not flagged as active
+		if sub != nil && (sub.Status == "trial" || sub.IsTrial) {
+			sub.PlanName = "trial"
+		}
+
 		// Check if trial already used in DB or MemStore
 		canTrial, err := IsTrialAvailable(r.Context(), h.Pool, h.Store, schoolID)
 		if err != nil {
 			return CurrentResponse{}, err
 		}
 
-		// canTrial is only true if they also don't have an active subscription
+		// canTrial is only true if they also don't have an active subscription or trial
 		if sub != nil && (sub.Status == "active" || sub.Status == "trial") {
 			canTrial = false
 		}
@@ -327,6 +330,9 @@ func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 			remaining := time.Until(sub.EndDate)
 			if remaining > 0 {
 				daysRemaining = int(remaining.Hours() / 24)
+				if daysRemaining <= 0 {
+					daysRemaining = 1
+				}
 				isExpired = false
 				if sub.Status == "trial" {
 					elapsedDays := int(time.Since(sub.StartDate).Hours() / 24)

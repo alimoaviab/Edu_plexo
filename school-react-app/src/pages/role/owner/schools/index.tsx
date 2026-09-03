@@ -73,6 +73,29 @@ export default function OwnerSchoolsPage() {
     toast.success(`${label} copied to clipboard!`);
   };
 
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteSchool = async (schoolId: string) => {
+    setDeleting(true);
+    try {
+      const res = await serviceRequest<any>(`/api/owner/schools/${schoolId}`, {
+        method: "DELETE",
+      });
+      if (res.success || res.ok) {
+        toast.success("Campus deleted successfully!");
+        setSelectedSchool(null);
+        void queryClient.invalidateQueries({ queryKey: ["owner-schools"] });
+        void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      } else {
+        toast.error(res.error?.message || res.message || "Failed to delete campus.");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete campus.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <SchoolShell eyebrow="Owner Portal" title="Portfolio">
@@ -215,76 +238,70 @@ export default function OwnerSchoolsPage() {
             </div>
 
             {/* Credentials Card */}
-            {(() => {
-              const credRole = selectedSchool.admin_role || "admin";
-              const credRoleLabel = credRole === "super_admin" ? "Super Admin" : credRole === "school_admin" ? "School Admin" : credRole.charAt(0).toUpperCase() + credRole.slice(1);
-              return (
-                <div className="p-5 bg-white border border-slate-200 text-slate-900 rounded-2xl shadow-sm space-y-4">
-                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
-                      <AppIcon name="Key" size={18} />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">{credRoleLabel} Login Credentials</h3>
-                      <p className="text-[11px] text-slate-500">Use these credentials to sign in as {credRoleLabel} for this campus.</p>
-                    </div>
+            <div className="p-5 bg-white border border-slate-200 text-slate-900 rounded-2xl shadow-sm space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+                  <AppIcon name="Key" size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">School Admin Login Credentials</h3>
+                  <p className="text-[11px] text-slate-500">Use these credentials to sign in as School Admin for this campus.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                {/* Email Box */}
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="text-slate-500 block font-medium">Admin Email</span>
+                    <span className="font-bold text-slate-900 text-sm select-all mt-0.5 block">
+                      {selectedSchool.admin_email || selectedSchool.email || "admin@school.com"}
+                    </span>
                   </div>
+                  <button 
+                    onClick={() => copyToClipboard(selectedSchool.admin_email || selectedSchool.email || "admin@school.com", "Admin Email")}
+                    className="p-2 text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
+                    title="Copy Email"
+                  >
+                    <AppIcon name="Copy" size={16} />
+                  </button>
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    {/* Email Box */}
-                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between">
-                      <div>
-                        <span className="text-slate-500 block font-medium">{credRoleLabel} Email</span>
-                        <span className="font-bold text-slate-900 text-sm select-all mt-0.5 block">
-                          {selectedSchool.admin_email || selectedSchool.email || "owner@school.com"}
-                        </span>
-                      </div>
-                      <button 
-                        onClick={() => copyToClipboard(selectedSchool.admin_email || selectedSchool.email || "owner@school.com", `${credRoleLabel} Email`)}
-                        className="p-2 text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
-                        title="Copy Email"
-                      >
-                        <AppIcon name="Copy" size={16} />
-                      </button>
-                    </div>
-
-                    {/* Password Box */}
-                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between">
-                      <div>
-                        <span className="text-slate-500 block font-medium">{credRoleLabel} Password</span>
-                        <span className="font-mono font-bold text-emerald-600 text-sm select-all mt-0.5 block">
-                          {showPassword
-                            ? (selectedSchool.admin_password || "Configured on campus creation")
-                            : "••••••••••••"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button 
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="p-2 text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
-                          title={showPassword ? "Hide Password" : "Show Password"}
-                        >
-                          <AppIcon name={showPassword ? "EyeOff" : "Eye"} size={16} />
-                        </button>
-                        <button 
-                          onClick={() => {
-                            if (selectedSchool.admin_password) {
-                              copyToClipboard(selectedSchool.admin_password, `${credRoleLabel} Password`);
-                            } else {
-                              toast.info("Password was configured during campus creation.");
-                            }
-                          }}
-                          className="p-2 text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
-                          title="Copy Password"
-                        >
-                          <AppIcon name="Copy" size={16} />
-                        </button>
-                      </div>
-                    </div>
+                {/* Password Box */}
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="text-slate-500 block font-medium">Admin Password</span>
+                    <span className="font-mono font-bold text-emerald-600 text-sm select-all mt-0.5 block">
+                      {showPassword
+                        ? (selectedSchool.admin_password || "Configured on campus creation")
+                        : "••••••••••••"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="p-2 text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
+                      title={showPassword ? "Hide Password" : "Show Password"}
+                    >
+                      <AppIcon name={showPassword ? "EyeOff" : "Eye"} size={16} />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        if (selectedSchool.admin_password) {
+                          copyToClipboard(selectedSchool.admin_password, "Admin Password");
+                        } else {
+                          toast.info("Password was configured during campus creation.");
+                        }
+                      }}
+                      className="p-2 text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
+                      title="Copy Password"
+                    >
+                      <AppIcon name="Copy" size={16} />
+                    </button>
                   </div>
                 </div>
-              );
-            })()}
+              </div>
+            </div>
 
             {/* Class Breakdown Table */}
             <div className="space-y-3">
@@ -329,7 +346,19 @@ export default function OwnerSchoolsPage() {
 
             </div>
             {/* Footer */}
-            <div className="p-4 md:p-6 border-t border-slate-100 flex justify-end bg-white">
+            <div className="p-4 md:p-6 border-t border-slate-100 flex items-center justify-between bg-white">
+              <button 
+                onClick={async () => {
+                  if (window.confirm(`Are you sure you want to delete campus "${selectedSchool.name}"? This action cannot be undone.`)) {
+                    await handleDeleteSchool(selectedSchool.id || selectedSchool.school_id);
+                  }
+                }}
+                disabled={deleting}
+                className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <AppIcon name="Trash2" size={14} />
+                <span>{deleting ? "Deleting..." : "Delete Campus"}</span>
+              </button>
               <button 
                 onClick={() => setSelectedSchool(null)}
                 className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition-colors"
