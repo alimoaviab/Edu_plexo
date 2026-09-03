@@ -4,18 +4,14 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { apiRequest, clearStoredSession } from '@/lib/api'
 
 const navItems = [
-  { label: 'Dashboard', href: '/dashboard', icon: 'dashboard' },
-  { label: 'Schools', href: '/schools', icon: 'apartment' },
-  { label: 'Question Bank', href: '/question-bank', icon: 'quiz' },
-  { label: 'Moderation', href: '/moderation', icon: 'shield' },
-  { label: 'Hierarchy', href: '/hierarchy', icon: 'schema' },
-  { label: 'CSV Imports', href: '/csv-imports', icon: 'cloud_upload' },
-  { label: 'Payments', href: '/payments', icon: 'payments' },
-  { label: 'Packages', href: '/packages', icon: 'inventory_2' },
-  { label: 'Subscriptions', href: '/subscriptions', icon: 'card_membership' },
-  { label: 'AI Usage', href: '/ai-usage', icon: 'smart_toy' },
-  { label: 'Users', href: '/users', icon: 'group' },
-  { label: 'Settings', href: '/settings', icon: 'settings' },
+  { label: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard' },
+  { label: 'Schools', href: '/schools', icon: 'Building2' },
+  { label: 'Payments', href: '/payments', icon: 'CreditCard' },
+  { label: 'Subscriptions', href: '/subscriptions', icon: 'Award' },
+  { label: 'Packages', href: '/packages', icon: 'Package' },
+  { label: 'AI Usage', href: '/ai-usage', icon: 'Bot' },
+  { label: 'Users', href: '/users', icon: 'Users' },
+  { label: 'Settings', href: '/settings', icon: 'Settings' },
 ]
 
 interface SAUser {

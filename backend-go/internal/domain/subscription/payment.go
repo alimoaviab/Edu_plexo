@@ -305,11 +305,14 @@ func (h *Handler) AdminListPendingPayments(w http.ResponseWriter, r *http.Reques
 			SELECT pr.id, pr.school_id, pr.plan_id, COALESCE(pr.payment_method_id,''), COALESCE(pr.screenshot_url,''),
 			       pr.transaction_id, pr.amount, pr.status, pr.submitted_at, pr.verified_at, COALESCE(pr.verified_by,''),
 			       COALESCE(pr.rejection_reason,''), COALESCE(pr.notes,''),
-			       COALESCE(s.name,'Unknown') AS school_name,
-			       COALESCE(s.admin_name,''), COALESCE(s.contact_phone, s.admin_phone, ''), COALESCE(s.contact_phone, s.admin_phone, ''),
+			       COALESCE(s.name, u.email, 'Owner Account') AS school_name,
+			       COALESCE(s.owner_email, u.email, '') AS owner_name,
+			       COALESCE(s.contact_phone, u.phone, '') AS phone,
+			       COALESCE(s.contact_phone, u.phone, '') AS whatsapp,
 			       COALESCE(sp.name, pr.plan_id) AS plan_name
 			FROM payment_requests pr
 			LEFT JOIN schools s ON s.school_id = pr.school_id OR s.id = pr.school_id
+			LEFT JOIN users u ON u.school_id = pr.school_id OR u.id = pr.school_id OR u.email = s.owner_email
 			LEFT JOIN subscription_plans sp ON sp.id = pr.plan_id
 			WHERE ($1::text = 'all' OR pr.status = $1)
 			ORDER BY pr.submitted_at DESC
@@ -396,6 +399,20 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 			return nil, api.NewControlledError("NOT_FOUND", "Payment request not found or already processed.", 404, nil)
 		}
 
+		// Preserve remaining trial days if existing subscription end_date is in the future
+		var currentEndDate time.Time
+		_ = tx.QueryRow(r.Context(), `
+			SELECT end_date FROM subscriptions 
+			WHERE (school_id=$1) AND end_date > NOW() 
+			ORDER BY end_date DESC LIMIT 1
+		`, schoolID).Scan(&currentEndDate)
+
+		baseDate := now
+		if !currentEndDate.IsZero() && currentEndDate.After(now) {
+			baseDate = currentEndDate
+		}
+		endDate := baseDate.AddDate(0, 0, durationDays)
+
 		// Deactivate old subscription
 		if _, err := tx.Exec(r.Context(), `
 			UPDATE subscriptions SET status='cancelled', updated_at=NOW()
@@ -405,7 +422,6 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Create new active subscription
-		endDate := now.AddDate(0, 0, durationDays)
 		subID := store.NewID("sub")
 		if _, err := tx.Exec(r.Context(), `
 			INSERT INTO subscriptions (id, school_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)

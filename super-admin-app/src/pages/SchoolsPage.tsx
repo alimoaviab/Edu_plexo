@@ -36,8 +36,10 @@ export function SchoolsPage() {
     if (search) params.set('search', search)
     const res = await apiRequest(`/api/super-admin/schools?${params}`)
     if (res.ok && res.data) {
-      const d = res.data as any
-      setSchools(d.items || d.data || [])
+      const items = Array.isArray(res.data) 
+        ? res.data 
+        : (res.data as any).items || (res.data as any).data || []
+      setSchools(items)
     }
     setLoading(false)
   }

@@ -35,6 +35,7 @@ export function UsersPage() {
   useEffect(() => { loadUsers() }, [roleFilter])
 
   const roleColors: Record<string, string> = {
+    owner: 'bg-purple-50 text-purple-700 border-purple-100',
     admin: 'bg-blue-50 text-blue-700 border-blue-100',
     teacher: 'bg-indigo-50 text-indigo-700 border-indigo-100',
     student: 'bg-emerald-50 text-emerald-700 border-emerald-100',
@@ -74,6 +75,7 @@ export function UsersPage() {
           className="h-8 px-3 rounded-lg border border-slate-200 text-[12px] font-semibold text-slate-600 outline-none"
         >
           <option value="">All Roles</option>
+          <option value="owner">Owner</option>
           <option value="admin">Admin</option>
           <option value="teacher">Teacher</option>
           <option value="student">Student</option>

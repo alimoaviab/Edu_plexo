@@ -196,6 +196,7 @@ type CurrentResponse struct {
 	MinimumMonthlyBill     int             `json:"minimum_monthly_bill"`
 	TrialWarning           string          `json:"trial_warning,omitempty"`
 	PackageBuilderRequired bool            `json:"package_builder_required"`
+	PendingPayment         *PaymentRequest `json:"pending_payment,omitempty"`
 }
 
 func (h *Handler) resolveSchoolID(ctx *api.RequestContext) string {
@@ -354,6 +355,42 @@ func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 			limit = sub.StudentLimit
 		}
 
+		var pendingPay *PaymentRequest
+		if h.Pool != nil {
+			var p PaymentRequest
+			err := h.Pool.QueryRow(r.Context(), `
+				SELECT id, school_id, plan_id, COALESCE(payment_method_id,''), COALESCE(screenshot_url,''),
+				       transaction_id, amount, status, submitted_at, COALESCE(notes,'')
+				FROM payment_requests
+				WHERE (school_id = $1 OR school_id = $2) AND status = 'pending'
+				ORDER BY submitted_at DESC LIMIT 1
+			`, schoolID, ctx.UserID).Scan(
+				&p.ID, &p.SchoolID, &p.PlanID, &p.PaymentMethodID, &p.ScreenshotURL,
+				&p.TransactionID, &p.Amount, &p.Status, &p.SubmittedAt, &p.Notes,
+			)
+			if err == nil {
+				pendingPay = &p
+			}
+		} else if h.Store != nil {
+			h.Store.RLock()
+			for _, t := range h.Store.Transactions {
+				if (t.SchoolID == schoolID || t.SchoolID == ctx.UserID) && t.Status == "pending" {
+					pendingPay = &PaymentRequest{
+						ID:            t.ID,
+						SchoolID:      t.SchoolID,
+						PlanID:        t.PackageID,
+						TransactionID: t.ReferenceNo,
+						Amount:        int(t.Amount),
+						Status:        t.Status,
+						SubmittedAt:   t.CreatedAt,
+						Notes:         t.Notes,
+					}
+					break
+				}
+			}
+			h.Store.RUnlock()
+		}
+
 		return CurrentResponse{
 			Subscription:           sub,
 			StudentsUsed:           studentsUsed,
@@ -369,6 +406,7 @@ func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 			MinimumMonthlyBill:     500,
 			TrialWarning:           trialWarning,
 			PackageBuilderRequired: builderRequired,
+			PendingPayment:         pendingPay,
 		}, nil
 	}))
 }

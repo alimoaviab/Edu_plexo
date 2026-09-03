@@ -849,6 +849,10 @@ func (h *Handler) DeleteSchool(w http.ResponseWriter, r *http.Request) {
 	// Remove the school itself
 	h.Store.Schools = append(h.Store.Schools[:schoolIdx], h.Store.Schools[schoolIdx+1:]...)
 
+	if h.Persist != nil {
+		h.Persist("schools:delete", targetSchoolID)
+	}
+
 	api.WriteResult(w, api.Ok(map[string]any{
 		"success": true,
 		"message": "School and all associated data permanently deleted.",
