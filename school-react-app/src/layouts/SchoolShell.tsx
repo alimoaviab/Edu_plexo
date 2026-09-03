@@ -53,7 +53,6 @@ const ownerNavGroups: NavGroup[] = [
     items: [
       { label: "Dashboard", href: "/owner/dashboard", icon: "dashboard" },
       { label: "My Schools", href: "/owner/schools", icon: "domain" },
-      { label: "Subscription", href: "/owner/subscription", icon: "card_membership" },
     ],
   },
 ];
@@ -119,6 +118,7 @@ const adminNavGroups: NavGroup[] = [
     items: [
       { label: "Schedule", href: "/admin/schedule", icon: "calendar_month" },
       { label: "Conversations", href: "/admin/messages", icon: "chat" },
+      { label: "Subscription", href: "/admin/subscription", icon: "card_membership" },
       { label: "Settings", href: "/admin/settings", icon: "settings" },
     ],
   },
@@ -346,6 +346,7 @@ const routeToModuleMap: Record<string, string> = {
   "/admin/templates/edit/:id": "certificates",
   "/admin/fee": "fee",
   "/admin/subscription": "subscription",
+  "/owner/subscription": "subscription",
   "/admin/schedule": "schedule",
   "/admin/messages": "conversations",
   "/admin/settings": "settings",
