@@ -62,6 +62,20 @@ func TestLoadProductionAcceptsSecureConfig(t *testing.T) {
 	}
 }
 
+func TestLoadProductionSucceedsWithoutAIKeys(t *testing.T) {
+	setProductionBaseEnv(t)
+	t.Setenv("GEMINI_API_KEY", "")
+	t.Setenv("ANTHROPIC_API_KEY", "")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("expected production config to load without AI keys, got %v", err)
+	}
+	if cfg.GeminiAPIKey != "" || cfg.AnthropicAPIKey != "" {
+		t.Fatal("expected empty AI keys")
+	}
+}
+
 func TestLoadDevelopmentUsesLocalFallback(t *testing.T) {
 	t.Setenv("APP_ENV", "development")
 	t.Setenv("JWT_SECRET", "")

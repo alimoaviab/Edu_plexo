@@ -148,6 +148,12 @@ func (h *Handler) Generate(w http.ResponseWriter, r *http.Request) {
 		model = premiumModel
 	}
 
+	// Check if API key is configured
+	if strings.TrimSpace(h.APIKey) == "" {
+		http.Error(w, `{"error":"AI SEO service is not configured"}`, http.StatusServiceUnavailable)
+		return
+	}
+
 	// Call Anthropic API with streaming
 	reqBody, _ := json.Marshal(map[string]any{
 		"model":      model,

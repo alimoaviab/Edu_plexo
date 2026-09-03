@@ -108,12 +108,8 @@ func (cfg Config) Validate(allowedOriginsEnv string) error {
 	if strings.TrimSpace(allowedOriginsEnv) == "" {
 		missing = append(missing, "ALLOWED_ORIGINS")
 	}
-	if strings.TrimSpace(cfg.GeminiAPIKey) == "" {
-		missing = append(missing, "GEMINI_API_KEY")
-	}
-	if strings.TrimSpace(cfg.AnthropicAPIKey) == "" {
-		missing = append(missing, "ANTHROPIC_API_KEY")
-	}
+	// AI credentials (GEMINI_API_KEY, ANTHROPIC_API_KEY) are optional for non-AI production
+	// deployments and will be utilized when AI features are actively enabled.
 	if len(missing) > 0 {
 		return fmt.Errorf("production config missing required env vars: %s", strings.Join(missing, ", "))
 	}
