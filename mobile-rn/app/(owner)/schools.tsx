@@ -101,14 +101,7 @@ export default function SchoolsScreen() {
     },
   });
 
-  // Login as Admin for this campus
-  const handleLoginAsAdmin = async (schoolId: string) => {
-    await prefStorage.set(StorageKeys.activeSchoolId, schoolId);
-    await hydrateAuth();
-    queryClient.clear();
-    setSelectedSchool(null);
-    router.replace('/(admin)' as never);
-  };
+
 
   // Create/Onboard new school campus
   const onboardMutation = useMutation({
@@ -408,15 +401,6 @@ export default function SchoolsScreen() {
                       </View>
                     </View>
                   </View>
-
-                  {/* Login as Admin button */}
-                  <Pressable
-                    onPress={() => handleLoginAsAdmin(selectedSchool.school_id)}
-                    style={({ pressed }) => [styles.btnLoginAdmin, pressed && styles.pressed]}
-                  >
-                    <Icon name="logout" size={16} color={colors.white} />
-                    <Text style={styles.btnLoginAdminText}>Login as Admin for this Campus</Text>
-                  </Pressable>
                 </View>
 
                 {/* Class Breakdown if any */}
@@ -855,21 +839,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#334155',
     padding: 6,
     borderRadius: radius.sm,
-  },
-  btnLoginAdmin: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: colors.primary,
-    paddingVertical: 10,
-    borderRadius: radius.md,
-    marginTop: 4,
-  },
-  btnLoginAdminText: {
-    ...typography.bodySm,
-    color: colors.white,
-    fontWeight: '800',
   },
   breakdownSection: {
     marginTop: spacing.sm,

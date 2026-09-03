@@ -27,6 +27,7 @@ export default function OwnerSchoolsPage() {
   // Onboard Modal State
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
   const [newSchool, setNewSchool] = useState({ name: "", code: "", city: "", address: "", principal_name: "", email: "", password: "" });
+  const [showModalPassword, setShowModalPassword] = useState(false);
   const [creating, setCreating] = useState(false);
   const [modalError, setModalError] = useState("");
 
@@ -47,6 +48,7 @@ export default function OwnerSchoolsPage() {
         toast.success("Campus onboarded successfully!");
         setIsOnboardModalOpen(false);
         setModalError("");
+        setShowModalPassword(false);
         setNewSchool({ name: "", code: "", city: "", address: "", principal_name: "", email: "", password: "" });
         void queryClient.invalidateQueries({ queryKey: ["owner-schools"] });
         void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -62,11 +64,6 @@ export default function OwnerSchoolsPage() {
     } finally {
       setCreating(false);
     }
-  };
-
-  const handleImpersonate = (schoolId: string) => {
-    window.localStorage.setItem("active_school_id", schoolId);
-    window.location.href = "/admin/dashboard";
   };
 
   const copyToClipboard = (text: string, label: string) => {
@@ -95,6 +92,7 @@ export default function OwnerSchoolsPage() {
           <button 
             onClick={() => {
               setModalError("");
+              setShowModalPassword(false);
               setIsOnboardModalOpen(true);
             }}
             className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
@@ -219,23 +217,14 @@ export default function OwnerSchoolsPage() {
               const credRoleLabel = credRole === "super_admin" ? "Super Admin" : credRole === "school_admin" ? "School Admin" : credRole.charAt(0).toUpperCase() + credRole.slice(1);
               return (
                 <div className="p-5 bg-white border border-slate-200 text-slate-900 rounded-2xl shadow-sm space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
-                        <AppIcon name="Key" size={18} />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-bold text-slate-900">{credRoleLabel} Login Credentials</h3>
-                        <p className="text-[11px] text-slate-500">Use these credentials to sign in as {credRoleLabel} for this campus.</p>
-                      </div>
+                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+                      <AppIcon name="Key" size={18} />
                     </div>
-                    <button
-                      onClick={() => handleImpersonate(selectedSchool.school_id)}
-                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5"
-                    >
-                      <AppIcon name="Login" size={14} className="text-white" />
-                      Login as {credRoleLabel}
-                    </button>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">{credRoleLabel} Login Credentials</h3>
+                      <p className="text-[11px] text-slate-500">Use these credentials to sign in as {credRoleLabel} for this campus.</p>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -349,7 +338,13 @@ export default function OwnerSchoolsPage() {
           <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-100">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-slate-900">Onboard Campus</h2>
-              <button onClick={() => setIsOnboardModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <button 
+                onClick={() => {
+                  setIsOnboardModalOpen(false);
+                  setShowModalPassword(false);
+                }} 
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <AppIcon name="X" size={20} />
               </button>
             </div>
@@ -395,13 +390,40 @@ export default function OwnerSchoolsPage() {
                     </div>
                     <div className="col-span-2 sm:col-span-1">
                       <label className="block text-sm font-medium text-slate-700 mb-1">Login Password</label>
-                      <input required type="password" value={newSchool.password} onChange={e => { setNewSchool({...newSchool, password: e.target.value}); setModalError(""); }} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" placeholder="••••••••" />
+                      <div className="relative">
+                        <input 
+                          required 
+                          type={showModalPassword ? "text" : "password"} 
+                          value={newSchool.password} 
+                          onChange={e => { setNewSchool({...newSchool, password: e.target.value}); setModalError(""); }} 
+                          className="w-full rounded-lg border border-slate-200 pl-3 pr-10 py-2 text-sm focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600" 
+                          placeholder="••••••••" 
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowModalPassword(prev => !prev)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 transition-colors"
+                          title={showModalPassword ? "Hide Password" : "Show Password"}
+                          tabIndex={-1}
+                        >
+                          <AppIcon name={showModalPassword ? "EyeOff" : "Eye"} size={16} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
               <div className="pt-4 flex justify-end gap-3">
-                <button type="button" onClick={() => setIsOnboardModalOpen(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg">Cancel</button>
+                <button 
+                  type="button" 
+                  onClick={() => { 
+                    setIsOnboardModalOpen(false); 
+                    setShowModalPassword(false); 
+                  }} 
+                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 rounded-lg"
+                >
+                  Cancel
+                </button>
                 <button type="submit" disabled={creating} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
                   {creating && <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />}
                   {creating ? "Creating..." : "Create Campus"}
