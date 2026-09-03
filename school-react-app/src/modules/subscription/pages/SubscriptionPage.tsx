@@ -1,19 +1,17 @@
 /**
- * SubscriptionPage — Complete subscription management UI.
+ * SubscriptionPage — Executive institutional subscription & billing management.
  *
  * Sections:
- *   1. Current Plan Card (status, usage, expiry)
- *   2. Usage Progress Bar
- *   3. Pricing Cards (Starter, Growth, Custom)
- *   4. Subscription History
+ *   1. Executive Header & Quick Actions
+ *   2. Active Tier & Student Capacity Analytics
+ *   3. Modern Pricing Cards (Starter, Growth [Hero], Premium, Enterprise)
+ *   4. Detailed Subscription & Billing History
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { SchoolShell } from "@/layouts/SchoolShell";
-import * as service from "../services/subscription.service";
 import { CurrentPlanCard } from "@/components/subscription/CurrentPlanCard";
-
 import { useSubscription } from "../hooks/useSubscription";
 import type { Plan } from "../services/subscription.service";
 import { AppIcon } from "shared/ui/AppIcon";
@@ -38,12 +36,79 @@ export function SubscriptionPage() {
 
   const sub = current?.subscription;
   const studentsUsed = current?.students_used ?? 0;
+  const studentLimit = sub?.student_limit || 0;
+  const percentUsed = studentLimit > 0 ? Math.min(100, Math.round((studentsUsed / studentLimit) * 100)) : 0;
+  const slotsRemaining = studentLimit > 0 ? Math.max(0, studentLimit - studentsUsed) : 0;
 
   const defaultPlans: Plan[] = [
-    { id: "plan_basic", name: "basic", display_name: "Basic Plan", price: 4000, currency: "PKR", student_limit: 100, features: ["All Premium Modules Included", "Unlimited Teacher Accounts", "Parent & Student Portals", "Complete Academic Suite", "Standard Support"], is_custom: false, popular: false },
-    { id: "plan_standard", name: "standard", display_name: "Standard Plan", price: 8000, currency: "PKR", student_limit: 300, features: ["All Premium Modules Included", "Unlimited Teacher Accounts", "Parent & Student Portals", "Complete Academic Suite", "Priority Support"], is_custom: false, popular: true },
-    { id: "plan_premium", name: "premium", display_name: "Premium Plan", price: 15000, currency: "PKR", student_limit: 800, features: ["All Premium Modules Included", "Unlimited Teacher Accounts", "Parent & Student Portals", "Complete Academic Suite", "Dedicated Support"], is_custom: false, popular: false },
-    { id: "plan_enterprise", name: "enterprise", display_name: "Enterprise Plan", price: 30000, currency: "PKR", student_limit: 2000, features: ["Custom Integrations", "Enterprise Features", "Custom Student Limit", "Priority Setup"], is_custom: true, popular: false },
+    {
+      id: "plan_starter",
+      name: "plan_starter",
+      display_name: "Starter Plan",
+      price: 4000,
+      currency: "PKR",
+      student_limit: 200,
+      features: [
+        "All Standard ERP Modules",
+        "Unlimited Teacher Accounts",
+        "Parent & Student Mobile Portals",
+        "Attendance & Examination Suite",
+        "Standard Email Support",
+      ],
+      is_custom: false,
+      popular: false,
+    },
+    {
+      id: "plan_growth",
+      name: "plan_growth",
+      display_name: "Growth Plan",
+      price: 8000,
+      currency: "PKR",
+      student_limit: 500,
+      features: [
+        "Everything in Starter Plan",
+        "SMS & Push Notification Gateway",
+        "Advanced Analytics & Marksheets",
+        "Fee Vouchers & Online Collections",
+        "Priority 24/7 Technical Support",
+      ],
+      is_custom: false,
+      popular: true,
+    },
+    {
+      id: "plan_premium",
+      name: "plan_premium",
+      display_name: "Premium Plan",
+      price: 15000,
+      currency: "PKR",
+      student_limit: 800,
+      features: [
+        "Everything in Growth Plan",
+        "Multi-Branch & Campus Management",
+        "Complete Staff HR & Payroll Suite",
+        "Custom ID Cards & Certificates",
+        "Dedicated Account Specialist",
+      ],
+      is_custom: false,
+      popular: false,
+    },
+    {
+      id: "plan_custom",
+      name: "plan_custom",
+      display_name: "Custom Enterprise",
+      price: 30000,
+      currency: "PKR",
+      student_limit: 2000,
+      features: [
+        "Tailored Student Capacity Limit",
+        "Custom Feature Module Selection",
+        "On-Premise or Dedicated Hosting",
+        "Custom Domain & White-Label Setup",
+        "VIP SLA & Priority Engineering",
+      ],
+      is_custom: true,
+      popular: false,
+    },
   ];
 
   const displayPlans = plans && plans.length > 0 ? plans : defaultPlans;
@@ -60,54 +125,142 @@ export function SubscriptionPage() {
 
   return (
     <SchoolShell eyebrow="Owner Portal" title="Subscription & Billing">
-      <div className="max-w-6xl mx-auto space-y-12">
-
+      <div className="max-w-7xl mx-auto space-y-10 pb-16">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Subscription & Billing</h1>
-          <p className="mt-2 text-gray-600">Manage your institution's subscription plan, student capacity limits, and billing across all campuses</p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/80">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-blue-100 text-blue-700">
+                Billing & Licensing
+              </span>
+              <span className="text-xs font-semibold text-slate-400">· Multi-Campus ERP</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Subscription & Billing
+            </h1>
+            <p className="mt-1 text-sm text-slate-500 font-medium max-w-2xl">
+              Oversee your institution's active licensing tier, allocate student capacity across branches, and manage renewal invoices.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => navigate(`${rolePrefix}/subscription/custom`)}
+              className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold hover:bg-slate-50 transition shadow-sm flex items-center gap-2"
+            >
+              <AppIcon name="Sliders" size={14} />
+              <span>Customize Modules</span>
+            </button>
+            <a
+              href="mailto:billing@eduplexo.com"
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-sm shadow-blue-600/20 flex items-center gap-2"
+            >
+              <AppIcon name="Headphones" size={14} />
+              <span>Contact Support</span>
+            </a>
+          </div>
         </div>
 
-
-        {/* Current Plan & Usage */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Top Analytics / Current Plan & Usage */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+          {/* Active Plan Card */}
           <div className="lg:col-span-2">
             <CurrentPlanCard subscription={sub ?? null} studentsUsed={studentsUsed} />
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col justify-center">
-            <h3 className="text-sm font-medium text-gray-500 mb-4">Student Usage</h3>
-            <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-3xl font-bold text-gray-900">{studentsUsed}</span>
-              <span className="text-gray-500">/ {sub?.student_limit || 0} students</span>
-            </div>
-            <div className="w-full bg-gray-100 rounded-full h-3 mb-2">
-              <div
-                className={`h-3 rounded-full transition-all duration-500 ${!sub ? "bg-gray-200" :
-                  studentsUsed >= sub.student_limit ? "bg-red-500" :
-                    studentsUsed >= sub.student_limit * 0.8 ? "bg-yellow-500" :
-                      "bg-green-500"
+          {/* Student Seat Utilization Card */}
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 flex flex-col justify-between shadow-sm relative overflow-hidden">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                    <AppIcon name="Users" size={16} />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+                      Student Capacity
+                    </h3>
+                    <span className="text-xs font-semibold text-slate-700">Seat Utilization</span>
+                  </div>
+                </div>
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                    percentUsed >= 90
+                      ? "bg-rose-100 text-rose-700"
+                      : percentUsed >= 70
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-emerald-100 text-emerald-800"
                   }`}
-                style={{ width: `${Math.min(100, sub ? (studentsUsed / sub.student_limit) * 100 : 0)}%` }}
-              />
+                >
+                  {percentUsed}% Used
+                </span>
+              </div>
+
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight tabular-nums">
+                  {studentsUsed.toLocaleString()}
+                </span>
+                <span className="text-sm font-semibold text-slate-400">
+                  / {studentLimit > 0 ? studentLimit.toLocaleString() : "—"} enrolled students
+                </span>
+              </div>
+
+              {/* Enhanced Progress Bar */}
+              <div className="w-full bg-slate-100 rounded-full h-3 mb-3 p-0.5 border border-slate-200/50">
+                <div
+                  className={`h-2 rounded-full transition-all duration-700 ${
+                    !sub
+                      ? "bg-slate-300"
+                      : percentUsed >= 95
+                      ? "bg-rose-500"
+                      : percentUsed >= 75
+                      ? "bg-amber-500"
+                      : "bg-gradient-to-r from-blue-500 to-indigo-600"
+                  }`}
+                  style={{ width: `${Math.max(4, Math.min(100, percentUsed))}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-xs font-medium text-slate-500 pt-1">
+                <span>{slotsRemaining.toLocaleString()} seats available</span>
+                <span>{percentUsed >= 90 ? "Upgrade recommended" : "Capacity optimal"}</span>
+              </div>
             </div>
-            <div className="flex justify-between text-xs text-gray-500 font-medium">
-              <span>{sub ? Math.round((studentsUsed / sub.student_limit) * 100) : 0}% used</span>
-              <span>{sub ? Math.max(0, sub.student_limit - studentsUsed) : 0} slots remaining</span>
+
+            <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+              <span className="text-slate-400">Need higher limit?</span>
+              <button
+                onClick={() => {
+                  const pricingSection = document.getElementById("pricing-cards-section");
+                  if (pricingSection) pricingSection.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+              >
+                <span>View Upgrade Plans</span>
+                <AppIcon name="ArrowDown" size={12} />
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Pricing Cards */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Available Plans</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Pricing Cards Section */}
+        <div id="pricing-cards-section" className="space-y-6 pt-4">
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Choose the Right Plan for Your School
+            </h2>
+            <p className="text-sm text-slate-500 font-medium">
+              Scale your school's student limit anytime with zero interruption. All plans include full access to the academic engine.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch pt-4">
             {displayPlans.map((plan) => {
               return (
                 <PricingCard
-                  key={plan.name}
+                  key={plan.id || plan.name}
                   plan={plan}
-                  isCurrentPlan={sub?.plan_name === plan.name}
+                  isCurrentPlan={sub?.plan_name === plan.name || (sub?.plan_name === "growth" && plan.name === "plan_growth")}
                   canTrial={current?.can_trial ?? false}
                   onStartTrial={async () => {
                     await startTrial(plan.name);
@@ -124,49 +277,90 @@ export function SubscriptionPage() {
           </div>
         </div>
 
-        {/* History */}
-        {history.length > 0 && (() => {
-          return (
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-              <div className="px-6 py-5 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Subscription History</h3>
+        {/* History Table */}
+        {deduped.length > 0 && (
+          <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm space-y-0">
+            <div className="px-6 py-5 border-b border-slate-200/80 flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
+                  Subscription & Billing History
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Complete ledger of license activations, tier upgrades, and automated invoices.
+                </p>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-gray-50 border-b border-gray-200 uppercase text-xs">
-                    <tr>
-                      <th className="text-left py-3 px-2 text-gray-500 font-medium">Plan</th>
-                      <th className="text-left py-3 px-2 text-gray-500 font-medium">Action</th>
-                      <th className="text-left py-3 px-2 text-gray-500 font-medium">Amount</th>
-                      <th className="text-left py-3 px-2 text-gray-500 font-medium">Period</th>
-                      <th className="text-left py-3 px-2 text-gray-500 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {deduped.map((entry) => (
-                      <tr key={entry.id} className="border-b border-gray-50">
-                        <td className="py-3 px-2 font-medium text-gray-900">{planDisplayName(entry.plan_name)}</td>
-                        <td className="py-3 px-2 capitalize text-gray-600">{entry.action.replace(/_/g, " ")}</td>
-                        <td className="py-3 px-2 text-gray-600">
-                          {entry.amount > 0 ? `PKR ${entry.amount.toLocaleString()}` : "Free"}
-                        </td>
-                        <td className="py-3 px-2 text-gray-500 text-xs">
-                          {new Date(entry.start_date).toLocaleDateString()} — {new Date(entry.end_date).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 px-2">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${entry.payment_status === "paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                            }`}>
-                            {entry.payment_status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                {deduped.length} Record{deduped.length === 1 ? "" : "s"}
+              </span>
             </div>
-          );
-        })()}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-black text-slate-400 uppercase tracking-wider">
+                  <tr>
+                    <th className="py-3.5 px-6 font-bold">Plan / Package</th>
+                    <th className="py-3.5 px-4 font-bold">Transaction Type</th>
+                    <th className="py-3.5 px-4 font-bold">Amount</th>
+                    <th className="py-3.5 px-4 font-bold">Billing Cycle</th>
+                    <th className="py-3.5 px-6 font-bold text-right">Payment Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {deduped.map((entry) => (
+                    <tr key={entry.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-4 px-6 font-bold text-slate-900 flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                          <AppIcon name="ShieldCheck" size={14} />
+                        </div>
+                        <span>{planDisplayName(entry.plan_name)}</span>
+                      </td>
+                      <td className="py-4 px-4 text-xs font-semibold text-slate-600 capitalize">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+                          {entry.action.replace(/_/g, " ")}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4 font-extrabold text-slate-900 tabular-nums">
+                        {entry.amount > 0 ? `PKR ${entry.amount.toLocaleString()}` : "Free (Trial)"}
+                      </td>
+                      <td className="py-4 px-4 text-xs font-medium text-slate-500">
+                        {new Date(entry.start_date).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}
+                        {" — "}
+                        {new Date(entry.end_date).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                            entry.payment_status === "paid"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-amber-50 text-amber-700 border border-amber-200"
+                          }`}
+                        >
+                          <AppIcon name={entry.payment_status === "paid" ? "CheckCircle" : "Clock"} size={12} />
+                          <span className="capitalize">{entry.payment_status}</span>
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Enterprise Support Callout */}
+        <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-white p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-sm">
+          <div className="space-y-1.5 text-center sm:text-left">
+            <h3 className="text-lg font-bold text-slate-900">Need Custom Student Limits or On-Premise Deployment?</h3>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-2xl">
+              We provide tailored solutions for educational networks managing more than 2,000 students or demanding bespoke system integration.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate(`${rolePrefix}/subscription/custom`)}
+            className="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shrink-0 shadow-sm"
+          >
+            Configure Custom Plan
+          </button>
+        </div>
       </div>
     </SchoolShell>
   );
@@ -186,91 +380,195 @@ interface PricingCardProps {
   sub: any;
 }
 
-function PricingCard({ plan, isCurrentPlan, canTrial, onStartTrial, onUpgrade, onManualSubscribe, isUpgrading, isStartingTrial, sub }: PricingCardProps) {
+function PricingCard({
+  plan,
+  isCurrentPlan,
+  canTrial,
+  onStartTrial,
+  onUpgrade,
+  onManualSubscribe,
+  isUpgrading,
+  isStartingTrial,
+  sub,
+}: PricingCardProps) {
+  const isPopular =
+    plan.popular ||
+    plan.name === "plan_growth" ||
+    plan.name === "growth" ||
+    plan.display_name?.toLowerCase().includes("growth");
+
   return (
-    <div className={`relative bg-white rounded-2xl border-2 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${plan.popular ? "border-blue-500 shadow-md" : "border-gray-200"
-      } ${isCurrentPlan ? "ring-2 ring-blue-200" : ""}`}>
+    <div
+      className={`relative rounded-3xl p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 hover:shadow-xl ${
+        isPopular
+          ? "bg-gradient-to-b from-slate-900 via-slate-900 to-indigo-950 text-white border-2 border-blue-500 shadow-2xl shadow-blue-950/40 lg:-translate-y-2.5 ring-2 ring-blue-500/40 z-10"
+          : "bg-white border border-slate-200/90 text-slate-900 shadow-sm hover:border-slate-300 hover:-translate-y-1"
+      } ${isCurrentPlan ? "ring-2 ring-emerald-500" : ""}`}
+    >
       {/* Popular Badge */}
-      {plan.popular && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="bg-blue-600 text-white text-xs font-bold px-4 py-1 rounded-full">
-            Most Popular
+      {isPopular && (
+        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
+          <span className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[11px] font-black tracking-widest uppercase px-4 py-1 rounded-full shadow-lg shadow-blue-600/40 border border-white/20">
+            <AppIcon name="Sparkles" size={12} className="text-yellow-300" />
+            <span>Most Popular</span>
           </span>
         </div>
       )}
 
       {/* Current Plan Badge */}
       {isCurrentPlan && (
-        <div className="absolute -top-3 right-4">
-          <span className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-            Current
+        <div className="absolute -top-3 right-4 z-20">
+          <span className="inline-flex items-center gap-1 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full shadow-md">
+            <AppIcon name="Check" size={11} />
+            <span>Current</span>
           </span>
         </div>
       )}
 
-      <div className="text-center pt-2">
-        <h3 className="text-lg font-bold text-gray-900">{plan.display_name}</h3>
-        <div className="mt-4">
-          {plan.is_custom ? (
-            <div className="text-3xl font-bold text-gray-900">Custom Modules</div>
-          ) : (
-            <>
-              <span className="text-4xl font-bold text-gray-900">
-                {plan.price.toLocaleString()}
-              </span>
-              <span className="text-gray-500 text-sm ml-1">PKR/month</span>
-            </>
-          )}
+      {/* Card Header & Price */}
+      <div>
+        <div className="text-center pt-2">
+          {/* CRITICAL: For Growth Plan (isPopular), text is pure WHITE */}
+          <h3
+            className={`text-xl font-black tracking-tight ${
+              isPopular ? "text-white" : "text-slate-900"
+            }`}
+          >
+            {plan.display_name}
+          </h3>
+
+          <div className="mt-4 flex items-baseline justify-center">
+            {plan.is_custom ? (
+              <div
+                className={`text-2xl font-black tracking-tight ${
+                  isPopular ? "text-white" : "text-slate-900"
+                }`}
+              >
+                Custom Modules
+              </div>
+            ) : (
+              <>
+                <span
+                  className={`text-4xl font-black tracking-tight ${
+                    isPopular ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  PKR {plan.price.toLocaleString()}
+                </span>
+                <span
+                  className={`text-xs font-semibold ml-1.5 ${
+                    isPopular ? "text-blue-200/90" : "text-slate-400"
+                  }`}
+                >
+                  /month
+                </span>
+              </>
+            )}
+          </div>
+
+          <div
+            className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+              isPopular
+                ? "bg-white/10 text-blue-200 border border-white/15"
+                : "bg-slate-100 text-slate-600"
+            }`}
+          >
+            <AppIcon name="Users" size={13} className={isPopular ? "text-blue-300" : "text-slate-500"} />
+            <span>
+              Up to <strong className={isPopular ? "text-white" : "text-slate-900"}>{plan.student_limit}+</strong> students
+            </span>
+          </div>
         </div>
-        <p className="mt-2 text-sm text-gray-500">
-          Up to <span className="font-semibold text-gray-700">{plan.student_limit}+</span> students
-        </p>
+
+        {/* Divider */}
+        <div className={`my-6 h-px ${isPopular ? "bg-white/10" : "bg-slate-100"}`} />
+
+        {/* Features List */}
+        <ul className="space-y-3.5">
+          {(plan.features || []).map((feature, i) => (
+            <li
+              key={i}
+              className={`flex items-start gap-3 text-xs sm:text-sm font-medium leading-snug ${
+                isPopular ? "text-slate-200" : "text-slate-600"
+              }`}
+            >
+              <div
+                className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-sm ${
+                  isPopular
+                    ? "bg-blue-500/25 text-blue-300 border border-blue-400/40"
+                    : "bg-blue-50 text-blue-600 border border-blue-100"
+                }`}
+              >
+                <AppIcon name="Check" size={12} className={isPopular ? "text-blue-300" : "text-blue-600"} />
+              </div>
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
-      {/* Features */}
-      <ul className="mt-6 space-y-3">
-        {(plan.features || []).map((feature, i) => (
-          <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
-            <svg className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            {feature}
-          </li>
-        ))}
-      </ul>
-
       {/* Action Button */}
-      <div className="mt-8">
+      <div className="mt-8 pt-2">
         {plan.is_custom ? (
           <button
             onClick={onManualSubscribe}
-            className="w-full py-3 px-4 rounded-xl font-medium border-2 border-blue-600 text-blue-600 hover:bg-blue-50 transition"
+            className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition-all active:scale-95 flex items-center justify-center gap-2 ${
+              isPopular
+                ? "bg-white text-slate-900 hover:bg-slate-100 shadow-md"
+                : "border-2 border-blue-600 text-blue-600 hover:bg-blue-50"
+            }`}
           >
-            Build Your Own Plan
+            <AppIcon name="Sliders" size={16} />
+            <span>Build Your Own Plan</span>
           </button>
         ) : isCurrentPlan ? (
-          <button disabled className="w-full py-3 px-4 rounded-xl font-medium bg-gray-100 text-gray-400 cursor-not-allowed">
-            Current Plan
+          <button
+            disabled
+            className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm cursor-not-allowed border ${
+              isPopular
+                ? "bg-white/10 text-slate-400 border-white/10"
+                : "bg-slate-100 text-slate-400 border-slate-200"
+            }`}
+          >
+            Active Plan
           </button>
         ) : canTrial && !plan.is_custom ? (
           <button
             onClick={onStartTrial}
             disabled={isStartingTrial}
-            className="w-full py-3 px-4 rounded-xl font-medium bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/25 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <AppIcon name="Gift" size={16} />
-            <span>{isStartingTrial ? "Starting..." : "Start Free Trial"}</span>
+            <span>{isStartingTrial ? "Activating..." : "Start 14-Day Free Trial"}</span>
+          </button>
+        ) : isPopular ? (
+          <button
+            onClick={onUpgrade}
+            disabled={isUpgrading}
+            className="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-xl shadow-blue-600/40 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            <AppIcon name="Zap" size={16} />
+            <span>
+              {isUpgrading
+                ? "Processing..."
+                : sub?.status === "expired" || sub?.status === "cancelled"
+                ? "Renew Growth Plan"
+                : "Upgrade to Growth Plan"}
+            </span>
           </button>
         ) : (
           <button
             onClick={onUpgrade}
             disabled={isUpgrading}
-            className={`w-full py-3 px-4 rounded-xl font-medium transition disabled:opacity-50 ${plan.popular
-                ? "bg-blue-600 text-white hover:bg-blue-700"
-                : "bg-gray-900 text-white hover:bg-gray-800"
-              }`}
+            className="w-full py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm bg-slate-900 hover:bg-slate-800 text-white transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isUpgrading ? "Upgrading..." : (sub?.status === "expired" || sub?.status === "cancelled" ? "Renew Subscription" : "Upgrade Plan")}
+            <span>
+              {isUpgrading
+                ? "Processing..."
+                : sub?.status === "expired" || sub?.status === "cancelled"
+                ? "Renew Plan"
+                : "Upgrade Plan"}
+            </span>
           </button>
         )}
       </div>
@@ -283,14 +581,14 @@ function PricingCard({ plan, isCurrentPlan, canTrial, onStartTrial, onUpgrade, o
 function SubscriptionSkeleton() {
   return (
     <div className="space-y-8 p-6 max-w-7xl mx-auto animate-pulse">
-      <div className="h-8 w-64 bg-gray-200 rounded" />
+      <div className="h-10 w-72 bg-slate-200 rounded-xl" />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 p-6 h-48" />
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 h-48" />
+        <div className="lg:col-span-2 h-44 bg-slate-100 rounded-2xl" />
+        <div className="h-44 bg-slate-100 rounded-2xl" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white rounded-2xl border border-gray-200 p-6 h-96" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-96 bg-slate-100 rounded-2xl" />
         ))}
       </div>
     </div>
@@ -301,17 +599,25 @@ function SubscriptionSkeleton() {
 
 function planDisplayName(name: string): string {
   const map: Record<string, string> = {
+    plan_starter: "Starter Plan",
+    starter: "Starter Plan",
+    plan_growth: "Growth Plan",
+    growth: "Growth Plan",
+    plan_basic: "Basic Plan",
     basic: "Basic Plan",
+    plan_standard: "Standard Plan",
     standard: "Standard Plan",
+    plan_premium: "Premium Plan",
     premium: "Premium Plan",
+    plan_enterprise: "Enterprise Plan",
     enterprise: "Enterprise Plan",
+    plan_custom: "Custom Plan",
+    custom: "Custom Plan",
   };
   if (map[name]) return map[name];
-  // If name is an encoded package string (comma-separated modules like "academic,learning,...")
-  // show a friendly label instead of the raw string
   if (name && name.includes(",")) return "Custom Built Plan";
   if (name) return name.charAt(0).toUpperCase() + name.slice(1);
-  return "—";
+  return "Standard License";
 }
 
 export { SubscriptionPage as AdminSubscriptionPage };
