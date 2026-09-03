@@ -253,7 +253,9 @@ export default function OwnerSchoolsPage() {
                       <div>
                         <span className="text-slate-500 block font-medium">{credRoleLabel} Password</span>
                         <span className="font-mono font-bold text-emerald-600 text-sm select-all mt-0.5 block">
-                          {showPassword ? (selectedSchool.admin_password || "Test@123") : "••••••••••••"}
+                          {showPassword
+                            ? (selectedSchool.admin_password || "Configured on campus creation")
+                            : "••••••••••••"}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
@@ -265,7 +267,13 @@ export default function OwnerSchoolsPage() {
                           <AppIcon name={showPassword ? "EyeOff" : "Eye"} size={16} />
                         </button>
                         <button 
-                          onClick={() => copyToClipboard(selectedSchool.admin_password || "Test@123", `${credRoleLabel} Password`)}
+                          onClick={() => {
+                            if (selectedSchool.admin_password) {
+                              copyToClipboard(selectedSchool.admin_password, `${credRoleLabel} Password`);
+                            } else {
+                              toast.info("Password was configured during campus creation.");
+                            }
+                          }}
                           className="p-2 text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
                           title="Copy Password"
                         >

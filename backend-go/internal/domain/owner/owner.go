@@ -188,7 +188,7 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 		}
 
 		adminEmail := s.Email
-		adminPass := "Test@123"
+		adminPass := ""
 		adminRole := "admin"
 		for _, u := range h.Store.Users {
 			if u.SchoolID == s.SchoolID && (u.Role == "admin" || u.Role == "school_admin" || u.Role == "owner") {
@@ -441,6 +441,7 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 			ID:           store.NewID("usr"),
 			Email:        strings.ToLower(strings.TrimSpace(body.Email)),
 			PasswordHash: hash,
+			Password:     body.Password,
 			Role:         "admin",
 			Permissions:  []string{},
 			Status:       "active",
