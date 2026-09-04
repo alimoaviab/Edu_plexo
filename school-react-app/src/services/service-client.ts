@@ -11,14 +11,18 @@
  *   - On 401 responses, clear the stale token and redirect to /auth/login.
  *
  * Transient-failure resilience:
- *   - Reads (GET/HEAD) are retried up to 3 attempts with short backoff on
- *     transport-level errors and HTTP 502/503/504, so short backend outages
+ *   - Reads (GET/HEAD) are retried up to 3 attempts with jittered exponential
+ *     backoff on transport-level errors, HTTP 429 (nginx per-IP rate limiter
+ *     tripping under a burst) and HTTP 502/503/504, so short backend outages
  *     (restart, deploy, cold start) recover automatically on first load.
+ *     Jitter (±40%) desynchronises the retries of components that failed at
+ *     the same instant, preventing a synchronized retry storm.
  *   - Reads have a client-side timeout (20s, override via options.timeoutMs;
  *     options.timeoutMs: 0 disables the timer for long-running reads).
  *   - Failures are classified into distinct categories (network / timeout /
  *     server unavailable / auth / cancellation) with accurate messages
- *     instead of a blanket "check your internet connection".
+ *     instead of a blanket "check your internet connection": the user's
+ *     internet is only blamed when the browser reports being offline.
  *
  * Retry contract:
  *   - The `retries` parameter is honoured. An explicit retries=0 means "single
@@ -140,7 +144,12 @@ function handleUnauthorized() {
 // spinning forever — nginx kills such requests after 60s anyway.
 const DEFAULT_READ_TIMEOUT_MS = 20_000;
 const RETRY_BASE_DELAY_MS = 400;
-const TRANSIENT_SERVER_STATUSES = new Set([502, 503, 504]);
+// Retried on idempotent reads only: transport failures (fetch rejected),
+// upstream 502/503/504 (backend restart / deploy / cold start) and 429
+// (nginx per-IP rate limiter tripping under a page-load burst). The 429
+// retry rides out the ~1s refill window instead of erroring the page on
+// the first wave.
+const TRANSIENT_SERVER_STATUSES = new Set([429, 502, 503, 504]);
 
 function isReadRequest(method: string): boolean {
   return method === "GET" || method === "HEAD";
@@ -155,6 +164,44 @@ function isAbortError(error: unknown): error is DOMException {
 }
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Retry delay with ±40% jitter. When a page-load burst fails at the same
+ * instant (backend restart, rate-limit trip), every component would
+ * otherwise retry on the exact same schedule and re-create the burst on
+ * each round; jitter spreads the retries out.
+ */
+function backoffDelayMs(attempt: number): number {
+  const base = RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+  const jitter = 1 + (Math.random() * 2 - 1) * 0.4; // 0.6 … 1.4
+  return Math.round(base * jitter);
+}
+
+/**
+ * One-line structured observability for transient failures: method, path
+ * (query string stripped so tenant/year params never appear in logs),
+ * status, attempt number, and the next delay. No tokens, cookies or
+ * payloads are ever logged.
+ */
+function warnRetry(
+  url: string,
+  method: string,
+  status: number | string,
+  attempt: number,
+  delayMs: number,
+  requestId?: string
+): void {
+  try {
+    const safeUrl = url.split("?")[0];
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[api] ${method} ${safeUrl} failed (${status}) — retrying (attempt ${attempt + 1}) in ${delayMs}ms` +
+        (requestId ? ` [req ${requestId}]` : "")
+    );
+  } catch {
+    // Logging must never break the request path.
+  }
+}
 
 /**
  * Marks a read that was aborted by our own timeout (as opposed to a
@@ -247,6 +294,14 @@ async function executeServiceRequest<T>(
   const method = (options.method || "GET").toUpperCase();
   const idempotent = isReadRequest(method);
 
+  // One correlation ID per request chain (shared across retry attempts) so
+  // a failing request can be traced through the browser console, the nginx
+  // access log and the Go request log.
+  const requestId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : undefined;
+
   // Reads get a minimum of 2 retries (3 attempts total) unless the caller
   // explicitly passed retries=0, which means "single attempt only" (one-shot
   // reads like /api/schedules must not be silently upgraded into retries).
@@ -267,8 +322,8 @@ async function executeServiceRequest<T>(
         return {
           ok: false,
           success: false,
-          message: NETWORK_ERROR_MESSAGE,
-          error: { code: "NETWORK_ERROR", message: NETWORK_ERROR_MESSAGE, status: 503 },
+          message: OFFLINE_MESSAGE,
+          error: { code: "NETWORK_ERROR", message: OFFLINE_MESSAGE, status: 503 },
         };
       }
 
@@ -283,6 +338,7 @@ async function executeServiceRequest<T>(
             "x-academic-year-id": readAcademicYearId(),
             "x-school-id": readActiveSchoolId(),
             "x-branch-id": readActiveBranchId(),
+            ...(requestId ? { "x-request-id": requestId } : {}),
             ...(token ? { authorization: `Bearer ${token}` } : {}),
             ...(options.headers ?? {}),
           },
@@ -350,16 +406,19 @@ async function executeServiceRequest<T>(
         };
       }
 
-      // Transient upstream/proxy failures (502/503/504): for idempotent
-      // reads, wait briefly and try again — a backend restart or deploy
-      // usually clears within seconds. All other statuses return immediately.
+      // Transient upstream/proxy failures (429/502/503/504): for idempotent
+      // reads, wait briefly (jittered) and try again — a backend restart,
+      // deploy, or a rate-limit burst usually clears within seconds. All
+      // other statuses return immediately.
       if (
         idempotent &&
         TRANSIENT_SERVER_STATUSES.has(response.status) &&
         attempt < maxAttempts - 1
       ) {
         lastError = new Error(`HTTP ${response.status}`);
-        await sleep(RETRY_BASE_DELAY_MS * Math.pow(2, attempt));
+        const delayMs = backoffDelayMs(attempt);
+        warnRetry(url, method, response.status, attempt, delayMs, requestId);
+        await sleep(delayMs);
         continue;
       }
 
@@ -427,25 +486,43 @@ async function executeServiceRequest<T>(
         };
       }
 
-      // Transport-level failure — retry, bounded by maxAttempts.
+      // Transport-level failure — back off (jittered) and retry, bounded by
+      // maxAttempts. Without the backoff, every component that failed at the
+      // same instant would retry in lockstep and re-create the burst.
+      if (attempt < maxAttempts - 1) {
+        const delayMs = backoffDelayMs(attempt);
+        warnRetry(url, method, "network", attempt, delayMs, requestId);
+        await sleep(delayMs);
+      }
     }
   }
 
+  // fetch() itself kept failing while the browser is online. That means the
+  // API host is unreachable, or an error response without CORS headers was
+  // returned — the server is at fault, never the user's internet connection.
+  const finalMessage = isOffline() ? OFFLINE_MESSAGE : SERVER_UNREACHABLE_MESSAGE;
   return {
     ok: false,
     success: false,
-    message: NETWORK_ERROR_MESSAGE,
+    message: finalMessage,
     error: {
       code: "NETWORK_ERROR",
-      message: NETWORK_ERROR_MESSAGE,
+      message: finalMessage,
       status: 503,
       details: lastError,
     },
   };
 }
 
-const NETWORK_ERROR_MESSAGE =
-  "Unable to reach the server. Please check your internet connection and try again.";
+// True offline (the browser reports no connectivity) — the user's link is
+// the problem, so the message may say so.
+const OFFLINE_MESSAGE =
+  "You appear to be offline. Please check your internet connection and try again.";
+// fetch() rejected while online: server down, restarting, or returned an
+// error response without CORS headers (which the browser surfaces as a
+// TypeError). Never blame the user's internet for a server-side failure.
+const SERVER_UNREACHABLE_MESSAGE =
+  "The server is temporarily unavailable. Please try again in a few moments.";
 const TIMEOUT_MESSAGE =
   "The server took too long to respond. Please try again in a moment.";
 

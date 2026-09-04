@@ -48,7 +48,7 @@ export function TeacherListPage() {
   }, [debouncedSearch, statusFilter]);
 
   // ─── Data ───────────────────────────────────────────────────────────
-  const { state, meta, deleteTeacher } = useTeachers({
+  const { state, meta, deleteTeacher, refresh: refreshTeachers } = useTeachers({
     page: pagination.page,
     limit: pagination.limit,
     status: statusFilter === "all" ? "" : statusFilter,
@@ -202,6 +202,9 @@ export function TeacherListPage() {
         variant="error"
         title="Failed to load faculty"
         message={state.error}
+        onRetry={() => {
+          void refreshTeachers();
+        }}
       />
     );
   }

@@ -25,6 +25,14 @@ func Logger(next http.Handler) http.Handler {
 		start := time.Now()
 		rec := &statusRecorder{ResponseWriter: w, status: 200}
 		next.ServeHTTP(rec, r)
+		// Include the client correlation ID (x-request-id) when present so a
+		// failing request can be traced across the browser console, nginx
+		// access log and this log. Path only — no query strings or headers.
+		reqID := r.Header.Get("X-Request-Id")
+		if reqID != "" {
+			log.Printf("%s %s -> %d (%s) reqid=%s", r.Method, r.URL.Path, rec.status, time.Since(start), reqID)
+			return
+		}
 		log.Printf("%s %s -> %d (%s)", r.Method, r.URL.Path, rec.status, time.Since(start))
 	})
 }

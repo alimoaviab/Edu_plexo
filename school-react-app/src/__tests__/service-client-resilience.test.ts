@@ -95,7 +95,10 @@ describe("serviceRequest resilience", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error.code).toBe("NETWORK_ERROR");
-      expect(result.error.message).toContain("Unable to reach the server");
+      // While ONLINE, a transport failure means the SERVER is unreachable —
+      // never blame the user's internet connection.
+      expect(result.error.message).toContain("temporarily unavailable");
+      expect(result.error.message).not.toContain("internet connection");
     }
     // 3 attempts total for reads — never more.
     expect(fetchCount).toBe(3);
@@ -113,6 +116,39 @@ describe("serviceRequest resilience", () => {
 
     expect(result.ok).toBe(true);
     expect(fetchCount).toBe(2);
+  });
+
+  it("rides out a rate-limit 429 on a GET with one bounded retry", async () => {
+    // nginx's per-IP limiter trips when a page-load burst exceeds the burst
+    // budget; the refill window is ~1s, so a single jittered retry should
+    // recover instead of erroring the page.
+    let fetchCount = 0;
+    globalThis.fetch = vi.fn().mockImplementation(async () => {
+      fetchCount += 1;
+      if (fetchCount === 1) return statusResponse(429);
+      return okResponse({ saved: true });
+    });
+
+    const result = await serviceRequest(uniqueUrl());
+
+    expect(result.ok).toBe(true);
+    expect(fetchCount).toBe(2);
+  });
+
+  it("does not retry a 429 on a mutation", async () => {
+    let fetchCount = 0;
+    globalThis.fetch = vi.fn().mockImplementation(async () => {
+      fetchCount += 1;
+      return statusResponse(429);
+    });
+
+    const result = await serviceRequest(uniqueUrl(), {
+      method: "POST",
+      body: JSON.stringify({ x: 1 }),
+    });
+
+    expect(result.ok).toBe(false);
+    expect(fetchCount).toBe(1);
   });
 
   it("reports 'server temporarily unavailable' (not a network error) after persistent 502/503/504", async () => {
@@ -184,6 +220,9 @@ describe("serviceRequest resilience", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error.code).toBe("NETWORK_ERROR");
+      // Genuinely offline — only THEN may the internet be blamed.
+      expect(result.error.message).toContain("offline");
+      expect(result.error.message).toContain("internet connection");
     }
     expect(fetchCount).toBe(0);
   });
@@ -222,6 +261,25 @@ describe("serviceRequest resilience", () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
     expect(settled).toBe(false); // still pending → no internal abort fired
     expect(fetchCount).toBe(1);
+  });
+
+  it("persistent 429 reports the rate-limit message (not an internet error)", async () => {
+    let fetchCount = 0;
+    globalThis.fetch = vi.fn().mockImplementation(async () => {
+      fetchCount += 1;
+      return statusResponse(429);
+    });
+
+    const result = await serviceRequest(uniqueUrl());
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe("HTTP_429");
+      expect(result.error.message).toContain("Too many requests");
+      expect(result.error.message).not.toContain("internet connection");
+    }
+    // Read retries are bounded (3 attempts) even for 429.
+    expect(fetchCount).toBe(3);
   });
 
   it("does not retry 401 responses and keeps the UNAUTHORIZED classification", async () => {

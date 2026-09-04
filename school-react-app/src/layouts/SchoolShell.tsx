@@ -31,6 +31,7 @@ import { ChildSwitcher } from "@/components/parent/ChildSwitcher";
 import { OwnerSchoolSwitcher } from "@/components/owner/OwnerSchoolSwitcher";
 import { GlobalSearch } from "shared/components/GlobalSearch";
 import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
+import { useSubscription } from "@/modules/subscription/hooks/useSubscription";
 import { toRolePath, getRolePrefix } from "@/hooks/useRolePath";
 import { serviceRequest } from "@/services/service-client";
 import { resetTenantCache } from "@/lib/query-client";
@@ -497,29 +498,29 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
       .filter((group) => group.items.length > 0);
   }, [navGroups, allowedModules, user, subscription]);
 
+  // Subscription/billing state drives the renewal banner, the plan-gated nav
+  // filtering and the quick actions. Read it through the shared TanStack
+  // Query hook — the SAME key <SubscriptionGuard> and the subscription pages
+  // use — so the whole app issues ONE /api/subscription/current request per
+  // tenant per minute instead of every mounted component firing its own
+  // fetch (each of which could trip the per-IP rate limiter on page load).
+  const { current: currentSubscription } = useSubscription();
+
   useEffect(() => {
-    if (user && user.role !== "super_admin") {
-      serviceRequest<any>("/api/subscription/current")
-        .then((payload) => {
-          if (payload?.ok && payload?.data) {
-            const data = payload.data;
-            if (data.subscription) {
-              setSubscription(data.subscription);
-            }
-            if (data.allowed_modules) {
-              setAllowedModules(data.allowed_modules);
-            }
-            if (data.available_packages) {
-              setAvailablePackages(data.available_packages);
-            }
-            if (data.selected_packages) {
-              setSelectedItems(data.selected_packages);
-            }
-          }
-        })
-        .catch(() => {});
+    if (!currentSubscription) return;
+    if (currentSubscription.subscription) {
+      setSubscription(currentSubscription.subscription);
     }
-  }, [user]);
+    if (currentSubscription.allowed_modules) {
+      setAllowedModules(currentSubscription.allowed_modules);
+    }
+    if (currentSubscription.available_packages) {
+      setAvailablePackages(currentSubscription.available_packages);
+    }
+    if (currentSubscription.selected_packages) {
+      setSelectedItems(currentSubscription.selected_packages);
+    }
+  }, [currentSubscription]);
 
 
 
@@ -573,6 +574,13 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
     }
   }, [authLoading, user, navigate, pathname]);
 
+  // useAuth rebuilds the `user` object on EVERY localStorage/auth-changed
+  // event (multi-tab activity, token refresh…), so keying effects on the
+  // object identity re-fetches bootstrap data on every unrelated change.
+  // Key on a stable identity string instead: refetch only when the account
+  // or the active school actually changes.
+  const userKey = user ? `${user.id}:${user.role}:${user.schoolId}` : "";
+
   useEffect(() => {
     if (authLoading || !user) return;
 
@@ -612,14 +620,16 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
         setSelectedAcademicYearIdState(defaultId);
         setSelectedAcademicYearId(defaultId);
       } catch {
-        // Ignore failure
+        // Ignore failure — selector simply stays empty; the first successful
+        // load (or a later mount) will populate it.
       }
     })();
 
     return () => {
       ignore = true;
     };
-  }, [authLoading, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, userKey]);
 
   if (authLoading || !user) {
     return (
