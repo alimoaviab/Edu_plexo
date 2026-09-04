@@ -154,7 +154,6 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 		ClassesBreakdown  []classStat `json:"classes_breakdown"`
 		SubStatus         string      `json:"subscription_status"`
 		AdminEmail        string      `json:"admin_email"`
-		AdminPassword     string      `json:"admin_password"`
 		AdminRole         string      `json:"admin_role"`
 	}
 
@@ -188,15 +187,11 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 		}
 
 		adminEmail := s.Email
-		adminPass := ""
 		adminRole := "admin"
 		for _, u := range h.Store.Users {
 			if u.SchoolID == s.SchoolID && (u.Role == "admin" || u.Role == "school_admin") {
 				adminEmail = u.Email
 				adminRole = "admin"
-				if u.Password != "" {
-					adminPass = u.Password
-				}
 				break
 			}
 		}
@@ -262,7 +257,6 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 			ClassesBreakdown:  classStatsList,
 			SubStatus:         subStatus,
 			AdminEmail:        adminEmail,
-			AdminPassword:     adminPass,
 			AdminRole:         adminRole,
 		})
 	}
@@ -447,7 +441,6 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 			ID:           store.NewID("usr"),
 			Email:        strings.ToLower(strings.TrimSpace(body.Email)),
 			PasswordHash: hash,
-			Password:     body.Password,
 			Role:         "admin",
 			Permissions:  []string{},
 			Status:       "active",

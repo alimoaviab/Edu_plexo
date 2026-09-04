@@ -35,7 +35,6 @@ func superAdminTestStore() *store.MemStore {
 				SchoolID:     "school_1",
 				Email:        "admin@test.school",
 				PasswordHash: "old-hash",
-				Password:     "visible-password",
 				Role:         "admin",
 				Status:       "active",
 				CreatedAt:    now,
@@ -138,11 +137,11 @@ func TestUpdateAdminPasswordHashesAndPersists(t *testing.T) {
 	if user.PasswordHash == "StrongPass12345" || user.PasswordHash == "old-hash" {
 		t.Fatalf("expected bcrypt hash, got %q", user.PasswordHash)
 	}
-	if user.Password != "" {
-		t.Fatalf("expected plaintext password to be cleared, got %q", user.Password)
-	}
 	if !auth.VerifyPassword("StrongPass12345", user.PasswordHash) {
 		t.Fatal("new hash does not verify")
+	}
+	if auth.VerifyPassword("StrongPass12345", "plaintext-in-hash-field") {
+		t.Fatal("plaintext credentials must never verify")
 	}
 	if persistedTable != "users" || persistedUser != user {
 		t.Fatalf("expected persisted user update, got table=%q user=%p", persistedTable, persistedUser)

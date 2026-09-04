@@ -20,6 +20,10 @@ type Claims struct {
 	SessionID            string   `json:"session_id"`
 	App                  string   `json:"app"`
 	ActorEmail           string   `json:"actor_email,omitempty"`
+	// Scope restricts what the token may be used for:
+	//   ""   → full API session (never placed in URLs)
+	//   "ws" → short-lived connection ticket for the /ws handshake only
+	Scope string `json:"scope,omitempty"`
 	jwt.RegisteredClaims
 }
 

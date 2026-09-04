@@ -387,11 +387,24 @@ func (h *Handler) ListClassFees(w http.ResponseWriter, r *http.Request) {
 		defer h.Store.RUnlock()
 
 		var className, academicYear string
+		classFound := false
 		for _, c := range h.Store.Classes {
 			if c.ID == classID {
-				className = c.Name
+				classFound = true
+				// The class must belong to the caller's tenant (owners and
+				// super admins may view globally). Without this check a
+				// cross-tenant caller learns another school's class name.
+				if c.SchoolID == ctx.SchoolID || ctx.SchoolID == "" || ctx.Role == "owner" || ctx.Role == "super_admin" {
+					className = c.Name
+				}
 				break
 			}
+		}
+		if !classFound {
+			return nil, api.NewControlledError("NOT_FOUND", "Class not found.", 404, nil)
+		}
+		if className == "" {
+			return nil, api.NewControlledError("NOT_FOUND", "Class not found.", 404, nil)
 		}
 		if yearID != "" {
 			for _, y := range h.Store.AcademicYears {

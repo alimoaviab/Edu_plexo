@@ -81,6 +81,23 @@ func createTestSchool(t *testing.T, pool *pgxpool.Pool) {
 		ON CONFLICT (id) DO NOTHING
 	`, testYearID, testSchoolID)
 	require.NoError(t, err)
+
+	// Actor rows required by FK constraints (attendance.marked_by,
+	// fee flows, leaves) when running against a real PostgreSQL with
+	// enforced foreign keys.
+	_, err = pool.Exec(ctx, `
+		INSERT INTO users (id, school_id, email, password_hash, role, status, created_at, updated_at)
+		VALUES ('test_user', $1, 'testuser@integ.test', 'not-a-real-hash', 'admin', 'active', NOW(), NOW())
+		ON CONFLICT (id) DO NOTHING
+	`, testSchoolID)
+	require.NoError(t, err)
+
+	_, err = pool.Exec(ctx, `
+		INSERT INTO fee_types (id, school_id, name, is_recurring, status, created_at, updated_at)
+		VALUES ('ft_tuition', $1, 'Tuition', true, 'active', NOW(), NOW())
+		ON CONFLICT (id) DO NOTHING
+	`, testSchoolID)
+	require.NoError(t, err)
 }
 
 func createTestStudents(t *testing.T, pool *pgxpool.Pool, n int) []string {

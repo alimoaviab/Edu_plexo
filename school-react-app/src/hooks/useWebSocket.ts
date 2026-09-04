@@ -2,7 +2,9 @@
  * useWebSocket — persistent WebSocket connection with auto-reconnect.
  *
  * Features:
- *   - Connects to /ws with JWT auth
+ *   - Obtains a SHORT-LIVED ws-scoped ticket from POST /api/auth/ws-ticket
+ *     and connects to /ws with only that ticket in the URL. The long-lived
+ *     session JWT never appears in a URL (logs, history, referrers, proxies).
  *   - Exponential backoff reconnect (1s, 2s, 4s, 8s, ... max 30s)
  *   - Dispatches messages to registered handlers by type
  *   - Updates TanStack Query cache on notification messages
@@ -46,21 +48,26 @@ export function useWebSocket(opts: UseWebSocketOptions = {}) {
   const hasToken = typeof localStorage !== "undefined" && Boolean(localStorage.getItem("token"));
   const enabled = enabledOption !== false && (!!user || hasToken);
 
-  // Build WebSocket URL
-  const getWSUrl = useCallback(() => {
-    const token = localStorage.getItem("token") || "";
-    const apiBase = (import.meta.env.VITE_API_URL || import.meta.env.VITE_WS_URL || "").replace(/\/$/, "");
-    if (apiBase) {
-      const wsBase = apiBase.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
-      return `${wsBase}/ws?token=${encodeURIComponent(token)}`;
+  // Resolve the API origin (no trailing slash).
+  const getApiBase = useCallback(() => {
+    const apiBase = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+    if (apiBase) return apiBase;
+    let host = window.location.host;
+    if (host === "app.eduplexo.com" || host === "admin.eduplexo.com") {
+      host = "api.eduplexo.com";
     }
-    let wsHost = window.location.host;
-    if (wsHost === "app.eduplexo.com" || wsHost === "admin.eduplexo.com") {
-      wsHost = "api.eduplexo.com";
-    }
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${protocol}//${wsHost}/ws?token=${encodeURIComponent(token)}`;
+    return `${window.location.protocol}//${host}`;
   }, []);
+
+  // Build WebSocket URL from a short-lived ticket.
+  const getWSUrl = useCallback(
+    (ticket: string) => {
+      const apiBase = getApiBase();
+      const wsBase = apiBase.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
+      return `${wsBase}/ws?token=${encodeURIComponent(ticket)}`;
+    },
+    [getApiBase]
+  );
 
   // Handle incoming messages
   const handleMessage = useCallback(
@@ -93,7 +100,7 @@ export function useWebSocket(opts: UseWebSocketOptions = {}) {
               queryClient.invalidateQueries({ queryKey: ["parent-attendance"] });
               queryClient.invalidateQueries({ queryKey: ["parent-student-attendance"] });
               queryClient.invalidateQueries({ queryKey: ["attendance-summary"] });
-              // Composite dashboard uses ["dashboard", "composite", schoolId, academicYearId]
+              // Composite dashboard uses [\"dashboard\", \"composite\", schoolId, academicYearId]
               queryClient.invalidateQueries({ queryKey: ["dashboard"] });
               queryClient.invalidateQueries({ queryKey: ["dashboard", "composite"] });
               break;
@@ -125,12 +132,54 @@ export function useWebSocket(opts: UseWebSocketOptions = {}) {
     [queryClient, onMessage]
   );
 
-  // Connect to WebSocket
-  const connect = useCallback(() => {
+  // Connect to WebSocket: exchange the session for a short-lived ws ticket
+  // first, then open the socket with only the ticket in the URL.
+  const connect = useCallback(async () => {
     if (!enabled || !mountedRef.current) return;
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
 
-    const url = getWSUrl();
+    // Schedule a reconnect with exponential backoff.
+    const scheduleReconnect = () => {
+      if (!mountedRef.current) return;
+      const attempt = reconnectAttemptRef.current;
+      const delay = Math.min(
+        INITIAL_RECONNECT_DELAY * Math.pow(2, attempt),
+        MAX_RECONNECT_DELAY
+      );
+      reconnectAttemptRef.current = attempt + 1;
+
+      console.info(`[ws] reconnecting in ${delay}ms (attempt ${attempt + 1})`);
+      reconnectTimerRef.current = setTimeout(() => void connect(), delay);
+    };
+
+    const token = localStorage.getItem("token") || "";
+    let ticket = "";
+    try {
+      const res = await fetch(`${getApiBase()}/api/auth/ws-ticket`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (res.status === 401) {
+        // Session is no longer valid — do not reconnect-loop forever.
+        console.info("[ws] session rejected; not reconnecting");
+        return;
+      }
+      const body = await res.json();
+      ticket = body?.data?.ticket || "";
+    } catch {
+      // Network failure — fall through to reconnect scheduling.
+    }
+
+    if (!mountedRef.current) return;
+    if (!ticket) {
+      scheduleReconnect();
+      return;
+    }
+
+    const url = getWSUrl(ticket);
     const ws = new WebSocket(url);
     wsRef.current = ws;
 
@@ -153,29 +202,20 @@ export function useWebSocket(opts: UseWebSocketOptions = {}) {
         return;
       }
 
-      // Exponential backoff reconnect
-      const attempt = reconnectAttemptRef.current;
-      const delay = Math.min(
-        INITIAL_RECONNECT_DELAY * Math.pow(2, attempt),
-        MAX_RECONNECT_DELAY
-      );
-      reconnectAttemptRef.current = attempt + 1;
-
-      console.info(`[ws] reconnecting in ${delay}ms (attempt ${attempt + 1})`);
-      reconnectTimerRef.current = setTimeout(connect, delay);
+      scheduleReconnect();
     };
 
     ws.onerror = () => {
       // Error is followed by onclose — no action needed here
     };
-  }, [enabled, getWSUrl, handleMessage]);
+  }, [enabled, getApiBase, getWSUrl, handleMessage]);
 
   // Connect on mount, reconnect on user change
   useEffect(() => {
     mountedRef.current = true;
 
     if (enabled) {
-      connect();
+      void connect();
     }
 
     return () => {

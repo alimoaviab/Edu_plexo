@@ -115,7 +115,10 @@ func TestAuthenticator_LockedUserBlocked(t *testing.T) {
 	}
 }
 
-func TestAuthenticator_WSQueryTokenAccepted(t *testing.T) {
+func TestAuthenticator_FullJWTInQueryRejectedByDefault(t *testing.T) {
+	// Long-lived session JWTs must never ride in URLs. With ALLOW_WS_TOKEN_QUERY
+	// off (the default, and the only permitted production value), ?token= on
+	// /ws is rejected even though the token itself is valid.
 	s := &store.MemStore{Users: []*store.User{testUser("user_1", "admin", "active")}}
 
 	token, err := auth.SignToken(testSecret, "school", bearerClaims("admin"), time.Hour)
@@ -130,8 +133,89 @@ func TestAuthenticator_WSQueryTokenAccepted(t *testing.T) {
 	req := httptest.NewRequest("GET", "/ws?token="+token, nil)
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected full JWT in /ws query to be rejected by default, got %d", rec.Code)
+	}
+}
+
+func TestAuthenticator_FullJWTInQueryAcceptedWhenOptIn(t *testing.T) {
+	// ALLOW_WS_TOKEN_QUERY=true is the non-production dev opt-in.
+	s := &store.MemStore{Users: []*store.User{testUser("user_1", "admin", "active")}}
+
+	cfg := authTestConfig()
+	cfg.AllowWSTokenQuery = true
+
+	token, err := auth.SignToken(testSecret, "school", bearerClaims("admin"), time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := Authenticator(cfg, s, session.New(nil))(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest("GET", "/ws?token="+token, nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
-		t.Fatalf("expected /ws query-token auth to succeed, got %d", rec.Code)
+		t.Fatalf("expected full JWT in /ws query to be accepted when opted in, got %d", rec.Code)
+	}
+}
+
+func TestAuthenticator_WSTicketInQueryAccepted(t *testing.T) {
+	// The production realtime path: a SHORT-LIVED ws-scoped ticket rides in the
+	// /ws URL with ALLOW_WS_TOKEN_QUERY off (the flag governs full JWTs only).
+	s := &store.MemStore{Users: []*store.User{testUser("user_1", "admin", "active")}}
+
+	wsClaims := bearerClaims("admin")
+	wsClaims.Scope = "ws"
+	ticket, err := auth.SignToken(testSecret, "school", wsClaims, time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := Authenticator(authTestConfig(), s, session.New(nil))(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest("GET", "/ws?token="+ticket, nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected ws-scoped ticket on /ws to be accepted, got %d", rec.Code)
+	}
+
+	// The same ticket must NOT work on a regular API route.
+	req2 := httptest.NewRequest("GET", "/api/students?token="+ticket, nil)
+	rec2 := httptest.NewRecorder()
+	handler.ServeHTTP(rec2, req2)
+	if rec2.Code != http.StatusUnauthorized {
+		t.Fatalf("expected ws-scoped ticket on API route to be rejected, got %d", rec2.Code)
+	}
+}
+
+func TestAuthenticator_WSTicketMisuseRejectedOnAPI(t *testing.T) {
+	// Even via the Authorization header, a ws-scoped ticket must only be
+	// honored on the /ws handshake path.
+	s := &store.MemStore{Users: []*store.User{testUser("user_1", "admin", "active")}}
+
+	wsClaims := bearerClaims("admin")
+	wsClaims.Scope = "ws"
+	token, err := auth.SignToken(testSecret, "school", wsClaims, time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler := Authenticator(authTestConfig(), s, session.New(nil))(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest("GET", "/api/students", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected ws-scoped ticket on API route to be rejected, got %d", rec.Code)
 	}
 }
 

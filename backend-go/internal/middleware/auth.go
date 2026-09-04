@@ -23,7 +23,7 @@ import (
 func Authenticator(cfg config.Config, s *store.MemStore, revoker session.Revoker) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := readToken(r)
+			token, tokenFromQuery := readToken(r)
 			if token == "" {
 				api.WriteResult(w, api.Fail("UNAUTHENTICATED", "Authentication required.", 401, nil))
 				return
@@ -32,6 +32,25 @@ func Authenticator(cfg config.Config, s *store.MemStore, revoker session.Revoker
 			claims, err := auth.VerifyToken(cfg.JWTSecret, cfg.AppName, token)
 			if err != nil {
 				api.WriteResult(w, api.Fail("UNAUTHORIZED", err.Error(), 401, nil))
+				return
+			}
+
+			// A FULL session JWT in a URL is only accepted when explicitly opted
+			// in via ALLOW_WS_TOKEN_QUERY (forbidden in production): URLs leak
+			// into proxy/access logs, history, and referrers. Short-lived
+			// ws-scoped tickets are always acceptable in URLs — that is the
+			// entire point of the ticket (60s lifetime bounds exposure).
+			if tokenFromQuery && claims.Scope != "ws" && !cfg.AllowWSTokenQuery {
+				api.WriteResult(w, api.Fail("UNAUTHORIZED", "Session tokens are not accepted in URLs.", 401, nil))
+				return
+			}
+
+			// Scope gate: a short-lived "ws" connection ticket (issued by
+			// POST /api/auth/ws-ticket) is only valid on the /ws handshake path.
+			// If an attacker lifts a ticket out of a proxy log, it cannot be
+			// replayed against regular API routes.
+			if claims.Scope == "ws" && (r.URL == nil || r.URL.Path != "/ws") {
+				api.WriteResult(w, api.Fail("UNAUTHORIZED", "This credential is only valid for the realtime connection.", 401, nil))
 				return
 			}
 
@@ -178,27 +197,28 @@ func Authenticator(cfg config.Config, s *store.MemStore, revoker session.Revoker
 	}
 }
 
-func readToken(r *http.Request) string {
+// readToken extracts the bearer credential: Authorization header, session
+// cookie, or — only on the /ws handshake path — the ?token= query parameter
+// (the second return value reports whether the token came from the URL). The
+// browser WebSocket API cannot set Authorization headers, so the SPA passes a
+// SHORT-LIVED ws-scoped ticket (POST /api/auth/ws-ticket) in the URL.
+func readToken(r *http.Request) (string, bool) {
 	authz := r.Header.Get("Authorization")
 	if authz != "" && strings.HasPrefix(strings.ToLower(authz), "bearer ") {
 		token := strings.TrimSpace(authz[7:])
 		if token != "" {
-			return token
+			return token, false
 		}
 	}
 	if c, err := r.Cookie("session"); err == nil && c.Value != "" {
-		return strings.TrimSpace(c.Value)
+		return strings.TrimSpace(c.Value), false
 	}
-	// The browser WebSocket API cannot set Authorization headers, and cookies
-	// are not always sent (third-party cookie blocking), so the SPA passes its
-	// JWT as ?token= for the /ws handshake only. Query-string tokens are never
-	// accepted on regular API routes to keep them out of access logs.
 	if r.URL != nil && r.URL.Path == "/ws" {
 		if t := strings.TrimSpace(r.URL.Query().Get("token")); t != "" {
-			return t
+			return t, true
 		}
 	}
-	return ""
+	return "", false
 }
 
 // clientIP resolves the caller IP from the trusted proxy chain (last

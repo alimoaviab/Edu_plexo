@@ -211,7 +211,7 @@ func TestAttendanceSheet_JoinQuery(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		_, err := pool.Exec(ctx, `
 			INSERT INTO attendance (id, school_id, academic_year_id, student_id, class_id, date, period, status, marked_by, source, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6::date, 1, 'present', 'test', 'manual', NOW(), NOW())
+			VALUES ($1, $2, $3, $4, $5, $6::date, 1, 'present', 'test_user', 'manual', NOW(), NOW())
 		`, store.NewID("att"), testSchoolID, testYearID, studentIDs[i], classID, today)
 		require.NoError(t, err)
 	}

@@ -14,6 +14,10 @@
 package metrics
 
 import (
+	"bufio"
+	"crypto/subtle"
+	"io"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -110,6 +114,31 @@ func Handler() http.Handler {
 	return promhttp.Handler()
 }
 
+// Protected wraps the Prometheus handler with bearer-token auth. Access
+// requires ?token=<METRICS_TOKEN> or Authorization: Bearer <METRICS_TOKEN>.
+// When no token is configured (development only) the endpoint stays open;
+// production config validation requires METRICS_TOKEN to be set.
+func Protected(token string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if token == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		provided := ""
+		if h := r.Header.Get("Authorization"); h != "" && strings.HasPrefix(h, "Bearer ") {
+			provided = strings.TrimSpace(h[len("Bearer "):])
+		}
+		if provided == "" {
+			provided = strings.TrimSpace(r.URL.Query().Get("token"))
+		}
+		if provided == "" || subtle.ConstantTimeCompare([]byte(provided), []byte(token)) != 1 {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // ─── Chi Middleware ──────────────────────────────────────────────────────
 
 // Middleware records HTTP request duration and status for Prometheus.
@@ -136,6 +165,11 @@ func Middleware(next http.Handler) http.Handler {
 }
 
 // statusWriter wraps http.ResponseWriter to capture the status code.
+//
+// Like the logging middleware's statusRecorder, it MUST preserve optional
+// http.ResponseWriter interfaces: losing http.Hijacker breaks WebSocket
+// upgrades through the real middleware stack (statusRecorder.Hijack would
+// find no Hijacker underneath), and losing http.Flusher breaks SSE streaming.
 type statusWriter struct {
 	http.ResponseWriter
 	status      int
@@ -155,6 +189,43 @@ func (w *statusWriter) Write(b []byte) (int, error) {
 		w.wroteHeader = true
 	}
 	return w.ResponseWriter.Write(b)
+}
+
+// Unwrap lets http.ResponseController reach the real writer.
+func (w *statusWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
+// Hijack lets WebSocket upgrades pass through the full middleware chain.
+func (w *statusWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, http.ErrNotSupported
+	}
+	return h.Hijack()
+}
+
+// Flush keeps SSE streaming (text/event-stream) working.
+func (w *statusWriter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+// Push keeps HTTP/2 server push working.
+func (w *statusWriter) Push(target string, opts *http.PushOptions) error {
+	if p, ok := w.ResponseWriter.(http.Pusher); ok {
+		return p.Push(target, opts)
+	}
+	return http.ErrNotSupported
+}
+
+// ReadFrom keeps zero-copy response writes working.
+func (w *statusWriter) ReadFrom(r io.Reader) (int64, error) {
+	if rf, ok := w.ResponseWriter.(io.ReaderFrom); ok {
+		return rf.ReadFrom(r)
+	}
+	return io.Copy(struct{ io.Writer }{w.ResponseWriter}, r)
 }
 
 // normalizePath returns the Chi route pattern (e.g. "/api/students/{id}")

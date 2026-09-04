@@ -4,6 +4,8 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"log"
@@ -73,6 +75,16 @@ type Config struct {
 	EmailOTPResendCooldownSeconds  int
 	EmailOTPMaxVerifyAttempts      int
 	EmailOTPMaxSendAttemptsPerHour int
+
+	// MetricsToken authenticates access to the Prometheus /metrics endpoint.
+	// Sent via ?token= or Authorization: Bearer. Empty means unauthenticated
+	// (development only); production validation requires it to be set.
+	MetricsToken string
+
+	// AllowWSTokenQuery permits the legacy /ws?token=... handshake. Off in
+	// production: long-lived JWTs must never ride in URLs (logs, history,
+	// referrers, proxies).
+	AllowWSTokenQuery bool
 }
 
 // Load reads env vars, applies local-development defaults, and validates
@@ -104,6 +116,8 @@ func Load() (Config, error) {
 		EmailOTPResendCooldownSeconds:  parseIntDefault(os.Getenv("EMAIL_OTP_RESEND_COOLDOWN_SECONDS"), 60),
 		EmailOTPMaxVerifyAttempts:      parseIntDefault(os.Getenv("EMAIL_OTP_MAX_VERIFY_ATTEMPTS"), 5),
 		EmailOTPMaxSendAttemptsPerHour: parseIntDefault(os.Getenv("EMAIL_OTP_MAX_SEND_ATTEMPTS_PER_HOUR"), 5),
+		MetricsToken:                   os.Getenv("METRICS_TOKEN"),
+		AllowWSTokenQuery:              os.Getenv("ALLOW_WS_TOKEN_QUERY") == "true",
 	}
 
 	if err := cfg.Validate(allowedOriginsEnv); err != nil {
@@ -111,8 +125,16 @@ func Load() (Config, error) {
 	}
 
 	if cfg.JWTSecret == "" {
-		cfg.JWTSecret = "dev-only-jwt-secret-change-me"
-		log.Println("[config] WARNING: JWT_SECRET is empty; using local development fallback. Set JWT_SECRET for any shared environment.")
+		// Development-only fallback: a RANDOM per-boot secret. Using a
+		// hard-coded compile-time string would let anyone who reads the repo
+		// forge JWTs for any dev/CI instance. With a random secret, dev tokens
+		// die on restart and can never be forged from code alone.
+		buf := make([]byte, 48)
+		if _, err := rand.Read(buf); err != nil {
+			return Config{}, fmt.Errorf("generate ephemeral dev JWT secret: %w", err)
+		}
+		cfg.JWTSecret = base64.RawStdEncoding.EncodeToString(buf)
+		log.Println("[config] WARNING: JWT_SECRET is empty; generated a random per-boot development secret (sessions do not survive restart). Set JWT_SECRET for any shared environment.")
 	} else if len(cfg.JWTSecret) < 32 {
 		log.Printf("[config] WARNING: JWT_SECRET is only %d characters; HS256 signing keys should be at least 32 random bytes (use `openssl rand -base64 48`).", len(cfg.JWTSecret))
 	}
@@ -145,6 +167,13 @@ func (cfg Config) Validate(allowedOriginsEnv string) error {
 	}
 	if len(missing) > 0 {
 		return fmt.Errorf("production config missing required env vars: %s", strings.Join(missing, ", "))
+	}
+	if strings.TrimSpace(cfg.MetricsToken) == "" {
+		missing = append(missing, "METRICS_TOKEN")
+		return fmt.Errorf("production config missing required env vars: %s", strings.Join(missing, ", "))
+	}
+	if cfg.AllowWSTokenQuery {
+		return errors.New("production config forbids ALLOW_WS_TOKEN_QUERY=true: long-lived JWTs must never ride in WebSocket URLs")
 	}
 	if cfg.EmailOTPExpirySeconds != 300 {
 		return fmt.Errorf("production EMAIL_OTP_EXPIRY_SECONDS must be exactly 300 (got %d)", cfg.EmailOTPExpirySeconds)

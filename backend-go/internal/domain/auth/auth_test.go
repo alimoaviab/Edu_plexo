@@ -68,9 +68,11 @@ func TestLogin_Success(t *testing.T) {
 		t.Fatal("expected session cookie to be set")
 	}
 
-	// Because rememberMe is true, max age should be 5 years
-	if sessionCookie.MaxAge != 60*60*24*365*5 {
-		t.Errorf("expected MaxAge to be 5 years, got %d", sessionCookie.MaxAge)
+	// Session hardening: rememberMe grants 30 days (never years). The cookie
+	// max-age mirrors the JWT lifetime so a stale cookie cannot outlive the
+	// credential it carries.
+	if sessionCookie.MaxAge != 60*60*24*30 {
+		t.Errorf("expected MaxAge to be 30 days (remember-me), got %d", sessionCookie.MaxAge)
 	}
 }
 

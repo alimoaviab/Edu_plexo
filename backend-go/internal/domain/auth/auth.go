@@ -314,7 +314,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	claims.Subject = user.ID
 
-	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
+	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, h.tokenTTL(body.RememberMe))
 	if err != nil {
 		api.WriteJSON(w, http.StatusInternalServerError, map[string]any{
 			"ok":      false,
@@ -420,7 +420,15 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	fullName := strings.TrimSpace(firstNonEmpty(body.AdminName, body.FullName))
 	schoolCode := strings.ToUpper(strings.TrimSpace(firstNonEmpty(body.SchoolCode, body.SchoolCode2)))
 
-	if role != "teacher" && role != "student" && role != "parent" && role != "admin" && role != "owner" {
+	// Self-service role policy (security invariant):
+	//   - owner        → new platform customer; creates their own school
+	//   - teacher/student/parent → join an existing school via its code
+	//   - admin        → must be provisioned by an owner or super-admin
+	//                    (owner.CreateAdmin / owner.CreateSchool). Admin
+	//                    self-registration is never allowed: it would let
+	//                    anyone mint a wildcard-permission tenant admin.
+	//   - super_admin  → fully denied (never in the allowlist).
+	if role != "teacher" && role != "student" && role != "parent" && role != "owner" {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("Invalid role selected"))
 		return
 	}
@@ -428,7 +436,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("All fields are required"))
 		return
 	}
-	if role != "admin" && role != "owner" && schoolCode == "" {
+	if role != "owner" && schoolCode == "" {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("School code is required"))
 		return
 	}
@@ -483,12 +491,14 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ─── Super Admin Bypass: Skip OTP Direct Account Creation ──────────
-	if superadmin.GetPlatformSettings().SkipOTP {
+	// Security invariant: this fast path exists ONLY for platform operators
+	// who are authenticated as super_admin and are provisioning a new OWNER
+	// account (onboarding). It must never be reachable by anonymous callers:
+	// an unauthenticated attacker could otherwise mint a privileged account
+	// with wildcard permissions. Anonymous signups always proceed through
+	// email OTP verification regardless of the SkipOTP flag.
+	if role == "owner" && superadmin.GetPlatformSettings().SkipOTP && h.isSuperAdminRequest(r) {
 		userID := store.NewID("usr")
-		permissions := []string{"*"}
-		if role != "admin" && role != "owner" {
-			permissions = []string{}
-		}
 
 		newUser := &store.User{
 			ID:           userID,
@@ -496,7 +506,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			Email:        email,
 			PasswordHash: hash,
 			Role:         role,
-			Permissions:  permissions,
+			Permissions:  []string{"*"},
 			Profile: store.UserProfile{
 				FirstName: firstWord(fullName),
 				LastName:  remainingWords(fullName),
@@ -531,7 +541,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			ActorEmail:           newUser.Email,
 		}
 		claims.Subject = newUser.ID
-		token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
+		token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, rememberTokenTTL)
 		if err == nil {
 			h.setSessionCookie(w, token, true)
 		}
@@ -755,6 +765,16 @@ func (h *Handler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Admin self-registration is permanently disallowed, including any
+	// legacy pending signups created before the policy was enforced.
+	if pending.Role == "admin" {
+		pending.Status = "consumed"
+		h.Store.Unlock()
+		h.Persist("pending_signups", pending)
+		api.WriteJSON(w, http.StatusBadRequest, signupErr("Admin accounts cannot be self-registered. Please contact the school owner."))
+		return
+	}
+
 	// Create active user record
 	userID := store.NewID("usr")
 	schoolID := "system"
@@ -762,7 +782,7 @@ func (h *Handler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		schoolID = pending.SchoolID
 	}
 	permissions := []string{"*"}
-	if pending.Role != "admin" && pending.Role != "owner" {
+	if pending.Role != "owner" {
 		permissions = []string{}
 	}
 
@@ -799,7 +819,7 @@ func (h *Handler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		ActorEmail:           newUser.Email,
 	}
 	claims.Subject = newUser.ID
-	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
+	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, rememberTokenTTL)
 	if err == nil {
 		h.setSessionCookie(w, token, true)
 	}
@@ -1095,7 +1115,7 @@ func (h *Handler) SwitchAcademicYear(w http.ResponseWriter, r *http.Request) {
 	}
 	claims.Subject = ctx.UserID
 
-	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
+	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, h.tokenTTLForRequest(r))
 	if err != nil {
 		api.WriteJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "message": "Failed to issue session."})
 		return
@@ -1118,6 +1138,7 @@ func (h *Handler) SwitchAcademicYear(w http.ResponseWriter, r *http.Request) {
 // the old non-error `null` response; with a valid HttpOnly session cookie it
 // returns non-secret user context so browser apps do not need localStorage tokens.
 func (h *Handler) Session(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
 	cookie, err := r.Cookie("session")
 	if err != nil || strings.TrimSpace(cookie.Value) == "" {
 		api.WriteJSON(w, http.StatusOK, nil)
@@ -1179,6 +1200,45 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+// WSTicket implements POST /api/auth/ws-ticket — an authenticated endpoint
+// that issues a SHORT-LIVED (60s), ws-scoped credential for the /ws handshake.
+// The realtime client exchanges its normal session for this ticket and puts
+// ONLY the ticket in the WebSocket URL, keeping the long-lived session JWT
+// out of URLs, proxy logs, browser history, and referrers.
+func (h *Handler) WSTicket(w http.ResponseWriter, r *http.Request) {
+	ctx := api.FromRequest(r)
+	if ctx == nil {
+		api.WriteJSON(w, http.StatusUnauthorized, map[string]any{"ok": false, "message": "Authentication required."})
+		return
+	}
+
+	claims := authpkg.Claims{
+		SchoolID:             ctx.SchoolID,
+		Role:                 ctx.Role,
+		Permissions:          ctx.Permissions,
+		ActiveAcademicYearID: ctx.ActiveAcademicYearID,
+		SessionID:            firstNonEmpty(ctx.SessionID, "sess_"+randomID()),
+		App:                  h.Cfg.AppName,
+		ActorEmail:           ctx.ActorEmail,
+		Scope:                "ws",
+	}
+	claims.Subject = ctx.UserID
+
+	token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, wsTicketTTL)
+	if err != nil {
+		api.WriteJSON(w, http.StatusInternalServerError, map[string]any{"ok": false, "message": "Failed to issue connection ticket."})
+		return
+	}
+
+	api.WriteJSON(w, http.StatusOK, map[string]any{
+		"ok": true,
+		"data": map[string]any{
+			"ticket":     token,
+			"expires_in": int(wsTicketTTL.Seconds()),
+		},
+	})
 }
 
 // Log implements POST /api/auth/_log — the original is a noop logger.
@@ -1252,6 +1312,40 @@ func (h *Handler) uniqueSchoolCode(name string) string {
 	return "SCH" + strings.ToUpper(randomID()[:7])
 }
 
+// tokenTTL returns the JWT lifetime for a login: 8 hours by default, 30 days
+// when the user opts in to "remember me". Keeping a long-lived bearer token
+// out of localStorage reduces the blast radius of token theft.
+func (h *Handler) tokenTTL(rememberMe bool) time.Duration {
+	if rememberMe {
+		return rememberTokenTTL
+	}
+	return defaultTokenTTL
+}
+
+// tokenTTLForRequest re-issues a session (e.g. academic-year switch) while
+// preserving the remaining lifetime of the incoming token, so switching a
+// year never extends the session beyond what was originally granted.
+func (h *Handler) tokenTTLForRequest(r *http.Request) time.Duration {
+	token := ""
+	if authz := r.Header.Get("Authorization"); authz != "" && strings.HasPrefix(strings.ToLower(authz), "bearer ") {
+		token = strings.TrimSpace(authz[7:])
+	}
+	if token == "" {
+		if c, err := r.Cookie("session"); err == nil {
+			token = strings.TrimSpace(c.Value)
+		}
+	}
+	if token != "" {
+		if claims, err := authpkg.VerifyToken(h.Cfg.JWTSecret, h.Cfg.AppName, token); err == nil {
+			remaining := time.Until(claims.ExpiresAt.Time)
+			if remaining > 0 {
+				return remaining
+		}
+		}
+	}
+	return defaultTokenTTL
+}
+
 func (h *Handler) setSessionCookie(w http.ResponseWriter, token string, rememberMe bool) {
 	// Cross-site cookie support: when CookieSecure is true (production with HTTPS),
 	// use SameSite=None so the cookie is sent on cross-origin requests from the
@@ -1261,11 +1355,13 @@ func (h *Handler) setSessionCookie(w http.ResponseWriter, token string, remember
 		sameSite = http.SameSiteNoneMode
 	}
 
-	maxAge := 60 * 60 * 24 * 365 // 1 year default
+	maxAge := int(defaultTokenTTL.Seconds()) // 8 hours default
 	if rememberMe {
-		maxAge = 60 * 60 * 24 * 365 * 5 // 5 years (cookie lifetime; the JWT
-		// itself still expires after 8760h, which then prompts a fresh login)
+		maxAge = int(rememberTokenTTL.Seconds()) // 30 days
 	}
+
+	// Never let proxies/caches store session material.
+	w.Header().Set("Cache-Control", "no-store")
 
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session",
@@ -1277,6 +1373,19 @@ func (h *Handler) setSessionCookie(w http.ResponseWriter, token string, remember
 		MaxAge:   maxAge,
 	})
 }
+
+const (
+	// Session lifetimes. 8h default; 30 days with "remember me". A long-lived
+	// bearer token stored in localStorage (or sent in a URL) is a standing
+	// credential theft risk; keeping sessions short bounds that risk.
+	defaultTokenTTL  = 8 * time.Hour
+	rememberTokenTTL = 30 * 24 * time.Hour
+
+	// wsTicketTTL bounds how long a /ws connection ticket is valid. Short
+	// enough that a ticket leaking into a proxy/access log cannot be reused
+	// as a session.
+	wsTicketTTL = 60 * time.Second
+)
 
 func (h *Handler) clearSessionCookie(w http.ResponseWriter) {
 	sameSite := http.SameSiteLaxMode
@@ -1299,6 +1408,38 @@ func signupErr(message string) map[string]any {
 		"ok":    false,
 		"error": map[string]any{"message": message},
 	}
+}
+
+// isSuperAdminRequest reports whether the request carries a valid JWT for a
+// currently-active super_admin account (Authorization header or session
+// cookie). Used to gate the SkipOTP instant-account-creation path so that
+// anonymous callers can never reach it.
+func (h *Handler) isSuperAdminRequest(r *http.Request) bool {
+	token := ""
+	if authz := r.Header.Get("Authorization"); authz != "" && strings.HasPrefix(strings.ToLower(authz), "bearer ") {
+		token = strings.TrimSpace(authz[7:])
+	}
+	if token == "" {
+		if c, err := r.Cookie("session"); err == nil && c.Value != "" {
+			token = strings.TrimSpace(c.Value)
+		}
+	}
+	if token == "" {
+		return false
+	}
+	claims, err := authpkg.VerifyToken(h.Cfg.JWTSecret, h.Cfg.AppName, token)
+	if err != nil || claims.Role != "super_admin" {
+		return false
+	}
+
+	h.Store.RLock()
+	defer h.Store.RUnlock()
+	for _, u := range h.Store.Users {
+		if u.ID == claims.Subject && strings.EqualFold(u.Email, claims.ActorEmail) && u.Role == "super_admin" && u.Status == "active" {
+			return true
+		}
+	}
+	return false
 }
 
 func firstNonEmpty(values ...string) string {

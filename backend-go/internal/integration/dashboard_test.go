@@ -25,6 +25,11 @@ func TestCompositeDashboard_FullIntegration(t *testing.T) {
 	cleanupTestData(t, pool)
 	t.Cleanup(func() { cleanupTestData(t, pool) })
 
+	// Purge any dashboard cache left by earlier runs so the first call
+	// below is a genuine cache MISS.
+	_, _ = rdb.Del(ctx, fmt.Sprintf("dash:%s:%s", testSchoolID, testYearID))
+	t.Cleanup(func() { _, _ = rdb.Del(ctx, fmt.Sprintf("dash:%s:%s", testSchoolID, testYearID)) })
+
 	// ─── Setup test data ───────────────────────────────────────────────
 	createTestSchool(t, pool)
 	classID := createTestClass(t, pool)
@@ -55,6 +60,10 @@ func TestCompositeDashboard_FullIntegration(t *testing.T) {
 		`, store.NewID("fee"), testSchoolID, sid, classID, testYearID, "INV-"+store.NewID(""))
 		require.NoError(t, err)
 	}
+
+	// Dashboard reads aggregate materialized views; refresh them so the
+	// seeded rows are visible (the real server refreshes on boot).
+	require.NoError(t, dashboard.RefreshMaterializedViews(ctx, pool))
 
 	// ─── Build handler with MemStore (for composite endpoint) ──────────
 	s := &store.MemStore{}

@@ -282,10 +282,34 @@ func EnsureBootstrapUsers(s *MemStore) {
 		})
 	}
 
+	// The bootstrap school must carry an active trial subscription: the
+	// SubscriptionGate middleware consults PostgreSQL when a pool is
+	// configured (PG-backed deployments), and a school with no row would be
+	// locked out of every module on a fresh deployment. Mirrors the 14-day
+	// trial that owner onboarding provisions (owner.CreateSchool).
+	hasBootstrapSub := false
+	for _, sub := range s.Subscriptions {
+		if sub.SchoolID == schoolID && (sub.Status == "active" || sub.Status == "trial") {
+			hasBootstrapSub = true
+			break
+		}
+	}
+	if !hasBootstrapSub {
+		s.Subscriptions = append(s.Subscriptions, &Subscription{
+			ID:           NewID("sub"),
+			SchoolID:     schoolID,
+			PackageID:    "growth",
+			StudentLimit: 500,
+			Status:       "trial",
+			NextRenewal:  now.AddDate(0, 0, 14),
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		})
+	}
+
 	if superUser != nil {
 		hash, _ := auth.HashPassword(superPassword)
 		superUser.PasswordHash = hash
-		superUser.Password = superPassword
 	} else {
 		// Super admins need a "system" school record to satisfy database FKs
 		hasSystemSchool := false
@@ -312,7 +336,6 @@ func EnsureBootstrapUsers(s *MemStore) {
 			SchoolID:     "system",
 			Email:        superEmail,
 			PasswordHash: func() string { h, _ := auth.HashPassword(superPassword); return h }(),
-			Password:     superPassword,
 			Role:         "super_admin",
 			Permissions:  []string{"*"},
 			Status:       "active",
@@ -325,7 +348,6 @@ func EnsureBootstrapUsers(s *MemStore) {
 	if schoolUser != nil {
 		hash, _ := auth.HashPassword(schoolPassword)
 		schoolUser.PasswordHash = hash
-		schoolUser.Password = schoolPassword
 	} else {
 		hash, _ := auth.HashPassword(schoolPassword)
 		s.Users = append(s.Users, &User{
@@ -333,7 +355,6 @@ func EnsureBootstrapUsers(s *MemStore) {
 			SchoolID:     schoolID,
 			Email:        schoolEmail,
 			PasswordHash: hash,
-			Password:     schoolPassword,
 			Role:         "admin",
 			Permissions:  []string{"*"},
 			Status:       "active",
@@ -346,7 +367,6 @@ func EnsureBootstrapUsers(s *MemStore) {
 	if ownerUser != nil {
 		hash, _ := auth.HashPassword(ownerPassword)
 		ownerUser.PasswordHash = hash
-		ownerUser.Password = ownerPassword
 	} else {
 		hash, _ := auth.HashPassword(ownerPassword)
 		s.Users = append(s.Users, &User{
@@ -354,7 +374,6 @@ func EnsureBootstrapUsers(s *MemStore) {
 			SchoolID:     "system", // Owners are stored under system scope
 			Email:        ownerEmail,
 			PasswordHash: hash,
-			Password:     ownerPassword,
 			Role:         "owner",
 			Permissions:  []string{"*"},
 			Status:       "active",
@@ -420,12 +439,12 @@ func bootstrapAdmin(s *MemStore) {
 		UpdatedAt: now,
 	})
 
+	schoolHash, _ := auth.HashPassword(schoolPassword)
 	s.Users = append(s.Users, &User{
 		ID:           NewID("user"),
 		SchoolID:     schoolID,
 		Email:        schoolEmail,
-		PasswordHash: schoolPassword,
-		Password:     schoolPassword,
+		PasswordHash: schoolHash,
 		Role:         "admin",
 		Permissions:  []string{"*"},
 		Status:       "active",
@@ -461,7 +480,6 @@ func bootstrapAdmin(s *MemStore) {
 		SchoolID:     "system",
 		Email:        superEmail,
 		PasswordHash: hash,
-		Password:     superPassword,
 		Role:         "super_admin",
 		Permissions:  []string{"*"},
 		Status:       "active",
@@ -497,9 +515,10 @@ func seedDev(s *MemStore) {
 		},
 	)
 
+	seedHash, _ := auth.HashPassword("Test@123")
 	s.Users = append(s.Users, &User{
 		ID: "user_admin_seed", SchoolID: schoolID, Email: "school@gmail.com",
-		PasswordHash: "Test@123", Role: "admin", Permissions: []string{"*"},
+		PasswordHash: seedHash, Role: "admin", Permissions: []string{"*"},
 		Status:    "active",
 		Profile:   UserProfile{FirstName: "Demo", LastName: "Admin"},
 		CreatedAt: now, UpdatedAt: now,

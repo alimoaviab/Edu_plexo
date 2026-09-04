@@ -1,13 +1,29 @@
 package middleware
 
 import (
+	"bufio"
+	"io"
 	"log"
+	"net"
 	"net/http"
 	"time"
 )
 
 // statusRecorder wraps http.ResponseWriter so we can capture the status code
 // for logging.
+//
+// It MUST preserve every optional interface the underlying writer may
+// implement. Losing them silently breaks functionality that depends on
+// interface assertions:
+//   - http.Hijacker  → WebSocket upgrades fail with
+//     "response does not implement http.Hijacker" (all /ws clients get 500).
+//   - http.Flusher   → SSE streaming (e.g. /api/seo/generate) fails with
+//     "Streaming not supported".
+//   - http.Pusher / io.ReaderFrom → HTTP/2 push and zero-copy writes.
+//
+// Each method below forwards to the wrapped ResponseWriter only when the
+// underlying value actually supports it, mirroring what Go's stdlib
+// http.NewResponseController-based handlers expect.
 type statusRecorder struct {
 	http.ResponseWriter
 	status int
@@ -16,6 +32,44 @@ type statusRecorder struct {
 func (s *statusRecorder) WriteHeader(code int) {
 	s.status = code
 	s.ResponseWriter.WriteHeader(code)
+}
+
+// Unwrap lets http.ResponseController reach the real writer.
+func (s *statusRecorder) Unwrap() http.ResponseWriter {
+	return s.ResponseWriter
+}
+
+// Hijack lets the gorilla/websocket Upgrader hijack the connection for
+// WebSocket upgrades through the full middleware chain.
+func (s *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := s.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, http.ErrNotSupported
+	}
+	return h.Hijack()
+}
+
+// Flush keeps SSE streaming (text/event-stream) working through the logger.
+func (s *statusRecorder) Flush() {
+	if f, ok := s.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+// Push keeps HTTP/2 server push working through the logger.
+func (s *statusRecorder) Push(target string, opts *http.PushOptions) error {
+	if p, ok := s.ResponseWriter.(http.Pusher); ok {
+		return p.Push(target, opts)
+	}
+	return http.ErrNotSupported
+}
+
+// ReadFrom keeps zero-copy response writes working through the logger.
+func (s *statusRecorder) ReadFrom(r io.Reader) (int64, error) {
+	if rf, ok := s.ResponseWriter.(io.ReaderFrom); ok {
+		return rf.ReadFrom(r)
+	}
+	return io.Copy(struct{ io.Writer }{s.ResponseWriter}, r)
 }
 
 // Logger writes a single line per request: method, path, status, duration.

@@ -1039,7 +1039,6 @@ func (h *Handler) UpdateAdminPassword(w http.ResponseWriter, r *http.Request) {
 	for _, u := range h.Store.Users {
 		if u.SchoolID == schoolID && u.Role == "admin" {
 			u.PasswordHash = passwordHash
-			u.Password = ""
 			u.UpdatedAt = time.Now()
 			h.Persist("users", u)
 

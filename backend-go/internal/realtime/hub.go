@@ -15,8 +15,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/eduplexo/backend-go/internal/api"
@@ -75,8 +77,13 @@ type Notifier interface {
 	SendToUser(schoolID, userID string, msg Message)
 }
 
+// connSeq is a process-wide counter used to mint unique connection IDs so
+// multiple connections from the same user (tabs/devices) never collide.
+var connSeq uint64
+
 // conn wraps a WebSocket connection with metadata.
 type conn struct {
+	id       string // unique per connection (multi-tab / reconnect safe)
 	ws       *websocket.Conn
 	schoolID string
 	userID   string
@@ -85,7 +92,9 @@ type conn struct {
 
 // Hub manages all WebSocket connections and Redis Pub/Sub subscriptions.
 type Hub struct {
-	// connections: schoolID → userID → connection
+	// connections: schoolID → connectionID → connection. Keyed by a unique
+	// connection ID (not user ID) so one user's tabs/devices coexist and a
+	// disconnect can only ever tear down its own connection.
 	mu    sync.RWMutex
 	conns map[string]map[string]*conn
 
@@ -120,6 +129,11 @@ func NewHub(rdb *redis.Client, allowedOrigins []string) *Hub {
 }
 
 // Shutdown gracefully closes all connections and subscriptions.
+//
+// Connections are snapshotted and removed from the map under the hub lock
+// BEFORE their channels are closed, so a concurrently exiting readPump can
+// never double-close a send channel (close-of-closed-channel panic would
+// crash the process during graceful shutdown).
 func (h *Hub) Shutdown() {
 	h.cancel()
 
@@ -127,16 +141,27 @@ func (h *Hub) Shutdown() {
 	for _, sub := range h.subs {
 		_ = sub.Close()
 	}
+	h.subs = make(map[string]*redis.PubSub)
 	h.subMu.Unlock()
 
 	h.mu.Lock()
+	var all []*conn
 	for _, school := range h.conns {
 		for _, c := range school {
-			close(c.send)
-			_ = c.ws.Close()
+			all = append(all, c)
 		}
 	}
+	h.conns = make(map[string]map[string]*conn)
 	h.mu.Unlock()
+
+	for _, c := range all {
+		close(c.send)
+		_ = c.ws.Close()
+		metrics.ActiveWebsockets.Dec()
+	}
+	if len(all) > 0 {
+		log.Printf("[ws] hub shutdown: closed %d connection(s)", len(all))
+	}
 }
 
 // ServeWS handles WebSocket upgrade requests.
@@ -158,6 +183,7 @@ func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c := &conn{
+		id:       "conn_" + strconv.FormatUint(atomic.AddUint64(&connSeq, 1), 10),
 		ws:       wsConn,
 		schoolID: reqCtx.SchoolID,
 		userID:   reqCtx.UserID,
@@ -172,15 +198,31 @@ func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request) {
 	go h.readPump(c)
 }
 
-// register adds a connection to the hub and starts Redis subscription if needed.
+// register adds a connection to the hub and starts Redis subscription if
+// needed. When the same user already has a live connection (new tab or a
+// reconnect that raced the old socket's teardown), the older connection is
+// superseded and shut down — otherwise its eventual disconnect would tear
+// down the newer connection's channel.
 func (h *Hub) register(c *conn) {
 	h.mu.Lock()
 	if h.conns[c.schoolID] == nil {
 		h.conns[c.schoolID] = make(map[string]*conn)
 	}
-	h.conns[c.schoolID][c.userID] = c
-	schoolConnCount := len(h.conns[c.schoolID])
+	school := h.conns[c.schoolID]
+
+	var stale []*conn
+	for _, existing := range school {
+		if existing.userID == c.userID && existing.id != c.id {
+			stale = append(stale, existing)
+		}
+	}
+	school[c.id] = c
+	schoolConnCount := len(school)
 	h.mu.Unlock()
+
+	for _, old := range stale {
+		h.unregister(old)
+	}
 
 	log.Printf("[ws] connected: school=%s user=%s (school_total=%d)", c.schoolID, c.userID, schoolConnCount)
 
@@ -190,26 +232,37 @@ func (h *Hub) register(c *conn) {
 	}
 }
 
-// unregister removes a connection and cleans up subscriptions.
+// unregister removes a connection and closes its send channel EXACTLY once.
+// It is idempotent and safe from any goroutine (readPump exit, supersede in
+// register, Hub.Shutdown): the connection is only acted on while it is still
+// present in the map, so no channel is ever closed twice and — because conns
+// are keyed by a unique id — no other connection's channel is ever touched.
 func (h *Hub) unregister(c *conn) {
 	h.mu.Lock()
-	if school, ok := h.conns[c.schoolID]; ok {
-		if _, exists := school[c.userID]; exists {
-			delete(school, c.userID)
-			close(c.send)
-		}
-		if len(school) == 0 {
-			delete(h.conns, c.schoolID)
-		}
+	school, ok := h.conns[c.schoolID]
+	if !ok {
+		h.mu.Unlock()
+		return
 	}
-	remaining := len(h.conns[c.schoolID])
+	if _, exists := school[c.id]; !exists {
+		h.mu.Unlock()
+		return
+	}
+	delete(school, c.id)
+	empty := len(school) == 0
+	if empty {
+		delete(h.conns, c.schoolID)
+	}
 	h.mu.Unlock()
 
+	close(c.send)
+	_ = c.ws.Close()
+
 	metrics.ActiveWebsockets.Dec()
-	log.Printf("[ws] disconnected: school=%s user=%s (remaining=%d)", c.schoolID, c.userID, remaining)
+	log.Printf("[ws] disconnected: school=%s user=%s", c.schoolID, c.userID)
 
 	// Unsubscribe from Redis if no more connections for this school
-	if remaining == 0 {
+	if empty {
 		h.unsubscribeSchool(c.schoolID)
 	}
 }
@@ -262,6 +315,11 @@ func (h *Hub) unsubscribeSchool(schoolID string) {
 }
 
 // fanOut sends a message to all connected users in a school.
+//
+// Sends happen while holding the read lock: unregister/Shutdown close send
+// channels only after removing the connection from the map under the write
+// lock, so a channel can never be written after it is closed (send-on-closed
+// panic). Sends are non-blocking, so holding the read lock is bounded.
 func (h *Hub) fanOut(schoolID string, data []byte) {
 	h.mu.RLock()
 	school := h.conns[schoolID]
@@ -269,14 +327,7 @@ func (h *Hub) fanOut(schoolID string, data []byte) {
 		h.mu.RUnlock()
 		return
 	}
-	// Copy to avoid holding lock during sends
-	targets := make([]*conn, 0, len(school))
 	for _, c := range school {
-		targets = append(targets, c)
-	}
-	h.mu.RUnlock()
-
-	for _, c := range targets {
 		select {
 		case c.send <- data:
 		default:
@@ -284,9 +335,13 @@ func (h *Hub) fanOut(schoolID string, data []byte) {
 			log.Printf("[ws] send buffer full, dropping message for user=%s", c.userID)
 		}
 	}
+	h.mu.RUnlock()
 }
 
-// SendToUser sends a message to a specific user (if connected).
+// SendToUser sends a message to a specific user's connections (if connected).
+// Like fanOut, sends happen under the read lock so a channel can never be
+// written after it is closed. Delivers to every live connection of the user
+// (all tabs).
 func (h *Hub) SendToUser(schoolID, userID string, msg Message) {
 	data, err := json.Marshal(msg)
 	if err != nil {
@@ -299,15 +354,15 @@ func (h *Hub) SendToUser(schoolID, userID string, msg Message) {
 		h.mu.RUnlock()
 		return
 	}
-	c, ok := school[userID]
-	h.mu.RUnlock()
-
-	if ok {
-		select {
-		case c.send <- data:
-		default:
+	for _, c := range school {
+		if c.userID == userID {
+			select {
+			case c.send <- data:
+			default:
+			}
 		}
 	}
+	h.mu.RUnlock()
 }
 
 // Publish sends a message to all users in a school via Redis Pub/Sub.

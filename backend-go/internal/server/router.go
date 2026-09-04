@@ -90,8 +90,9 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 	r.Use(middleware.Recover)
 	r.Use(middleware.Logger)
 
-	// Prometheus metrics endpoint (no auth required — restrict via nginx in prod)
-	r.Handle("/metrics", metrics.Handler())
+	// Prometheus metrics endpoint. Protected by METRICS_TOKEN when configured
+	// (production validation requires it); nginx additionally restricts it.
+	r.Handle("/metrics", metrics.Protected(cfg.MetricsToken, metrics.Handler()))
 
 	// ─── Health check endpoints ──────────────────────────────────────────
 	// /health       — full dependency check (PG + Redis + memory)
@@ -117,7 +118,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 		}
 	}
 
-	authH := authdomain.NewPG(cfg, s, saveFn, pg.Pool())
+	authH := authdomain.NewPG(cfg, s, saveFn, pg.RuntimePool())
 	authH.SetRevoker(revoker)
 
 	// ─── WebSocket endpoint (requires auth) ──────────────────────────────
@@ -128,7 +129,12 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 
 	r.Route("/api", func(r chi.Router) {
 		// ─── Public auth endpoints ───────────────────────────────────────
-		authRL := middleware.NewRateLimiter(10, time.Minute)
+		// Distributed limiter when Redis is configured; otherwise the
+		// single-instance in-memory limiter (identical limits).
+		var authRL middleware.AuthLimiter = middleware.NewRateLimiter(10, time.Minute)
+		if rdb.Available() && rdb.Raw() != nil {
+			authRL = middleware.NewRedisAuthLimiter(rdb.Raw(), "auth", 10, time.Minute)
+		}
 		r.Post("/auth/login", authRL.Limit(authH.Login))
 		r.Post("/auth/logout", authH.Logout)
 		r.Post("/auth/signup", authRL.Limit(authH.Signup))
@@ -149,8 +155,13 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.Authenticator(cfg, s, revoker))
 			if pg != nil {
-				r.Use(middleware.SubscriptionGate(pg.Pool()))
+				r.Use(middleware.SubscriptionGate(pg.RuntimePool()))
 			}
+
+			// Short-lived (60s), ws-scoped ticket for the /ws handshake. Lets the
+			// SPA keep the long-lived session JWT out of URLs. (Registered after
+			// all Use() calls — chi forbids middleware after routes.)
+			r.Post("/auth/ws-ticket", authH.WSTicket)
 
 			ayH := academicyear.New(s, saveFn)
 			r.Get("/academic-years", ayH.List)
@@ -161,7 +172,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Post("/academic-years/switch", authH.SwitchAcademicYear)
 
 			// ─── Owner ERP ──────────────────────────────────────────────────────
-			owH := owner.NewPG(cfg, s, saveFn, pg.Pool())
+			owH := owner.NewPG(cfg, s, saveFn, pg.RuntimePool())
 			r.Get("/owner/dashboard", owH.DashboardStats)
 			r.Get("/owner/schools", owH.GetSchools)
 			r.Post("/owner/schools", owH.CreateSchool)
@@ -194,7 +205,8 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Get("/eduplexo-extension/history/export.csv", edxH.ExportCSV)
 			r.Get("/eduplexo-extension/history/{id}", edxH.Detail)
 			r.Post("/eduplexo-extension/history/{id}/revert", edxH.Revert)
-			stH := students.NewPG(s, saveFn, pg.Pool(), rdb)
+
+			stH := students.NewPG(s, saveFn, pg.RuntimePool(), rdb)
 			// Subscription limit checker is set after subH is created below
 			r.Get("/students", stH.List)
 			r.Get("/students/analytics", stH.Analytics)
@@ -204,7 +216,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Put("/students/{id}", stH.Update)
 			r.Delete("/students/{id}", stH.Delete)
 
-			tcH := teachers.NewPG(s, saveFn, pg.Pool(), rdb)
+			tcH := teachers.NewPG(s, saveFn, pg.RuntimePool(), rdb)
 			r.Get("/teachers", tcH.List)
 			r.Post("/teachers", tcH.Create)
 			r.Get("/teachers/{id}", tcH.Get)
@@ -237,7 +249,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Get("/school/subjects", suH.List)
 			r.Get("/school/subjects/class/{classId}", suH.List)
 
-			dH := dashboard.NewPG(pg.Pool(), rdb, s)
+			dH := dashboard.NewPG(pg.RuntimePool(), rdb, s)
 			r.Get("/analytics/dashboard", dH.Get)
 
 			searchH := search.New(s)
@@ -248,7 +260,8 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Get("/dashboard/composite", compH.Get)
 
 			atH := attendance.NewWithCache(s, saveFn, rdb)
-			atPG := attendance.NewPG(pg.Pool(), rdb, s)
+
+			atPG := attendance.NewPG(pg.RuntimePool(), rdb, s)
 			r.Get("/attendance", atH.List)
 			r.Post("/attendance", atH.Create)
 			r.Get("/attendance/{id}", atH.Get)
@@ -258,7 +271,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Post("/attendance/mark", atPG.MarkBulkPG) // Direct PG batch insert
 			r.Get("/attendance/sheet", atPG.Sheet)      // Direct PG JOIN query
 
-			tcAttH := attendance.NewTeacherAttendanceHandler(s, saveFn, pg.Pool(), rdb)
+			tcAttH := attendance.NewTeacherAttendanceHandler(s, saveFn, pg.RuntimePool(), rdb)
 			r.Post("/teachers/attendance/checkin", tcAttH.CheckIn)
 			r.Post("/teachers/attendance/checkout", tcAttH.CheckOut)
 			r.Get("/teachers/attendance/history", tcAttH.History)
@@ -465,7 +478,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Get("/school/fees/classes-summary", fH.ClassesSummary)
 
 			// ─── Expenses domain (Expense Manager) ────────────────────────
-			expH := expenses.New(s, pg.Pool(), rdb)
+			expH := expenses.New(s, pg.RuntimePool(), rdb)
 			r.Get("/expenses", expH.List)
 			r.Get("/expenses/stats", expH.GetStats)
 			r.Get("/expenses/{id}", expH.GetByID)
@@ -478,7 +491,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Post("/domain/setup", stubs.NotImplemented(""))
 
 			// ─── Subscription & Billing ───────────────────────────────────
-			subH := subscription.New(pg.Pool(), s)
+			subH := subscription.New(pg.RuntimePool(), s)
 			stH.LimitChecker = subH.CheckStudentLimit // Wire student limit enforcement
 			r.Get("/subscription/current", subH.GetCurrent)
 			r.Get("/subscription/plans", subH.GetPlans)
@@ -517,7 +530,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Post("/fees/generate-async", rt.FeeGenerateAsyncHandler(jobQueue))
 
 			// Super Admin
-			saH := superadmin.NewPG(s, saveFn, pg.Pool())
+			saH := superadmin.NewPG(s, saveFn, pg.RuntimePool())
 			r.Get("/super-admin/dashboard", saH.DashboardStats)
 			r.Get("/super-admin/schools", saH.ListSchools)
 			r.Get("/super-admin/schools/{id}", saH.GetSchool)

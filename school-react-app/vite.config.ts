@@ -82,7 +82,10 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: "dist",
-      sourcemap: true,
+      // Source maps are OFF by default (production builds never ship .map
+      // files — they expose full app source to anyone who can fetch the
+      // bundle). Set VITE_SOURCEMAP=true explicitly when debugging a build.
+      sourcemap: env.VITE_SOURCEMAP === "true",
       rollupOptions: {
         output: {
           manualChunks(id) {

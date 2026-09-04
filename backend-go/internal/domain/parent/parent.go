@@ -202,16 +202,11 @@ func (h *Handler) StudentInfo(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-			// Fallback for the dev-seed flow where we haven't populated
-			// links yet — surface every student in the tenant. The
-			// frontend's selector still works.
-			if len(out) == 0 {
-				for _, s := range h.Store.Students {
-					if s.SchoolID == ctx.SchoolID {
-						out = append(out, h.studentSummary(s))
-					}
-				}
-			}
+			// Security invariant: a parent may ONLY ever see students linked
+			// to their account (student_parents). There is deliberately no
+			// fallback here that enumerates the tenant's student body — an
+			// unlinked parent must receive an empty child list, never a
+			// directory of other children's names/roll numbers/classes.
 			h.Store.RUnlock()
 			return map[string]any{"students": out}, nil
 		}

@@ -78,6 +78,14 @@ vi.stubGlobal("localStorage", {
   removeItem: (key: string) => { delete mockStorage[key]; },
 });
 
+// Mock fetch — the hook exchanges the session for a short-lived ws ticket.
+const mockFetch = vi.fn(async () => ({
+  status: 200,
+  ok: true,
+  json: async () => ({ ok: true, data: { ticket: "ws-ticket-123", expires_in: 60 } }),
+}));
+vi.stubGlobal("fetch", mockFetch);
+
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -93,6 +101,7 @@ function createWrapper() {
 describe("useWebSocket", () => {
   beforeEach(() => {
     MockWebSocket.reset();
+    mockFetch.mockClear();
     vi.useFakeTimers();
   });
 
@@ -100,7 +109,7 @@ describe("useWebSocket", () => {
     vi.useRealTimers();
   });
 
-  it("connects to the correct WebSocket URL", async () => {
+  it("connects to the correct WebSocket URL with a short-lived ticket", async () => {
     const { Wrapper } = createWrapper();
     const { useWebSocket } = await import("@/hooks/useWebSocket");
 
@@ -114,7 +123,14 @@ describe("useWebSocket", () => {
     const ws = MockWebSocket.last();
     expect(ws).toBeDefined();
     expect(ws!.url).toContain("/ws");
-    expect(ws!.url).toContain("token=test-jwt-token");
+    // Only the short-lived ticket rides in the URL — never the session JWT.
+    expect(ws!.url).toContain("token=ws-ticket-123");
+    expect(ws!.url).not.toContain("test-jwt-token");
+
+    // The session JWT was exchanged via POST /api/auth/ws-ticket.
+    const fetchCall = mockFetch.mock.calls.find(([, init]) => init?.method === "POST");
+    expect(fetchCall).toBeDefined();
+    expect(String(fetchCall![0])).toContain("/api/auth/ws-ticket");
   });
 
   it("updates notification cache on message received", async () => {

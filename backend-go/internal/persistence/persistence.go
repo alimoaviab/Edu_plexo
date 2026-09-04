@@ -28,12 +28,26 @@ import (
 	"time"
 
 	"github.com/eduplexo/backend-go/internal/store"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Persister owns the connection pool, write queue, and snapshot loop.
+// Persister owns the connection pools, write queue, and snapshot loop.
+//
+// Two pools back the PostgreSQL deployment:
+//   - pool: the privileged owner connection used ONLY by trusted platform
+//     machinery — boot-time Load, the write-behind flush / FullSnapshot
+//     mirror, and materialized-view refresh. This role (school_user in the
+//     docker-compose deployment) is the PostgreSQL bootstrap superuser;
+//     row-level security never applies to it, by design, because it is not
+//     a request path.
+//   - runtimePool: every connection immediately `SET ROLE school_runtime`
+//     (the least-privilege role created by migration 000036, which owns no
+//     tables). RLS applies to this role on every query; request handlers
+//     must run here (see RuntimePool).
 type Persister struct {
-	pool *pgxpool.Pool
+	pool        *pgxpool.Pool
+	runtimePool *pgxpool.Pool
 
 	mu            sync.Mutex
 	queue         []write
@@ -191,9 +205,40 @@ func New(ctx context.Context, dsn string) (*Persister, error) {
 		return nil, fmt.Errorf("postgres ping: %w", err)
 	}
 
+	// Runtime (request-path) pool: every connection adopts the least-
+	// privilege school_runtime role so row-level security binds. Fails
+	// closed — if migration 000036 has not been applied (role missing or
+	// membership not granted), the server refuses to start rather than
+	// silently serving request queries as the privileged owner.
+	rtConfig, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("pgxpool.ParseConfig(runtime): %w", err)
+	}
+	rtConfig.MaxConns = poolConfig.MaxConns
+	rtConfig.MinConns = poolConfig.MinConns
+	rtConfig.MaxConnLifetime = poolConfig.MaxConnLifetime
+	rtConfig.MaxConnIdleTime = poolConfig.MaxConnIdleTime
+	rtConfig.HealthCheckPeriod = poolConfig.HealthCheckPeriod
+	rtConfig.AfterConnect = func(_ context.Context, conn *pgx.Conn) error {
+		_, err := conn.Exec(context.Background(), "SET ROLE school_runtime")
+		return err
+	}
+	runtimePool, err := pgxpool.NewWithConfig(ctx, rtConfig)
+	if err != nil {
+		return nil, fmt.Errorf("pgxpool.NewWithConfig(runtime): %w", err)
+	}
+	rtPingCtx, rtCancel := context.WithTimeout(ctx, 5*time.Second)
+	defer rtCancel()
+	if err := runtimePool.Ping(rtPingCtx); err != nil {
+		runtimePool.Close()
+		pool.Close()
+		return nil, fmt.Errorf("postgres runtime pool ping (is migration 000036 applied and "+
+			"is the connect user a member of school_runtime?): %w", err)
+	}
+
 	log.Printf("[persistence] connected to PostgreSQL (pool: max=%d, min=%d, lifetime=%s)",
 		poolConfig.MaxConns, poolConfig.MinConns, poolConfig.MaxConnLifetime)
-	return &Persister{pool: pool, flushInterval: 1 * time.Second}, nil
+	return &Persister{pool: pool, runtimePool: runtimePool, flushInterval: 1 * time.Second}, nil
 }
 
 // Available reports whether a PostgreSQL pool is configured.
@@ -209,10 +254,25 @@ func (p *Persister) Pool() *pgxpool.Pool {
 	return p.pool
 }
 
-// Close releases the pool. Safe on nil.
+// RuntimePool returns the least-privilege request-path pool. Every
+// connection on it runs as school_runtime (SET ROLE), so PostgreSQL
+// row-level security applies to all of its queries. Per-request handlers
+// MUST use this pool; p.Pool() is reserved for the trusted sync layer
+// (Load / flush / FullSnapshot / matview refresh).
+func (p *Persister) RuntimePool() *pgxpool.Pool {
+	if p == nil {
+		return nil
+	}
+	return p.runtimePool
+}
+
+// Close releases the pools. Safe on nil.
 func (p *Persister) Close() {
 	if p != nil && p.pool != nil {
 		p.pool.Close()
+	}
+	if p != nil && p.runtimePool != nil {
+		p.runtimePool.Close()
 	}
 }
 

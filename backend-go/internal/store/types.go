@@ -45,7 +45,6 @@ type User struct {
 	CampusID     string      `json:"campus_id,omitempty"`
 	Email        string      `json:"email"`
 	PasswordHash string      `json:"-"`
-	Password     string      `json:"-"`
 	Role         string      `json:"role"`
 	Permissions  []string    `json:"permissions"`
 	Profile      UserProfile `json:"profile"`

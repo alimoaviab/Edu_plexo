@@ -16,6 +16,7 @@ func setProductionBaseEnv(t *testing.T) {
 	t.Setenv("BREVO_API_KEY", "test-brevo-api-key")
 	t.Setenv("BREVO_SENDER_EMAIL", "verify@eduplexo.com")
 	t.Setenv("EMAIL_OTP_EXPIRY_SECONDS", "300")
+	t.Setenv("METRICS_TOKEN", "test-production-metrics-token")
 }
 
 func TestLoadProductionRequiresJWTSecret(t *testing.T) {
@@ -97,7 +98,10 @@ func TestLoadProductionSucceedsWithoutAIKeys(t *testing.T) {
 	}
 }
 
-func TestLoadDevelopmentUsesLocalFallback(t *testing.T) {
+func TestLoadDevelopmentGeneratesRandomFallbackSecret(t *testing.T) {
+	// Fail-closed hardening: when JWT_SECRET is unset, development boots with a
+	// RANDOM per-boot secret — never a hard-coded, repo-readable value that
+	// could be used to forge tokens.
 	t.Setenv("APP_ENV", "development")
 	t.Setenv("JWT_SECRET", "")
 	t.Setenv("DATABASE_URL", "")
@@ -105,12 +109,34 @@ func TestLoadDevelopmentUsesLocalFallback(t *testing.T) {
 	t.Setenv("COOKIE_SECURE", "false")
 	t.Setenv("GEMINI_API_KEY", "")
 	t.Setenv("ANTHROPIC_API_KEY", "")
+	t.Setenv("METRICS_TOKEN", "")
 
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("expected development config to load, got %v", err)
 	}
-	if cfg.JWTSecret != "dev-only-jwt-secret-change-me" {
-		t.Fatalf("expected development JWT fallback, got %q", cfg.JWTSecret)
+	if cfg.JWTSecret == "" || len(cfg.JWTSecret) < 32 {
+		t.Fatalf("expected a random per-boot development JWT secret (>=32 chars), got %q", cfg.JWTSecret)
+	}
+}
+
+func TestLoadProductionRequiresMetricsToken(t *testing.T) {
+	setProductionBaseEnv(t)
+	t.Setenv("METRICS_TOKEN", "")
+
+	_, err := Load()
+	if err == nil || !strings.Contains(err.Error(), "METRICS_TOKEN") {
+		t.Fatalf("expected missing METRICS_TOKEN error, got %v", err)
+	}
+}
+
+func TestLoadProductionRejectsWSTokenQuery(t *testing.T) {
+	// Long-lived JWTs must never ride in WebSocket URLs in production.
+	setProductionBaseEnv(t)
+	t.Setenv("ALLOW_WS_TOKEN_QUERY", "true")
+
+	_, err := Load()
+	if err == nil || !strings.Contains(err.Error(), "ALLOW_WS_TOKEN_QUERY") {
+		t.Fatalf("expected ALLOW_WS_TOKEN_QUERY rejection in production, got %v", err)
 	}
 }

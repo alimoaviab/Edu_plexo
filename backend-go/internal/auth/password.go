@@ -46,7 +46,9 @@ func VerifyPassword(plain, stored string) bool {
 		return strings.EqualFold(hex.EncodeToString(sum[:]), stored)
 	}
 
-	// Plain-text equality is supported only for in-memory dev seeds; never
-	// for any production hash.
-	return stored == plain
+	// Security invariant: passwords are NEVER compared in plaintext. Every
+	// stored credential must be a bcrypt (or legacy sha256) hash. Any seed or
+	// fixture that stores a raw password is a bug — login must fail rather
+	// than silently accept a plaintext credential.
+	return false
 }
