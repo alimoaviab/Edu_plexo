@@ -17,6 +17,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/auth"
 	"github.com/eduplexo/backend-go/internal/store"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -472,9 +473,18 @@ func (h *Handler) ListSchools(w http.ResponseWriter, r *http.Request) {
 				COALESCE(s.address, '') AS address,
 				COALESCE(s.city, '') AS city,
 				COALESCE(NULLIF(TRIM(u.profile_first || ' ' || u.profile_last), ''), 'School Owner') AS principal_name,
-				COALESCE(u.status, s.status, 'active') AS status,
+				CASE
+					WHEN sub.status = 'suspended' OR s.status = 'suspended' OR u.status = 'suspended' THEN 'suspended'
+					WHEN s.status = 'pending' THEN 'pending'
+					WHEN sub.status = 'expired' AND (sub.grace_ends_at IS NULL OR sub.grace_ends_at <= NOW()) THEN 'expired'
+					ELSE COALESCE(s.status, u.status, 'active')
+				END AS status,
 				u.email AS owner_email,
-				COALESCE((SELECT COUNT(*) FROM students st WHERE st.school_id = s.school_id), 0) AS student_count,
+				COALESCE((SELECT COUNT(*) FROM students st WHERE st.school_id IN (
+					SELECT school_id FROM schools WHERE (owner_user_id = u.id OR owner_email = u.email) AND school_id NOT IN ('system', '__global__')
+					UNION
+					SELECT school_id FROM owner_schools WHERE owner_user_id = u.id
+				)), (SELECT COUNT(*) FROM students st WHERE st.school_id = s.school_id), 0) AS student_count,
 				COALESCE((SELECT COUNT(*) FROM teachers tc WHERE tc.school_id = s.school_id), 0) AS teacher_count,
 				COALESCE((SELECT COUNT(*) FROM classes cl WHERE cl.school_id = s.school_id), 0) AS class_count,
 				COALESCE(sub.plan_name, s.plan_key, 'Free Trial') AS plan,
@@ -482,12 +492,14 @@ func (h *Handler) ListSchools(w http.ResponseWriter, r *http.Request) {
 				COALESCE(sub.end_date, s.plan_expires_at, u.created_at + INTERVAL '14 days') AS expiry,
 				u.created_at,
 				u.updated_at,
-				COALESCE(sub.status, '') AS subscription_status,
-				COALESCE(sub.is_trial, false) AS is_trial,
-				CASE WHEN sub.end_date IS NULL THEN 0
-				     WHEN sub.end_date > NOW() THEN CEIL(EXTRACT(EPOCH FROM (sub.end_date - NOW())) / 86400.0)::int
-				     ELSE 0 END AS days_remaining,
-				COALESCE(sub.student_limit, 0) AS student_limit,
+				COALESCE(NULLIF(sub.status, ''), CASE WHEN u.created_at + INTERVAL '14 days' > NOW() THEN 'trial' ELSE 'expired' END) AS subscription_status,
+				COALESCE(sub.is_trial, sub.plan_name IS NULL OR sub.plan_name = 'trial' OR sub.plan_name = 'Free Trial') AS is_trial,
+				CASE 
+					WHEN COALESCE(sub.end_date, s.plan_expires_at, u.created_at + INTERVAL '14 days') > NOW() 
+						THEN CEIL(EXTRACT(EPOCH FROM (COALESCE(sub.end_date, s.plan_expires_at, u.created_at + INTERVAL '14 days') - NOW())) / 86400.0)::int
+					ELSE 0 
+				END AS days_remaining,
+				COALESCE(sub.student_limit, 500) AS student_limit,
 				sub.grace_ends_at
 			FROM users u
 			LEFT JOIN LATERAL (
@@ -500,16 +512,30 @@ func (h *Handler) ListSchools(w http.ResponseWriter, r *http.Request) {
 			LEFT JOIN LATERAL (
 				SELECT sub.plan_name, sub.end_date, sub.status, sub.is_trial, sub.student_limit, sub.grace_ends_at
 				FROM subscriptions sub
-				WHERE (sub.school_id = s.school_id OR sub.school_id = u.school_id OR sub.school_id = u.id
-				       OR sub.owner_user_id = u.id
+				WHERE (sub.owner_user_id = u.id
+				       OR sub.school_id = s.school_id OR sub.school_id = u.school_id OR sub.school_id = u.id
 				       OR (s.school_id IS NULL AND sub.school_id = u.id))
-				ORDER BY sub.created_at DESC
+				ORDER BY CASE
+					-- Tier 0: Live active paid or custom plan
+					WHEN sub.status = 'active' AND sub.is_trial = false AND sub.start_date <= NOW() AND sub.end_date > NOW() THEN 0
+					-- Tier 1: Live active trial
+					WHEN sub.status IN ('active', 'trial') AND (sub.is_trial = true OR sub.plan_name = 'trial') AND sub.start_date <= NOW() AND sub.end_date > NOW() THEN 1
+					-- Tier 2: Due scheduled plan
+					WHEN sub.status = 'scheduled' AND sub.start_date <= NOW() THEN 2
+					-- Tier 3: Future scheduled plan
+					WHEN sub.status = 'scheduled' THEN 3
+					-- Tier 4: Suspended
+					WHEN sub.status = 'suspended' THEN 4
+					-- Tier 5: Expired/cancelled
+					WHEN sub.status IN ('expired', 'cancelled') THEN 5
+					ELSE 6
+				END, sub.created_at DESC
 				LIMIT 1
 			) sub ON true
 			LEFT JOIN LATERAL (
 				SELECT COALESCE(SUM(amount) FILTER (WHERE status IN ('verified', 'activated')), 0) AS total_paid
 				FROM payment_requests pr
-				WHERE pr.school_id = s.school_id OR pr.school_id = u.school_id OR pr.school_id = u.id OR (pr.school_id = 'system' AND sub.plan_name IS NOT NULL)
+				WHERE pr.owner_user_id = u.id OR pr.school_id = s.school_id OR pr.school_id = u.school_id OR pr.school_id = u.id OR (pr.school_id = 'system' AND sub.plan_name IS NOT NULL)
 			) pay ON true
 			WHERE u.role = 'owner'
 			ORDER BY u.created_at DESC
@@ -604,35 +630,44 @@ func (h *Handler) GetSchool(w http.ResponseWriter, r *http.Request) {
 
 	id := chi.URLParam(r, "id")
 
+	type OwnerSchoolSummary struct {
+		ID       string `json:"id"`
+		SchoolID string `json:"school_id"`
+		Name     string `json:"name"`
+		Code     string `json:"code"`
+		Status   string `json:"status"`
+	}
+
 	type schoolDetailView struct {
-		ID            string     `json:"_id"`
-		SchoolID      string     `json:"school_id"`
-		Name          string     `json:"name"`
-		Code          string     `json:"code"`
-		Email         string     `json:"email"`
-		Phone         string     `json:"phone"`
-		Address       string     `json:"address"`
-		City          string     `json:"city"`
-		PrincipalName string     `json:"principal_name"`
-		Website       string     `json:"website"`
-		Status        string     `json:"status"`
-		OwnerEmail    string     `json:"owner_email"`
-		StudentCount  int        `json:"student_count"`
-		TeacherCount  int        `json:"teacher_count"`
-		ClassCount    int        `json:"class_count"`
-		ParentCount   int        `json:"parent_count"`
-		SubjectCount  int        `json:"subject_count"`
-		Plan          string     `json:"plan"`
-		Revenue       float64    `json:"revenue"`
-		Expiry        time.Time  `json:"expiry"`
-		CreatedAt     time.Time  `json:"created_at"`
-		UpdatedAt     time.Time  `json:"updated_at"`
+		ID            string               `json:"_id"`
+		SchoolID      string               `json:"school_id"`
+		Name          string               `json:"name"`
+		Code          string               `json:"code"`
+		Email         string               `json:"email"`
+		Phone         string               `json:"phone"`
+		Address       string               `json:"address"`
+		City          string               `json:"city"`
+		PrincipalName string               `json:"principal_name"`
+		Website       string               `json:"website"`
+		Status        string               `json:"status"`
+		OwnerEmail    string               `json:"owner_email"`
+		StudentCount  int                  `json:"student_count"`
+		TeacherCount  int                  `json:"teacher_count"`
+		ClassCount    int                  `json:"class_count"`
+		ParentCount   int                  `json:"parent_count"`
+		SubjectCount  int                  `json:"subject_count"`
+		Plan          string               `json:"plan"`
+		Revenue       float64              `json:"revenue"`
+		Expiry        time.Time            `json:"expiry"`
+		CreatedAt     time.Time            `json:"created_at"`
+		UpdatedAt     time.Time            `json:"updated_at"`
 		// Real subscription state
-		SubStatus     string     `json:"subscription_status"`
-		IsTrial       bool       `json:"is_trial"`
-		DaysRemaining int        `json:"days_remaining"`
-		StudentLimit  int        `json:"student_limit"`
-		GraceEndsAt   *time.Time `json:"grace_ends_at,omitempty"`
+		SubStatus     string               `json:"subscription_status"`
+		IsTrial       bool                 `json:"is_trial"`
+		DaysRemaining int                  `json:"days_remaining"`
+		StudentLimit  int                  `json:"student_limit"`
+		GraceEndsAt   *time.Time           `json:"grace_ends_at,omitempty"`
+		Schools       []OwnerSchoolSummary `json:"schools,omitempty"`
 	}
 
 	// PG-first: the route id may be an owner user id, an owner email, a
@@ -652,25 +687,36 @@ func (h *Handler) GetSchool(w http.ResponseWriter, r *http.Request) {
 				COALESCE(s.address, '') AS address,
 				COALESCE(s.city, '') AS city,
 				COALESCE(NULLIF(TRIM(u.profile_first || ' ' || u.profile_last), ''), s.admin_name, 'School Owner') AS principal_name,
-				COALESCE(s.website, '') AS website,
-				COALESCE(u.status, s.status, 'active') AS status,
+				'' AS website,
+				CASE
+					WHEN sub.status = 'suspended' OR s.status = 'suspended' OR u.status = 'suspended' THEN 'suspended'
+					WHEN s.status = 'pending' THEN 'pending'
+					WHEN sub.status = 'expired' AND (sub.grace_ends_at IS NULL OR sub.grace_ends_at <= NOW()) THEN 'expired'
+					ELSE COALESCE(s.status, u.status, 'active')
+				END AS status,
 				u.email AS owner_email,
-				COALESCE((SELECT COUNT(*) FROM students st WHERE st.school_id = s.school_id), 0) AS student_count,
+				COALESCE((SELECT COUNT(*) FROM students st WHERE st.school_id IN (
+					SELECT school_id FROM schools WHERE (owner_user_id = u.id OR owner_email = u.email) AND school_id NOT IN ('system', '__global__')
+					UNION
+					SELECT school_id FROM owner_schools WHERE owner_user_id = u.id
+				)), (SELECT COUNT(*) FROM students st WHERE st.school_id = s.school_id), 0) AS student_count,
 				COALESCE((SELECT COUNT(*) FROM teachers tc WHERE tc.school_id = s.school_id), 0) AS teacher_count,
 				COALESCE((SELECT COUNT(*) FROM classes cl WHERE cl.school_id = s.school_id), 0) AS class_count,
 				0 AS parent_count,
 				COALESCE((SELECT COUNT(*) FROM subjects sb WHERE sb.school_id = s.school_id), 0) AS subject_count,
 				COALESCE(sub.plan_name, 'Free Trial') AS plan,
 				COALESCE(pay.total_paid, 0)::float8 AS revenue,
-				COALESCE(sub.end_date, u.created_at + INTERVAL '14 days') AS expiry,
+				COALESCE(sub.end_date, s.plan_expires_at, u.created_at + INTERVAL '14 days') AS expiry,
 				u.created_at,
 				u.updated_at,
-				COALESCE(sub.status, '') AS subscription_status,
-				COALESCE(sub.is_trial, false) AS is_trial,
-				CASE WHEN sub.end_date IS NULL THEN 0
-				     WHEN sub.end_date > NOW() THEN CEIL(EXTRACT(EPOCH FROM (sub.end_date - NOW())) / 86400.0)::int
-				     ELSE 0 END AS days_remaining,
-				COALESCE(sub.student_limit, 0) AS student_limit,
+				COALESCE(NULLIF(sub.status, ''), CASE WHEN u.created_at + INTERVAL '14 days' > NOW() THEN 'trial' ELSE 'expired' END) AS subscription_status,
+				COALESCE(sub.is_trial, sub.plan_name IS NULL OR sub.plan_name = 'trial' OR sub.plan_name = 'Free Trial') AS is_trial,
+				CASE 
+					WHEN COALESCE(sub.end_date, s.plan_expires_at, u.created_at + INTERVAL '14 days') > NOW() 
+						THEN CEIL(EXTRACT(EPOCH FROM (COALESCE(sub.end_date, s.plan_expires_at, u.created_at + INTERVAL '14 days') - NOW())) / 86400.0)::int
+					ELSE 0 
+				END AS days_remaining,
+				COALESCE(sub.student_limit, 500) AS student_limit,
 				sub.grace_ends_at
 			FROM users u
 			LEFT JOIN LATERAL (
@@ -678,23 +724,41 @@ func (h *Handler) GetSchool(w http.ResponseWriter, r *http.Request) {
 				WHERE (s.owner_email = u.email OR s.owner_user_id = u.id
 				       OR s.school_id = u.school_id OR s.id = u.school_id)
 				  AND s.school_id NOT IN ('system', '__global__')
-				ORDER BY s.created_at ASC LIMIT 1
+				ORDER BY CASE WHEN s.id = $1 OR s.school_id = $1 THEN 0 ELSE 1 END, s.created_at ASC 
+				LIMIT 1
 			) s ON true
 			LEFT JOIN LATERAL (
 				SELECT sub.plan_name, sub.end_date, sub.status, sub.is_trial, sub.student_limit, sub.grace_ends_at
 				FROM subscriptions sub
-				WHERE (sub.school_id = s.school_id OR sub.school_id = u.school_id OR sub.school_id = u.id
-				       OR sub.owner_user_id = u.id)
-				ORDER BY sub.created_at DESC LIMIT 1
+				WHERE (sub.owner_user_id = u.id
+				       OR sub.school_id = s.school_id OR sub.school_id = u.school_id OR sub.school_id = u.id
+				       OR (s.school_id IS NULL AND sub.school_id = u.id))
+				ORDER BY CASE
+					-- Tier 0: Live active paid or custom plan
+					WHEN sub.status = 'active' AND sub.is_trial = false AND sub.start_date <= NOW() AND sub.end_date > NOW() THEN 0
+					-- Tier 1: Live active trial
+					WHEN sub.status IN ('active', 'trial') AND (sub.is_trial = true OR sub.plan_name = 'trial') AND sub.start_date <= NOW() AND sub.end_date > NOW() THEN 1
+					-- Tier 2: Due scheduled plan
+					WHEN sub.status = 'scheduled' AND sub.start_date <= NOW() THEN 2
+					-- Tier 3: Future scheduled plan
+					WHEN sub.status = 'scheduled' THEN 3
+					-- Tier 4: Suspended
+					WHEN sub.status = 'suspended' THEN 4
+					-- Tier 5: Expired/cancelled
+					WHEN sub.status IN ('expired', 'cancelled') THEN 5
+					ELSE 6
+				END, sub.created_at DESC 
+				LIMIT 1
 			) sub ON true
 			LEFT JOIN LATERAL (
 				SELECT COALESCE(SUM(amount) FILTER (WHERE status IN ('verified', 'activated')), 0) AS total_paid
 				FROM payment_requests pr
-				WHERE pr.school_id = s.school_id OR pr.school_id = u.school_id OR pr.school_id = u.id
+				WHERE pr.owner_user_id = u.id OR pr.school_id = s.school_id OR pr.school_id = u.school_id OR pr.school_id = u.id
 			) pay ON true
 			WHERE u.role = 'owner'
 			  AND (u.id = $1 OR u.email = $1 OR u.school_id = $1
-			       OR s.school_id = $1 OR s.id = $1)
+			       OR s.school_id = $1 OR s.id = $1
+			       OR EXISTS (SELECT 1 FROM schools sc WHERE (sc.id = $1 OR sc.school_id = $1) AND (sc.owner_user_id = u.id OR sc.owner_email = u.email)))
 			LIMIT 1
 		`, id).Scan(
 			&sv.ID, &sv.SchoolID, &sv.Name, &sv.Code, &sv.Email, &sv.Phone,
@@ -705,6 +769,25 @@ func (h *Handler) GetSchool(w http.ResponseWriter, r *http.Request) {
 		)
 		if err == nil {
 			sv.GraceEndsAt = grace
+			// Fetch all schools belonging to this owner
+			var ownedSchools []OwnerSchoolSummary
+			rows, qErr := h.Pool.Query(r.Context(), `
+				SELECT id, school_id, name, code, status
+				FROM schools
+				WHERE (owner_user_id = $1 OR owner_email = $2)
+				  AND school_id NOT IN ('system', '__global__')
+				ORDER BY created_at ASC
+			`, sv.ID, sv.OwnerEmail)
+			if qErr == nil {
+				defer rows.Close()
+				for rows.Next() {
+					var os OwnerSchoolSummary
+					if scanErr := rows.Scan(&os.ID, &os.SchoolID, &os.Name, &os.Code, &os.Status); scanErr == nil {
+						ownedSchools = append(ownedSchools, os)
+					}
+				}
+			}
+			sv.Schools = ownedSchools
 			api.WriteResult(w, api.Ok(sv))
 			return
 		}
@@ -978,7 +1061,7 @@ func (h *Handler) SuspendSchool(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Reason string `json:"reason"`
 	}
-	json.NewDecoder(r.Body).Decode(&body)
+	_ = json.NewDecoder(r.Body).Decode(&body)
 
 	h.Store.Lock()
 	defer h.Store.Unlock()
@@ -986,30 +1069,56 @@ func (h *Handler) SuspendSchool(w http.ResponseWriter, r *http.Request) {
 	// Authoritative subscription suspension (PG). The subscription row is the
 	// single source of truth the SubscriptionGate middleware enforces.
 	if h.Pool != nil {
+		var ownerID string
+		_ = h.Pool.QueryRow(r.Context(), `
+			SELECT COALESCE(
+				(SELECT id FROM users WHERE (id = $1 OR email = $1) AND role = 'owner' LIMIT 1),
+				(SELECT owner_user_id FROM schools WHERE id = $1 OR school_id = $1 LIMIT 1),
+				(SELECT u.id FROM users u JOIN schools s ON s.owner_email = u.email WHERE (s.id = $1 OR s.school_id = $1) AND u.role = 'owner' LIMIT 1),
+				$1
+			)
+		`, id).Scan(&ownerID)
+
 		tag, err := h.Pool.Exec(r.Context(), `
 			UPDATE subscriptions SET status = 'suspended', updated_at = NOW()
-			WHERE (school_id = $1
-			       OR school_id IN (SELECT school_id FROM schools WHERE id = $1 OR school_id = $1)
-			       OR owner_user_id = $1
-			       OR school_id IN (SELECT id FROM users WHERE id = $1))
+			WHERE (owner_user_id = $1 OR owner_user_id = $2
+			       OR school_id = $1 OR school_id = $2
+			       OR school_id IN (SELECT school_id FROM schools WHERE id = $1 OR school_id = $1 OR owner_user_id = $1 OR owner_user_id = $2))
 			  AND status NOT IN ('cancelled')
-		`, id)
+		`, id, ownerID)
 		if err != nil {
 			api.WriteResult(w, api.Fail("INTERNAL", "Failed to suspend subscription.", 500, nil))
 			return
 		}
-		// Non-owner users are suspended too (owner keeps billing access).
-		_, _ = h.Pool.Exec(r.Context(), `UPDATE users SET status = 'suspended' WHERE (school_id = $1 OR id = $1) AND role != 'owner'`, id)
-		_, _ = h.Pool.Exec(r.Context(), `UPDATE schools SET status = 'suspended' WHERE id = $1 OR school_id = $1`, id)
-		if tag.RowsAffected() > 0 {
-			api.WriteResult(w, api.Ok(map[string]any{
-				"success":     true,
-				"message":     "School subscription suspended. Protected access is now blocked; the Owner can still renew via billing.",
-				"reason":      body.Reason,
-				"subscriptions_updated": tag.RowsAffected(),
-			}))
-			return
-		}
+
+		// Update schools
+		_, _ = h.Pool.Exec(r.Context(), `
+			UPDATE schools SET status = 'suspended', updated_at = NOW()
+			WHERE id = $1 OR school_id = $1 OR owner_user_id = $1 OR owner_user_id = $2
+		`, id, ownerID)
+
+		// Non-owner users are marked suspended (blocking operational access)
+		_, _ = h.Pool.Exec(r.Context(), `
+			UPDATE users SET status = 'suspended', updated_at = NOW()
+			WHERE (school_id = $1 OR school_id = $2 
+			       OR school_id IN (SELECT school_id FROM schools WHERE owner_user_id = $1 OR owner_user_id = $2))
+			  AND role != 'owner'
+		`, id, ownerID)
+
+		// Owner status is also marked suspended so account displays suspended
+		// (SubscriptionGate permits owners to access billing/renewal routes for recovery)
+		_, _ = h.Pool.Exec(r.Context(), `
+			UPDATE users SET status = 'suspended', updated_at = NOW()
+			WHERE (id = $1 OR id = $2) AND role = 'owner'
+		`, id, ownerID)
+
+		api.WriteResult(w, api.Ok(map[string]any{
+			"success":               true,
+			"message":               "School subscription suspended. Protected access is now blocked; the Owner can still renew via billing.",
+			"reason":                body.Reason,
+			"subscriptions_updated": tag.RowsAffected(),
+		}))
+		return
 	}
 
 	for _, s := range h.Store.Schools {
@@ -1041,8 +1150,157 @@ func (h *Handler) SuspendSchool(w http.ResponseWriter, r *http.Request) {
 
 			api.WriteResult(w, api.Ok(map[string]any{
 				"success": true,
-				"message": "School and all associated users/data suspended.",
-				"reason":  body.Reason,
+				"message": "School and all associated accounts suspended.",
+			}))
+			return
+		}
+	}
+	api.WriteResult(w, api.Fail("NOT_FOUND", "School not found.", 404, nil))
+}
+
+// ReactivateSchool restores an authorized school/owner subscription.
+// POST /api/super-admin/schools/:id/reactivate
+func (h *Handler) ReactivateSchool(w http.ResponseWriter, r *http.Request) {
+	if _, ok := requireSuperAdmin(w, r); !ok {
+		return
+	}
+
+	id := chi.URLParam(r, "id")
+	var body struct {
+		Reason     string `json:"reason"`
+		ExtendDays int    `json:"extend_days,omitempty"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	h.Store.Lock()
+	defer h.Store.Unlock()
+
+	if h.Pool != nil {
+		var ownerID string
+		_ = h.Pool.QueryRow(r.Context(), `
+			SELECT COALESCE(
+				(SELECT id FROM users WHERE (id = $1 OR email = $1) AND role = 'owner' LIMIT 1),
+				(SELECT owner_user_id FROM schools WHERE id = $1 OR school_id = $1 LIMIT 1),
+				(SELECT u.id FROM users u JOIN schools s ON s.owner_email = u.email WHERE (s.id = $1 OR s.school_id = $1) AND u.role = 'owner' LIMIT 1),
+				$1
+			)
+		`, id).Scan(&ownerID)
+
+		// 1. Check latest subscription
+		var subID, subStatus, planName string
+		var endDate time.Time
+		var isTrial bool
+		err := h.Pool.QueryRow(r.Context(), `
+			SELECT id, status, plan_name, end_date, is_trial
+			FROM subscriptions
+			WHERE owner_user_id = $1 OR owner_user_id = $2
+			   OR school_id = $1 OR school_id = $2
+			   OR school_id IN (SELECT school_id FROM schools WHERE owner_user_id = $1 OR owner_user_id = $2)
+			ORDER BY created_at DESC LIMIT 1
+		`, id, ownerID).Scan(&subID, &subStatus, &planName, &endDate, &isTrial)
+
+		if err != nil && err != pgx.ErrNoRows {
+			api.WriteResult(w, api.Fail("INTERNAL", "Failed to check subscription.", 500, nil))
+			return
+		}
+
+		now := time.Now()
+		canReactivate := false
+		var newStatus string
+
+		// If explicit extension days provided by Super Admin (e.g. manual extension override)
+		if body.ExtendDays > 0 {
+			newEnd := now.AddDate(0, 0, body.ExtendDays)
+			newStatus = "active"
+			if isTrial {
+				newStatus = "trial"
+			}
+			_, _ = h.Pool.Exec(r.Context(), `
+				UPDATE subscriptions SET status = $1, end_date = $2, grace_ends_at = NULL, updated_at = NOW()
+				WHERE id = $3
+			`, newStatus, newEnd, subID)
+			canReactivate = true
+		} else if err == nil && subID != "" {
+			// Case A: Subscription was suspended while still within valid period
+			if endDate.After(now) {
+				newStatus = "active"
+				if isTrial {
+					newStatus = "trial"
+				}
+				_, _ = h.Pool.Exec(r.Context(), `
+					UPDATE subscriptions SET status = $1, grace_ends_at = NULL, updated_at = NOW()
+					WHERE id = $2
+				`, newStatus, subID)
+				canReactivate = true
+			} else {
+				// Case B: Expired subscription — check if there is an approved payment ready to activate
+				var hasApprovedPay bool
+				_ = h.Pool.QueryRow(r.Context(), `
+					SELECT EXISTS (
+						SELECT 1 FROM payment_requests
+						WHERE (owner_user_id = $1 OR owner_user_id = $2 OR school_id = $1 OR school_id = $2)
+						  AND status IN ('approved', 'verified')
+						  AND applied_at IS NULL
+					)
+				`, id, ownerID).Scan(&hasApprovedPay)
+
+				if hasApprovedPay {
+					newEnd := now.AddDate(0, 0, 30)
+					_, _ = h.Pool.Exec(r.Context(), `
+						UPDATE subscriptions SET status = 'active', start_date = $1, end_date = $2, grace_ends_at = NULL, updated_at = NOW()
+						WHERE id = $3
+					`, now, newEnd, subID)
+					_, _ = h.Pool.Exec(r.Context(), `
+						UPDATE payment_requests SET status = 'activated', applied_at = NOW()
+						WHERE (owner_user_id = $1 OR owner_user_id = $2 OR school_id = $1 OR school_id = $2)
+						  AND status IN ('approved', 'verified')
+						  AND applied_at IS NULL
+					`, id, ownerID)
+					canReactivate = true
+				}
+			}
+		}
+
+		if !canReactivate {
+			api.WriteResult(w, api.Fail("SUBSCRIPTION_EXPIRED",
+				"Cannot reactivate: Subscription has expired. A valid renewal payment must be verified or an extension granted before access can be restored.",
+				400, map[string]any{"expired": true, "end_date": endDate}))
+			return
+		}
+
+		// Restore schools and users
+		_, _ = h.Pool.Exec(r.Context(), `
+			UPDATE schools SET status = 'active', updated_at = NOW()
+			WHERE id = $1 OR id = $2 OR school_id = $1 OR school_id = $2 OR owner_user_id = $1 OR owner_user_id = $2
+		`, id, ownerID)
+
+		_, _ = h.Pool.Exec(r.Context(), `
+			UPDATE users SET status = 'active', updated_at = NOW()
+			WHERE id = $1 OR id = $2 OR school_id = $1 OR school_id = $2 
+			   OR school_id IN (SELECT school_id FROM schools WHERE owner_user_id = $1 OR owner_user_id = $2)
+		`, id, ownerID)
+
+		api.WriteResult(w, api.Ok(map[string]any{
+			"success": true,
+			"message": "Owner account and school access reactivated successfully.",
+		}))
+		return
+	}
+
+	for _, s := range h.Store.Schools {
+		if s.ID == id || s.SchoolID == id {
+			s.Status = "active"
+			s.UpdatedAt = time.Now()
+			for _, u := range h.Store.Users {
+				if u.SchoolID == s.SchoolID || u.ID == id {
+					u.Status = "active"
+					h.Persist("users", u)
+				}
+			}
+			h.Persist("schools", s)
+			api.WriteResult(w, api.Ok(map[string]any{
+				"success": true,
+				"message": "School and associated accounts reactivated.",
 			}))
 			return
 		}

@@ -26,6 +26,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/api"
 	"github.com/eduplexo/backend-go/internal/domain/superadmin"
 	"github.com/eduplexo/backend-go/internal/store"
+	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -621,12 +622,18 @@ func (h *Handler) GetPlans(w http.ResponseWriter, r *http.Request) {
 			        WHERE ss.plan_id = sp.id AND ss.status IN ('active','scheduled','trial')
 			        ORDER BY ss.created_at DESC LIMIT 1) AS bound_end
 			FROM subscription_plans sp
-			WHERE (plan_type = 'standard' AND owner_user_id IS NULL AND id <> 'plan_custom')
-			   OR (plan_type = 'custom' AND owner_user_id = $1
-			       AND (is_active = true OR EXISTS (
+			WHERE (sp.id IN ('plan_starter', 'plan_growth', 'plan_premium') AND sp.is_active = true)
+			   OR (sp.plan_type = 'custom' AND sp.owner_user_id = $1
+			       AND (sp.is_active = true OR EXISTS (
 			           SELECT 1 FROM subscriptions ss
 			           WHERE ss.plan_id = sp.id AND ss.status IN ('active','scheduled','trial'))))
-			ORDER BY CASE WHEN sp.is_custom THEN 10 ELSE sp.display_order END ASC, sp.created_at ASC
+			ORDER BY CASE 
+				WHEN sp.id = 'plan_starter' THEN 1
+				WHEN sp.id = 'plan_growth' THEN 2
+				WHEN sp.id = 'plan_premium' THEN 3
+				WHEN sp.is_custom THEN 10
+				ELSE 20
+			END ASC, sp.created_at ASC
 		`, ownerID)
 		if err == nil {
 			defer rows.Close()
@@ -1083,18 +1090,21 @@ func (h *Handler) GetHistory(w http.ResponseWriter, r *http.Request) {
 		var rows pgx.Rows
 		var err error
 		if ctx.Role == "owner" {
-			// Query only history for schools that belong to this owner
+			// Query only history for schools and subscription events that belong to this owner
 			rows, err = h.Pool.Query(r.Context(), `
 				SELECT id, school_id, plan_name, student_limit, amount, payment_status, start_date, end_date, action, created_at
 				FROM subscription_history
-				WHERE school_id IN (
+				WHERE owner_user_id = $1
+				   OR school_id IN (
 					SELECT school_id FROM owner_schools WHERE owner_user_id = $1
 					UNION
 					SELECT school_id FROM schools WHERE (owner_user_id = $1 OR owner_email = $2) AND school_id NOT IN ('system', '__global__')
-				) OR (school_id = $3 AND $3 NOT IN ('system', '__global__', ''))
+					UNION
+					SELECT $1
+				   )
 				ORDER BY created_at DESC
 				LIMIT 50
-			`, ctx.UserID, ctx.ActorEmail, targetSchoolID)
+			`, ctx.UserID, ctx.ActorEmail)
 		} else if targetSchoolID != "" && targetSchoolID != "system" && targetSchoolID != "__global__" {
 			rows, err = h.Pool.Query(r.Context(), `
 				SELECT id, school_id, plan_name, student_limit, amount, payment_status, start_date, end_date, action, created_at
@@ -1122,6 +1132,75 @@ func (h *Handler) GetHistory(w http.ResponseWriter, r *http.Request) {
 		}
 		return entries, nil
 	}))
+}
+
+// ─── GET /api/subscription/receipts/{id} ─────────────────────────────────
+
+// GetReceipt returns a single payment/receipt record with strict customer ownership checking.
+func (h *Handler) GetReceipt(w http.ResponseWriter, r *http.Request) {
+	ctx := api.FromRequest(r)
+	if ctx == nil {
+		api.WriteResult(w, api.Fail("UNAUTHENTICATED", "Authentication required.", 401, nil))
+		return
+	}
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "Receipt ID required.", 400, nil))
+		return
+	}
+	if h.Pool == nil {
+		api.WriteResult(w, api.Fail("NOT_FOUND", "Receipt not found.", 404, nil))
+		return
+	}
+
+	var pr PaymentRequest
+	var pOwner, pSchool string
+	err := h.Pool.QueryRow(r.Context(), `
+		SELECT pr.id, pr.school_id, pr.plan_id, COALESCE(pr.payment_method_id,''), COALESCE(pr.screenshot_url,''),
+		       pr.transaction_id, pr.amount, pr.status, pr.submitted_at, pr.verified_at,
+		       COALESCE(pr.owner_user_id, ''), pr.school_id
+		FROM payment_requests pr
+		WHERE pr.id = $1
+	`, id).Scan(&pr.ID, &pr.SchoolID, &pr.PlanID, &pr.PaymentMethodID, &pr.ScreenshotURL,
+		&pr.TransactionID, &pr.Amount, &pr.Status, &pr.SubmittedAt, &pr.VerifiedAt,
+		&pOwner, &pSchool)
+	if err == pgx.ErrNoRows {
+		api.WriteResult(w, api.Fail("NOT_FOUND", "Receipt not found.", 404, nil))
+		return
+	}
+	if err != nil {
+		api.WriteResult(w, api.Fail("INTERNAL", "Failed to query receipt.", 500, nil))
+		return
+	}
+
+	// Security: Super Admin has global access; Owners only have access to their own receipts
+	if ctx.Role != "super_admin" {
+		if ctx.Role == "owner" {
+			isOwner := pOwner == ctx.UserID
+			if !isOwner {
+				var owned bool
+				_ = h.Pool.QueryRow(r.Context(), `
+					SELECT EXISTS (
+						SELECT 1 FROM schools WHERE (owner_user_id = $1 OR owner_email = $2) AND (school_id = $3 OR id = $3)
+						UNION
+						SELECT 1 FROM owner_schools WHERE owner_user_id = $1 AND school_id = $3
+						UNION
+						SELECT 1 WHERE $1 = $3
+					)
+				`, ctx.UserID, ctx.ActorEmail, pSchool).Scan(&owned)
+				isOwner = owned
+			}
+			if !isOwner {
+				api.WriteResult(w, api.Fail("FORBIDDEN", "You do not have permission to view this receipt.", 403, nil))
+				return
+			}
+		} else {
+			api.WriteResult(w, api.Fail("FORBIDDEN", "Access denied.", 403, nil))
+			return
+		}
+	}
+
+	api.WriteResult(w, api.Ok(pr))
 }
 
 // ─── STUDENT LIMIT CHECK (called by students handler) ────────────────────
@@ -1155,10 +1234,19 @@ func (h *Handler) recordHistory(ctx context.Context, schoolID, planName string, 
 	if h.Pool == nil {
 		return
 	}
+	ownerID := ""
+	reqCtx := api.FromContext(ctx)
+	if reqCtx != nil && reqCtx.Role == "owner" && reqCtx.UserID != "" {
+		ownerID = reqCtx.UserID
+	} else if schoolID != "" && schoolID != "system" && schoolID != "__global__" {
+		_ = h.Pool.QueryRow(ctx, `
+			SELECT COALESCE(owner_user_id, '') FROM schools WHERE school_id = $1 OR id = $1 LIMIT 1
+		`, schoolID).Scan(&ownerID)
+	}
 	_, err := h.Pool.Exec(ctx, `
-		INSERT INTO subscription_history (id, school_id, plan_name, student_limit, amount, payment_status, start_date, end_date, action, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
-	`, store.NewID("sh"), schoolID, planName, studentLimit, amount, paymentStatus, start, end, action)
+		INSERT INTO subscription_history (id, school_id, plan_name, student_limit, amount, payment_status, start_date, end_date, action, created_at, owner_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), $10)
+	`, store.NewID("sh"), schoolID, planName, studentLimit, amount, paymentStatus, start, end, action, ownerID)
 	if err != nil {
 		log.Printf("[subscription] history record failed: %v", err)
 	}

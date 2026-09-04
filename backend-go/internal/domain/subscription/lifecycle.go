@@ -215,7 +215,8 @@ func ReconcileScope(ctx context.Context, pool *pgxpool.Pool, scope OwnerScope) e
 		WHERE sched.status = 'scheduled'
 		  AND sched.start_date <= NOW()
 		  AND (sched.school_id = ANY($1) OR sched.owner_user_id = ANY($2))
-		  AND (cur.school_id = sched.school_id OR cur.owner_user_id = sched.owner_user_id)
+		  AND (cur.school_id = ANY($1) OR cur.owner_user_id = ANY($2))
+		  AND cur.id <> sched.id
 		  AND cur.status IN ('active', 'trial')
 	`, scope.SchoolIDs, ownerIDs); err != nil {
 		return fmt.Errorf("reconcile cancel-overlap: %w", err)
@@ -516,11 +517,19 @@ func GetOwnerSubscription(ctx context.Context, pool *pgxpool.Pool, scope OwnerSc
 		FROM subscriptions
 		WHERE (school_id = ANY($1) OR owner_user_id = $2)
 		ORDER BY CASE
-			WHEN status IN ('active', 'trial') AND start_date <= NOW() AND end_date > NOW() THEN 0
-			WHEN status = 'scheduled' AND start_date <= NOW() THEN 1
-			WHEN status = 'scheduled' THEN 2
-			WHEN status IN ('expired', 'cancelled', 'suspended') THEN 3
-			ELSE 4
+			-- 0: Live active paid or custom plan (strictly non-trial)
+			WHEN status = 'active' AND is_trial = false AND start_date <= NOW() AND end_date > NOW() THEN 0
+			-- 1: Live active trial
+			WHEN status IN ('active', 'trial') AND (is_trial = true OR plan_name = 'trial') AND start_date <= NOW() AND end_date > NOW() THEN 1
+			-- 2: Due scheduled plan (promoted on next reconcile)
+			WHEN status = 'scheduled' AND start_date <= NOW() THEN 2
+			-- 3: Future scheduled plan
+			WHEN status = 'scheduled' THEN 3
+			-- 4: Suspended status (needs explicit attention)
+			WHEN status = 'suspended' THEN 4
+			-- 5: Expired or cancelled
+			WHEN status IN ('expired', 'cancelled') THEN 5
+			ELSE 6
 		END,
 		created_at DESC, start_date DESC
 		LIMIT 1

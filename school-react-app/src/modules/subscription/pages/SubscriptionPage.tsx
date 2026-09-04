@@ -102,7 +102,9 @@ export function SubscriptionPage() {
   const slotsRemaining = studentLimit > 0 ? Math.max(0, studentLimit - studentsUsed) : 0;
 
   const rolePrefix = window.location.pathname.startsWith("/admin") ? "/admin" : "/owner";
-  const displayPlans = (plans || []).filter((p) => !p.is_custom);
+  const displayPlans = (plans || [])
+    .filter((p) => !p.is_custom && p.name !== "trial" && p.id !== "trial" && p.name !== "free_trial")
+    .sort((a, b) => planRank(a) - planRank(b));
   const customPlans = (plans || []).filter((p) => p.is_custom);
   const currentPlan = currentPlanOf(current, plans);
   const currentIsCustom = Boolean(current?.current_plan_is_custom);
@@ -324,7 +326,7 @@ export function SubscriptionPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {displayPlans.map((plan) => (
               <CompactPlanCard
                 key={plan.id || plan.name}
@@ -339,34 +341,41 @@ export function SubscriptionPage() {
                 onSelect={() => navigate(`${rolePrefix}/subscription/payment`, { state: { plan } })}
               />
             ))}
+            <div className="relative rounded-2xl border border-dashed border-violet-300 bg-violet-50/40 p-4 flex flex-col justify-between shadow-sm">
+              <div>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-violet-100 text-violet-700">
+                  Tailored SLA
+                </span>
+                <h3 className="text-sm font-black text-slate-900 mt-2">Larger Plan</h3>
+                <p className="text-[11px] text-slate-500 mt-1">1,000+ students, multi-campus governance & dedicated support</p>
+              </div>
+              <div className="mt-4">
+                <a
+                  href="mailto:billing@eduplexo.com?subject=Custom%20plan%20inquiry"
+                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-violet-600 hover:bg-violet-700 text-white shadow-sm transition active:scale-95"
+                >
+                  <AppIcon name="Sparkles" size={13} />
+                  <span>Contact EduPlexo</span>
+                </a>
+              </div>
+            </div>
           </div>
-
-          {customPlans.length === 0 && !currentIsCustom && (
-            <p className="text-[11px] text-slate-500 font-medium">
-              Need more capacity than Premium?{" "}
-              <a
-                href="mailto:billing@eduplexo.com?subject=Custom%20plan%20request"
-                className="text-violet-700 font-bold underline underline-offset-2"
-              >
-                Contact EduPlexo
-              </a>{" "}
-              to discuss a tailored plan for your institution.
-            </p>
-          )}
         </div>
 
         {/* ── SECTION 3: Billing activity ──────────────────────────────── */}
-        {history.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-slate-200/80 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">Billing Activity</h3>
-                <p className="text-[11px] text-slate-500 font-medium">Real subscription & payment events</p>
-              </div>
+        <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm">
+          <div className="px-5 py-4 border-b border-slate-200/80 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">Billing Activity</h3>
+              <p className="text-[11px] text-slate-500 font-medium">Real subscription & payment events</p>
+            </div>
+            {history.length > 0 && (
               <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600">
                 {history.length} event{history.length === 1 ? "" : "s"}
               </span>
-            </div>
+            )}
+          </div>
+          {history.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-wider">
@@ -405,8 +414,12 @@ export function SubscriptionPage() {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="p-8 text-center text-slate-400 text-xs font-medium">
+              No billing activity recorded yet. Future plan updates and approved payments will appear here.
+            </div>
+          )}
+        </div>
       </div>
     </SchoolShell>
   );

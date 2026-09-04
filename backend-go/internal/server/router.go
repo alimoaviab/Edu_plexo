@@ -507,6 +507,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Post("/subscription/start-trial", subH.StartTrial)
 			r.Post("/subscription/packages", subH.UpdatePackages)
 			r.Get("/subscription/history", subH.GetHistory)
+			r.Get("/subscription/receipts/{id}", subH.GetReceipt)
 
 			// Payment (School Admin)
 			r.Get("/payment/methods", subH.ListPaymentMethods)
@@ -547,6 +548,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Patch("/super-admin/schools/{id}/password", saH.UpdateAdminPassword)
 			r.Post("/super-admin/schools/{id}/approve", saH.ApproveSchool)
 			r.Post("/super-admin/schools/{id}/suspend", saH.SuspendSchool)
+			r.Post("/super-admin/schools/{id}/reactivate", saH.ReactivateSchool)
 			r.Delete("/super-admin/schools/{id}", saH.DeleteSchool)
 			r.Get("/super-admin/plans", saH.ListPlans)
 			r.Get("/super-admin/users", saH.ListUsers)

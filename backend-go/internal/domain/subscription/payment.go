@@ -333,9 +333,9 @@ func (h *Handler) UploadPayment(w http.ResponseWriter, r *http.Request) {
 			Status: "pending", SubmittedAt: time.Now(), PaymentDate: paidAt, Notes: body.Notes,
 		}
 		_, err := h.Pool.Exec(r.Context(), `
-			INSERT INTO payment_requests (id, school_id, plan_id, payment_method_id, screenshot_url, transaction_id, amount, status, notes, submitted_at, created_at)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',$8,NOW(),NOW())
-		`, pr.ID, pr.SchoolID, pr.PlanID, pr.PaymentMethodID, pr.ScreenshotURL, pr.TransactionID, pr.Amount, pr.Notes)
+			INSERT INTO payment_requests (id, school_id, plan_id, payment_method_id, screenshot_url, transaction_id, amount, status, notes, submitted_at, created_at, owner_user_id)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',$8,NOW(),NOW(),$9)
+		`, pr.ID, pr.SchoolID, pr.PlanID, pr.PaymentMethodID, pr.ScreenshotURL, pr.TransactionID, pr.Amount, pr.Notes, ctx.UserID)
 		if err != nil {
 			return nil, fmt.Errorf("upload payment: %w", err)
 		}

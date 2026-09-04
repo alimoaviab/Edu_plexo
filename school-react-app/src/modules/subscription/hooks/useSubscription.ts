@@ -1,13 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as service from "../services/subscription.service";
 import { showToast } from "@/utils/toast";
-import { tenantQueryKey } from "@/lib/query-client";
+import { ownerQueryKey } from "@/lib/query-client";
+import { useAuth } from "@/hooks/useAuth";
 
 export function useSubscription() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const ownerId = user?.id;
 
   const currentQuery = useQuery({
-    queryKey: tenantQueryKey(["subscription", "current"]),
+    queryKey: ownerQueryKey(ownerId, ["subscription", "current"]),
     queryFn: async () => {
       const res = await service.getCurrent();
       if (!res.ok) return null;
@@ -19,7 +22,7 @@ export function useSubscription() {
   });
 
   const plansQuery = useQuery({
-    queryKey: tenantQueryKey(["subscription", "plans", "v2"]),
+    queryKey: ownerQueryKey(ownerId, ["subscription", "plans", "v2"]),
     queryFn: async () => {
       const res = await service.getPlans();
       if (!res.ok) return [];
@@ -31,7 +34,7 @@ export function useSubscription() {
   });
 
   const historyQuery = useQuery({
-    queryKey: tenantQueryKey(["subscription", "history"]),
+    queryKey: ownerQueryKey(ownerId, ["subscription", "history"]),
     queryFn: async () => {
       const res = await service.getHistory();
       if (!res.ok) return [];
@@ -47,7 +50,7 @@ export function useSubscription() {
     onSuccess: (res) => {
       if (res.ok) {
         showToast("Your free trial has started! Enjoy all features.", "success");
-        queryClient.invalidateQueries({ queryKey: tenantQueryKey(["subscription"]) });
+        queryClient.invalidateQueries({ queryKey: ownerQueryKey(ownerId, ["subscription"]) });
       } else {
         showToast(res.error?.message || "Could not start trial. You may have already used your trial period.", "error");
       }
@@ -60,7 +63,7 @@ export function useSubscription() {
     onSuccess: (res) => {
       if (res.ok) {
         showToast("Subscription upgraded successfully!", "success");
-        queryClient.invalidateQueries({ queryKey: tenantQueryKey(["subscription"]) });
+        queryClient.invalidateQueries({ queryKey: ownerQueryKey(ownerId, ["subscription"]) });
       } else {
         showToast(res.error?.message || "Could not upgrade subscription. Please try again or contact support.", "error");
       }

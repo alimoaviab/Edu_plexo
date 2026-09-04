@@ -94,6 +94,17 @@ export function tenantQueryKey(parts: unknown[]): unknown[] {
   return [resource, schoolId, academicYearId, ...rest];
 }
 
+/**
+ * Build a query key prefix scoped to the authenticated owner.
+ * Subscriptions, custom plans, and billing activity are strictly owner-scoped
+ * and not dependent on school or academic year.
+ */
+export function ownerQueryKey(ownerId: string | undefined, parts: unknown[]): unknown[] {
+  if (typeof window === "undefined" || !parts.length) return parts;
+  const resolvedOwner = ownerId || localStorage.getItem("last_user_id") || "anon-owner";
+  return ["owner", resolvedOwner, ...parts];
+}
+
 
 /**
  * Clear all cached queries. Call on logout or tenant switch.

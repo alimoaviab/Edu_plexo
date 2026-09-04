@@ -32,12 +32,23 @@ func WithContext(parent context.Context, ctx *RequestContext) context.Context {
 	return context.WithValue(parent, requestContextKey, ctx)
 }
 
-// FromRequest retrieves the RequestContext stored by the auth middleware.
-// Returns nil if the request is not authenticated.
-func FromRequest(r *http.Request) *RequestContext {
-	v := r.Context().Value(requestContextKey)
+// FromContext retrieves the RequestContext from a context.Context.
+func FromContext(ctx context.Context) *RequestContext {
+	if ctx == nil {
+		return nil
+	}
+	v := ctx.Value(requestContextKey)
 	if v == nil {
 		return nil
 	}
 	return v.(*RequestContext)
+}
+
+// FromRequest retrieves the RequestContext stored by the auth middleware.
+// Returns nil if the request is not authenticated.
+func FromRequest(r *http.Request) *RequestContext {
+	if r == nil {
+		return nil
+	}
+	return FromContext(r.Context())
 }

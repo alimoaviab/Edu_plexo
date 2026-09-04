@@ -16,6 +16,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/api"
 	authpkg "github.com/eduplexo/backend-go/internal/auth"
 	"github.com/eduplexo/backend-go/internal/config"
+	"github.com/eduplexo/backend-go/internal/domain/subscription"
 	"github.com/eduplexo/backend-go/internal/domain/superadmin"
 	"github.com/eduplexo/backend-go/internal/email"
 	"github.com/eduplexo/backend-go/internal/session"
@@ -173,10 +174,10 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Status == "locked" || user.Status == "suspended" {
+	if user.Status == "locked" || (user.Status == "suspended" && user.Role != "owner") {
 		api.WriteJSON(w, http.StatusForbidden, map[string]any{
 			"ok":      false,
-			"message": "Your account has been suspended because subscription payment was not renewed. Please contact Eduplexo support at +92 306 4944326 to reactivate your account.",
+			"message": "Your school subscription is currently inactive. Please contact the Owner to renew the EduPlexo subscription.",
 			"error": map[string]any{
 				"code":          "ACCOUNT_SUSPENDED",
 				"support_phone": "+92 306 4944326",
@@ -542,6 +543,11 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 
 		h.Persist("users", newUser)
 
+		// Authoritatively establish the 14-day trial in PG so Super Admin and Owner agree immediately
+		if newUser.Role == "owner" && h.Pool != nil {
+			_ = subscription.EnsureOwnerTrial(r.Context(), h.Pool, newUser.ID)
+		}
+
 		// Generate authenticated JWT session
 		claims := authpkg.Claims{
 			SchoolID:             schoolID,
@@ -819,6 +825,11 @@ func (h *Handler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	h.Store.Unlock()
 
 	h.Persist("users", newUser)
+
+	// Authoritatively establish the 14-day trial in PG so Super Admin and Owner agree immediately
+	if newUser.Role == "owner" && h.Pool != nil {
+		_ = subscription.EnsureOwnerTrial(r.Context(), h.Pool, newUser.ID)
+	}
 
 	// Generate authenticated JWT session
 	claims := authpkg.Claims{

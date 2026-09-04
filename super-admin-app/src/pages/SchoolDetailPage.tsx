@@ -1,7 +1,16 @@
 import { AppIcon } from "shared/ui/AppIcon";
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { apiRequest } from '@/lib/api'
+import { showToast } from '@/utils/toast'
+
+interface OwnerSchoolSummary {
+  id: string
+  school_id: string
+  name: string
+  code: string
+  status: string
+}
 
 interface SchoolDetail {
   _id: string
@@ -26,6 +35,12 @@ interface SchoolDetail {
   expiry: string
   created_at: string
   updated_at: string
+  subscription_status?: string
+  is_trial?: boolean
+  days_remaining?: number
+  student_limit?: number
+  grace_ends_at?: string
+  schools?: OwnerSchoolSummary[]
 }
 
 export function SchoolDetailPage() {
@@ -36,6 +51,8 @@ export function SchoolDetailPage() {
   const [loading, setLoading] = useState(true)
   const [extending, setExtending] = useState(false)
   const [extendDays, setExtendDays] = useState(30)
+  const [confirmModal, setConfirmModal] = useState<'suspend' | 'delete' | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const loadDetails = async () => {
     setLoading(true)
@@ -54,12 +71,20 @@ export function SchoolDetailPage() {
 
   useEffect(() => { loadDetails() }, [id])
 
-  const handleStatusChange = async (newStatus: string) => {
-    const res = await apiRequest(`/api/super-admin/schools/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: newStatus, reason: 'Admin action' })
+  const handleStatusAction = async (action: 'suspend' | 'reactivate') => {
+    setIsProcessing(true)
+    const res = await apiRequest(`/api/super-admin/schools/${id}/${action}`, {
+      method: 'POST',
+      body: JSON.stringify({ reason: action === 'suspend' ? 'Super Admin manual suspension' : 'Super Admin manual reactivation' })
     })
-    if (res.ok) loadDetails()
+    setIsProcessing(false)
+    if (res.ok) {
+      showToast(`Institution ${action === 'suspend' ? 'suspended' : 'reactivated'} successfully.`, 'success')
+      setConfirmModal(null)
+      loadDetails()
+    } else {
+      showToast(res.message || `Failed to ${action} institution.`, 'error')
+    }
   }
 
   const handleExtend = async (days: number) => {
@@ -68,19 +93,23 @@ export function SchoolDetailPage() {
       body: JSON.stringify({ school_id: id, days })
     })
     if (res.ok) {
-      alert(`Granted +${days} days to ${school?.name}!`)
+      showToast(`Granted +${days} days to ${school?.name}!`, 'success')
       setExtending(false)
       loadDetails()
     } else {
-      alert(res.message || 'Failed to extend subscription.')
+      showToast(res.message || 'Failed to extend subscription.', 'error')
     }
   }
 
   const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to permanently delete "${school?.name}"? This will remove ALL data (students, teachers, classes, fees, etc.) and cannot be undone.`)) return
+    setIsProcessing(true)
     const res = await apiRequest(`/api/super-admin/schools/${id}`, { method: 'DELETE' })
+    setIsProcessing(false)
     if (res.ok) {
+      showToast('Institution deleted successfully.', 'success')
       navigate('/schools')
+    } else {
+      showToast(res.message || 'Failed to delete institution.', 'error')
     }
   }
 
@@ -137,16 +166,28 @@ export function SchoolDetailPage() {
         <div className="flex items-center gap-2">
           <span className={statusColor(school.status)}>{school.status}</span>
           {school.status === 'active' && (
-            <button onClick={() => handleStatusChange('suspended')} className="h-7 px-3 text-[10px] font-bold text-red-700 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors">
+            <button
+              onClick={() => setConfirmModal('suspend')}
+              disabled={isProcessing}
+              className="h-7 px-3 text-[10px] font-bold text-red-700 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors"
+            >
               Suspend
             </button>
           )}
           {(school.status === 'suspended' || school.status === 'expired') && (
-            <button onClick={() => handleStatusChange('active')} className="h-7 px-3 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg hover:bg-emerald-100 transition-colors">
-              Activate
+            <button
+              onClick={() => handleStatusAction('reactivate')}
+              disabled={isProcessing}
+              className="h-7 px-3 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg hover:bg-emerald-100 transition-colors"
+            >
+              Reactivate
             </button>
           )}
-          <button onClick={handleDelete} className="h-7 px-3 text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors">
+          <button
+            onClick={() => setConfirmModal('delete')}
+            disabled={isProcessing}
+            className="h-7 px-3 text-[10px] font-bold text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+          >
             Delete
           </button>
         </div>
@@ -212,6 +253,40 @@ export function SchoolDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Associated Campuses / Multi-School Card */}
+          {school.schools && school.schools.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <AppIcon name="Building2" size={18} className="text-blue-600" />
+                  Owned Campuses & Branches ({school.schools.length})
+                </h3>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Aggregated Subscription
+                </span>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {school.schools.map((s) => (
+                  <div key={s.school_id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition">
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">{s.name}</p>
+                      <p className="text-[10px] text-slate-400 font-mono">ID: {s.school_id} · Code: {s.code}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={statusColor(s.status)}>{s.status}</span>
+                      <Link
+                        to={`/schools/${s.school_id}`}
+                        className="text-[11px] font-bold text-blue-600 hover:text-blue-700"
+                      >
+                        View
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Subscription & Billing Track Record Card */}
           <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
@@ -399,6 +474,62 @@ export function SchoolDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 max-w-md w-full space-y-4 animate-fade-in-up">
+            <div className="flex items-center gap-3">
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                confirmModal === 'suspend' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+              }`}>
+                <AppIcon name={confirmModal === 'suspend' ? 'AlertTriangle' : 'Trash2'} size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  {confirmModal === 'suspend' ? 'Suspend Institution' : 'Delete Institution'}
+                </h3>
+                <p className="text-xs text-slate-500">{school.name}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              {confirmModal === 'suspend'
+                ? 'Suspending this institution will immediately block access for all teachers, admins, and students. The owner will be restricted to the billing renewal portal until reactivated.'
+                : 'Are you sure you want to permanently delete this institution? All data across campuses and students will be permanently removed. This cannot be undone.'}
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal(null)}
+                disabled={isProcessing}
+                className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={() => {
+                  if (confirmModal === 'suspend') {
+                    handleStatusAction('suspend')
+                  } else {
+                    handleDelete()
+                  }
+                }}
+                className={`px-4 py-2 text-xs font-bold text-white rounded-xl shadow-sm transition ${
+                  confirmModal === 'suspend'
+                    ? 'bg-amber-600 hover:bg-amber-700'
+                    : 'bg-red-600 hover:bg-red-700'
+                }`}
+              >
+                {isProcessing ? 'Processing…' : confirmModal === 'suspend' ? 'Confirm Suspension' : 'Permanently Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

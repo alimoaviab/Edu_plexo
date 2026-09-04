@@ -2,6 +2,7 @@ import { AppIcon } from "shared/ui/AppIcon";
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiRequest } from '@/lib/api'
+import { showToast } from '@/utils/toast'
 
 interface School {
   _id: string
@@ -32,6 +33,8 @@ export function SchoolsPage() {
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [actionModal, setActionModal] = useState<{ schoolId: string; name: string; type: 'suspend' | 'delete' } | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const loadSchools = async () => {
     setLoading(true)
@@ -50,19 +53,34 @@ export function SchoolsPage() {
 
   useEffect(() => { loadSchools() }, [statusFilter])
 
-  const handleAction = async (schoolId: string, action: 'approve' | 'suspend' | 'renew') => {
+  const handleAction = async (schoolId: string, action: 'approve' | 'suspend' | 'renew' | 'reactivate') => {
     const endpoint = action === 'renew' ? 'approve' : action
+    setIsProcessing(true)
     const res = await apiRequest(`/api/super-admin/schools/${schoolId}/${endpoint}`, {
       method: 'POST',
-      body: JSON.stringify({ reason: action === 'suspend' ? 'Admin action' : 'Subscription renewal' }),
+      body: JSON.stringify({ reason: action === 'suspend' ? 'Super Admin manual suspension' : 'Super Admin manual action' }),
     })
-    if (res.ok) loadSchools()
+    setIsProcessing(false)
+    if (res.ok) {
+      showToast(`School ${action === 'suspend' ? 'suspended' : action === 'reactivate' ? 'reactivated' : action} successfully.`, 'success')
+      setActionModal(null)
+      loadSchools()
+    } else {
+      showToast(res.message || `Failed to ${action} school.`, 'error')
+    }
   }
 
-  const handleDelete = async (schoolId: string, schoolName: string) => {
-    if (!confirm(`Are you sure you want to permanently delete "${schoolName}"? This cannot be undone.`)) return
+  const handleDelete = async (schoolId: string) => {
+    setIsProcessing(true)
     const res = await apiRequest(`/api/super-admin/schools/${schoolId}`, { method: 'DELETE' })
-    if (res.ok) loadSchools()
+    setIsProcessing(false)
+    if (res.ok) {
+      showToast('School deleted successfully.', 'success')
+      setActionModal(null)
+      loadSchools()
+    } else {
+      showToast(res.message || 'Failed to delete school.', 'error')
+    }
   }
 
   const statusBadge = (status: string) => {
@@ -229,8 +247,20 @@ export function SchoolsPage() {
                           </button>
                         )}
                         {school.status === 'active' && (
-                          <button onClick={() => handleAction(school._id, 'suspend')} className="h-7 px-2.5 text-[10px] font-bold text-red-700 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors">
+                          <button
+                            onClick={() => setActionModal({ schoolId: school._id, name: school.name, type: 'suspend' })}
+                            className="h-7 px-2.5 text-[10px] font-bold text-red-700 bg-red-50 border border-red-100 rounded-xl hover:bg-red-100 transition-colors"
+                          >
                             Suspend
+                          </button>
+                        )}
+                        {school.status === 'suspended' && (
+                          <button
+                            onClick={() => handleAction(school._id, 'reactivate')}
+                            disabled={isProcessing}
+                            className="h-7 px-2.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl hover:bg-emerald-100 transition-colors"
+                          >
+                            Reactivate
                           </button>
                         )}
                       </div>
@@ -242,6 +272,62 @@ export function SchoolsPage() {
           </table>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {actionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 max-w-md w-full space-y-4 animate-fade-in-up">
+            <div className="flex items-center gap-3">
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                actionModal.type === 'suspend' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+              }`}>
+                <AppIcon name={actionModal.type === 'suspend' ? 'AlertTriangle' : 'Trash2'} size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  {actionModal.type === 'suspend' ? 'Suspend Institution' : 'Delete Institution'}
+                </h3>
+                <p className="text-xs text-slate-500">{actionModal.name}</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              {actionModal.type === 'suspend'
+                ? 'Suspending this institution will immediately block access for all teachers, admins, and students. The owner will be restricted to the billing renewal portal until reactivated.'
+                : 'Are you sure you want to permanently delete this institution? All data across campuses and students will be permanently removed. This cannot be undone.'}
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setActionModal(null)}
+                disabled={isProcessing}
+                className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isProcessing}
+                onClick={() => {
+                  if (actionModal.type === 'suspend') {
+                    handleAction(actionModal.schoolId, 'suspend')
+                  } else {
+                    handleDelete(actionModal.schoolId)
+                  }
+                }}
+                className={`px-4 py-2 text-xs font-bold text-white rounded-xl shadow-sm transition ${
+                  actionModal.type === 'suspend'
+                    ? 'bg-amber-600 hover:bg-amber-700'
+                    : 'bg-red-600 hover:bg-red-700'
+                }`}
+              >
+                {isProcessing ? 'Processing…' : actionModal.type === 'suspend' ? 'Confirm Suspension' : 'Permanently Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

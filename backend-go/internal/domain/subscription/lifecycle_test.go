@@ -100,4 +100,18 @@ func TestCheckStudentLimitStoreAggregation(t *testing.T) {
 	if _, err := h.checkStudentLimitStore(context.Background(), "SCH-A"); err == nil {
 		t.Fatal("expected STUDENT_LIMIT_REACHED at 500/500")
 	}
+
+	// Now upgrade to custom plan with 1600 students.
+	s.Lock()
+	s.Subscriptions = append(s.Subscriptions, &store.Subscription{
+		ID: "sub-custom", SchoolID: "SCH-A", PackageID: "custom", StudentLimit: 1600,
+		Status: "active", NextRenewal: now.AddDate(0, 0, 30), CreatedAt: now.Add(time.Minute), UpdatedAt: now.Add(time.Minute),
+	})
+	s.Unlock()
+
+	// 500 students against 1600 limit → must be allowed!
+	if _, err := h.checkStudentLimitStore(context.Background(), "SCH-A"); err != nil {
+		t.Fatalf("expected allowed under custom plan limit 1600, got error: %v", err)
+	}
 }
+
