@@ -44,15 +44,12 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 	}()
 
 	return rl
-}
-
-// Limit is the middleware handler
+} // Limit is the middleware handler
 func (rl *RateLimiter) Limit(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ip := r.Header.Get("X-Forwarded-For")
-		if ip == "" {
-			ip = r.RemoteAddr
-		}
+		// Client IP is resolved from the trusted proxy chain — the client-created
+		// prefix of X-Forwarded-For is ignored (see api.ClientIP).
+		ip := api.ClientIP(r)
 
 		rl.mu.Lock()
 		v, exists := rl.visitors[ip]
@@ -69,7 +66,7 @@ func (rl *RateLimiter) Limit(next http.HandlerFunc) http.HandlerFunc {
 
 		v.count++
 		v.lastVisit = time.Now()
-		
+
 		if v.count > rl.limit {
 			rl.mu.Unlock()
 			api.WriteJSON(w, http.StatusTooManyRequests, map[string]any{

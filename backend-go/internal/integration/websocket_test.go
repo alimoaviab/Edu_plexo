@@ -31,7 +31,7 @@ func setupWSServer(t *testing.T) (*httptest.Server, *realtime.Hub, *redis.Client
 	rdb := redis.NewClient(opts)
 	t.Cleanup(func() { rdb.Close() })
 
-	hub := realtime.NewHub(rdb)
+	hub := realtime.NewHub(rdb, []string{"http://localhost:3000"})
 	t.Cleanup(func() { hub.Shutdown() })
 
 	s := &store.MemStore{

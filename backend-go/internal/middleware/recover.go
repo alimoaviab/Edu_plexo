@@ -5,9 +5,9 @@
 package middleware
 
 import (
-	"errors"
 	"log"
 	"net/http"
+	"runtime/debug"
 
 	"github.com/eduplexo/backend-go/internal/api"
 )
@@ -19,12 +19,11 @@ func Recover(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
-				log.Printf("[panic] %s %s: %v", r.Method, r.URL.Path, rec)
-				err, ok := rec.(error)
-				if !ok {
-					err = errors.New("internal server error")
-				}
-				api.WriteResult(w, api.Fail("INTERNAL_ERROR", err.Error(), 500, nil))
+				// The full panic value and stack trace stay server-side (logs);
+				// clients get the generic envelope. Panic text can leak internals
+				// (SQL errors, file paths, dependency messages) that aid attackers.
+				log.Printf("[panic] %s %s: %v\n%s", r.Method, r.URL.Path, rec, debug.Stack())
+				api.WriteResult(w, api.Fail("INTERNAL_ERROR", "An unexpected error occurred. Please try again.", 500, nil))
 			}
 		}()
 		next.ServeHTTP(w, r)

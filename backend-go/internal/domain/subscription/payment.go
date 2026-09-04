@@ -177,6 +177,21 @@ type uploadPaymentInput struct {
 
 func (h *Handler) UploadPayment(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+
+	// Submitting a subscription payment proof is a billing operation for the
+	// school/owner — students, teachers, and parents must never file payment
+	// requests on the school's behalf.
+	if ctx == nil {
+		api.WriteResult(w, api.Fail("UNAUTHENTICATED", "Authentication required.", 401, nil))
+		return
+	}
+	switch ctx.Role {
+	case "owner", "admin", "super_admin":
+	default:
+		api.WriteResult(w, api.Fail("FORBIDDEN", "You do not have permission to submit payment requests.", 403, nil))
+		return
+	}
+
 	var body uploadPaymentInput
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "Invalid JSON.", 400, nil))
