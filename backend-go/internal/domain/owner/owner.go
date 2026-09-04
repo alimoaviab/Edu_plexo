@@ -134,14 +134,14 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 	api.WriteJSON(w, http.StatusOK, map[string]any{
 		"ok": true,
 		"data": map[string]any{
-			"total_schools":           len(schools),
-			"total_campuses":          len(campuses),
-			"total_students":          totalStudents,
-			"total_teachers":          totalTeachers,
-			"total_staff":             totalStaff,
-			"active_subscriptions":    activeSubscriptions,
-			"expiring_subscriptions":  expiringSubscriptions,
-			"schools":                 schools,
+			"total_schools":          len(schools),
+			"total_campuses":         len(campuses),
+			"total_students":         totalStudents,
+			"total_teachers":         totalTeachers,
+			"total_staff":            totalStaff,
+			"active_subscriptions":   activeSubscriptions,
+			"expiring_subscriptions": expiringSubscriptions,
+			"schools":                schools,
 			"subscription": map[string]any{
 				"plan":           subPlan,
 				"status":         subStatus,
@@ -192,6 +192,12 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 		AdminEmail        string      `json:"admin_email"`
 		AdminRole         string      `json:"admin_role"`
 	}
+
+	// Canonical owner-side financial definition (shared helper) — collected =
+	// Σ invoice PaidAmount, pending = Σ outstanding. The Portfolio Analytics,
+	// Finance and Ledger modules all read the same map, so every Owner view
+	// reports identical numbers for the same concept.
+	feeTotalsBySchool := h.feeTotalsLocked(ownerSchoolIDs, nil, nil)
 
 	result := make([]schoolWithStats, 0)
 	for _, s := range h.Store.Schools {
@@ -273,14 +279,10 @@ func (h *Handler) GetSchools(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		for _, f := range h.Store.Fees {
-			if f.SchoolID == s.SchoolID {
-				totalFeeColl += f.PaidAmount
-				pend := f.Amount - f.PaidAmount
-				if pend > 0 {
-					totalFeePend += pend
-				}
-			}
+		ft := feeTotalsBySchool[s.SchoolID]
+		if ft != nil {
+			totalFeeColl = ft.Collected
+			totalFeePend = ft.Pending
 		}
 
 		result = append(result, schoolWithStats{
@@ -355,26 +357,26 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 	schoolID := fmt.Sprintf("SCH-%s", strings.ToUpper(store.NewID(""))[4:12])
 
 	newSchool := &store.School{
-		ID:            store.NewID("sch"),
-		SchoolID:      schoolID,
-		OwnerEmail:    ctx.ActorEmail,
-		OwnerUserID:   ctx.UserID,
-		CampusType:    "main",
-		Name:          body.Name,
-		Code:          code,
-		Email:         body.Email,
-		Phone:         body.Phone,
-		Address:       body.Address,
-		City:          body.City,
-		PrincipalName: body.PrincipalName,
-		Website:       body.Website,
-		LogoURL:       body.LogoURL,
-		Status:        "active",
+		ID:             store.NewID("sch"),
+		SchoolID:       schoolID,
+		OwnerEmail:     ctx.ActorEmail,
+		OwnerUserID:    ctx.UserID,
+		CampusType:     "main",
+		Name:           body.Name,
+		Code:           code,
+		Email:          body.Email,
+		Phone:          body.Phone,
+		Address:        body.Address,
+		City:           body.City,
+		PrincipalName:  body.PrincipalName,
+		Website:        body.Website,
+		LogoURL:        body.LogoURL,
+		Status:         "active",
 		ApprovalStatus: "approved",
-		ApprovedAt:    &now,
-		ApprovedBy:    "owner",
-		CreatedAt:     now,
-		UpdatedAt:     now,
+		ApprovedAt:     &now,
+		ApprovedBy:     "owner",
+		CreatedAt:      now,
+		UpdatedAt:      now,
 	}
 
 	// Create default academic year
@@ -407,21 +409,21 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 	// Create default campus with matching details
 	campusID := store.NewID("cmp")
 	newCampus := &store.Campus{
-		ID:             campusID,
-		SchoolID:       schoolID,
-		OwnerUserID:    ctx.UserID,
-		Name:           body.Name,
-		Code:           code,
-		Address:        body.Address,
-		City:           body.City,
-		Phone:          body.Phone,
-		Email:          body.Email,
-		PrincipalName:  body.PrincipalName,
-		Status:         "active",
-		Timezone:       "Asia/Karachi",
-		Currency:       "PKR",
-		CreatedAt:      now,
-		UpdatedAt:      now,
+		ID:            campusID,
+		SchoolID:      schoolID,
+		OwnerUserID:   ctx.UserID,
+		Name:          body.Name,
+		Code:          code,
+		Address:       body.Address,
+		City:          body.City,
+		Phone:         body.Phone,
+		Email:         body.Email,
+		PrincipalName: body.PrincipalName,
+		Status:        "active",
+		Timezone:      "Asia/Karachi",
+		Currency:      "PKR",
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 
 	// Create default school settings
@@ -483,7 +485,7 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 	var adminUser *store.User
 	if body.Email != "" && body.Password != "" {
 		hash, _ := authpkg.HashPassword(body.Password)
-		
+
 		nameParts := strings.SplitN(strings.TrimSpace(body.PrincipalName), " ", 2)
 		firstName := "School"
 		lastName := "Admin"
@@ -506,10 +508,10 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 				FirstName: firstName,
 				LastName:  lastName,
 			},
-			SchoolID:     schoolID,
-			CampusID:     campusID,
-			CreatedAt:    now,
-			UpdatedAt:    now,
+			SchoolID:  schoolID,
+			CampusID:  campusID,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 		h.Store.Users = append(h.Store.Users, adminUser)
 	}
@@ -1271,82 +1273,6 @@ func (h *Handler) ListSubscriptions(w http.ResponseWriter, r *http.Request) {
 // ═══════════════════════════════════════════════════════════════════════════
 // ANALYTICS
 // ═══════════════════════════════════════════════════════════════════════════
-
-// Analytics — GET /api/owner/analytics
-func (h *Handler) Analytics(w http.ResponseWriter, r *http.Request) {
-	ctx := ownerOnly(w, r)
-	if ctx == nil {
-		return
-	}
-
-	h.Store.RLock()
-	defer h.Store.RUnlock()
-
-	ownerSchoolIDs := h.ownerSchoolIDs(ctx.ActorEmail, ctx.UserID)
-
-	// Gender distribution
-	male, female, other := 0, 0, 0
-	for _, st := range h.Store.Students {
-		if !containsStr(ownerSchoolIDs, st.SchoolID) || st.Status != "active" {
-			continue
-		}
-		switch strings.ToLower(st.Gender) {
-		case "male":
-			male++
-		case "female":
-			female++
-		default:
-			other++
-		}
-	}
-
-	// Per-school student count
-	type schoolStat struct {
-		SchoolID   string `json:"school_id"`
-		SchoolName string `json:"school_name"`
-		Students   int    `json:"students"`
-		Teachers   int    `json:"teachers"`
-	}
-	var perSchool []schoolStat
-	for _, sid := range ownerSchoolIDs {
-		sc, tc := 0, 0
-		name := sid
-		for _, s := range h.Store.Schools {
-			if s.SchoolID == sid {
-				name = s.Name
-				break
-			}
-		}
-		for _, st := range h.Store.Students {
-			if st.SchoolID == sid && st.Status == "active" {
-				sc++
-			}
-		}
-		for _, t := range h.Store.Teachers {
-			if t.SchoolID == sid && t.Status == "active" {
-				tc++
-			}
-		}
-		perSchool = append(perSchool, schoolStat{
-			SchoolID:   sid,
-			SchoolName: name,
-			Students:   sc,
-			Teachers:   tc,
-		})
-	}
-
-	api.WriteJSON(w, http.StatusOK, map[string]any{
-		"ok": true,
-		"data": map[string]any{
-			"gender_distribution": map[string]int{
-				"male":   male,
-				"female": female,
-				"other":  other,
-			},
-			"per_school": perSchool,
-		},
-	})
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // NOTIFICATIONS

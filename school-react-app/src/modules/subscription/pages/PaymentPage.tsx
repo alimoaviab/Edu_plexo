@@ -91,14 +91,14 @@ export function PaymentPage() {
   const statePlan = location.state?.plan as Plan | undefined;
   const fallbackPlan = useMemo(() => {
     const sub = current?.subscription;
-    if (!sub || !sub.plan_name || sub.plan_name === "trial") return undefined;
-    const match = (plans || []).find(
-      (p) =>
-        p.id === sub.plan_name ||
-        p.name === sub.plan_name ||
-        p.name === `plan_${sub.plan_name}` ||
-        sub.plan_name.includes(p.name.toLowerCase())
-    );
+    if (!sub || !sub.plan_name || sub.plan_name === "trial") return undefined;	const match = (plans || []).find(
+			(p) =>
+				(sub.plan_id && (p.id === sub.plan_id || p.name === sub.plan_id)) ||
+				p.id === sub.plan_name ||
+				p.name === sub.plan_name ||
+				p.name === `plan_${sub.plan_name}` ||
+				sub.plan_name.toLowerCase().includes(p.name.toLowerCase())
+		);
     return match;
   }, [current, plans]);
   const plan = statePlan ?? fallbackPlan;
@@ -108,9 +108,14 @@ export function PaymentPage() {
   const [smsText, setSmsText] = useState("");
   const [transactionId, setTransactionId] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-
-  const rolePrefix = location.pathname.startsWith("/admin") ? "/admin" : "/owner";
+  const [dragOver, setDragOver] = useState(false);	const rolePrefix = location.pathname.startsWith("/admin") ? "/admin" : "/owner";
+	const planIsCurrent = Boolean(
+		current?.subscription &&
+			current.subscription.plan_name !== "trial" &&
+			((current.subscription.plan_id && (current.subscription.plan_id === plan?.id || current.subscription.plan_id === plan?.name)) ||
+				current.subscription.plan_name === plan?.name ||
+				current.subscription.plan_name === plan?.display_name)
+	);
 
   useEffect(() => {
     if (!plan) {
@@ -240,10 +245,9 @@ export function PaymentPage() {
                   Step 2 of 2
                 </span>
                 <span className="text-xs font-semibold text-slate-400">· Manual Invoice Settlement</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {statePlan ? `Upgrade to ${plan.display_name}` : `Renew ${plan.display_name}`}
-              </h1>
+              </div>					<h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+						{statePlan && !planIsCurrent ? `Upgrade to ${plan.display_name}` : `Renew ${plan.display_name}`}
+					</h1>
             </div>
           </div>
 

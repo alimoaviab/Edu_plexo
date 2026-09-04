@@ -220,18 +220,39 @@ func (h *Handler) UploadPayment(w http.ResponseWriter, r *http.Request) {
 			return nil, api.NewControlledError("VALIDATION_ERROR", "Unable to resolve your institution for billing. Please contact support.", 400, nil)
 		}
 
-		// Validate the selected package and amount against the catalog when a
-		// catalog plan is referenced (modular package-builder encodings skip
-		// this check because they have no subscription_plans row).
+		// Validate the selected package against the catalog when a catalog plan
+		// is referenced. Custom plans are OWNER-SPECIFIC: the payment must be
+		// filed by the exact owner the contract was negotiated for, and the
+		// amount must equal the negotiated price.
 		if h.Pool != nil && planID != "" {
 			var catalogPrice, catalogLimit int
+			var planOwner, planType string
 			err := h.Pool.QueryRow(r.Context(), `
-				SELECT price, student_limit FROM subscription_plans WHERE id = $1 AND is_active = true
-			`, planID).Scan(&catalogPrice, &catalogLimit)
-			if err == nil && catalogPrice > 0 && body.Amount != catalogPrice {
-				return nil, api.NewControlledError("VALIDATION_ERROR",
-					fmt.Sprintf("Amount must match the plan price (PKR %d). You submitted PKR %d.", catalogPrice, body.Amount),
-					400, nil)
+				SELECT price, student_limit, COALESCE(owner_user_id,''), COALESCE(plan_type,'standard')
+				FROM subscription_plans
+				WHERE id = $1
+				  AND (is_active = true
+				       OR EXISTS (SELECT 1 FROM subscriptions ss
+				                  WHERE ss.plan_id = subscription_plans.id AND ss.status IN ('active','scheduled','trial')))
+			`, planID).Scan(&catalogPrice, &catalogLimit, &planOwner, &planType)
+			if err != nil && err != pgx.ErrNoRows {
+				return nil, fmt.Errorf("validate plan: %w", err)
+			}
+			if err == nil {
+				// Catalog row found: enforce negotiated-plan ownership + amount.
+				// (Legacy modular package-builder encodings have no row and
+				// skip this catalog-level validation.)
+				if planType == "custom" {
+					scope, serr := ResolveOwnerScope(r.Context(), h.Pool, schoolID)
+					if serr != nil || scope.OwnerUserID == "" || scope.OwnerUserID != planOwner {
+						return nil, api.NewControlledError("FORBIDDEN", "This negotiated plan does not belong to your account.", 403, nil)
+					}
+				}
+				if catalogPrice > 0 && body.Amount != catalogPrice {
+					return nil, api.NewControlledError("VALIDATION_ERROR",
+						fmt.Sprintf("Amount must match the plan price (PKR %d). You submitted PKR %d.", catalogPrice, body.Amount),
+						400, nil)
+				}
 			}
 		}
 		var paidAt *time.Time
@@ -448,14 +469,32 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 		planName := planID
 		studentLimit := 500
 		durationDays := 30
-		var dbName string
+		var dbName, planType, planOwner string
 		err = h.Pool.QueryRow(r.Context(), `
-			SELECT name, student_limit, duration_days FROM subscription_plans WHERE id = $1 AND is_active = true
-		`, planID).Scan(&dbName, &studentLimit, &durationDays)
+			SELECT name, student_limit, duration_days, COALESCE(plan_type,'standard'), COALESCE(owner_user_id,'')
+			FROM subscription_plans WHERE id = $1 AND is_active = true
+		`, planID).Scan(&dbName, &studentLimit, &durationDays, &planType, &planOwner)
 		if err == nil {
 			planName = dbName
 		} else if err != pgx.ErrNoRows {
 			return nil, fmt.Errorf("get plan: %w", err)
+		}
+
+		// A negotiated custom plan may only be activated for the owner it was
+		// created for — never re-pointed at another tenant.
+		if planType == "custom" && (planOwner == "" || planOwner != scope.OwnerUserID) {
+			return nil, api.NewControlledError("FORBIDDEN", "This payment references a custom plan that does not belong to the payment's owner.", 403, nil)
+		}
+
+		// An ENDED custom contract (no active row at approval time) cannot be
+		// purchased anymore unless the Super Admin explicitly re-opens it.
+		if planType == "" && planID != "" {
+			var existsType string
+			_ = h.Pool.QueryRow(r.Context(), `SELECT plan_type FROM subscription_plans WHERE id = $1`, planID).Scan(&existsType)
+			if existsType == "custom" {
+				return nil, api.NewControlledError("STATE_CONFLICT",
+					"This custom plan agreement has ended and cannot be activated. Create a new agreement or renew via the Owner's Custom Plan manager.", 409, nil)
+			}
 		}
 
 		now := time.Now()
@@ -488,6 +527,14 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 
 		// ── Case 1: Trial still running → schedule the plan at trial end ─
 		if sub != nil && sub.Status == "trial" && sub.EndDate.After(now) {
+			if planType == "custom" {
+				if _, err := tx.Exec(r.Context(), `
+					UPDATE subscription_plans SET is_active = true, effective_until = NULL, updated_at = NOW()
+					WHERE id = $1 AND plan_type = 'custom'
+				`, planID); err != nil {
+					return nil, fmt.Errorf("reactivate custom contract: %w", err)
+				}
+			}
 			if _, err := tx.Exec(r.Context(), `
 				INSERT INTO subscription_history (id, school_id, plan_name, student_limit, amount,
 					payment_status, start_date, end_date, action, created_at)
@@ -516,11 +563,19 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 			newEnd := sub.EndDate.AddDate(0, 0, durationDays)
 			if _, err := tx.Exec(r.Context(), `
 				UPDATE subscriptions
-				SET plan_name = $2, student_limit = $3, price = $4, end_date = $5,
+				SET plan_name = $2, plan_id = $6, student_limit = $3, price = $4, end_date = $5,
 				    updated_at = NOW()
 				WHERE id = $1
-			`, sub.ID, planName, studentLimit, amount, newEnd); err != nil {
+			`, sub.ID, planName, studentLimit, amount, newEnd, planID); err != nil {
 				return nil, fmt.Errorf("extend subscription: %w", err)
+			}
+			if planType == "custom" {
+				if _, err := tx.Exec(r.Context(), `
+					UPDATE subscription_plans SET is_active = true, effective_until = NULL, updated_at = NOW()
+					WHERE id = $1 AND plan_type = 'custom'
+				`, planID); err != nil {
+					return nil, fmt.Errorf("reactivate custom contract: %w", err)
+				}
 			}
 			if _, err := tx.Exec(r.Context(), `
 				UPDATE payment_requests SET status = 'activated', applied_at = NOW() WHERE id = $1
@@ -565,11 +620,19 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 		}
 		subID := store.NewID("sub")
 		if _, err := tx.Exec(r.Context(), `
-			INSERT INTO subscriptions (id, school_id, owner_user_id, plan_name, student_limit, price,
+			INSERT INTO subscriptions (id, school_id, owner_user_id, plan_id, plan_name, student_limit, price,
 				currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
-			VALUES ($1, $2, $3, $4, $5, $6, 'PKR', $7, $8, 'active', false, true, NOW(), NOW())
-		`, subID, targetSchool, scope.OwnerUserID, planName, studentLimit, amount, now, now.AddDate(0, 0, durationDays)); err != nil {
+			VALUES ($1, $2, $3, $4, $5, $6, $7, 'PKR', $8, $9, 'active', false, true, NOW(), NOW())
+		`, subID, targetSchool, scope.OwnerUserID, planID, planName, studentLimit, amount, now, now.AddDate(0, 0, durationDays)); err != nil {
 			return nil, fmt.Errorf("create subscription: %w", err)
+		}
+		if planType == "custom" {
+			if _, err := tx.Exec(r.Context(), `
+				UPDATE subscription_plans SET is_active = true, effective_until = NULL, updated_at = NOW()
+				WHERE id = $1 AND plan_type = 'custom'
+			`, planID); err != nil {
+				return nil, fmt.Errorf("reactivate custom contract: %w", err)
+			}
 		}
 		if _, err := tx.Exec(r.Context(), `
 			UPDATE payment_requests SET status = 'activated', applied_at = NOW() WHERE id = $1

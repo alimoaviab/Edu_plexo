@@ -67,24 +67,29 @@ export default function OwnerSubscriptionScreen() {
         },
       ],
     );
-  };
+  };	const handleUpgrade = (plan: Plan) => {
+		router.push({
+			pathname: '/(owner)/payment',
+			params: {
+				planId: plan.id,
+				planName: plan.name,
+				displayName: plan.display_name,
+				price: String(plan.price),
+				studentLimit: String(plan.student_limit),
+			},
+		} as never);
+	};
 
-  const handleUpgrade = (plan: Plan) => {
-    router.push({
-      pathname: '/(owner)/payment',
-      params: {
-        planId: plan.id,
-        planName: plan.name,
-        displayName: plan.display_name,
-        price: String(plan.price),
-        studentLimit: String(plan.student_limit),
-      },
-    } as never);
-  };
-
-  const handleCustomPlan = () => {
-    router.push('/(owner)/custom-plan' as never);
-  };
+	const isCurrentPlan = (plan: Plan) => {
+		const subName = subscription?.plan_name ?? '';
+		if (!subscription || !subName || subName === 'trial') return false;
+		return (
+			(subscription.plan_id != null && (subscription.plan_id === plan.id || subscription.plan_id === plan.name)) ||
+			plan.id === subName ||
+			plan.name === subName ||
+			plan.display_name === subName
+		);
+	};
 
   if (isLoading) {
     return (
@@ -139,24 +144,19 @@ export default function OwnerSubscriptionScreen() {
             </Text>
           </View>
 
-          <View style={styles.plansContainer}>
-            {plans.map((plan) => {
-              const isCurrent = subscription?.plan_name === plan.name;
-              return (
-                <PricingCard
-                  key={plan.name}
-                  plan={plan}
-                  isCurrentPlan={isCurrent}
-                  canTrial={canTrial}
-                  onStartTrial={() => handleStartTrial(plan)}
-                  onUpgrade={() => handleUpgrade(plan)}
-                  onManualSubscribe={handleCustomPlan}
-                  isUpgrading={isUpgrading}
-                  isStartingTrial={isStartingTrial}
-                  sub={subscription}
-                />
-              );
-            })}
+          <View style={styles.plansContainer}>			{plans.map((plan) => (
+				<PricingCard
+					key={plan.id || plan.name}
+					plan={plan}
+					isCurrentPlan={isCurrentPlan(plan)}
+					canTrial={canTrial}
+					onStartTrial={() => handleStartTrial(plan)}
+					onUpgrade={() => handleUpgrade(plan)}
+					isUpgrading={isUpgrading}
+					isStartingTrial={isStartingTrial}
+					sub={subscription}
+				/>
+			))}
           </View>
 
           {/* Subscription History Section */}

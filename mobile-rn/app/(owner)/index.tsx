@@ -47,7 +47,11 @@ const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.78;
 const QUICK_ACTIONS: { key: string; label: string; icon: IconName; href: string }[] = [
   { key: 'schools', label: 'My Schools', icon: 'building', href: '/(owner)/schools' },
   { key: 'onboard', label: 'Onboard Campus', icon: 'plus', href: '/(owner)/schools' },
-  { key: 'subscription', label: 'Subscription', icon: 'wallet', href: '/(owner)/subscription' },
+  { key: 'analytics', label: 'Analytics', icon: 'chart', href: '/(owner)/analytics' },
+  { key: 'ledger', label: 'Ledger', icon: 'clipboard', href: '/(owner)/ledger' },
+  { key: 'finance', label: 'Finance', icon: 'wallet', href: '/(owner)/finance' },
+  { key: 'alerts', label: 'Alerts', icon: 'bell', href: '/(owner)/alerts' },
+  { key: 'subscription', label: 'Subscription', icon: 'shield', href: '/(owner)/subscription' },
 ];
 
 type Accent = 'primary' | 'success' | 'warning' | 'error' | 'neutral';

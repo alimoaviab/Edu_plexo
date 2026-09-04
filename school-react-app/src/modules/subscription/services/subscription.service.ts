@@ -10,12 +10,18 @@ export interface Plan {
   features: string[];
   is_custom: boolean;
   popular: boolean;
+  // ── custom contract / catalog metadata (backend-driven) ──
+  duration_days?: number;
+  description?: string;
+  status?: string; // bound subscription status: active | scheduled | trial | ""
+  ends_at?: string;
 }
 
 export interface Subscription {
   id: string;
   school_id: string;
   owner_user_id?: string;
+  plan_id?: string;
   plan_name: string;
   student_limit: number;
   price: number;
@@ -76,6 +82,12 @@ export interface CurrentSubscription {
   in_grace_period?: boolean;
   can_upgrade?: boolean;
   can_renew?: boolean;
+  // ── Owner-specific negotiated custom plan state ──
+  current_plan_is_custom?: boolean;
+  custom_plan_ending?: boolean;
+  custom_plan_ends_at?: string;
+  scheduled_plan?: string;
+  scheduled_plan_starts_at?: string;
 }
 
 export interface HistoryEntry {

@@ -11,7 +11,6 @@ interface PricingCardProps {
   canTrial: boolean;
   onStartTrial: () => void;
   onUpgrade: () => void;
-  onManualSubscribe: () => void;
   isUpgrading: boolean;
   isStartingTrial: boolean;
   sub: Subscription | null;
@@ -23,18 +22,19 @@ export function PricingCard({
   canTrial,
   onStartTrial,
   onUpgrade,
-  onManualSubscribe,
   isUpgrading,
   isStartingTrial,
   sub,
 }: PricingCardProps) {
   const isExpired = sub?.status === 'expired' || sub?.status === 'cancelled' || sub?.status === 'canceled';
+  const isScheduled = plan.status === 'scheduled';
 
   return (
     <View
       style={[
         styles.card,
         plan.popular ? styles.cardPopular : styles.cardDefault,
+        plan.is_custom ? styles.cardCustom : null,
         isCurrentPlan ? styles.cardCurrent : null,
         shadows.card,
       ]}
@@ -43,6 +43,13 @@ export function PricingCard({
       {plan.popular ? (
         <View style={styles.popularBadge}>
           <Text style={styles.popularBadgeText}>MOST POPULAR</Text>
+        </View>
+      ) : null}
+
+      {/* Custom Plan Badge */}
+      {plan.is_custom ? (
+        <View style={styles.customBadge}>
+          <Text style={styles.customBadgeText}>NEGOTIATED CUSTOM PLAN</Text>
         </View>
       ) : null}
 
@@ -58,7 +65,12 @@ export function PricingCard({
         <Text style={styles.planName}>{plan.display_name}</Text>
         <View style={styles.priceWrap}>
           {plan.is_custom ? (
-            <Text style={styles.customPriceText}>Custom Modules</Text>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceNumber}>
+                {plan.price > 0 ? plan.price.toLocaleString() : '—'}
+              </Text>
+              <Text style={styles.priceUnit}>{plan.currency || 'PKR'}/mo</Text>
+            </View>
           ) : (
             <View style={styles.priceRow}>
               <Text style={styles.priceNumber}>{plan.price.toLocaleString()}</Text>
@@ -67,8 +79,13 @@ export function PricingCard({
           )}
         </View>
         <Text style={styles.capacityText}>
-          Up to <Text style={styles.capacityHighlight}>{plan.student_limit}+</Text> students
+          Up to <Text style={styles.capacityHighlight}>{plan.student_limit.toLocaleString()}</Text> students
         </Text>
+        {plan.is_custom ? (
+          <Text style={styles.customNote}>
+            {plan.description || 'Negotiated specifically for your institution'}
+          </Text>
+        ) : null}
       </View>
 
       {/* Divider */}
@@ -84,22 +101,45 @@ export function PricingCard({
             <Text style={styles.featureText}>{feature}</Text>
           </View>
         ))}
-      </View>
-
-      {/* Action Button */}
-      <View style={styles.actionWrap}>
-        {plan.is_custom ? (
-          <Pressable
-            onPress={onManualSubscribe}
-            style={({ pressed }) => [styles.btnOutline, pressed && styles.pressed]}
-          >
-            <Text style={styles.btnOutlineText}>Build Your Own Plan</Text>
-          </Pressable>
-        ) : isCurrentPlan ? (
-          <View style={styles.btnDisabled}>
-            <Text style={styles.btnDisabledText}>Current Plan</Text>
-          </View>
-        ) : canTrial && !plan.is_custom ? (
+      </View>		{/* Action Button */}
+		<View style={styles.actionWrap}>
+			{isCurrentPlan ? (
+				isExpired ? (
+					<Pressable
+						onPress={onUpgrade}
+						disabled={isUpgrading}
+						style={({ pressed }) => [styles.btnPrimary, pressed && styles.pressed]}
+					>
+						{isUpgrading ? (
+							<ActivityIndicator size="small" color={colors.white} />
+						) : (
+							<Text style={styles.btnPrimaryText}>Renew Subscription</Text>
+						)}
+					</Pressable>
+				) : (
+					<View style={styles.btnDisabled}>
+						<Text style={styles.btnDisabledText}>Current Plan</Text>
+					</View>
+				)
+			) : plan.is_custom ? (
+				isScheduled ? (
+					<View style={styles.btnDisabled}>
+						<Text style={styles.btnDisabledText}>Scheduled</Text>
+					</View>
+				) : (
+					<Pressable
+						onPress={onUpgrade}
+						disabled={isUpgrading}
+						style={({ pressed }) => [styles.btnCustom, pressed && styles.pressed]}
+					>
+						{isUpgrading ? (
+							<ActivityIndicator size="small" color={colors.white} />
+						) : (
+							<Text style={styles.btnCustomText}>Pay for This Plan</Text>
+						)}
+					</Pressable>
+				)
+			) : canTrial && !plan.is_custom ? (
           <Pressable
             onPress={onStartTrial}
             disabled={isStartingTrial}
@@ -125,11 +165,10 @@ export function PricingCard({
           >
             {isUpgrading ? (
               <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <Text style={styles.btnPrimaryText}>
-                {isExpired ? 'Renew Subscription' : 'Upgrade Plan'}
-              </Text>
-            )}
+            ) : (					<Text style={styles.btnPrimaryText}>
+						{isExpired ? 'Renew Subscription' : 'Upgrade Plan'}
+					</Text>
+				)}
           </Pressable>
         )}
       </View>
@@ -281,22 +320,45 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray900,
     paddingVertical: 12,
     borderRadius: radius.lg,
-  },
-  btnOutline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    paddingVertical: 12,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primaryLight,
-  },
-  btnOutlineText: {
-    ...typography.bodySm,
-    color: colors.primary,
-    fontWeight: '800',
-  },
+  },	btnCustom: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		justifyContent: 'center',
+		backgroundColor: '#6D28D9',
+		paddingVertical: 12,
+		borderRadius: radius.lg,
+	},
+	btnCustomText: {
+		...typography.bodySm,
+		color: colors.white,
+		fontWeight: '800',
+	},
+	cardCustom: {
+		borderColor: '#C4B5FD',
+	},
+	customBadge: {
+		position: 'absolute',
+		top: -12,
+		left: 20,
+		backgroundColor: '#6D28D9',
+		paddingHorizontal: 10,
+		paddingVertical: 3,
+		borderRadius: radius.full,
+	},
+	customBadgeText: {
+		...typography.caption,
+		color: colors.white,
+		fontWeight: '900',
+		fontSize: 9,
+		letterSpacing: 0.5,
+	},
+	customNote: {
+		...typography.caption,
+		color: '#6D28D9',
+		fontWeight: '600',
+		marginTop: 4,
+		textAlign: 'center',
+	},
   btnDisabled: {
     alignItems: 'center',
     justifyContent: 'center',

@@ -191,6 +191,13 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Delete("/owner/admins/{id}", owH.DeleteAdmin)
 			r.Get("/owner/subscriptions", owH.ListSubscriptions)
 			r.Get("/owner/analytics", owH.Analytics)
+			r.Get("/owner/ledger", owH.Ledger)
+			r.Get("/owner/finance", owH.Finance)
+			r.Get("/owner/alerts", owH.Alerts)
+			r.Get("/owner/budgets", owH.ListBudgets)
+			r.Post("/owner/budgets", owH.CreateBudget)
+			r.Patch("/owner/budgets/{id}", owH.UpdateBudget)
+			r.Delete("/owner/budgets/{id}", owH.DeleteBudget)
 			r.Get("/owner/notifications", owH.Notifications)
 
 			edxH := eduplexoextension.New(s, saveFn)
@@ -553,6 +560,14 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Put("/super-admin/packages/{id}", pkgH.Update)
 			r.Delete("/super-admin/packages/{id}", pkgH.Delete)
 			r.Post("/super-admin/packages/{id}/toggle", pkgH.Toggle)
+
+			// Super Admin — Owner-specific negotiated Custom Plans
+			r.Get("/super-admin/owners/search", subH.OwnersSearch)
+			r.Get("/super-admin/owners/{ownerID}/custom-plans", subH.OwnerCustomPlansDetail)
+			r.Post("/super-admin/owners/{ownerID}/custom-plans", subH.CreateCustomPlan)
+			r.Patch("/super-admin/owners/{ownerID}/custom-plans/{planID}", subH.UpdateCustomPlan)
+			r.Post("/super-admin/owners/{ownerID}/custom-plans/{planID}/activate", subH.ActivateCustomPlan)
+			r.Post("/super-admin/owners/{ownerID}/custom-plans/{planID}/end", subH.EndCustomPlan)
 
 			// Subscriptions
 			r.Get("/super-admin/subscriptions", subH.AdminListSubscriptions)

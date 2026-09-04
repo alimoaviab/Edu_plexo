@@ -39,6 +39,7 @@ const (
 	PhaseExpired       = "expired"
 	PhaseGrace         = "grace"
 	PhaseSuspended     = "suspended"
+	PhaseScheduled     = "scheduled" // future-dated plan, not yet current
 )
 
 // OwnerScope is the tenant unit for subscription billing: one owner plus all
@@ -204,7 +205,32 @@ func ReconcileScope(ctx context.Context, pool *pgxpool.Pool, scope OwnerScope) e
 		return fmt.Errorf("reconcile suspend: %w", err)
 	}
 
-	// 3. Apply an approved payment when there is no active/trial period.
+	// 3. Promote due SCHEDULED rows (custom plan / future-dated assignment).
+	//    A scheduled row only becomes current when its start_date arrives; a
+	//    single owner must never hold two simultaneous current entitlements.
+	if _, err := pool.Exec(ctx, `
+		UPDATE subscriptions cur
+		SET status = 'cancelled', updated_at = NOW()
+		FROM subscriptions sched
+		WHERE sched.status = 'scheduled'
+		  AND sched.start_date <= NOW()
+		  AND (sched.school_id = ANY($1) OR sched.owner_user_id = ANY($2))
+		  AND (cur.school_id = sched.school_id OR cur.owner_user_id = sched.owner_user_id)
+		  AND cur.status IN ('active', 'trial')
+	`, scope.SchoolIDs, ownerIDs); err != nil {
+		return fmt.Errorf("reconcile cancel-overlap: %w", err)
+	}
+	if _, err := pool.Exec(ctx, `
+		UPDATE subscriptions
+		SET status = 'active', grace_ends_at = NULL, updated_at = NOW()
+		WHERE (school_id = ANY($1) OR owner_user_id = ANY($2))
+		  AND status = 'scheduled'
+		  AND start_date <= NOW()
+	`, scope.SchoolIDs, ownerIDs); err != nil {
+		return fmt.Errorf("reconcile promote scheduled: %w", err)
+	}
+
+	// 4. Apply an approved payment when there is no active/trial period.
 	var hasActive bool
 	err := pool.QueryRow(ctx, `
 		SELECT EXISTS(
@@ -345,11 +371,21 @@ func ActivateApprovedPayment(ctx context.Context, pool *pgxpool.Pool, scope Owne
 	}
 	subID := store.NewID("sub")
 	if _, err := tx.Exec(ctx, `
-		INSERT INTO subscriptions (id, school_id, owner_user_id, plan_name, student_limit, price,
+		INSERT INTO subscriptions (id, school_id, owner_user_id, plan_id, plan_name, student_limit, price,
 			currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, 'PKR', $7, $8, 'active', false, true, NOW(), NOW())
-	`, subID, targetSchool, scope.OwnerUserID, planName, studentLimit, amount, start, end); err != nil {
+		VALUES ($1, $2, $3, $4, $5, $6, $7, 'PKR', $8, $9, 'active', false, true, NOW(), NOW())
+	`, subID, targetSchool, scope.OwnerUserID, planID, planName, studentLimit, amount, start, end); err != nil {
 		return nil, false, fmt.Errorf("create subscription: %w", err)
+	}
+
+	// An approved payment on a custom contract re-activates the contract
+	// (renewal after a Super Admin ended it is an explicit re-commitment).
+	if planID != "" {
+		_, _ = tx.Exec(ctx, `
+			UPDATE subscription_plans
+			SET is_active = true, effective_until = NULL, updated_at = NOW()
+			WHERE id = $1 AND plan_type = 'custom'
+		`, planID)
 	}
 
 	// History: subscribe | renew.
@@ -392,6 +428,11 @@ func DerivePhase(sub *Subscription) string {
 	switch sub.Status {
 	case "suspended":
 		return PhaseSuspended
+	case "scheduled":
+		if sub.StartDate.After(now) {
+			return PhaseScheduled
+		}
+		return PhaseExpired // due but never promoted — treat as lapsed
 	case "active":
 		if now.After(sub.EndDate) {
 			return PhaseExpired
@@ -450,8 +491,18 @@ func TrialDaysFromSettings() int {
 
 // ─── Owner subscription lookup ────────────────────────────────────────────
 
-// GetOwnerSubscription returns the latest authoritative subscription row for
-// the owner scope (any status — active, trial, expired, suspended).
+// GetOwnerSubscription returns the owner scope's current entitlement row.
+//
+// Row precedence (status-aware, never a blind "latest created"):
+//
+//	0. live current period     — active/trial whose window covers now
+//	1. due scheduled           — status scheduled, start_date already reached
+//	2. upcoming scheduled      — future-dated scheduled row (next plan)
+//	3. lapsed / suspended      — expired | cancelled | suspended (state shown)
+//
+// A scheduled row therefore never shadows an active period before its
+// effective date, which keeps capacity and phase correct across plan
+// transitions (standard → scheduled custom plan etc.).
 func GetOwnerSubscription(ctx context.Context, pool *pgxpool.Pool, scope OwnerScope) (*Subscription, error) {
 	if pool == nil || len(scope.SchoolIDs) == 0 {
 		return nil, nil
@@ -459,15 +510,22 @@ func GetOwnerSubscription(ctx context.Context, pool *pgxpool.Pool, scope OwnerSc
 	var sub Subscription
 	var trialStart, trialEnd, graceEnd *time.Time
 	err := pool.QueryRow(ctx, `
-		SELECT id, school_id, COALESCE(owner_user_id, ''), plan_name, student_limit, price,
+		SELECT id, school_id, COALESCE(owner_user_id, ''), COALESCE(plan_id, ''), plan_name, student_limit, price,
 		       COALESCE(currency, 'PKR'), start_date, end_date, status, is_trial, trial_used,
 		       trial_start_date, trial_end_date, grace_ends_at, created_at, updated_at
 		FROM subscriptions
 		WHERE (school_id = ANY($1) OR owner_user_id = $2)
-		ORDER BY created_at DESC, start_date DESC
+		ORDER BY CASE
+			WHEN status IN ('active', 'trial') AND start_date <= NOW() AND end_date > NOW() THEN 0
+			WHEN status = 'scheduled' AND start_date <= NOW() THEN 1
+			WHEN status = 'scheduled' THEN 2
+			WHEN status IN ('expired', 'cancelled', 'suspended') THEN 3
+			ELSE 4
+		END,
+		created_at DESC, start_date DESC
 		LIMIT 1
 	`, scope.SchoolIDs, scope.OwnerUserID).Scan(
-		&sub.ID, &sub.SchoolID, &sub.OwnerUserID, &sub.PlanName, &sub.StudentLimit, &sub.Price,
+		&sub.ID, &sub.SchoolID, &sub.OwnerUserID, &sub.PlanID, &sub.PlanName, &sub.StudentLimit, &sub.Price,
 		&sub.Currency, &sub.StartDate, &sub.EndDate, &sub.Status, &sub.IsTrial, &sub.TrialUsed,
 		&trialStart, &trialEnd, &graceEnd, &sub.CreatedAt, &sub.UpdatedAt)
 	if err == pgx.ErrNoRows {

@@ -32,6 +32,10 @@ export default function OwnerLayout() {
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       <Tabs.Screen name="payment" options={{ href: null, title: 'Upgrade Payment' }} />
       <Tabs.Screen name="custom-plan" options={{ href: null, title: 'Build Your Own Plan' }} />
+      <Tabs.Screen name="analytics" options={{ href: null, title: 'Portfolio Analytics' }} />
+      <Tabs.Screen name="ledger" options={{ href: null, title: 'Ledger' }} />
+      <Tabs.Screen name="finance" options={{ href: null, title: 'Finance & Budgets' }} />
+      <Tabs.Screen name="alerts" options={{ href: null, title: 'Alerts & Insights' }} />
     </Tabs>
   );
 }

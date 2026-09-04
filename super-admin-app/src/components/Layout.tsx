@@ -5,14 +5,15 @@ import { apiRequest, clearStoredSession } from '@/lib/api'
 import { ToastHost } from '@/utils/toast'
 
 const navItems = [
-  { label: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard' },
-  { label: 'Owners & Schools', href: '/schools', icon: 'Building2' },
-  { label: 'Payments', href: '/payments', icon: 'CreditCard' },
-  { label: 'Subscriptions', href: '/subscriptions', icon: 'Award' },
-  { label: 'Packages', href: '/packages', icon: 'Package' },
-  { label: 'AI Usage', href: '/ai-usage', icon: 'Bot' },
-  { label: 'Users', href: '/users', icon: 'Users' },
-  { label: 'Settings', href: '/settings', icon: 'Settings' },
+	{ label: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard' },
+	{ label: 'Owners & Schools', href: '/schools', icon: 'Building2' },
+	{ label: 'Payments', href: '/payments', icon: 'CreditCard' },
+	{ label: 'Subscriptions', href: '/subscriptions', icon: 'Award' },
+	{ label: 'Custom Plans', href: '/custom-plans', icon: 'FileText' },
+	{ label: 'Packages', href: '/packages', icon: 'Package' },
+	{ label: 'AI Usage', href: '/ai-usage', icon: 'Bot' },
+	{ label: 'Users', href: '/users', icon: 'Users' },
+	{ label: 'Settings', href: '/settings', icon: 'Settings' },
 ]
 
 interface SAUser {

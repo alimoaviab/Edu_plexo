@@ -32,16 +32,23 @@ import (
 
 // ─── Plan Definitions ────────────────────────────────────────────────────
 
+// ─── Plan definitions also carry optional catalog metadata ───────────────
+// (duration_days is surfaced for owner custom contracts)
+
 type Plan struct {
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	DisplayName  string   `json:"display_name"`
-	Price        int      `json:"price"`
-	Currency     string   `json:"currency"`
-	StudentLimit int      `json:"student_limit"`
-	Features     []string `json:"features"`
-	IsCustom     bool     `json:"is_custom"`
-	Popular      bool     `json:"popular"`
+	ID           string     `json:"id"`
+	Name         string     `json:"name"`
+	DisplayName  string     `json:"display_name"`
+	Price        int        `json:"price"`
+	Currency     string     `json:"currency"`
+	StudentLimit int        `json:"student_limit"`
+	DurationDays int        `json:"duration_days,omitempty"`
+	Features     []string   `json:"features"`
+	IsCustom     bool       `json:"is_custom"`
+	Popular      bool       `json:"popular"`
+	Description  string     `json:"description,omitempty"`
+	Status       string     `json:"status,omitempty"` // bound subscription status: active | scheduled | trial | ""
+	EndsAt       *time.Time `json:"ends_at,omitempty"`
 }
 
 var AvailablePlans = []Plan{
@@ -96,23 +103,6 @@ var AvailablePlans = []Plan{
 		IsCustom: false,
 		Popular:  false,
 	},
-	{
-		ID:           "plan_custom",
-		Name:         "plan_custom",
-		DisplayName:  "Custom Plan",
-		Price:        0,
-		Currency:     "PKR",
-		StudentLimit: 1200,
-		Features: []string{
-			"Everything in Premium",
-			"Dedicated Account Manager",
-			"Enterprise Features",
-			"Custom Integrations",
-			"Custom Student Limit",
-		},
-		IsCustom: true,
-		Popular:  false,
-	},
 }
 
 // ─── Subscription Model ──────────────────────────────────────────────────
@@ -121,6 +111,7 @@ type Subscription struct {
 	ID             string     `json:"id"`
 	SchoolID       string     `json:"school_id"`
 	OwnerUserID    string     `json:"owner_user_id,omitempty"`
+	PlanID         string     `json:"plan_id,omitempty"`
 	PlanName       string     `json:"plan_name"`
 	StudentLimit   int        `json:"student_limit"`
 	Price          int        `json:"price"`
@@ -200,19 +191,25 @@ type CurrentResponse struct {
 	PackageBuilderRequired bool            `json:"package_builder_required"`
 	PendingPayment         *PaymentRequest `json:"pending_payment,omitempty"`
 	// ── Backend-derived lifecycle state (frontend renders, never invents) ──
-	Phase            string         `json:"phase"`
-	PaymentStatus    string         `json:"payment_status"` // none | pending | approved
-	NextPlan         string         `json:"next_plan,omitempty"`
-	NextPlanStartAt  *time.Time     `json:"next_plan_start_at,omitempty"`
-	GraceEndsAt      *time.Time     `json:"grace_ends_at,omitempty"`
-	SuspendsAt       *time.Time     `json:"suspends_at,omitempty"`
-	RenewsAt         *time.Time     `json:"renews_at,omitempty"`
-	TrialEndsAt      *time.Time     `json:"trial_ends_at,omitempty"`
-	ApprovedPayment  *PaymentRequest `json:"approved_payment,omitempty"`
-	IsSuspended      bool           `json:"is_suspended"`
-	InGracePeriod    bool           `json:"in_grace_period"`
-	CanUpgrade       bool           `json:"can_upgrade"`
-	CanRenew         bool           `json:"can_renew"`
+	Phase                string          `json:"phase"`
+	PaymentStatus        string          `json:"payment_status"` // none | pending | approved
+	NextPlan             string          `json:"next_plan,omitempty"`
+	NextPlanStartAt      *time.Time      `json:"next_plan_start_at,omitempty"`
+	GraceEndsAt          *time.Time      `json:"grace_ends_at,omitempty"`
+	SuspendsAt           *time.Time      `json:"suspends_at,omitempty"`
+	RenewsAt             *time.Time      `json:"renews_at,omitempty"`
+	TrialEndsAt          *time.Time      `json:"trial_ends_at,omitempty"`
+	ApprovedPayment      *PaymentRequest `json:"approved_payment,omitempty"`
+	IsSuspended          bool            `json:"is_suspended"`
+	InGracePeriod        bool            `json:"in_grace_period"`
+	CanUpgrade           bool            `json:"can_upgrade"`
+	CanRenew             bool            `json:"can_renew"`
+	// ── Owner-specific negotiated custom plan state ───────────────────────
+	CurrentPlanIsCustom   bool       `json:"current_plan_is_custom"`
+	CustomPlanEnding      bool       `json:"custom_plan_ending"` // contract retired, transition window running
+	CustomPlanEndsAt      *time.Time `json:"custom_plan_ends_at,omitempty"`
+	ScheduledPlan         string     `json:"scheduled_plan,omitempty"`
+	ScheduledPlanStartsAt *time.Time `json:"scheduled_plan_starts_at,omitempty"`
 }
 
 func (h *Handler) resolveSchoolID(ctx *api.RequestContext) string {
@@ -392,6 +389,47 @@ func (h *Handler) getCurrentPG(r *http.Request, ctx *api.RequestContext, schoolI
 		nextPlanStart = &start
 	}
 
+	// ── Custom-plan state (negotiated owner contract) ───────────────────
+	currentPlanIsCustom := false
+	customPlanEnding := false
+	var customPlanEndsAt *time.Time
+	if sub != nil && sub.PlanID != "" && sub.PlanName != "trial" {
+		var ptype string
+		var isActive bool
+		if err := h.Pool.QueryRow(r.Context(), `
+			SELECT COALESCE(plan_type, 'standard'), COALESCE(is_active, true)
+			FROM subscription_plans WHERE id = $1
+		`, sub.PlanID).Scan(&ptype, &isActive); err == nil {
+			currentPlanIsCustom = ptype == "custom"
+			customPlanEnding = currentPlanIsCustom && !isActive
+			if customPlanEnding {
+				e := sub.EndDate
+				customPlanEndsAt = &e
+			}
+		}
+	}
+
+	// A future-dated scheduled plan (e.g. custom contract effective at the
+	// next period boundary) is surfaced separately from payment approvals.
+	var scheduledPlan string
+	var scheduledStart *time.Time
+	if sub != nil && (sub.Status == "active" || sub.Status == "trial") {
+		var spID, spName string
+		var start time.Time
+		if err := h.Pool.QueryRow(r.Context(), `
+			SELECT plan_id, plan_name, start_date FROM subscriptions
+			WHERE (school_id = ANY($1) OR owner_user_id = $2)
+			  AND status = 'scheduled' AND start_date > NOW()
+			ORDER BY start_date ASC LIMIT 1
+		`, scope.SchoolIDs, scope.OwnerUserID).Scan(&spID, &spName, &start); err == nil {
+			scheduledPlan = spName
+			if scheduledPlan == "" {
+				scheduledPlan = spID
+			}
+			scheduledStart = &start
+		}
+	}
+
 	var graceEndsAt, suspendsAt, renewsAt, trialEndsAt *time.Time
 	if sub != nil {
 		if sub.GraceEndsAt != nil {
@@ -445,6 +483,11 @@ func (h *Handler) getCurrentPG(r *http.Request, ctx *api.RequestContext, schoolI
 		InGracePeriod:          phase == PhaseGrace || phase == PhaseTrialExpired,
 		CanUpgrade:             canUpgrade,
 		CanRenew:               canRenew,
+		CurrentPlanIsCustom:    currentPlanIsCustom,
+		CustomPlanEnding:       customPlanEnding,
+		CustomPlanEndsAt:       customPlanEndsAt,
+		ScheduledPlan:          scheduledPlan,
+		ScheduledPlanStartsAt:  scheduledStart,
 	}, nil
 }
 
@@ -553,12 +596,38 @@ func (h *Handler) getCurrentStore(r *http.Request, ctx *api.RequestContext, scho
 
 func (h *Handler) GetPlans(w http.ResponseWriter, r *http.Request) {
 	if h.Pool != nil {
+		// Owner-scoped custom plans: only the authenticated OWNER sees their
+		// own negotiated contracts. Admins/teachers/super_admins never do.
+		ctx := api.FromRequest(r)
+		ownerID := ""
+		if ctx != nil {
+			if ctx.Role == "owner" && ctx.UserID != "" {
+				ownerID = ctx.UserID
+			} else if ctx.SchoolID != "" && ctx.SchoolID != "system" && ctx.SchoolID != "__global__" {
+				_ = h.Pool.QueryRow(r.Context(), `
+					SELECT COALESCE(owner_user_id, '') FROM schools
+					WHERE school_id = $1 OR id = $1 LIMIT 1
+				`, ctx.SchoolID).Scan(&ownerID)
+			}
+		}
 		rows, err := h.Pool.Query(r.Context(), `
-			SELECT id, name, student_limit, price, COALESCE(currency,'PKR'), features, is_custom, display_order
-			FROM subscription_plans 
-			WHERE is_active = true AND id IN ('plan_starter', 'plan_growth', 'plan_premium', 'plan_custom')
-			ORDER BY display_order ASC, created_at ASC
-		`)
+			SELECT sp.id, sp.name, sp.student_limit, sp.price, COALESCE(sp.currency,'PKR'),
+			       sp.features, sp.is_custom, sp.display_order,
+			       COALESCE(sp.duration_days, 30), COALESCE(sp.description, ''),
+			       COALESCE((SELECT ss.status FROM subscriptions ss
+			                 WHERE ss.plan_id = sp.id AND ss.status IN ('active','scheduled','trial')
+			                 ORDER BY ss.created_at DESC LIMIT 1), '') AS bound_status,
+			       (SELECT ss.end_date FROM subscriptions ss
+			        WHERE ss.plan_id = sp.id AND ss.status IN ('active','scheduled','trial')
+			        ORDER BY ss.created_at DESC LIMIT 1) AS bound_end
+			FROM subscription_plans sp
+			WHERE (plan_type = 'standard' AND owner_user_id IS NULL AND id <> 'plan_custom')
+			   OR (plan_type = 'custom' AND owner_user_id = $1
+			       AND (is_active = true OR EXISTS (
+			           SELECT 1 FROM subscriptions ss
+			           WHERE ss.plan_id = sp.id AND ss.status IN ('active','scheduled','trial'))))
+			ORDER BY CASE WHEN sp.is_custom THEN 10 ELSE sp.display_order END ASC, sp.created_at ASC
+		`, ownerID)
 		if err == nil {
 			defer rows.Close()
 			plans := make([]Plan, 0)
@@ -567,21 +636,20 @@ func (h *Handler) GetPlans(w http.ResponseWriter, r *http.Request) {
 				var dbName string
 				var featuresJSON []byte
 				var displayOrder int
-				if err := rows.Scan(&p.ID, &dbName, &p.StudentLimit, &p.Price, &p.Currency, &featuresJSON, &p.IsCustom, &displayOrder); err == nil {
+				var boundEnd *time.Time
+				if err := rows.Scan(&p.ID, &dbName, &p.StudentLimit, &p.Price, &p.Currency, &featuresJSON,
+					&p.IsCustom, &displayOrder, &p.DurationDays, &p.Description, &p.Status, &boundEnd); err == nil {
 					p.Features = DecodeFeaturesJSON(featuresJSON)
 					p.DisplayName = dbName
 					p.Name = p.ID
+					p.EndsAt = boundEnd
 					if p.ID == "plan_growth" {
 						p.Popular = true
-					} else {
-						p.Popular = false
 					}
 					plans = append(plans, p)
-				} else {
-					fmt.Println("Scan error in GetPlans:", err.Error())
 				}
 			}
-			if len(plans) > 0 {
+			if len(plans) > 0 || err == nil {
 				api.WriteResult(w, api.Ok(plans))
 				return
 			}
@@ -857,24 +925,53 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 	}
 
 	api.WriteResult(w, api.ServiceTry(func() (*Subscription, error) {
-		// Find the plan
-		var plan *Plan
-		for i := range AvailablePlans {
-			if AvailablePlans[i].Name == body.PlanName {
-				plan = &AvailablePlans[i]
-				break
+		planID := strings.TrimSpace(body.PlanName)
+		displayName := planID
+		studentLimit := 0
+		price := 0
+		durationDays := 30
+
+		// A subscriber may only choose a public standard plan or their OWN
+		// negotiated custom contract — never another owner's.
+		ownerScopeID := ""
+		if h.Pool != nil {
+			scope, err := ResolveOwnerScope(r.Context(), h.Pool, schoolID)
+			if err == nil {
+				ownerScopeID = scope.OwnerUserID
 			}
 		}
-		if plan == nil {
-			return nil, api.NewControlledError("VALIDATION_ERROR", "Invalid plan name.", 400, nil)
-		}
 
-		studentLimit := plan.StudentLimit
-		price := plan.Price
-		if plan.IsCustom && body.StudentLimit > 0 {
-			studentLimit = body.StudentLimit
-			// Custom pricing: PKR 15 per student per month
-			price = body.StudentLimit * 15
+		if h.Pool != nil {
+			err := h.Pool.QueryRow(r.Context(), `
+				SELECT name, student_limit, price, COALESCE(duration_days, 30) FROM subscription_plans
+				WHERE id = $1 AND is_active = true
+				  AND ((plan_type = 'standard' AND owner_user_id IS NULL AND id <> 'plan_custom')
+				       OR (plan_type = 'custom' AND owner_user_id = $2 AND $2 <> ''))
+			`, planID, ownerScopeID).Scan(&displayName, &studentLimit, &price, &durationDays)
+			if err == pgx.ErrNoRows {
+				return nil, api.NewControlledError("VALIDATION_ERROR", "Invalid or unavailable plan. Please choose a plan from the subscription page.", 400, nil)
+			}
+			if err != nil {
+				return nil, fmt.Errorf("resolve plan: %w", err)
+			}
+		} else {
+			// In-memory fallback: public standard plans only (no global custom).
+			var plan *Plan
+			for i := range AvailablePlans {
+				if AvailablePlans[i].Name == planID || AvailablePlans[i].ID == planID {
+					plan = &AvailablePlans[i]
+					break
+				}
+			}
+			if plan == nil || plan.IsCustom {
+				return nil, api.NewControlledError("VALIDATION_ERROR", "Invalid plan name.", 400, nil)
+			}
+			displayName = plan.DisplayName
+			studentLimit = plan.StudentLimit
+			price = plan.Price
+		}
+		if durationDays < 1 {
+			durationDays = 30
 		}
 
 		// Safe downgrade guard: never silently shrink capacity below current usage.
@@ -884,7 +981,7 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 				used, err := CountActiveStudentsInScope(r.Context(), h.Pool, scope)
 				if err == nil && used > studentLimit {
 					return nil, api.NewControlledError("CAPACITY_CONFLICT",
-						fmt.Sprintf("Cannot switch to %s: your current student count (%d) exceeds this plan's capacity (%d). Please reduce enrolled students first or choose a higher plan.", plan.DisplayName, used, studentLimit),
+						fmt.Sprintf("Cannot switch to %s: your current student count (%d) exceeds this plan's capacity (%d). Please reduce enrolled students first or choose a higher plan.", displayName, used, studentLimit),
 						409,
 						map[string]any{"current_students": used, "plan_limit": studentLimit},
 					)
@@ -893,16 +990,16 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if h.Pool != nil {
-			// Deactivate current subscription
+			// Deactivate current subscription (history rows are kept)
 			_, _ = h.Pool.Exec(r.Context(), `
 				UPDATE subscriptions SET status = 'cancelled', updated_at = NOW()
-				WHERE (school_id = $1 OR owner_user_id = $2) AND status IN ('active', 'trial')
+				WHERE (school_id = $1 OR owner_user_id = $2) AND status IN ('active', 'trial', 'scheduled')
 			`, schoolID, ctx.UserID)
 		}
 
-		// Create new subscription (1 month)
+		// Create new subscription for the billing interval
 		now := time.Now()
-		endDate := now.AddDate(0, 1, 0)
+		endDate := now.AddDate(0, 0, durationDays)
 		id := store.NewID("sub")
 
 		// Preserve trial_used flag
@@ -917,7 +1014,8 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 			ID:           id,
 			SchoolID:     schoolID,
 			OwnerUserID:  ctx.UserID,
-			PlanName:     plan.Name,
+			PlanID:       planID,
+			PlanName:     displayName,
 			StudentLimit: studentLimit,
 			Price:        price,
 			Currency:     "PKR",
@@ -932,9 +1030,9 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 
 		if h.Pool != nil {
 			_, err := h.Pool.Exec(r.Context(), `
-				INSERT INTO subscriptions (id, school_id, owner_user_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-			`, sub.ID, sub.SchoolID, sub.OwnerUserID, sub.PlanName, sub.StudentLimit, sub.Price, sub.Currency,
+				INSERT INTO subscriptions (id, school_id, owner_user_id, plan_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+			`, sub.ID, sub.SchoolID, sub.OwnerUserID, sub.PlanID, sub.PlanName, sub.StudentLimit, sub.Price, sub.Currency,
 				sub.StartDate, sub.EndDate, sub.Status, sub.IsTrial, sub.TrialUsed,
 				sub.CreatedAt, sub.UpdatedAt)
 			if err != nil {
@@ -942,7 +1040,7 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		h.recordHistory(r.Context(), schoolID, plan.Name, studentLimit, price, "paid", now, endDate, "upgrade")
+		h.recordHistory(r.Context(), schoolID, displayName, studentLimit, price, "paid", now, endDate, "upgrade")
 
 		// Also update the MemStore to keep it in sync during runtime without restart
 		if h.Store != nil {
@@ -950,8 +1048,8 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 			h.Store.Subscriptions = append(h.Store.Subscriptions, &store.Subscription{
 				ID:               sub.ID,
 				SchoolID:         sub.SchoolID,
-				PackageID:        sub.PlanName,
-				SelectedPackages: ParseSelectedPackages(plan.Name, nil),
+				PackageID:        displayName,
+				SelectedPackages: ParseSelectedPackages(planID, nil),
 				Status:           sub.Status,
 				AutoRenew:        false,
 				NextRenewal:      sub.EndDate,

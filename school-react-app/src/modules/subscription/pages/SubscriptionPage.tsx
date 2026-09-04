@@ -3,13 +3,15 @@
  *
  * Fully state-driven: every status, date, remaining-day value, and CTA
  * decision comes from the backend `/api/subscription/current` payload
- * (`phase`, `payment_status`, `next_plan`, `days_remaining`, ...). No
+ * (`phase`, `payment_status`, `scheduled_plan`, `days_remaining`, ...). No
  * hardcoded trial durations, plan prices, or lifecycle text lives here.
  *
  * Sections:
- *   1. Current subscription (compact banner)
+ *   1. Current subscription (compact banner — standard, trial, or the
+ *      Owner's negotiated Custom Plan)
  *   2. Student capacity (owner-wide, backend counts)
- *   3. Plan comparison (compact cards from the plan catalog API)
+ *   3. Plans (standard comparison + the Owner's private Custom Plan contract
+ *      when Super Admin assigned one; otherwise a "Contact EduPlexo" CTA)
  *   4. Billing activity (real history timeline)
  */
 
@@ -31,18 +33,29 @@ function planRank(plan: Plan | undefined): number {
   return 4;
 }
 
-function currentPlanOf(current?: CurrentSubscription | null): Plan | null {
+function currentPlanOf(current: CurrentSubscription | null | undefined, plans: Plan[]): Plan | null {
   const sub = current?.subscription;
   if (!sub || !sub.plan_name || sub.plan_name === "trial") return null;
+  // Prefer the real catalog / contract object (carries is_custom, prices,
+  // limit) — matched by machine plan_id first, then by name.
+  const match = (plans || []).find(
+    (p) =>
+      (sub.plan_id && (p.id === sub.plan_id || p.name === sub.plan_id)) ||
+      p.id === sub.plan_name ||
+      p.name === sub.plan_name ||
+      p.name === `plan_${sub.plan_name}` ||
+      p.id === `plan_${sub.plan_name}`
+  );
+  if (match) return match;
   return {
-    id: sub.plan_name.startsWith("plan_") ? sub.plan_name : `plan_${sub.plan_name}`,
+    id: sub.plan_id || sub.plan_name,
     name: sub.plan_name,
     display_name: planDisplayName(sub.plan_name),
     price: sub.price,
     currency: sub.currency || "PKR",
     student_limit: sub.student_limit,
     features: [],
-    is_custom: false,
+    is_custom: Boolean(current?.current_plan_is_custom),
     popular: false,
   };
 }
@@ -89,8 +102,10 @@ export function SubscriptionPage() {
   const slotsRemaining = studentLimit > 0 ? Math.max(0, studentLimit - studentsUsed) : 0;
 
   const rolePrefix = window.location.pathname.startsWith("/admin") ? "/admin" : "/owner";
-  const displayPlans = (plans || []).filter((p) => !p.is_custom && p.name !== "plan_custom" && p.id !== "plan_custom");
-  const currentPlan = currentPlanOf(current);
+  const displayPlans = (plans || []).filter((p) => !p.is_custom);
+  const customPlans = (plans || []).filter((p) => p.is_custom);
+  const currentPlan = currentPlanOf(current, plans);
+  const currentIsCustom = Boolean(current?.current_plan_is_custom);
 
   const renewalDate = isTrialPhase ? current?.trial_ends_at || sub?.end_date : current?.renews_at || sub?.end_date;
   const scheduledPlan = current?.next_plan ? planDisplayName(current.next_plan) : "";
@@ -127,10 +142,20 @@ export function SubscriptionPage() {
                   <h2 className="text-lg font-black text-slate-900 tracking-tight">
                     {isTrialPhase ? "Free Trial" : planDisplayName(sub?.plan_name || "") || "No Active Plan"}
                   </h2>
+                  {currentIsCustom && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold tracking-wider bg-violet-100 text-violet-700 border border-violet-200">
+                      Custom Plan
+                    </span>
+                  )}
                   <StatusBadge phase={phase} daysRemaining={daysRemaining} />
                   {current?.payment_status === "approved" && (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                       {scheduledPlan} scheduled
+                    </span>
+                  )}
+                  {current?.scheduled_plan && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-violet-50 text-violet-700 border border-violet-200">
+                      {planDisplayName(current.scheduled_plan)} scheduled
                     </span>
                   )}
                 </div>
@@ -138,18 +163,19 @@ export function SubscriptionPage() {
                 <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-slate-600">
                   {sub && sub.price > 0 && (
                     <span className="font-bold text-slate-900 tabular-nums">
-                      PKR {sub.price.toLocaleString()} / month
+                      {sub.currency || "PKR"} {sub.price.toLocaleString()} / month
                     </span>
                   )}
-                  {daysRemaining > 0 && (
+                  {daysRemaining > 0 && !isTrialPhase && (
                     <span className="font-semibold">
-                      {isTrialPhase ? "Trial ends" : "Renews"}:{" "}
+                      {current?.custom_plan_ending ? "Plan ends" : "Renews"}:{" "}
                       <strong className="text-slate-900">{formatDate(renewalDate)}</strong>
                     </span>
                   )}
                   {isTrialPhase && (
                     <span className="font-semibold">
-                      {daysRemaining} {daysRemaining === 1 ? "day" : "days"} remaining
+                      Trial ends: <strong className="text-slate-900">{formatDate(renewalDate)}</strong> · {daysRemaining}{" "}
+                      {daysRemaining === 1 ? "day" : "days"} remaining
                     </span>
                   )}
                   {phase === "expiring" && (
@@ -167,6 +193,18 @@ export function SubscriptionPage() {
                   )}
                 </div>
 
+                {current?.custom_plan_ending && (
+                  <p className="mt-2 text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 inline-block">
+                    Your custom plan is ending {formatDate(current.custom_plan_ends_at)}. Please select a new plan or
+                    contact support.
+                  </p>
+                )}
+                {current?.scheduled_plan && current.scheduled_plan_starts_at && (
+                  <p className="mt-2 text-xs font-medium text-violet-700 bg-violet-50 border border-violet-100 rounded-lg px-2.5 py-1.5 inline-block">
+                    {planDisplayName(current.scheduled_plan)} is scheduled to start on{" "}
+                    {formatDate(current.scheduled_plan_starts_at)}.
+                  </p>
+                )}
                 {current?.payment_status === "approved" && scheduledPlan && (
                   <p className="mt-2 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1.5 inline-block">
                     Payment approved — {scheduledPlan} will activate
@@ -180,6 +218,7 @@ export function SubscriptionPage() {
                   phase={phase}
                   canTrial={Boolean(current?.can_trial)}
                   isTrialPhase={isTrialPhase}
+                  isCustomPlan={currentIsCustom}
                   daysRemaining={daysRemaining}
                   onTrial={() => navigate(`${rolePrefix}/subscription/payment`)}
                   onRenew={() => navigate(`${rolePrefix}/subscription/payment`, { state: { plan: currentPlan } })}
@@ -212,7 +251,10 @@ export function SubscriptionPage() {
             </div>
             <p className="text-xl font-black text-slate-900 tabular-nums">
               {studentsUsed.toLocaleString()}
-              <span className="text-sm font-semibold text-slate-400"> / {studentLimit > 0 ? studentLimit.toLocaleString() : "—"} students</span>
+              <span className="text-sm font-semibold text-slate-400">
+                {" "}
+                / {studentLimit > 0 ? studentLimit.toLocaleString() : "—"} students
+              </span>
             </p>
             <div className="w-full bg-slate-100 rounded-full h-2 mt-2.5 mb-1.5 overflow-hidden">
               <div
@@ -242,20 +284,55 @@ export function SubscriptionPage() {
           </div>
         </div>
 
-        {/* ── SECTION 2: Plan comparison (compact) ─────────────────────── */}
+        {/* ── SECTION 2: Plans (standard comparison + owner custom contract) ── */}
         <div id="plans-section" className="space-y-3 pt-1 scroll-mt-6">
-          <h2 className="text-sm font-black text-slate-900 tracking-tight">Plans</h2>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="text-sm font-black text-slate-900 tracking-tight">Plans</h2>
+            {customPlans.length === 0 && !currentIsCustom && (
+              <a
+                href="mailto:billing@eduplexo.com?subject=Custom%20plan%20request"
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-lg px-2.5 py-1.5 transition"
+              >
+                <AppIcon name="Sparkles" size={12} />
+                <span>Need a larger plan? Contact EduPlexo</span>
+              </a>
+            )}
+          </div>
+
+          {/* Negotiated custom contract card — only rendered when Super Admin
+              actually assigned one to THIS owner (backend-scoped). */}
+          {customPlans.length > 0 && (
+            <div className="space-y-3">
+              {customPlans.map((p) => {
+                const isThisCurrent = Boolean(
+                  currentIsCustom && currentPlan && (currentPlan.id === p.id || currentPlan.name === p.name)
+                );
+                return (
+                  <CustomContractCard
+                    key={p.id || p.name}
+                    plan={p}
+                    isCurrent={isThisCurrent}
+                    ending={isThisCurrent && Boolean(current?.custom_plan_ending)}
+                    endingAt={isThisCurrent ? current?.custom_plan_ends_at : undefined}
+                    phase={phase}
+                    daysRemaining={daysRemaining}
+                    studentsUsed={studentsUsed}
+                    onRenew={() => navigate(`${rolePrefix}/subscription/payment`, { state: { plan: p } })}
+                  />
+                );
+              })}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {displayPlans.map((plan) => (
               <CompactPlanCard
                 key={plan.id || plan.name}
                 plan={plan}
                 isCurrent={Boolean(
-                  currentPlan &&
-                    planRank(plan) === planRank(currentPlan) &&
-                    !isTrialPhase &&
-                    !isLapsed
+                  !currentIsCustom && currentPlan && planRank(plan) === planRank(currentPlan) && !isTrialPhase && !isLapsed
                 )}
+                switchMode={currentIsCustom}
                 phase={phase}
                 daysRemaining={daysRemaining}
                 studentsUsed={studentsUsed}
@@ -263,6 +340,19 @@ export function SubscriptionPage() {
               />
             ))}
           </div>
+
+          {customPlans.length === 0 && !currentIsCustom && (
+            <p className="text-[11px] text-slate-500 font-medium">
+              Need more capacity than Premium?{" "}
+              <a
+                href="mailto:billing@eduplexo.com?subject=Custom%20plan%20request"
+                className="text-violet-700 font-bold underline underline-offset-2"
+              >
+                Contact EduPlexo
+              </a>{" "}
+              to discuss a tailored plan for your institution.
+            </p>
+          )}
         </div>
 
         {/* ── SECTION 3: Billing activity ──────────────────────────────── */}
@@ -322,18 +412,133 @@ export function SubscriptionPage() {
   );
 }
 
+// ─── Negotiated custom contract card ────────────────────────────────────
+
+function CustomContractCard({
+  plan,
+  isCurrent,
+  ending,
+  endingAt,
+  phase,
+  daysRemaining,
+  studentsUsed,
+  onRenew,
+}: {
+  plan: Plan;
+  isCurrent: boolean;
+  ending?: boolean;
+  endingAt?: string;
+  phase: string;
+  daysRemaining: number;
+  studentsUsed: number;
+  onRenew: () => void;
+}) {
+  const atCapacity = studentsUsed >= plan.student_limit;
+  const isScheduled = !isCurrent && plan.status === "scheduled";
+  const lapsed = new Set(["expired", "grace", "suspended", "trial_expired", "expiring"]).has(phase);
+
+  let statusLabel: { text: string; cls: string };
+  if (isCurrent) {
+    statusLabel = ending
+      ? { text: `Ending ${endingAt ? formatDate(endingAt) : ""}`.trim(), cls: "bg-amber-50 text-amber-800 border-amber-200" }
+      : lapsed
+      ? { text: "Renewal required", cls: "bg-rose-50 text-rose-700 border-rose-200" }
+      : { text: "Current Plan", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+  } else if (isScheduled) {
+    statusLabel = { text: "Scheduled", cls: "bg-violet-50 text-violet-700 border-violet-200" };
+  } else {
+    statusLabel = { text: "Negotiated", cls: "bg-violet-50 text-violet-700 border-violet-200" };
+  }
+
+  return (
+    <div className="relative rounded-2xl border-2 border-violet-300 bg-gradient-to-r from-violet-50/80 via-white to-white p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest bg-violet-600 text-white">
+            CUSTOM PLAN
+          </span>
+          <h3 className="text-base font-black text-slate-900 tracking-tight">{plan.display_name}</h3>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusLabel.cls}`}>
+            {statusLabel.text}
+          </span>
+        </div>
+        <p className="mt-1 text-[11px] font-medium text-slate-500">
+          Negotiated specifically for your institution{plan.description ? ` · ${plan.description}` : ""}
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-slate-600">
+          <span className="font-black text-slate-900 tabular-nums">
+            {plan.currency || "PKR"} {plan.price.toLocaleString()}
+            <span className="text-[10px] text-slate-400 font-semibold"> / {plan.duration_days || 30} days</span>
+          </span>
+          <span className="font-semibold">
+            Capacity: <strong className="text-slate-900">{plan.student_limit.toLocaleString()} students</strong>
+          </span>
+          {atCapacity && <span className="font-bold text-rose-600">Capacity reached</span>}
+          {isCurrent && daysRemaining > 0 && phase !== "expired" && (
+            <span className="font-semibold">
+              {ending ? "Ends in" : "Renews in"} {daysRemaining} {daysRemaining === 1 ? "day" : "days"}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="shrink-0 flex items-center gap-2">
+        {isCurrent ? (
+          lapsed || ending ? (
+            <button
+              onClick={onRenew}
+              className={`px-4 py-2 rounded-xl text-white text-xs font-bold shadow-sm transition active:scale-95 ${
+                ending ? "bg-amber-500 hover:bg-amber-600" : "bg-emerald-600 hover:bg-emerald-700"
+              }`}
+            >
+              Renew Plan
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">
+              <AppIcon name="CheckCircle" size={13} />
+              Current Plan
+            </span>
+          )
+        ) : isScheduled ? (
+          <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-violet-700 bg-violet-50 border border-violet-200">
+            <AppIcon name="Clock" size={13} />
+            Starts at period end
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-slate-500 bg-slate-100">
+            <AppIcon name="ShieldCheck" size={13} />
+            Pre-approved for you
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Status badge ─────────────────────────────────────────────────────────
 
 function StatusBadge({ phase, daysRemaining }: { phase: string; daysRemaining: number }) {
   const map: Record<string, { label: string; cls: string; icon: string }> = {
     trial_active: { label: "Trial Active", cls: "bg-blue-50 text-blue-700 border-blue-200", icon: "Clock" },
-    trial_expiring: { label: `Trial ends in ${daysRemaining}d`, cls: "bg-amber-50 text-amber-700 border-amber-200", icon: "AlertTriangle" },
-    trial_expired: { label: "Trial Expired", cls: "bg-rose-50 text-rose-700 border-rose-200", icon: "AlertCircle" },
+    trial_expiring: {
+      label: `Trial ends in ${daysRemaining}d`,
+      cls: "bg-amber-50 text-amber-700 border-amber-200",
+      icon: "AlertTriangle",
+    },
+    trial_expired: {
+      label: "Trial Expired",
+      cls: "bg-rose-50 text-rose-700 border-rose-200",
+      icon: "AlertCircle",
+    },
     active: { label: "Active", cls: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: "CheckCircle" },
-    expiring: { label: `Expires in ${daysRemaining}d`, cls: "bg-amber-50 text-amber-700 border-amber-200", icon: "AlertTriangle" },
+    expiring: {
+      label: `Expires in ${daysRemaining}d`,
+      cls: "bg-amber-50 text-amber-700 border-amber-200",
+      icon: "AlertTriangle",
+    },
     grace: { label: "Grace Period", cls: "bg-rose-50 text-rose-700 border-rose-200", icon: "AlertTriangle" },
     expired: { label: "Expired", cls: "bg-rose-50 text-rose-700 border-rose-200", icon: "AlertCircle" },
     suspended: { label: "Suspended", cls: "bg-rose-100 text-rose-800 border-rose-300", icon: "Ban" },
+    scheduled: { label: "Scheduled", cls: "bg-violet-50 text-violet-700 border-violet-200", icon: "Clock" },
   };
   const s = map[phase] || map.expired;
   return (
@@ -350,6 +555,7 @@ function PrimaryCta({
   phase,
   canTrial,
   isTrialPhase,
+  isCustomPlan,
   daysRemaining,
   onTrial,
   onRenew,
@@ -359,6 +565,7 @@ function PrimaryCta({
   phase: string;
   canTrial: boolean;
   isTrialPhase: boolean;
+  isCustomPlan: boolean;
   daysRemaining: number;
   onTrial: () => void;
   onRenew: () => void;
@@ -369,20 +576,23 @@ function PrimaryCta({
   let onClick = onUpgrade;
   let cls = "bg-blue-600 hover:bg-blue-700 text-white";
 
-  if (isTrialPhase) {
+  if (phase === "suspended" || phase === "expired" || phase === "grace" || phase === "trial_expired") {
+    label = "Renew Plan";
+    onClick = onRenew;
+    cls = "bg-emerald-600 hover:bg-emerald-700 text-white";
+  } else if (phase === "expiring" || (!isTrialPhase && daysRemaining > 0 && daysRemaining <= 3)) {
+    label = "Renew Plan";
+    onClick = onRenew;
+    cls = "bg-emerald-600 hover:bg-emerald-700 text-white";
+  } else if (canTrial && (phase === "none" || isTrialPhase)) {
+    label = isTrialPhase ? "Choose Plan" : "Start Free Trial";
+    onClick = isTrialPhase ? onUpgrade : onTrial;
+  } else if (isTrialPhase || phase === "none") {
     label = "Choose Plan";
-    onClick = onUpgrade;
-  } else if (phase === "suspended" || phase === "expired" || phase === "grace" || phase === "trial_expired") {
-    label = "Renew Plan";
-    onClick = onRenew;
-    cls = "bg-emerald-600 hover:bg-emerald-700 text-white";
-  } else if (phase === "expiring" || daysRemaining <= 3) {
-    label = "Renew Plan";
-    onClick = onRenew;
-    cls = "bg-emerald-600 hover:bg-emerald-700 text-white";
-  } else if (canTrial && phase === "none") {
-    label = "Start Free Trial";
-    onClick = onTrial;
+  } else {
+    // Live plan with plenty of runway: negotiating/paying flows live on the
+    // plans section. Custom plans never assume an "upgrade" direction.
+    label = isCustomPlan ? "Switch Plan" : "Upgrade Plan";
   }
 
   return (
@@ -401,6 +611,7 @@ function PrimaryCta({
 function CompactPlanCard({
   plan,
   isCurrent,
+  switchMode,
   phase,
   daysRemaining,
   studentsUsed,
@@ -408,6 +619,7 @@ function CompactPlanCard({
 }: {
   plan: Plan;
   isCurrent: boolean;
+  switchMode: boolean;
   phase: string;
   daysRemaining: number;
   studentsUsed: number;
@@ -421,6 +633,10 @@ function CompactPlanCard({
     ctaLabel = phase === "expiring" || daysRemaining <= 3 ? "Renew Plan" : "Current Plan";
   } else if (phase === "suspended" || phase === "expired" || phase === "grace") {
     ctaLabel = "Renew Plan";
+  } else if (switchMode) {
+    // Custom plans have no price/capacity ranking — switching semantics are
+    // explicit, never an assumed "upgrade".
+    ctaLabel = "Switch to";
   } else if (atCapacity) {
     ctaLabel = "Upgrade";
   }
@@ -458,12 +674,12 @@ function CompactPlanCard({
         <button
           onClick={onSelect}
           className={`mt-3 w-full py-2 rounded-xl text-xs font-bold transition active:scale-95 shadow-sm ${
-            isPopular
-              ? "bg-blue-600 hover:bg-blue-700 text-white"
-              : "bg-slate-900 hover:bg-slate-800 text-white"
+            isPopular ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-slate-900 hover:bg-slate-800 text-white"
           }`}
         >
-          {ctaLabel} to {plan.display_name.split(" ")[0]}
+          {ctaLabel === "Switch to"
+            ? `Switch to ${plan.display_name.split(" ")[0]}`
+            : `${ctaLabel} to ${plan.display_name.split(" ")[0]}`}
         </button>
       )}
     </div>
