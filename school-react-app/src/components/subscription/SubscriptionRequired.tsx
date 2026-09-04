@@ -13,21 +13,15 @@ export function SubscriptionRequired({ current }: SubscriptionRequiredProps) {
 
   const sub = current?.subscription;
   const isExpired = sub?.status === "expired" || sub?.status === "cancelled";
-  const isOwner = user?.role === "owner";
+  // const isOwner = user?.role === "owner";
+  const isOwner = false;
 
-  const title = isOwner
-    ? isExpired
-      ? "Your Subscription Has Expired"
-      : "Please Choose Your Subscription Plan"
-    : isExpired
-      ? "Subscription Expired"
-      : "Subscription Inactive";
+  const title = isExpired
+    ? "Subscription Expired"
+    : "Subscription Inactive";
 
-  const description = isOwner
-    ? isExpired
-      ? "Your institution subscription has ended. Please renew or upgrade your plan to restore full access across all your campuses."
-      : "You have not activated your Free Trial or Subscription. Please choose a plan to continue managing your institution."
-    : "Your school's subscription plan is currently inactive or has expired. Please contact your School Owner to renew or activate the plan.";
+  const description =
+    "Your school's subscription plan is currently inactive or has expired. Please contact your administrator or support to renew or activate the plan.";
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center min-h-[70vh] bg-slate-50/50 p-6 md:p-12 animate-fade-in-up">
@@ -50,7 +44,8 @@ export function SubscriptionRequired({ current }: SubscriptionRequiredProps) {
           {description}
         </p>
 
-        {isOwner ? (
+        {/* Owner subscription management buttons disabled */}
+        {/* {isOwner ? (
           <div className="space-y-3">
             <button
               onClick={() => navigate("/owner/subscription")}
@@ -68,14 +63,14 @@ export function SubscriptionRequired({ current }: SubscriptionRequiredProps) {
               <span>Manage / Onboard Campuses</span>
             </button>
           </div>
-        ) : (
+        ) : ( */}
           <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl">
             <p className="text-xs font-semibold text-slate-600 leading-normal flex items-center gap-2 justify-center">
               <AppIcon name="Lock" size={14} className="text-slate-400 shrink-0" />
-              <span>Please contact your <strong>School Owner</strong> to renew or activate the subscription.</span>
+              <span>Please contact your administrator to renew or activate the subscription.</span>
             </p>
           </div>
-        )}
+        {/* )} */}
       </div>
     </div>
   );

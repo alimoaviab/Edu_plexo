@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { AppIcon } from "shared/ui/AppIcon";
-import { serviceRequest } from "@/services/service-client";
+// OwnerSchoolSwitcher disabled: Owner role has been removed.
+// All users are now bound to their assigned school/campus directly.
 
 export function OwnerSchoolSwitcher() {
+  /*
   const [schools, setSchools] = useState<any[]>([]);
   const [campuses, setCampuses] = useState<any[]>([]);
   const [activeSchoolId, setActiveSchoolId] = useState<string>("");
@@ -94,7 +94,6 @@ export function OwnerSchoolSwitcher() {
 
   return (
     <div className="hidden sm:flex items-center gap-2">
-      {/* School Selector */}
       <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 shadow-sm">
         <AppIcon name="Building" size={14} className="text-blue-600" />
         <select
@@ -111,7 +110,6 @@ export function OwnerSchoolSwitcher() {
         </select>
       </div>
 
-      {/* Branch Selector */}
       {campuses.length > 1 && (
         <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 shadow-sm">
           <AppIcon name="GitBranch" size={14} className="text-emerald-600" />
@@ -131,4 +129,6 @@ export function OwnerSchoolSwitcher() {
       )}
     </div>
   );
+  */
+  return null;
 }

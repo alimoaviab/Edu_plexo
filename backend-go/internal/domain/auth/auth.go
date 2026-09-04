@@ -412,15 +412,16 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	role := strings.ToLower(strings.TrimSpace(body.Role))
-	if role == "" {
-		role = "owner"
+	if role == "" || role == "owner" {
+		role = "admin" // Owner role disabled: automatically converted to admin
 	}
 	email := strings.ToLower(strings.TrimSpace(body.Email))
 	password := body.Password
 	fullName := strings.TrimSpace(firstNonEmpty(body.AdminName, body.FullName))
 	schoolCode := strings.ToUpper(strings.TrimSpace(firstNonEmpty(body.SchoolCode, body.SchoolCode2)))
 
-	if role != "teacher" && role != "student" && role != "parent" && role != "admin" && role != "owner" {
+	// Owner role disabled: only teacher, student, parent, admin allowed
+	if role != "teacher" && role != "student" && role != "parent" && role != "admin" /* && role != "owner" */ {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("Invalid role selected"))
 		return
 	}
@@ -428,7 +429,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("All fields are required"))
 		return
 	}
-	if role != "admin" && role != "owner" && schoolCode == "" {
+	if role != "admin" /* && role != "owner" */ && schoolCode == "" {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("School code is required"))
 		return
 	}
@@ -465,7 +466,123 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 
 	schoolID := "system"
-	if role != "admin" && role != "owner" {
+	var defaultYearID string
+	var defaultCampusID string
+
+	if role == "admin" {
+		// Admin registration: provision new School, default AcademicYear, Campus, Settings, Subscription
+		schoolName := strings.TrimSpace(firstNonEmpty(body.SchoolName, body.SchoolName2))
+		if schoolName == "" {
+			schoolName = fullName + "'s School"
+		}
+
+		schoolID = fmt.Sprintf("SCH-%s", strings.ToUpper(store.NewID(""))[4:12])
+		code := strings.ToUpper(strings.ReplaceAll(schoolName, " ", ""))
+		if len(code) > 6 {
+			code = code[:6]
+		}
+		if len(code) < 3 {
+			code = fmt.Sprintf("SCH%s", strings.ToUpper(store.NewID(""))[4:7])
+		}
+
+		h.Store.Lock()
+		for _, s := range h.Store.Schools {
+			if strings.EqualFold(s.Code, code) {
+				code = fmt.Sprintf("%s%s", code[:min(3, len(code))], strings.ToUpper(store.NewID(""))[4:7])
+				break
+			}
+		}
+
+		newSchool := &store.School{
+			ID:             store.NewID("sch"),
+			SchoolID:       schoolID,
+			CampusType:     "main",
+			Name:           schoolName,
+			Code:           code,
+			Email:          email,
+			Phone:          body.Phone,
+			PrincipalName:  fullName,
+			Status:         "active",
+			ApprovalStatus: "approved",
+			ApprovedAt:     &now,
+			ApprovedBy:     "admin",
+			CreatedAt:      now,
+			UpdatedAt:      now,
+		}
+
+		startYear := now.Year()
+		if now.Month() < time.April {
+			startYear--
+		}
+		defaultYearID = store.NewID("ay")
+		newYear := &store.AcademicYear{
+			ID:          defaultYearID,
+			SchoolID:    schoolID,
+			Year:        fmt.Sprintf("%d-%d", startYear, startYear+1),
+			StartDate:   time.Date(startYear, 4, 1, 0, 0, 0, 0, time.UTC),
+			EndDate:     time.Date(startYear+1, 3, 31, 0, 0, 0, 0, time.UTC),
+			IsActive:    true,
+			Status:      "active",
+			Description: "Default academic year",
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
+
+		defaultCampusID = store.NewID("cmp")
+		newCampus := &store.Campus{
+			ID:            defaultCampusID,
+			SchoolID:      schoolID,
+			Name:          schoolName + " - Main Campus",
+			Code:          code,
+			Phone:         body.Phone,
+			Email:         email,
+			PrincipalName: fullName,
+			Status:        "active",
+			Timezone:      "Asia/Karachi",
+			Currency:      "PKR",
+			CreatedAt:     now,
+			UpdatedAt:     now,
+		}
+
+		newSettings := &store.SchoolSettings{
+			SchoolID: schoolID,
+			Profile: map[string]any{
+				"schoolName":    schoolName,
+				"email":         email,
+				"principalName": fullName,
+			},
+			Branding:  map[string]any{},
+			Academic:  map[string]any{"institutionalLevel": "K-12"},
+			UpdatedAt: now,
+		}
+
+		trialExpiry := now.AddDate(0, 0, 14)
+		newSub := &store.Subscription{
+			ID:           store.NewID("sub"),
+			SchoolID:     schoolID,
+			PackageID:    "growth",
+			StudentLimit: 500,
+			Status:       "trial",
+			NextRenewal:  trialExpiry,
+			CreatedAt:    now,
+			UpdatedAt:    now,
+		}
+
+		h.Store.Schools = append(h.Store.Schools, newSchool)
+		h.Store.AcademicYears = append(h.Store.AcademicYears, newYear)
+		h.Store.Campuses = append(h.Store.Campuses, newCampus)
+		h.Store.SchoolSettings = append(h.Store.SchoolSettings, newSettings)
+		h.Store.Subscriptions = append(h.Store.Subscriptions, newSub)
+		h.Store.Unlock()
+
+		if h.Persist != nil {
+			h.Persist("schools", newSchool)
+			h.Persist("academic_years", newYear)
+			h.Persist("campuses", newCampus)
+			h.Persist("school_settings", newSettings)
+			h.Persist("subscriptions", newSub)
+		}
+	} else if role != "owner" {
 		h.Store.RLock()
 		var school *store.School
 		for _, s := range h.Store.Schools {
@@ -482,7 +599,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		schoolID = school.SchoolID
 	}
 
-	// ─── Super Admin Bypass: Skip OTP Direct Account Creation ──────────
+	// ─── Direct Account Creation when SkipOTP is enabled ──────────
 	if superadmin.GetPlatformSettings().SkipOTP {
 		userID := store.NewID("usr")
 		permissions := []string{"*"}
@@ -493,6 +610,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		newUser := &store.User{
 			ID:           userID,
 			SchoolID:     schoolID,
+			CampusID:     defaultCampusID,
 			Email:        email,
 			PasswordHash: hash,
 			Role:         role,
@@ -525,7 +643,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			SchoolID:             schoolID,
 			Role:                 newUser.Role,
 			Permissions:          newUser.Permissions,
-			ActiveAcademicYearID: "",
+			ActiveAcademicYearID: defaultYearID,
 			SessionID:            "sess_" + randomID(),
 			App:                  h.Cfg.AppName,
 			ActorEmail:           newUser.Email,
@@ -548,7 +666,7 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 				"role":                    newUser.Role,
 				"email":                   newUser.Email,
 				"user_id":                 newUser.ID,
-				"active_academic_year_id": "",
+				"active_academic_year_id": defaultYearID,
 			},
 		})
 		return
@@ -766,9 +884,26 @@ func (h *Handler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		permissions = []string{}
 	}
 
+	var campusID string
+	for _, c := range h.Store.Campuses {
+		if c.SchoolID == schoolID {
+			campusID = c.ID
+			break
+		}
+	}
+
+	var activeYearID string
+	for _, ay := range h.Store.AcademicYears {
+		if ay.SchoolID == schoolID && ay.IsActive {
+			activeYearID = ay.ID
+			break
+		}
+	}
+
 	newUser := &store.User{
 		ID:           userID,
 		SchoolID:     schoolID,
+		CampusID:     campusID,
 		Email:        pending.Email,
 		PasswordHash: pending.PasswordHash,
 		Role:         pending.Role,
@@ -793,7 +928,7 @@ func (h *Handler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 		SchoolID:             schoolID,
 		Role:                 newUser.Role,
 		Permissions:          newUser.Permissions,
-		ActiveAcademicYearID: "",
+		ActiveAcademicYearID: activeYearID,
 		SessionID:            "sess_" + randomID(),
 		App:                  h.Cfg.AppName,
 		ActorEmail:           newUser.Email,
@@ -815,7 +950,7 @@ func (h *Handler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 			"role":                    newUser.Role,
 			"email":                   newUser.Email,
 			"user_id":                 newUser.ID,
-			"active_academic_year_id": "",
+			"active_academic_year_id": activeYearID,
 		},
 	})
 }

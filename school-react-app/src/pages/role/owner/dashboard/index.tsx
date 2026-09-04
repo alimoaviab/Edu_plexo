@@ -1,3 +1,5 @@
+// OwnerDashboardPage disabled: Owner role has been removed.
+import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AppIcon } from "shared/ui/AppIcon";
@@ -8,8 +10,13 @@ import { useTenantContext } from "@/hooks/useTenantContext";
 import { toast } from "@/utils/toast";
 
 export default function OwnerDashboardPage() {
-  const { schoolId } = useTenantContext();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    navigate("/admin/dashboard", { replace: true });
+  }, [navigate]);
+
+  const { schoolId } = useTenantContext();
 
   // 1. Fetch dashboard top-level stats
   const { data: stats, isLoading: statsLoading } = useQuery<any>({

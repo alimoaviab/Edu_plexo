@@ -75,16 +75,18 @@ export function useAuth() {
         }
         localStorage.setItem("last_user_id", payload.sub);
 
-        if (payload.role !== "owner") {
-          enforceSchoolBoundary(payload.school_id);
-          if (payload.school_id && payload.school_id !== "system") {
-            localStorage.setItem("active_school_id", payload.school_id);
-          }
+        // Owner role bypass commented out: standard school boundary enforced for all roles
+        // if (payload.role !== "owner") {
+        enforceSchoolBoundary(payload.school_id);
+        if (payload.school_id && payload.school_id !== "system") {
+          localStorage.setItem("active_school_id", payload.school_id);
         }
+        // }
 
-        const effectiveSchoolId = payload.role === "owner" 
-          ? (localStorage.getItem("active_school_id") || payload.school_id)
-          : payload.school_id;
+        // const effectiveSchoolId = payload.role === "owner" 
+        //   ? (localStorage.getItem("active_school_id") || payload.school_id)
+        //   : payload.school_id;
+        const effectiveSchoolId = payload.school_id;
 
         const scopedKey = `academic_year_id:${effectiveSchoolId}`;
         const scopedYear = localStorage.getItem(scopedKey);
@@ -95,7 +97,8 @@ export function useAuth() {
           scopedYear || payload.active_academic_year_id || "";
         if (effectiveYear) {
           localStorage.setItem("academic_year_id", effectiveYear);
-        } else if (payload.role !== "owner") {
+        } else {
+          // Owner bypass commented out
           localStorage.removeItem("academic_year_id");
         }
 

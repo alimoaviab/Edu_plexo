@@ -2,27 +2,28 @@ import { useLocation, useNavigate, NavigateOptions } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 /**
- * Returns the current role path prefix ('/owner' or '/admin').
+ * Returns the current role path prefix ('/admin').
  */
-export function getRolePrefix(pathname?: string, role?: string): string {
-  if (pathname && pathname.startsWith("/owner")) {
-    return "/owner";
-  }
-  if (role === "owner") {
-    return "/owner";
-  }
+export function getRolePrefix(_pathname?: string, _role?: string): string {
+  // Owner role path logic commented out:
+  // if (pathname && pathname.startsWith("/owner")) {
+  //   return "/owner";
+  // }
+  // if (role === "owner") {
+  //   return "/owner";
+  // }
   return "/admin";
 }
 
 /**
- * Transforms an /admin/... path into the appropriate /owner/... or /admin/... path
- * based on current pathname and user role.
+ * Transforms an /admin/... path into role path (owner disabled).
  */
-export function toRolePath(path: string, prefix?: string): string {
-  const effectivePrefix = prefix || "/admin";
-  if (effectivePrefix === "/owner" && path.startsWith("/admin")) {
-    return path.replace(/^\/admin/, "/owner");
-  }
+export function toRolePath(path: string, _prefix?: string): string {
+  // Owner path rewrite commented out:
+  // const effectivePrefix = prefix || "/admin";
+  // if (effectivePrefix === "/owner" && path.startsWith("/admin")) {
+  //   return path.replace(/^\/admin/, "/owner");
+  // }
   return path;
 }
 
@@ -46,6 +47,6 @@ export function useRolePath() {
     rolePrefix,
     rolePath,
     roleNavigate,
-    isOwner: rolePrefix === "/owner",
+    isOwner: false, // Owner role disabled
   };
 }

@@ -8,24 +8,25 @@ import { motion } from "framer-motion";
 import { AppIcon } from "shared/ui/AppIcon";
 import { decodeJwtPayload } from "@/utils/jwt";
 
-type Role = "owner" | "admin" | "teacher" | "student";
+// type Role = "owner" | "admin" | "teacher" | "student";
+type Role = "admin" | "teacher" | "student";
 
 const ROLE_ICONS: Record<Role, React.ReactNode> = {
-  owner: <AppIcon name="Building2" size={20} />,
+  // owner: <AppIcon name="Building2" size={20} />,
   admin: <AppIcon name="ShieldCheck" size={20} />,
   teacher: <AppIcon name="BookOpen" size={20} />,
   student: <AppIcon name="GraduationCap" size={20} />,
 };
 
 const ROLES: { key: Role; label: string }[] = [
-  { key: "owner", label: "Owner" },
+  // { key: "owner", label: "Owner" },
   { key: "admin", label: "Admin" },
   { key: "teacher", label: "Teacher" },
   { key: "student", label: "Student" },
 ];
 
 const ROLE_ROUTES: Record<string, string> = {
-  owner: "/owner/dashboard",
+  // owner: "/owner/dashboard",
   admin: "/admin/dashboard",
   super_admin: "/admin/dashboard",
   teacher: "/teacher/dashboard",
@@ -41,7 +42,7 @@ function resolveRoleRoute(role?: string): string {
 
 function suggestedTabForRole(role: string): Role {
   const r = role.toLowerCase();
-  if (r === "owner") return "owner";
+  // if (r === "owner") return "owner";
   if (r === "teacher") return "teacher";
   if (r === "student" || r === "parent") return "student";
   return "admin";
@@ -165,7 +166,8 @@ export function LoginPage() {
         localStorage.removeItem("student_id");
 
         localStorage.setItem("token", payload.token);
-        if (payload?.role !== "owner" && payload?.school_id && payload.school_id !== "system") {
+        // Owner logic commented out: school_id is always set
+        if (payload?.school_id && payload.school_id !== "system") {
           localStorage.setItem("active_school_id", payload.school_id);
         }
         window.dispatchEvent(new Event("auth-changed"));
@@ -265,7 +267,7 @@ export function LoginPage() {
 
           <div className="mt-10 text-center">
             <p className="text-gray-500 font-bold text-xs tracking-wide">
-              New member? <Link to="/auth/signup" className="text-blue-600 hover:underline underline-offset-4 decoration-2">Create Account</Link>
+              New school? <Link to="/auth/signup" className="text-blue-600 hover:underline underline-offset-4 decoration-2">Create Admin Account</Link>
             </p>
           </div>
         </motion.div>

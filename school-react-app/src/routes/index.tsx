@@ -19,7 +19,7 @@ import {
   teacherRoutes,
   parentRoutes,
   studentRoutes,
-  ownerRoutes,
+  // ownerRoutes,
 } from "./generated-routes";
 
 // Auth pages are small and critical-path — keep them eager
@@ -147,27 +147,27 @@ export const router = createBrowserRouter([
         ],
       },
 
-      // ─── Owner ─────────────────────────────────────────────────────────
-      {
-        element: <ProtectedRoute allowedRoles={["owner"]} />,
-        children: [
-          { path: "/owner", element: <Navigate to="/owner/dashboard" replace /> },
-          ...ownerRoutes,
-          ...adminRoutes
-            .filter(route => route.path !== "/admin/dashboard" && !route.path?.startsWith("/admin/subscription"))
-            .map(route => ({
-              ...route,
-              path: (route.path || "").replace("/admin", "/owner")
-            })),
-          { path: "/owner/tests", element: suspense(AdminTestsPage) },
-          { path: "/owner/tests/create", element: suspense(AdminTestCreatePage) },
-          { path: "/owner/tests/marks", element: suspense(AdminTestMarksPage) },
-        ],
-      },
+      // ─── Owner (Disabled) ───────────────────────────────────────────────
+      // {
+      //   element: <ProtectedRoute allowedRoles={["owner"]} />,
+      //   children: [
+      //     { path: "/owner", element: <Navigate to="/owner/dashboard" replace /> },
+      //     ...ownerRoutes,
+      //     ...adminRoutes
+      //       .filter(route => route.path !== "/admin/dashboard" && !route.path?.startsWith("/admin/subscription"))
+      //       .map(route => ({
+      //         ...route,
+      //         path: (route.path || "").replace("/admin", "/owner")
+      //       })),
+      //     { path: "/owner/tests", element: suspense(AdminTestsPage) },
+      //     { path: "/owner/tests/create", element: suspense(AdminTestCreatePage) },
+      //     { path: "/owner/tests/marks", element: suspense(AdminTestMarksPage) },
+      //   ],
+      // },
 
       // ─── Admin ─────────────────────────────────────────────────────────
       {
-        element: <ProtectedRoute allowedRoles={["admin", "super_admin", "owner"]} />,
+        element: <ProtectedRoute allowedRoles={["admin", "super_admin" /* , "owner" */]} />,
         children: [
           { path: "/admin", element: <Navigate to="/admin/dashboard" replace /> },
           ...adminRoutes,

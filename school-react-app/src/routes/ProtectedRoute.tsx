@@ -19,8 +19,8 @@ interface ProtectedRouteProps {
   allowedRoles?: Role[];
 }
 
-const ROLE_HOME: Record<Role, string> = {
-  owner: "/owner/dashboard",
+const ROLE_HOME: Partial<Record<Role, string>> = {
+  // owner: "/owner/dashboard",
   super_admin: "/admin/dashboard",
   admin: "/admin/dashboard",
   teacher: "/teacher/dashboard",

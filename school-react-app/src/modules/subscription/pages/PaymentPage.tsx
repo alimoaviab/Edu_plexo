@@ -92,7 +92,9 @@ export function PaymentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
-  const rolePrefix = location.pathname.startsWith("/admin") ? "/admin" : "/owner";
+  // Owner role prefix disabled
+  // const rolePrefix = location.pathname.startsWith("/admin") ? "/admin" : "/owner";
+  const rolePrefix = "/admin";
 
   useEffect(() => {
     if (!plan) {
@@ -204,7 +206,7 @@ export function PaymentPage() {
   ];
 
   return (
-    <SchoolShell eyebrow="Owner Portal" title="Subscription Upgrade">
+    <SchoolShell eyebrow="Administration" title="Subscription Upgrade">
       <div className="max-w-6xl mx-auto space-y-8 pb-16">
         {/* Header & Breadcrumb */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">

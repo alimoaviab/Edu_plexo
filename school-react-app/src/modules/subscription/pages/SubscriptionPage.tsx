@@ -106,10 +106,12 @@ export function SubscriptionPage() {
     return true;
   });
 
-  const rolePrefix = window.location.pathname.startsWith("/admin") ? "/admin" : "/owner";
+  // Owner role prefix disabled
+  // const rolePrefix = window.location.pathname.startsWith("/admin") ? "/admin" : "/owner";
+  const rolePrefix = "/admin";
 
   return (
-    <SchoolShell eyebrow="Owner Portal" title="Subscription & Billing">
+    <SchoolShell eyebrow="Administration" title="Subscription & Billing">
       <div className="max-w-7xl mx-auto space-y-10 pb-16">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/80">

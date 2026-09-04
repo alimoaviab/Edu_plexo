@@ -73,7 +73,10 @@ export const authHandlers = [
         { status: 400 }
       );
     }
-    return HttpResponse.json({ ok: true, data: { email: body.email } });
+    return HttpResponse.json({
+      ok: true,
+      data: { email: body.email, token: "mock-token", school_id: "SCH-MOCK" },
+    });
   }),
 
   // Auth utility shims — match old-app/api/[...slug]/route.ts behaviour for

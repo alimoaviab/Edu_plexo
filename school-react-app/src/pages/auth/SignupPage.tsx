@@ -1,33 +1,20 @@
 /**
- * Owner Signup & Brevo Email OTP Verification.
- *
- * Implements a two-stage registration:
- * Stage 1: Owner Details Submission (FullName, Phone, Email, Password)
- * Stage 2: Authoritative 5-Minute 6-Digit OTP Email Verification via Brevo
+ * Admin Signup & Instant Account Activation.
+ * Registers school and administrator account directly without OTP verification.
  */
 
-import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { AppIcon } from "shared/ui/AppIcon";
-import { OtpInput } from "../../components/auth/OtpInput";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9\s]).{8,}$/;
-const STORAGE_KEY = "eduplexo_pending_signup_session";
-
-interface PendingSession {
-  pendingId: string;
-  email: string;
-  expiresAt: number; // epoch ms
-  resendAt: number;  // epoch ms
-}
 
 export function SignupPage() {
   const navigate = useNavigate();
 
   // Form state
-  const [stage, setStage] = useState<"form" | "verify">("form");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -35,6 +22,7 @@ export function SignupPage() {
 
   const [formData, setFormData] = useState({
     fullName: "",
+    schoolName: "",
     email: "",
     phone: "",
     password: "",
@@ -44,69 +32,6 @@ export function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // OTP Verification state
-  const [pendingSession, setPendingSession] = useState<PendingSession | null>(null);
-  const [otpValue, setOtpValue] = useState("");
-  const [timeRemaining, setTimeRemaining] = useState<number>(300); // seconds
-  const [resendCooldown, setResendCooldown] = useState<number>(60); // seconds
-  const [isResending, setIsResending] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-
-  // Change Email Modal state
-  const [showChangeEmail, setShowChangeEmail] = useState(false);
-  const [newEmailInput, setNewEmailInput] = useState("");
-  const [isChangingEmail, setIsChangingEmail] = useState(false);
-
-  // Restore existing pending session on mount
-  useEffect(() => {
-    try {
-      const stored = sessionStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed: PendingSession = JSON.parse(stored);
-        if (parsed.expiresAt > Date.now()) {
-          setPendingSession(parsed);
-          setStage("verify");
-        } else {
-          sessionStorage.removeItem(STORAGE_KEY);
-        }
-      }
-    } catch {
-      sessionStorage.removeItem(STORAGE_KEY);
-    }
-  }, []);
-
-  // Synchronize 5-minute countdown and 60-second resend cooldown timers
-  useEffect(() => {
-    if (stage !== "verify" || !pendingSession) return;
-
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const secondsLeft = Math.max(0, Math.floor((pendingSession.expiresAt - now) / 1000));
-      const resendLeft = Math.max(0, Math.floor((pendingSession.resendAt - now) / 1000));
-
-      setTimeRemaining(secondsLeft);
-      setResendCooldown(resendLeft);
-
-      if (secondsLeft === 0) {
-        if (!isResending) {
-          setError((prev) => {
-            if (prev && prev !== "This verification code has expired. Please request a new code.") {
-              return prev;
-            }
-            return "This verification code has expired. Please request a new code.";
-          });
-        }
-      } else {
-        // As long as there is time remaining, clear any stale expiration error
-        setError((prev) =>
-          prev === "This verification code has expired. Please request a new code." ? "" : prev
-        );
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [stage, pendingSession, isResending]);
-
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -114,7 +39,8 @@ export function SignupPage() {
   }
 
   function validate(): string | null {
-    if (!formData.fullName.trim()) return "Owner name is required";
+    if (!formData.fullName.trim()) return "Administrator name is required";
+    if (!formData.schoolName.trim()) return "School / Institution name is required";
     if (!formData.phone.trim()) return "Phone number is required";
     if (!formData.email.trim()) return "Email is required";
     if (!EMAIL_REGEX.test(formData.email)) return "Please enter a valid email address";
@@ -125,7 +51,7 @@ export function SignupPage() {
     return null;
   }
 
-  // ─── Stage 1: Submit Details & Request 6-Digit OTP ────────────────────────
+  // ─── Submit Details & Instant Activation ───────────────────────────────
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const v = validate();
@@ -144,10 +70,11 @@ export function SignupPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           fullName: formData.fullName.trim(),
+          schoolName: formData.schoolName.trim(),
           phone: formData.phone.trim(),
           email: formData.email.trim(),
           password: formData.password,
-          role: "owner"
+          role: "admin"
         }),
       });
 
@@ -158,9 +85,7 @@ export function SignupPage() {
 
       const data = result?.data;
 
-      // ─── Super Admin Bypass: Direct Login when Skip OTP is active ───
       if (data?.token) {
-        sessionStorage.removeItem(STORAGE_KEY);
         setSuccessMessage("Account created successfully! Redirecting to your dashboard...");
 
         localStorage.removeItem("active_school_id");
@@ -172,224 +97,25 @@ export function SignupPage() {
         localStorage.removeItem("student_id");
 
         localStorage.setItem("token", data.token);
-        if (data.role !== "owner" && data.school_id && data.school_id !== "system") {
+        if (data.school_id && data.school_id !== "system") {
           localStorage.setItem("active_school_id", data.school_id);
+        }
+        if (data.active_academic_year_id) {
+          localStorage.setItem("academic_year_id", data.active_academic_year_id);
         }
         window.dispatchEvent(new Event("auth-changed"));
         setTimeout(() => {
-          if (data.role === "owner") {
-            navigate("/owner/dashboard", { replace: true });
-          } else {
-            navigate("/admin/dashboard", { replace: true });
-          }
+          navigate("/admin/dashboard", { replace: true });
         }, 800);
-        return;
+      } else {
+        navigate("/auth/login", { replace: true });
       }
-
-      if (!data?.pending_id) {
-        throw new Error("Invalid response received from authentication server.");
-      }
-
-      const expirySeconds = data.expires_in_seconds || 300;
-      const cooldownSeconds = data.resend_cooldown_seconds || 60;
-      const session: PendingSession = {
-        pendingId: data.pending_id,
-        email: data.email || formData.email.trim(),
-        expiresAt: Date.now() + expirySeconds * 1000,
-        resendAt: Date.now() + cooldownSeconds * 1000,
-      };
-
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-      setPendingSession(session);
-      setTimeRemaining(expirySeconds);
-      setResendCooldown(cooldownSeconds);
-      setOtpValue("");
-      setError("");
-      setStage("verify");
-      setSuccessMessage("We sent a 6-digit verification code to your email address.");
     } catch (err: unknown) {
       setError((err as Error).message || "Signup failed. Please try again.");
     } finally {
       setLoading(false);
     }
   }
-
-  // ─── Stage 2: Verify 6-Digit OTP & Activate Account ───────────────────────
-  async function handleVerifyOTP(codeToVerify?: string) {
-    const code = codeToVerify || otpValue;
-    if (!code || code.length !== 6) {
-      setError("Please enter the complete 6-digit verification code.");
-      return;
-    }
-    if (!pendingSession?.pendingId) {
-      setError("Verification session not found. Please sign up again.");
-      return;
-    }
-
-    setIsVerifying(true);
-    setError("");
-    setSuccessMessage("");
-
-    try {
-      const response = await fetch("/api/auth/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pending_id: pendingSession.pendingId,
-          otp: code,
-        }),
-      });
-
-      const result = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(result?.error?.message || result?.message || "Verification failed.");
-      }
-
-      // Success! Clear session storage and store auth token
-      sessionStorage.removeItem(STORAGE_KEY);
-      setSuccessMessage("Email verified successfully! Redirecting to your dashboard...");
-
-      if (result?.data?.token) {
-        // Clear old session storage to prevent cross-account bleed
-        localStorage.removeItem("active_school_id");
-        localStorage.removeItem("active_branch_id");
-        localStorage.removeItem("academic_year_id");
-        localStorage.removeItem("last_school_id");
-        localStorage.removeItem("profile_id");
-        localStorage.removeItem("class_id");
-        localStorage.removeItem("student_id");
-
-        localStorage.setItem("token", result.data.token);
-        if (result.data.role !== "owner" && result.data.school_id && result.data.school_id !== "system") {
-          localStorage.setItem("active_school_id", result.data.school_id);
-        }
-        window.dispatchEvent(new Event("auth-changed"));
-        setTimeout(() => {
-          if (result.data.role === "owner") {
-            navigate("/owner/dashboard", { replace: true });
-          } else {
-            navigate("/admin/dashboard", { replace: true });
-          }
-        }, 800);
-      } else {
-        setTimeout(() => navigate("/auth/login"), 800);
-      }
-    } catch (err: unknown) {
-      setError((err as Error).message || "Incorrect verification code. Please try again.");
-      setOtpValue("");
-    } finally {
-      setIsVerifying(false);
-    }
-  }
-
-  // ─── Stage 2: Resend Fresh 6-Digit OTP ────────────────────────────────────
-  async function handleResendOTP() {
-    if (resendCooldown > 0 || !pendingSession?.pendingId || isResending) return;
-
-    setIsResending(true);
-    setError("");
-    setSuccessMessage("");
-    // Optimistically reset time remaining so expiration error disappears instantly
-    setTimeRemaining(300);
-
-    try {
-      const response = await fetch("/api/auth/resend-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pending_id: pendingSession.pendingId,
-        }),
-      });
-
-      const result = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(result?.error?.message || result?.message || "Failed to resend verification code.");
-      }
-
-      const data = result?.data;
-      const expirySeconds = data?.expires_in_seconds || 300;
-      const cooldownSeconds = data?.resend_cooldown_seconds || 60;
-
-      const updatedSession: PendingSession = {
-        ...pendingSession,
-        expiresAt: Date.now() + expirySeconds * 1000,
-        resendAt: Date.now() + cooldownSeconds * 1000,
-      };
-
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSession));
-      setPendingSession(updatedSession);
-      setTimeRemaining(expirySeconds);
-      setResendCooldown(cooldownSeconds);
-      setOtpValue("");
-      setError("");
-      setSuccessMessage("A fresh verification code has been dispatched to your email.");
-    } catch (err: unknown) {
-      setError((err as Error).message || "Failed to resend code.");
-    } finally {
-      setIsResending(false);
-    }
-  }
-
-  // ─── Stage 2: Change Email Address ────────────────────────────────────────
-  async function handleChangeEmailSubmit(e: FormEvent) {
-    e.preventDefault();
-    const cleanEmail = newEmailInput.trim().toLowerCase();
-    if (!cleanEmail || !EMAIL_REGEX.test(cleanEmail)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-    if (!pendingSession?.pendingId) return;
-
-    setIsChangingEmail(true);
-    setError("");
-
-    try {
-      const response = await fetch("/api/auth/change-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pending_id: pendingSession.pendingId,
-          new_email: cleanEmail,
-        }),
-      });
-
-      const result = await response.json().catch(() => null);
-      if (!response.ok) {
-        throw new Error(result?.error?.message || result?.message || "Failed to update email.");
-      }
-
-      const data = result?.data;
-      const expirySeconds = data?.expires_in_seconds || 300;
-      const cooldownSeconds = data?.resend_cooldown_seconds || 60;
-
-      const updatedSession: PendingSession = {
-        ...pendingSession,
-        email: cleanEmail,
-        expiresAt: Date.now() + expirySeconds * 1000,
-        resendAt: Date.now() + cooldownSeconds * 1000,
-      };
-
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSession));
-      setPendingSession(updatedSession);
-      setTimeRemaining(expirySeconds);
-      setResendCooldown(cooldownSeconds);
-      setOtpValue("");
-      setError("");
-      setShowChangeEmail(false);
-      setSuccessMessage(`Email updated! We sent a new verification code to ${cleanEmail}.`);
-    } catch (err: unknown) {
-      setError((err as Error).message || "Failed to update email address.");
-    } finally {
-      setIsChangingEmail(false);
-    }
-  }
-
-  // Formatted countdown strings
-  const formatTimer = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] relative flex items-center justify-center p-4 md:p-8 overflow-hidden">
@@ -402,7 +128,6 @@ export function SignupPage() {
 
       <div className="w-full max-w-[500px] relative z-10">
         <motion.div
-          layout
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
@@ -414,310 +139,139 @@ export function SignupPage() {
               <img src="/logo.jpeg" alt="Eduplexo" className="h-full w-full object-cover" />
             </div>
 
-            {stage === "form" ? (
-              <>
-                <h2 className="text-3xl font-black text-gray-900 mb-1 tracking-tight">Create Owner Account</h2>
-                <p className="text-gray-500 font-medium text-xs">Enter owner details below to register your account</p>
-              </>
-            ) : (
-              <>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-bold mb-2">
-                  <AppIcon name="ShieldCheck" size={14} />
-                  <span>Security Verification</span>
-                </div>
-                <h2 className="text-3xl font-black text-gray-900 mb-1 tracking-tight">Verify Your Email</h2>
-                <p className="text-gray-500 font-medium text-xs max-w-xs mx-auto">
-                  We've sent a 6-digit verification code to{" "}
-                  <strong className="text-gray-800 font-semibold">{pendingSession?.email}</strong>
-                </p>
-              </>
-            )}
+            <h2 className="text-3xl font-black text-gray-900 mb-1 tracking-tight">Create Admin Account</h2>
+            <p className="text-gray-500 font-medium text-xs">Register your school and administrator account</p>
           </div>
 
-          <AnimatePresence mode="wait">
-            {stage === "form" ? (
-              /* ─── Stage 1: Registration Form ────────────────────────────── */
-              <motion.form
-                key="signup-form"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-4"
-                onSubmit={handleSubmit}
-              >
-                <Field 
-                  label="Owner Name" 
-                  name="fullName" 
-                  required 
-                  value={formData.fullName} 
-                  onChange={handleChange} 
-                  placeholder="e.g. Aisha Khan" 
-                  autoFocus 
-                />
-                
-                <Field 
-                  label="Phone Number" 
-                  name="phone" 
-                  type="tel" 
-                  required 
-                  value={formData.phone} 
-                  onChange={handleChange} 
-                  placeholder="+92 300 1234567" 
-                />
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <Field 
+              label="Administrator Name" 
+              name="fullName" 
+              required 
+              value={formData.fullName} 
+              onChange={handleChange} 
+              placeholder="e.g. Dr. Salman Ahmed" 
+              autoFocus 
+            />
 
-                <Field 
-                  label="Email Address" 
-                  name="email" 
-                  type="email" 
-                  required 
-                  value={formData.email} 
-                  onChange={handleChange} 
-                  placeholder="owner@example.com" 
-                />
+            <Field 
+              label="School / Institution Name" 
+              name="schoolName" 
+              required 
+              value={formData.schoolName} 
+              onChange={handleChange} 
+              placeholder="e.g. Beaconhouse Cambridge School" 
+            />
+            
+            <Field 
+              label="Phone Number" 
+              name="phone" 
+              type="tel" 
+              required 
+              value={formData.phone} 
+              onChange={handleChange} 
+              placeholder="+92 300 1234567" 
+            />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <PasswordField 
-                    label="Password" 
-                    name="password" 
-                    value={formData.password} 
-                    onChange={handleChange} 
-                    show={showPassword} 
-                    onToggle={() => setShowPassword(!showPassword)} 
-                  />
-                  <PasswordField 
-                    label="Confirm Password" 
-                    name="confirmPassword" 
-                    value={formData.confirmPassword} 
-                    onChange={handleChange} 
-                    show={showConfirmPassword} 
-                    onToggle={() => setShowConfirmPassword(!showConfirmPassword)} 
-                  />
-                </div>
+            <Field 
+              label="Email Address" 
+              name="email" 
+              type="email" 
+              required 
+              value={formData.email} 
+              onChange={handleChange} 
+              placeholder="admin@school.com" 
+            />
 
-                <div className="flex items-start gap-3 pt-1">
-                  <input
-                    id="acceptTerms"
-                    name="acceptTerms"
-                    type="checkbox"
-                    required
-                    checked={acceptTerms}
-                    onChange={(e) => {
-                      setAcceptTerms(e.target.checked);
-                      setError("");
-                    }}
-                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 accent-blue-600 cursor-pointer mt-0.5"
-                  />
-                  <label htmlFor="acceptTerms" className="text-xs text-gray-600 font-medium select-none cursor-pointer">
-                    I accept the{" "}
-                    <a
-                      href="https://eduplexo.com/terms"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-blue-600 hover:underline font-semibold"
-                    >
-                      Terms & Conditions
-                    </a>{" "}
-                    and{" "}
-                    <a
-                      href="https://eduplexo.com/privacy"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-blue-600 hover:underline font-semibold"
-                    >
-                      Privacy Policy
-                    </a>
-                    .
-                  </label>
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <PasswordField 
+                label="Password" 
+                name="password" 
+                value={formData.password} 
+                onChange={handleChange} 
+                show={showPassword} 
+                onToggle={() => setShowPassword(!showPassword)} 
+              />
+              <PasswordField 
+                label="Confirm Password" 
+                name="confirmPassword" 
+                value={formData.confirmPassword} 
+                onChange={handleChange} 
+                show={showConfirmPassword} 
+                onToggle={() => setShowConfirmPassword(!showConfirmPassword)} 
+              />
+            </div>
 
-                {error && (
-                  <p className="text-[11px] text-red-600 font-bold bg-red-50/90 p-3.5 rounded-2xl border border-red-200 flex items-center gap-2 shadow-sm">
-                    <AppIcon name="AlertCircle" size={16} className="flex-shrink-0 text-red-500" />
-                    <span>{error}</span>
-                  </p>
-                )}
-
-                <button 
-                  type="submit" 
-                  disabled={loading} 
-                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4 text-sm"
+            <div className="flex items-start gap-3 pt-1">
+              <input
+                id="acceptTerms"
+                name="acceptTerms"
+                type="checkbox"
+                required
+                checked={acceptTerms}
+                onChange={(e) => {
+                  setAcceptTerms(e.target.checked);
+                  setError("");
+                }}
+                className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 accent-blue-600 cursor-pointer mt-0.5"
+              />
+              <label htmlFor="acceptTerms" className="text-xs text-gray-600 font-medium select-none cursor-pointer">
+                I accept the{" "}
+                <a
+                  href="https://eduplexo.com/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-blue-600 hover:underline font-semibold"
                 >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                      <span>Sending Verification Code...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Create Owner Account</span>
-                      <AppIcon name="ArrowRight" size={18} />
-                    </>
-                  )}
-                </button>
-              </motion.form>
-            ) : (
-              /* ─── Stage 2: OTP Verification Card ────────────────────────── */
-              <motion.div
-                key="otp-verification"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-5"
-              >
-                {/* Status Messages */}
-                {!error && successMessage && (
-                  <div className="text-xs text-emerald-700 font-semibold bg-emerald-50 p-3.5 rounded-2xl border border-emerald-200 flex items-center gap-2">
-                    <AppIcon name="CheckCircle" size={16} className="flex-shrink-0 text-emerald-600" />
-                    <span>{successMessage}</span>
-                  </div>
-                )}
-
-                {error && (
-                  <div className="text-[11px] text-red-600 font-bold bg-red-50/90 p-3.5 rounded-2xl border border-red-200 flex items-center gap-2 shadow-sm">
-                    <AppIcon name="AlertCircle" size={16} className="flex-shrink-0 text-red-500" />
-                    <span>{error}</span>
-                  </div>
-                )}
-
-                {/* 6-Digit Segmented Input */}
-                <div className="py-1">
-                  <OtpInput
-                    length={6}
-                    value={otpValue}
-                    onChange={(val: string) => {
-                      setOtpValue(val);
-                      setError("");
-                    }}
-                    onComplete={(code: string) => handleVerifyOTP(code)}
-                    disabled={isVerifying}
-                    hasError={Boolean(error)}
-                    autoFocus
-                  />
-                </div>
-
-                {/* Expiration Countdown & Change Email */}
-                <div className="flex items-center justify-between px-1 text-xs">
-                  <div className="flex items-center gap-1.5 font-semibold text-slate-600">
-                    <AppIcon name="Clock" size={14} className={timeRemaining <= 60 ? "text-red-500" : "text-blue-500"} />
-                    <span>Expires in:</span>
-                    <span className={`font-mono font-bold ${timeRemaining <= 60 ? "text-red-600 animate-pulse" : "text-slate-900"}`}>
-                      {formatTimer(timeRemaining)}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewEmailInput(pendingSession?.email || "");
-                      setShowChangeEmail(prev => !prev);
-                      setError("");
-                    }}
-                    className="text-blue-600 hover:text-blue-800 font-semibold hover:underline"
-                  >
-                    Change email
-                  </button>
-                </div>
-
-                {/* Inline Change Email Form Drawer */}
-                {showChangeEmail && (
-                  <motion.form
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    onSubmit={handleChangeEmailSubmit}
-                    className="p-3.5 bg-blue-50/60 rounded-2xl border border-blue-100 space-y-2.5"
-                  >
-                    <label className="text-[11px] font-bold text-blue-900 uppercase tracking-wider block">
-                      Update Verification Email
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="email"
-                        required
-                        value={newEmailInput}
-                        onChange={(e) => setNewEmailInput(e.target.value)}
-                        placeholder="newowner@example.com"
-                        className="flex-1 h-10 px-3 text-xs bg-white rounded-xl border border-blue-200 outline-none focus:border-blue-600 font-semibold"
-                      />
-                      <button
-                        type="submit"
-                        disabled={isChangingEmail}
-                        className="px-4 h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl disabled:opacity-50"
-                      >
-                        {isChangingEmail ? "Saving..." : "Update"}
-                      </button>
-                    </div>
-                  </motion.form>
-                )}
-
-                {/* Primary Verification Action */}
-                <button
-                  type="button"
-                  onClick={() => handleVerifyOTP()}
-                  disabled={isVerifying || otpValue.length !== 6}
-                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  Terms & Conditions
+                </a>{" "}
+                and{" "}
+                <a
+                  href="https://eduplexo.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-blue-600 hover:underline font-semibold"
                 >
-                  {isVerifying ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                      <span>Verifying Code...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Verify & Activate Account</span>
-                      <AppIcon name="ArrowRight" size={18} />
-                    </>
-                  )}
-                </button>
+                  Privacy Policy
+                </a>
+                .
+              </label>
+            </div>
 
-                {/* Resend OTP Action */}
-                <div className="text-center pt-2">
-                  {resendCooldown > 0 ? (
-                    <p className="text-xs text-slate-400 font-medium">
-                      Didn't receive code? Resend available in{" "}
-                      <span className="font-mono font-bold text-slate-600">{resendCooldown}s</span>
-                    </p>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleResendOTP}
-                      disabled={isResending}
-                      className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1.5"
-                    >
-                      {isResending ? (
-                        <span>Sending new code...</span>
-                      ) : (
-                        <>
-                          <AppIcon name="RefreshCw" size={13} />
-                          <span>Resend verification code</span>
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-
-                {/* Return to signup form */}
-                <div className="text-center border-t border-slate-100 pt-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sessionStorage.removeItem(STORAGE_KEY);
-                      setStage("form");
-                      setError("");
-                      setSuccessMessage("");
-                    }}
-                    className="text-xs text-slate-500 hover:text-slate-800 font-semibold"
-                  >
-                    ← Back to signup details
-                  </button>
-                </div>
-              </motion.div>
+            {error && (
+              <p className="text-[11px] text-red-600 font-bold bg-red-50/90 p-3.5 rounded-2xl border border-red-200 flex items-center gap-2 shadow-sm">
+                <AppIcon name="AlertCircle" size={16} className="flex-shrink-0 text-red-500" />
+                <span>{error}</span>
+              </p>
             )}
-          </AnimatePresence>
+
+            {successMessage && (
+              <div className="text-xs text-emerald-700 font-semibold bg-emerald-50 p-3.5 rounded-2xl border border-emerald-200 flex items-center gap-2">
+                <AppIcon name="CheckCircle" size={16} className="flex-shrink-0 text-emerald-600" />
+                <span>{successMessage}</span>
+              </div>
+            )}
+
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-4 text-sm"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  <span>Creating Account...</span>
+                </>
+              ) : (
+                <>
+                  <span>Create Admin Account</span>
+                  <AppIcon name="ArrowRight" size={18} />
+                </>
+              )}
+            </button>
+          </form>
 
           {/* Footer SignIn link */}
           <div className="mt-6 text-center border-t border-gray-100 pt-5">
@@ -778,3 +332,18 @@ function PasswordField({ label, name, value, onChange, show, onToggle }: any) {
     </div>
   );
 }
+
+/* =========================================================================
+ * PREVIOUS OTP VERIFICATION FLOW (COMMENTED OUT AS PER REQUIREMENT)
+ * =========================================================================
+ * const STORAGE_KEY = "eduplexo_pending_signup_session";
+ * interface PendingSession {
+ *   pendingId: string;
+ *   email: string;
+ *   expiresAt: number;
+ *   resendAt: number;
+ * }
+ * // OTP verification stage, countdown timers, resend OTP & email update
+ * // were disabled to allow direct, instant admin account creation.
+ * ========================================================================= */
+

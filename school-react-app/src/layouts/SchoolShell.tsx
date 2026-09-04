@@ -28,7 +28,7 @@ import {
 import { useAuth, type Role } from "@/hooks/useAuth";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { ChildSwitcher } from "@/components/parent/ChildSwitcher";
-import { OwnerSchoolSwitcher } from "@/components/owner/OwnerSchoolSwitcher";
+// import { OwnerSchoolSwitcher } from "@/components/owner/OwnerSchoolSwitcher";
 import { GlobalSearch } from "shared/components/GlobalSearch";
 import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
 import { useSubscription } from "@/modules/subscription/hooks/useSubscription";
@@ -48,15 +48,16 @@ type NavGroup = {
   items: NavItem[];
 };
 
-const ownerNavGroups: NavGroup[] = [
-  {
-    label: "Executive",
-    items: [
-      { label: "Dashboard", href: "/owner/dashboard", icon: "dashboard" },
-      { label: "My Schools", href: "/owner/schools", icon: "domain" },
-    ],
-  },
-];
+// Owner nav groups disabled
+// const ownerNavGroups: NavGroup[] = [
+//   {
+//     label: "Executive",
+//     items: [
+//       { label: "Dashboard", href: "/owner/dashboard", icon: "dashboard" },
+//       { label: "My Schools", href: "/owner/schools", icon: "domain" },
+//     ],
+//   },
+// ];
 
 const adminNavGroups: NavGroup[] = [
   {
@@ -234,21 +235,20 @@ const studentNavGroups: NavGroup[] = [
 
 function navGroupsForRole(role: Role | undefined): NavGroup[] {
   if (!role) return [];
-  if (role === "owner") {
-    // Map the admin routes to /owner/ for the owner role
-    const ownerMappedAdminGroups = adminNavGroups.map(group => ({
-      ...group,
-      items: (group.items || [])
-        .filter(Boolean)
-        .filter(item => item && item.href && item.href !== "/admin/dashboard")
-        .map(item => ({
-          ...item,
-          href: item.href.replace("/admin", "/owner")
-        }))
-    })).filter(group => Array.isArray(group.items) && group.items.length > 0); // Remove empty groups like Reports
-
-    return [...ownerNavGroups, ...ownerMappedAdminGroups];
-  }
+  // Owner role nav mapping disabled
+  // if (role === "owner") {
+  //   const ownerMappedAdminGroups = adminNavGroups.map(group => ({
+  //     ...group,
+  //     items: (group.items || [])
+  //       .filter(Boolean)
+  //       .filter(item => item && item.href && item.href !== "/admin/dashboard")
+  //       .map(item => ({
+  //         ...item,
+  //         href: item.href.replace("/admin", "/owner")
+  //       }))
+  //   })).filter(group => Array.isArray(group.items) && group.items.length > 0);
+  //   return [...ownerNavGroups, ...ownerMappedAdminGroups];
+  // }
   if (role === "admin" || role === "super_admin") return adminNavGroups;
   if (role === "teacher") return teacherNavGroups;
   if (role === "parent") return parentNavGroups;
@@ -347,7 +347,7 @@ const routeToModuleMap: Record<string, string> = {
   "/admin/templates/edit/:id": "certificates",
   "/admin/fee": "fee",
   "/admin/subscription": "subscription",
-  "/owner/subscription": "subscription",
+  // "/owner/subscription": "subscription",
   "/admin/schedule": "schedule",
   "/admin/messages": "conversations",
   "/admin/settings": "settings",
@@ -468,7 +468,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
   const isExpiringSoon = daysRemaining !== null && daysRemaining <= 3;
   const isExpired = daysRemaining !== null && daysRemaining <= 0;
   const graceDaysRemaining = daysRemaining !== null ? Math.max(0, 3 + daysRemaining) : 0;
-  const showRenewalPopup = !isRenewalDismissed && isExpiringSoon && (user?.role === "owner" || user?.role === "admin");
+  const showRenewalPopup = !isRenewalDismissed && isExpiringSoon && (/* user?.role === "owner" || */ user?.role === "admin");
 
   const navGroups = useMemo(() => navGroupsForRole(user?.role), [user]);
 
@@ -559,9 +559,10 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
     if (user) {
       const path = pathname;
       if (path.startsWith("/admin")) {
-        if (user.role === "owner") {
-          navigate(path.replace(/^\/admin/, "/owner"), { replace: true });
-        } else if (user.role !== "admin" && user.role !== "super_admin") {
+        // if (user.role === "owner") {
+        //   navigate(path.replace(/^\/admin/, "/owner"), { replace: true });
+        // } else
+        if (user.role !== "admin" && user.role !== "super_admin") {
           navigate(`/${user.role}/dashboard`, { replace: true });
         }
       } else if (path.startsWith("/teacher") && user.role !== "teacher") {
@@ -783,7 +784,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
                   {isExpired ? `${graceDaysRemaining}d grace` : `${daysRemaining}d left`}
                 </span>
                 <Link
-                  to={user?.role === "owner" ? "/owner/subscription" : "/admin/subscription"}
+                  to="/admin/subscription"
                   className={`px-2 py-0.5 rounded-lg text-[10px] font-black text-white shadow-xs transition-transform active:scale-95 ${
                     isExpired ? "bg-rose-600 hover:bg-rose-700" : "bg-amber-600 hover:bg-amber-700"
                   }`}
@@ -803,7 +804,8 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
           </div>
 
           <div className="flex items-center gap-3 relative z-[100] overflow-visible">
-            {user.role === "owner" && <OwnerSchoolSwitcher />}
+            {/* Owner school switcher disabled */}
+            {/* {user.role === "owner" && <OwnerSchoolSwitcher />} */}
             {user.role === "parent" && <ChildSwitcher />}
 
             {user.role === "admin" && (
@@ -845,7 +847,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
             )}
 
             <div className="flex items-center gap-2">
-              {(user.role === "admin" || user.role === "owner") && (
+              {(user.role === "admin" /* || user.role === "owner" */) && (
                 <AdminActions 
                   allowedModules={allowedModules} 
                   subscription={subscription} 

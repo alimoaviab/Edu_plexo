@@ -1326,7 +1326,7 @@ var (
 		AutoApproveSchools: true,
 		DefaultPackageID:   "",
 		TrialDays:          14,
-		SkipOTP:            false,
+		SkipOTP:            true,
 		PackageRates: map[string]int{
 			"academic":       5,
 			"learning":       4,
@@ -1366,10 +1366,11 @@ func (h *Handler) initPlatformSettings() {
 			auto_approve_schools BOOLEAN NOT NULL DEFAULT TRUE,
 			default_package_id   TEXT NOT NULL DEFAULT '',
 			trial_days           INT NOT NULL DEFAULT 14,
-			skip_otp             BOOLEAN NOT NULL DEFAULT FALSE,
+			skip_otp             BOOLEAN NOT NULL DEFAULT TRUE,
 			package_rates        JSONB NOT NULL DEFAULT '{}',
 			updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
+		UPDATE platform_settings SET skip_otp = TRUE WHERE id = 'default';
 	`)
 
 	var autoApprove bool

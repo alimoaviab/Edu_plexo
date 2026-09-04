@@ -163,7 +163,9 @@ export function CustomPlanBuilder() {
     return cost < 500 ? 500 : cost;
   }, [studentLimit, totalRateForDisplay]);
 
-  const rolePrefix = window.location.pathname.startsWith("/admin") ? "/admin" : "/owner";
+  // Owner role prefix disabled
+  // const rolePrefix = window.location.pathname.startsWith("/admin") ? "/admin" : "/owner";
+  const rolePrefix = "/admin";
 
   const handleSavePlan = async () => {
     setSavingPlan(true);

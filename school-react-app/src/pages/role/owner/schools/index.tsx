@@ -1,4 +1,5 @@
-import { useState } from "react";
+// OwnerSchoolsPage disabled: Owner role has been removed.
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppIcon } from "shared/ui/AppIcon";
@@ -9,6 +10,10 @@ import { toast } from "@/utils/toast";
 export default function OwnerSchoolsPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    navigate("/admin/dashboard", { replace: true });
+  }, [navigate]);
   
   const { data: schoolsData, isLoading: loading } = useQuery<any[]>({
     queryKey: ["owner-schools"],

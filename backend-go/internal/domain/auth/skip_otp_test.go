@@ -83,8 +83,8 @@ func TestSignup_SkipOTP_DirectCreation(t *testing.T) {
 	if foundUser.Status != "active" {
 		t.Fatalf("expected user status to be 'active', got '%s'", foundUser.Status)
 	}
-	if foundUser.Role != "owner" {
-		t.Fatalf("expected user role to be 'owner', got '%s'", foundUser.Role)
+	if foundUser.Role != "admin" {
+		t.Fatalf("expected user role to be 'admin', got '%s'", foundUser.Role)
 	}
 
 	// Verify no pending signup was created

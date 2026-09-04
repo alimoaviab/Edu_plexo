@@ -20,7 +20,8 @@ interface StudentLimitModalProps {
 export function StudentLimitModal({ isOpen, onClose, currentCount, limit, planName }: StudentLimitModalProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isOwner = user?.role === "owner";
+  // const isOwner = user?.role === "owner";
+  const isOwner = false;
 
   if (!isOpen) return null;
 
@@ -46,9 +47,7 @@ export function StudentLimitModal({ isOpen, onClose, currentCount, limit, planNa
 
         {/* Description */}
         <p className="mt-3 text-gray-600 text-center text-sm">
-          {isOwner
-            ? "You have reached your subscription student limit. Please upgrade your plan to add more students."
-            : "Your school has reached its subscription student limit. Please contact your School Owner to upgrade the subscription plan to add more students."}
+          Your school has reached its subscription student limit. Please contact your administrator to upgrade the subscription plan to add more students.
         </p>
 
         {/* Usage Info */}
@@ -77,20 +76,21 @@ export function StudentLimitModal({ isOpen, onClose, currentCount, limit, planNa
 
         {/* Actions */}
         <div className="mt-6 space-y-3">
-          {isOwner ? (
+          {/* Owner upgrade link disabled */}
+          {/* {isOwner ? (
             <button
               onClick={() => { onClose(); navigate("/owner/subscription"); }}
               className="w-full py-3 px-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition"
             >
               Upgrade Plan
             </button>
-          ) : (
+          ) : ( */}
             <div className="p-3 bg-amber-50 border border-amber-100 rounded-xl text-center">
               <p className="text-xs font-semibold text-amber-800">
-                Contact your School Owner to increase student quota.
+                Contact your administrator to increase student quota.
               </p>
             </div>
-          )}
+          {/* )} */}
           <a
             href="mailto:support@eduplexo.com"
             className="block w-full py-3 px-4 text-center border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition text-xs"

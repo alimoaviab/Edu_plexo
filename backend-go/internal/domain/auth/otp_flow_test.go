@@ -12,6 +12,7 @@ import (
 
 	"github.com/eduplexo/backend-go/internal/config"
 	"github.com/eduplexo/backend-go/internal/domain/auth"
+	"github.com/eduplexo/backend-go/internal/domain/superadmin"
 	"github.com/eduplexo/backend-go/internal/store"
 )
 
@@ -51,6 +52,10 @@ func (m *mockEmailClient) lastSent() *mockEmailCall {
 }
 
 func setupTestAuthHandler() (*auth.Handler, *store.MemStore, *mockEmailClient) {
+	superadmin.SetPlatformSettings(superadmin.PlatformSettings{
+		SkipOTP: false,
+	})
+
 	cfg := config.Config{
 		JWTSecret:                      "test-jwt-secret-very-long-enough-32-chars",
 		AppName:                        "eduplexo",
@@ -178,7 +183,7 @@ func TestVerifyOTP_Success(t *testing.T) {
 		t.Fatalf("expected 3 users in store (2 seed + 1 new), got %d", len(memStore.Users))
 	}
 	user := memStore.Users[2]
-	if user.Email != "hamza@example.com" || user.Role != "owner" || user.Status != "active" {
+	if user.Email != "hamza@example.com" || user.Role != "admin" || user.Status != "active" {
 		t.Fatalf("unexpected user record: %+v", user)
 	}
 

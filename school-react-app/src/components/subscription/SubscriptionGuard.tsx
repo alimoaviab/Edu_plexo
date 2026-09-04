@@ -16,9 +16,9 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   // Exempt auth routes, subscription setup routes, and school onboarding routes
   const isExempt = 
     pathname.startsWith("/auth") || 
-    pathname.startsWith("/owner/subscription") ||
-    pathname.startsWith("/admin/subscription") ||
-    pathname.startsWith("/owner/schools");
+    // pathname.startsWith("/owner/subscription") ||
+    pathname.startsWith("/admin/subscription");
+    // pathname.startsWith("/owner/schools");
 
   const isSuperAdmin = user?.role === "super_admin";
 
