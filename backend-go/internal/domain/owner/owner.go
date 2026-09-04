@@ -79,14 +79,42 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 			totalStaff++
 		}
 	}
+
+	// Authoritative subscription summary for the owner (hydrated from PG).
+	// The latest non-cancelled row across the owner's schools is the current
+	// subscription; capacity is the owner-wide active limit.
+	subPlan := ""
+	subStatus := "none"
+	subEnd := time.Time{}
+	studentLimit := 0
 	for _, sub := range h.Store.Subscriptions {
-		if containsStr(ownerSchoolIDs, sub.SchoolID) {
-			if sub.Status == "active" || sub.Status == "trial" {
-				activeSubscriptions++
-				if !sub.NextRenewal.IsZero() && time.Until(sub.NextRenewal) < 15*24*time.Hour {
-					expiringSubscriptions++
-				}
+		if !containsStr(ownerSchoolIDs, sub.SchoolID) && sub.SchoolID != ctx.UserID {
+			continue
+		}
+		if sub.Status == "cancelled" {
+			continue
+		}
+		if subEnd.Before(sub.NextRenewal) || subEnd.IsZero() {
+			subEnd = sub.NextRenewal
+			subPlan = sub.PackageID
+			subStatus = sub.Status
+		}
+		if sub.Status == "active" || sub.Status == "trial" {
+			activeSubscriptions++
+			if sub.StudentLimit > studentLimit {
+				studentLimit = sub.StudentLimit
 			}
+			if !sub.NextRenewal.IsZero() && time.Until(sub.NextRenewal) < 15*24*time.Hour {
+				expiringSubscriptions++
+			}
+		}
+	}
+
+	daysRemaining := 0
+	if !subEnd.IsZero() {
+		daysRemaining = int(subEnd.Sub(time.Now()).Hours() / 24)
+		if daysRemaining < 0 {
+			daysRemaining = 0
 		}
 	}
 
@@ -114,6 +142,14 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 			"active_subscriptions":    activeSubscriptions,
 			"expiring_subscriptions":  expiringSubscriptions,
 			"schools":                 schools,
+			"subscription": map[string]any{
+				"plan":           subPlan,
+				"status":         subStatus,
+				"end_date":       subEnd,
+				"days_remaining": daysRemaining,
+				"students_used":  totalStudents,
+				"students_limit": studentLimit,
+			},
 		},
 	})
 }
@@ -401,17 +437,39 @@ func (h *Handler) CreateSchool(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: now,
 	}
 
-	// Create subscription (default 14-day free trial for onboarded campus)
-	trialExpiry := now.AddDate(0, 0, 14)
+	// Create subscription for the onboarded campus. The owner's subscription
+	// is authoritative: a new school MIRRORS the owner's current plan/period
+	// (never a fresh trial — that would reset the countdown on every campus).
+	// Only owners with no subscription at all get the default trial here.
+	var ownerSchoolIDs []string
+	for _, os := range h.Store.OwnerSchools {
+		if os.OwnerUserID == ctx.UserID {
+			ownerSchoolIDs = append(ownerSchoolIDs, os.SchoolID)
+		}
+	}
+	var ownerSub *store.Subscription
+	for _, sub := range h.Store.Subscriptions {
+		if (containsStr(ownerSchoolIDs, sub.SchoolID) || sub.SchoolID == ctx.UserID) && sub.Status != "cancelled" {
+			if ownerSub == nil || sub.CreatedAt.After(ownerSub.CreatedAt) {
+				ownerSub = sub
+			}
+		}
+	}
 	newSub := &store.Subscription{
 		ID:           store.NewID("sub"),
 		SchoolID:     schoolID,
 		PackageID:    "growth",
 		StudentLimit: 500,
 		Status:       "trial",
-		NextRenewal:  trialExpiry,
+		NextRenewal:  now.AddDate(0, 0, 14),
 		CreatedAt:    now,
 		UpdatedAt:    now,
+	}
+	if ownerSub != nil {
+		newSub.PackageID = ownerSub.PackageID
+		newSub.StudentLimit = ownerSub.StudentLimit
+		newSub.Status = ownerSub.Status
+		newSub.NextRenewal = ownerSub.NextRenewal
 	}
 
 	h.Store.Schools = append(h.Store.Schools, newSchool)

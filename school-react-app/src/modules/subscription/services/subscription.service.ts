@@ -15,6 +15,7 @@ export interface Plan {
 export interface Subscription {
   id: string;
   school_id: string;
+  owner_user_id?: string;
   plan_name: string;
   student_limit: number;
   price: number;
@@ -26,6 +27,7 @@ export interface Subscription {
   trial_used: boolean;
   trial_start_date?: string;
   trial_end_date?: string;
+  grace_ends_at?: string;
 }
 
 export interface ModulePackage {
@@ -60,6 +62,20 @@ export interface CurrentSubscription {
   allowed_modules?: Record<string, boolean>;
   package_builder_required?: boolean;
   pending_payment?: PendingPayment | null;
+  // ── Backend-derived lifecycle state (render as-is, never invent) ──
+  phase?: string;
+  payment_status?: "none" | "pending" | "approved";
+  next_plan?: string;
+  next_plan_start_at?: string;
+  grace_ends_at?: string;
+  suspends_at?: string;
+  renews_at?: string;
+  trial_ends_at?: string;
+  approved_payment?: PendingPayment | null;
+  is_suspended?: boolean;
+  in_grace_period?: boolean;
+  can_upgrade?: boolean;
+  can_renew?: boolean;
 }
 
 export interface HistoryEntry {

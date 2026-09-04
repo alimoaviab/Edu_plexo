@@ -1,6 +1,7 @@
 import { AppIcon } from "shared/ui/AppIcon";
 import { useEffect, useState } from 'react'
 import { apiRequest } from '@/lib/api'
+import { showToast } from '@/utils/toast'
 
 interface PaymentRequest {
   id: string
@@ -26,6 +27,8 @@ export function PaymentsPage() {
   const [tab, setTab] = useState<'pending' | 'approved' | 'rejected'>('pending')
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [confirmAction, setConfirmAction] = useState<{ type: 'verify' | 'reject'; payment: PaymentRequest } | null>(null)
+  const [rejectReason, setRejectReason] = useState('Payment could not be verified with bank.')
 
   useEffect(() => {
     fetchPayments()
@@ -50,25 +53,28 @@ export function PaymentsPage() {
   }
 
   const handleVerify = async (id: string) => {
-    if (!window.confirm('Are you sure you want to approve this payment and activate the subscription?')) {
-      return
-    }
     setActionLoading(id)
     try {
       const res = await apiRequest(`/api/admin/payments/${id}/verify`, { method: 'POST' })
       if (res.ok) {
+        const body = res.data as any
+        if (body?.already_processed) {
+          showToast('This payment was already processed.', 'info')
+        } else if (body?.scheduled) {
+          showToast(`Payment approved. ${body.plan || 'Plan'} will activate after the current trial ends.`, 'success')
+        } else {
+          showToast(`Payment approved. ${body?.plan || 'Plan'} is now active.`, 'success')
+        }
         await fetchPayments()
       } else {
-        alert(res.message || 'Failed to verify payment.')
+        showToast(res.message || 'Failed to verify payment.', 'error')
       }
     } finally {
       setActionLoading(null)
     }
   }
 
-  const handleReject = async (id: string) => {
-    const reason = prompt('Enter rejection reason (will be visible to owner):', 'Payment could not be verified with bank.')
-    if (reason === null) return
+  const handleReject = async (id: string, reason: string) => {
     setActionLoading(id)
     try {
       const res = await apiRequest(`/api/admin/payments/${id}/reject`, {
@@ -76,9 +82,10 @@ export function PaymentsPage() {
         body: JSON.stringify({ reason: reason.trim() || 'Payment not verified' }),
       })
       if (res.ok) {
+        showToast('Payment rejected. The Owner will see the reason and can resubmit.', 'success')
         await fetchPayments()
       } else {
-        alert(res.message || 'Failed to reject payment.')
+        showToast(res.message || 'Failed to reject payment.', 'error')
       }
     } finally {
       setActionLoading(null)
@@ -301,7 +308,7 @@ export function PaymentsPage() {
                         {p.status === 'pending' ? (
                           <div className="flex items-center justify-end gap-2">
                             <button
-                              onClick={() => handleReject(p.id)}
+                              onClick={() => { setRejectReason('Payment could not be verified with bank.'); setConfirmAction({ type: 'reject', payment: p }) }}
                               disabled={actionLoading === p.id}
                               className="px-3 py-1.5 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-1"
                             >
@@ -309,7 +316,7 @@ export function PaymentsPage() {
                               <span>Reject</span>
                             </button>
                             <button
-                              onClick={() => handleVerify(p.id)}
+                              onClick={() => setConfirmAction({ type: 'verify', payment: p })}
                               disabled={actionLoading === p.id}
                               className="px-3.5 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm shadow-emerald-600/30 active:scale-95 disabled:opacity-50 flex items-center gap-1"
                             >
@@ -329,6 +336,87 @@ export function PaymentsPage() {
           </div>
         )}
       </div>
+
+      {/* Confirm Action Modal */}
+      {confirmAction && (
+        <div
+          onClick={() => setConfirmAction(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-4"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-black text-slate-900">
+                  {confirmAction.type === 'verify' ? 'Approve Payment' : 'Reject Payment'}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {confirmAction.payment.school_name || 'Owner Account'} · Rs {confirmAction.payment.amount.toLocaleString()}
+                </p>
+              </div>
+              <button
+                onClick={() => setConfirmAction(null)}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-700 transition-colors"
+              >
+                <AppIcon name="X" size={18} />
+              </button>
+            </div>
+
+            {confirmAction.type === 'verify' ? (
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Approving this payment verifies the transaction and updates the subscription lifecycle. If the Owner is on trial, the plan is scheduled to activate when the trial ends. Double approval is safe — the second click reports the payment as already processed.
+              </p>
+            ) : (
+              <div>
+                <p className="text-xs text-slate-600 mb-2">
+                  Enter the rejection reason — the Owner will see it and can resubmit.
+                </p>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-rose-400 transition-colors resize-none"
+                  placeholder="Reason for rejection..."
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                onClick={() => setConfirmAction(null)}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const p = confirmAction.payment
+                  setConfirmAction(null)
+                  if (confirmAction.type === 'verify') {
+                    await handleVerify(p.id)
+                  } else {
+                    await handleReject(p.id, rejectReason)
+                  }
+                }}
+                disabled={actionLoading === confirmAction.payment.id}
+                className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md transition-all disabled:opacity-50 ${
+                  confirmAction.type === 'verify'
+                    ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
+                    : 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/30'
+                }`}
+              >
+                {actionLoading === confirmAction.payment.id
+                  ? 'Processing...'
+                  : confirmAction.type === 'verify'
+                  ? 'Confirm Approval'
+                  : 'Confirm Rejection'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Full Image Preview Modal */}
       {selectedImage && (

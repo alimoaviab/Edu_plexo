@@ -209,6 +209,31 @@ func (h *Handler) UploadPayment(w http.ResponseWriter, r *http.Request) {
 		if (body.ScreenshotURL == "" && body.Notes == "") || body.TransactionID == "" || body.Amount < 1 {
 			return nil, api.NewControlledError("VALIDATION_ERROR", "transaction_id, amount, and either screenshot or SMS text are required.", 400, nil)
 		}
+
+		// Resolve the owner's billing scope: owner accounts may not carry a
+		// school_id in their session, so fall back to their first owned school.
+		schoolID := ctx.SchoolID
+		if schoolID == "" || schoolID == "system" || schoolID == "__global__" {
+			schoolID = h.resolveSchoolID(ctx)
+		}
+		if schoolID == "" {
+			return nil, api.NewControlledError("VALIDATION_ERROR", "Unable to resolve your institution for billing. Please contact support.", 400, nil)
+		}
+
+		// Validate the selected package and amount against the catalog when a
+		// catalog plan is referenced (modular package-builder encodings skip
+		// this check because they have no subscription_plans row).
+		if h.Pool != nil && planID != "" {
+			var catalogPrice, catalogLimit int
+			err := h.Pool.QueryRow(r.Context(), `
+				SELECT price, student_limit FROM subscription_plans WHERE id = $1 AND is_active = true
+			`, planID).Scan(&catalogPrice, &catalogLimit)
+			if err == nil && catalogPrice > 0 && body.Amount != catalogPrice {
+				return nil, api.NewControlledError("VALIDATION_ERROR",
+					fmt.Sprintf("Amount must match the plan price (PKR %d). You submitted PKR %d.", catalogPrice, body.Amount),
+					400, nil)
+			}
+		}
 		var paidAt *time.Time
 		if body.PaymentDate != "" {
 			if parsed, err := time.Parse("2006-01-02", body.PaymentDate); err == nil {
@@ -281,7 +306,7 @@ func (h *Handler) UploadPayment(w http.ResponseWriter, r *http.Request) {
 
 		id := store.NewID("pay")
 		pr := &PaymentRequest{
-			ID: id, SchoolID: ctx.SchoolID, PlanID: planID, SelectedPackages: selected,
+			ID: id, SchoolID: schoolID, PlanID: planID, SelectedPackages: selected,
 			PaymentMethodID: body.PaymentMethodID, ScreenshotURL: body.ScreenshotURL,
 			TransactionID: body.TransactionID, Amount: body.Amount,
 			Status: "pending", SubmittedAt: time.Now(), PaymentDate: paidAt, Notes: body.Notes,
@@ -368,6 +393,15 @@ func (h *Handler) AdminListPendingPayments(w http.ResponseWriter, r *http.Reques
 	}))
 }
 
+// AdminVerifyPayment approves a payment proof and applies the subscription
+// transition. It is stateful and idempotent:
+//
+//	Trial still running   → payment approved, plan SCHEDULED to start at trial end
+//	Paid active (renewal) → payment approved+applied, period extended from expiry
+//	Expired / suspended   → payment approved+applied, plan activates immediately
+//
+// A second approval returns already_processed=true and never creates a second
+// subscription or billing period.
 func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
 	if ctx.Role != "super_admin" {
@@ -379,123 +413,213 @@ func (h *Handler) AdminVerifyPayment(w http.ResponseWriter, r *http.Request) {
 		if h.Pool == nil {
 			return h.adminVerifyStorePayment(paymentID, ctx.UserID)
 		}
-		tx, err := h.Pool.Begin(r.Context())
-		if err != nil {
-			return nil, fmt.Errorf("begin verify payment transaction: %w", err)
-		}
-		defer tx.Rollback(r.Context())
 
-		// Get payment request
+		// ── Resolve payment + tenant scope ───────────────────────────────
 		var schoolID, planID string
 		var amount int
-		err = tx.QueryRow(r.Context(), `
-			SELECT school_id, plan_id, amount FROM payment_requests WHERE id=$1 AND status='pending' FOR UPDATE
+		err := h.Pool.QueryRow(r.Context(), `
+			SELECT school_id, plan_id, amount FROM payment_requests WHERE id = $1
 		`, paymentID).Scan(&schoolID, &planID, &amount)
 		if err == pgx.ErrNoRows {
-			return nil, api.NewControlledError("NOT_FOUND", "Payment request not found or already processed.", 404, nil)
+			return nil, api.NewControlledError("NOT_FOUND", "Payment request not found.", 404, nil)
 		}
 		if err != nil {
 			return nil, fmt.Errorf("get payment: %w", err)
 		}
 
-		// Get plan details. Modular package-builder payments store selected
-		// package ids directly in plan_id, so there may be no subscription_plans row.
-		var planName string
-		var studentLimit, durationDays int
-		err = tx.QueryRow(r.Context(), `
-			SELECT name, student_limit, duration_days FROM subscription_plans WHERE id=$1
-		`, planID).Scan(&planName, &studentLimit, &durationDays)
-		if err == pgx.ErrNoRows {
-			selected := ParseSelectedPackages(planID, nil)
-			planName = EncodeSelectedPackages(selected)
-			studentLimit = h.countActiveStudents(schoolID)
-			durationDays = 30
-		} else if err != nil {
+		// Idempotency: non-pending payments were already processed.
+		var currentStatus string
+		_ = h.Pool.QueryRow(r.Context(), `SELECT status FROM payment_requests WHERE id = $1`, paymentID).Scan(&currentStatus)
+		if currentStatus != "pending" {
+			return map[string]any{
+				"payment_id":       paymentID,
+				"already_processed": true,
+				"payment_status":    currentStatus,
+				"verified":          true,
+			}, nil
+		}
+
+		scope, err := ResolveOwnerScope(r.Context(), h.Pool, schoolID)
+		if err != nil {
+			return nil, fmt.Errorf("resolve owner scope: %w", err)
+		}
+
+		// ── Validate the selected package ────────────────────────────────
+		planName := planID
+		studentLimit := 500
+		durationDays := 30
+		var dbName string
+		err = h.Pool.QueryRow(r.Context(), `
+			SELECT name, student_limit, duration_days FROM subscription_plans WHERE id = $1 AND is_active = true
+		`, planID).Scan(&dbName, &studentLimit, &durationDays)
+		if err == nil {
+			planName = dbName
+		} else if err != pgx.ErrNoRows {
 			return nil, fmt.Errorf("get plan: %w", err)
 		}
 
 		now := time.Now()
+		sub, err := GetOwnerSubscription(r.Context(), h.Pool, scope)
+		if err != nil {
+			return nil, fmt.Errorf("get current subscription: %w", err)
+		}
 
-		// Mark payment as verified
+		tx, err := h.Pool.Begin(r.Context())
+		if err != nil {
+			return nil, fmt.Errorf("begin verify transaction: %w", err)
+		}
+		defer tx.Rollback(r.Context())
+
+		// Mark payment approved atomically (idempotency guard).
 		tag, err := tx.Exec(r.Context(), `
-			UPDATE payment_requests SET status='verified', verified_at=$2, verified_by=$3 WHERE id=$1
+			UPDATE payment_requests SET status = 'approved', verified_at = $2, verified_by = $3
+			WHERE id = $1 AND status = 'pending'
 		`, paymentID, now, ctx.UserID)
 		if err != nil {
-			return nil, fmt.Errorf("verify payment request: %w", err)
+			return nil, fmt.Errorf("approve payment: %w", err)
 		}
 		if tag.RowsAffected() != 1 {
-			return nil, api.NewControlledError("NOT_FOUND", "Payment request not found or already processed.", 404, nil)
+			return map[string]any{
+				"payment_id":       paymentID,
+				"already_processed": true,
+				"verified":          true,
+			}, nil
 		}
 
-		// Preserve remaining trial days if existing subscription end_date is in the future
-		var currentEndDate time.Time
-		_ = tx.QueryRow(r.Context(), `
-			SELECT end_date FROM subscriptions 
-			WHERE (school_id=$1) AND end_date > NOW() 
-			ORDER BY end_date DESC LIMIT 1
-		`, schoolID).Scan(&currentEndDate)
-
-		baseDate := now
-		if !currentEndDate.IsZero() && currentEndDate.After(now) {
-			baseDate = currentEndDate
+		// ── Case 1: Trial still running → schedule the plan at trial end ─
+		if sub != nil && sub.Status == "trial" && sub.EndDate.After(now) {
+			if _, err := tx.Exec(r.Context(), `
+				INSERT INTO subscription_history (id, school_id, plan_name, student_limit, amount,
+					payment_status, start_date, end_date, action, created_at)
+				VALUES ($1, $2, $3, $4, $5, 'approved', $6, $7, 'payment_approved', NOW())
+			`, store.NewID("sh"), schoolID, planName, studentLimit, amount, now, sub.EndDate); err != nil {
+				return nil, fmt.Errorf("record scheduled history: %w", err)
+			}
+			if err := tx.Commit(r.Context()); err != nil {
+				return nil, fmt.Errorf("commit scheduled approval: %w", err)
+			}
+			logPaymentApproval(h, ctx, schoolID, paymentID, planName, amount, map[string]any{"scheduled": true, "activates_at": sub.EndDate})
+			return map[string]any{
+				"payment_id":      paymentID,
+				"school_id":       schoolID,
+				"plan":            planName,
+				"student_limit":   studentLimit,
+				"verified":        true,
+				"scheduled":       true,
+				"activates_at":    sub.EndDate,
+				"message":         "Payment approved. The plan will activate after the current trial ends.",
+			}, nil
 		}
-		endDate := baseDate.AddDate(0, 0, durationDays)
 
-		// Deactivate old subscription
+		// ── Case 2: Active paid renewal → extend from current expiry ─────
+		if sub != nil && sub.Status == "active" && sub.EndDate.After(now) {
+			newEnd := sub.EndDate.AddDate(0, 0, durationDays)
+			if _, err := tx.Exec(r.Context(), `
+				UPDATE subscriptions
+				SET plan_name = $2, student_limit = $3, price = $4, end_date = $5,
+				    updated_at = NOW()
+				WHERE id = $1
+			`, sub.ID, planName, studentLimit, amount, newEnd); err != nil {
+				return nil, fmt.Errorf("extend subscription: %w", err)
+			}
+			if _, err := tx.Exec(r.Context(), `
+				UPDATE payment_requests SET status = 'activated', applied_at = NOW() WHERE id = $1
+			`, paymentID); err != nil {
+				return nil, fmt.Errorf("apply payment: %w", err)
+			}
+			if _, err := tx.Exec(r.Context(), `
+				INSERT INTO subscription_history (id, school_id, plan_name, student_limit, amount,
+					payment_status, start_date, end_date, action, created_at)
+				VALUES ($1, $2, $3, $4, $5, 'paid', $6, $7, 'renew', NOW())
+			`, store.NewID("sh"), schoolID, planName, studentLimit, amount, sub.EndDate, newEnd); err != nil {
+				return nil, fmt.Errorf("record renew history: %w", err)
+			}
+			if err := tx.Commit(r.Context()); err != nil {
+				return nil, fmt.Errorf("commit renewal: %w", err)
+			}
+			logPaymentApproval(h, ctx, schoolID, paymentID, planName, amount, map[string]any{"activated": true, "renews_at": newEnd})
+			return map[string]any{
+				"payment_id":      paymentID,
+				"subscription_id": sub.ID,
+				"school_id":       schoolID,
+				"plan":            planName,
+				"student_limit":   studentLimit,
+				"end_date":        newEnd,
+				"verified":        true,
+				"activated":       true,
+				"message":         "Payment approved. Subscription renewed and extended.",
+			}, nil
+		}
+
+		// ── Case 3: Expired / suspended / trial ended → activate now ─────
 		if _, err := tx.Exec(r.Context(), `
-			UPDATE subscriptions SET status='cancelled', updated_at=NOW()
-			WHERE school_id=$1 AND status IN ('active','trial')
-		`, schoolID); err != nil {
+			UPDATE subscriptions SET status = 'cancelled', updated_at = NOW()
+			WHERE (school_id = ANY($1) OR owner_user_id = $2) AND status IN ('active', 'trial')
+		`, scope.SchoolIDs, scope.OwnerUserID); err != nil {
 			return nil, fmt.Errorf("cancel old subscription: %w", err)
 		}
 
-		// Create new active subscription
+		targetSchool := schoolID
+		if targetSchool == "" || targetSchool == "system" {
+			targetSchool = scope.PrimarySchool()
+		}
 		subID := store.NewID("sub")
 		if _, err := tx.Exec(r.Context(), `
-			INSERT INTO subscriptions (id, school_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
-			VALUES ($1,$2,$3,$4,$5,'PKR',$6,$7,'active',false,true,NOW(),NOW())
-		`, subID, schoolID, planName, studentLimit, amount, now, endDate); err != nil {
+			INSERT INTO subscriptions (id, school_id, owner_user_id, plan_name, student_limit, price,
+				currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, 'PKR', $7, $8, 'active', false, true, NOW(), NOW())
+		`, subID, targetSchool, scope.OwnerUserID, planName, studentLimit, amount, now, now.AddDate(0, 0, durationDays)); err != nil {
 			return nil, fmt.Errorf("create subscription: %w", err)
 		}
-
-		// Record history
 		if _, err := tx.Exec(r.Context(), `
-			INSERT INTO subscription_history (id, school_id, plan_name, student_limit, amount, payment_status, start_date, end_date, action, created_at)
+			UPDATE payment_requests SET status = 'activated', applied_at = NOW() WHERE id = $1
+		`, paymentID); err != nil {
+			return nil, fmt.Errorf("apply payment: %w", err)
+		}
+		if _, err := tx.Exec(r.Context(), `
+			INSERT INTO subscription_history (id, school_id, plan_name, student_limit, amount,
+				payment_status, start_date, end_date, action, created_at)
 			VALUES ($1, $2, $3, $4, $5, 'paid', $6, $7, 'subscribe', NOW())
-		`, store.NewID("sh"), schoolID, planName, studentLimit, amount, now, endDate); err != nil {
-			return nil, fmt.Errorf("record subscription history: %w", err)
+		`, store.NewID("sh"), targetSchool, planName, studentLimit, amount, now, now.AddDate(0, 0, durationDays)); err != nil {
+			return nil, fmt.Errorf("record subscribe history: %w", err)
 		}
 
 		if err := tx.Commit(r.Context()); err != nil {
-			return nil, fmt.Errorf("commit verify payment transaction: %w", err)
+			return nil, fmt.Errorf("commit activation: %w", err)
 		}
-
-		if h.Store != nil {
-			h.Store.Lock()
-			h.Store.AuditLogs = append(h.Store.AuditLogs, &store.AuditLog{
-				ID:         store.NewID("aud"),
-				SchoolID:   schoolID,
-				ActorID:    ctx.UserID,
-				ActorRole:  ctx.Role,
-				Action:     "payment_approval",
-				EntityType: "payment",
-				EntityID:   paymentID,
-				After:      map[string]any{"plan": planName, "amount": amount, "end_date": endDate},
-				CreatedAt:  now,
-			})
-			h.Store.Unlock()
-		}
-
+		logPaymentApproval(h, ctx, targetSchool, paymentID, planName, amount, map[string]any{"activated": true})
 		return map[string]any{
 			"payment_id":      paymentID,
 			"subscription_id": subID,
-			"school_id":       schoolID,
+			"school_id":       targetSchool,
 			"plan":            planName,
 			"student_limit":   studentLimit,
-			"end_date":        endDate,
+			"end_date":        now.AddDate(0, 0, durationDays),
 			"verified":        true,
+			"activated":       true,
+			"message":         "Payment approved. The plan is now active.",
 		}, nil
 	}))
+}
+
+// logPaymentApproval records the approval in the in-memory audit trail.
+func logPaymentApproval(h *Handler, ctx *api.RequestContext, schoolID, paymentID, plan string, amount int, details map[string]any) {
+	if h.Store == nil {
+		return
+	}
+	h.Store.Lock()
+	h.Store.AuditLogs = append(h.Store.AuditLogs, &store.AuditLog{
+		ID:         store.NewID("aud"),
+		SchoolID:   schoolID,
+		ActorID:    ctx.UserID,
+		ActorRole:  ctx.Role,
+		Action:     "payment_approval",
+		EntityType: "payment",
+		EntityID:   paymentID,
+		After:      details,
+		CreatedAt:  time.Now(),
+	})
+	h.Store.Unlock()
 }
 
 type rejectInput struct {
@@ -657,6 +781,7 @@ func (h *Handler) AdminExtendSubscription(w http.ResponseWriter, r *http.Request
 			UPDATE subscriptions 
 			SET end_date = GREATEST(end_date, NOW()) + ($2 || ' days')::interval,
 			    status = 'active',
+			    grace_ends_at = NULL,
 			    updated_at = NOW()
 			WHERE (school_id = $1 OR school_id IN (SELECT school_id FROM schools WHERE id = $1 OR school_id = $1))
 		`, body.SchoolID, fmt.Sprintf("%d", body.Days))

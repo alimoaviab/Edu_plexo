@@ -49,6 +49,17 @@ export interface CurrentSubscription {
   available_packages?: ModulePackage[];
   allowed_modules?: Record<string, boolean>;
   package_builder_required?: boolean;
+  // ── Backend-derived lifecycle state (render as-is, never invent) ──
+  phase?: string;
+  payment_status?: 'none' | 'pending' | 'approved';
+  next_plan?: string;
+  next_plan_start_at?: string;
+  grace_ends_at?: string;
+  suspends_at?: string;
+  renews_at?: string;
+  trial_ends_at?: string;
+  is_suspended?: boolean;
+  in_grace_period?: boolean;
 }
 
 export interface HistoryEntry {

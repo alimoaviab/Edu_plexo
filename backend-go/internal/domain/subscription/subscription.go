@@ -120,6 +120,7 @@ var AvailablePlans = []Plan{
 type Subscription struct {
 	ID             string     `json:"id"`
 	SchoolID       string     `json:"school_id"`
+	OwnerUserID    string     `json:"owner_user_id,omitempty"`
 	PlanName       string     `json:"plan_name"`
 	StudentLimit   int        `json:"student_limit"`
 	Price          int        `json:"price"`
@@ -131,6 +132,7 @@ type Subscription struct {
 	TrialUsed      bool       `json:"trial_used"`
 	TrialStartDate *time.Time `json:"trial_start_date,omitempty"`
 	TrialEndDate   *time.Time `json:"trial_end_date,omitempty"`
+	GraceEndsAt    *time.Time `json:"grace_ends_at,omitempty"`
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
 }
@@ -197,6 +199,20 @@ type CurrentResponse struct {
 	TrialWarning           string          `json:"trial_warning,omitempty"`
 	PackageBuilderRequired bool            `json:"package_builder_required"`
 	PendingPayment         *PaymentRequest `json:"pending_payment,omitempty"`
+	// ── Backend-derived lifecycle state (frontend renders, never invents) ──
+	Phase            string         `json:"phase"`
+	PaymentStatus    string         `json:"payment_status"` // none | pending | approved
+	NextPlan         string         `json:"next_plan,omitempty"`
+	NextPlanStartAt  *time.Time     `json:"next_plan_start_at,omitempty"`
+	GraceEndsAt      *time.Time     `json:"grace_ends_at,omitempty"`
+	SuspendsAt       *time.Time     `json:"suspends_at,omitempty"`
+	RenewsAt         *time.Time     `json:"renews_at,omitempty"`
+	TrialEndsAt      *time.Time     `json:"trial_ends_at,omitempty"`
+	ApprovedPayment  *PaymentRequest `json:"approved_payment,omitempty"`
+	IsSuspended      bool           `json:"is_suspended"`
+	InGracePeriod    bool           `json:"in_grace_period"`
+	CanUpgrade       bool           `json:"can_upgrade"`
+	CanRenew         bool           `json:"can_renew"`
 }
 
 func (h *Handler) resolveSchoolID(ctx *api.RequestContext) string {
@@ -256,175 +272,281 @@ func (h *Handler) GetCurrent(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
 	schoolID := h.resolveSchoolID(ctx)
 	api.WriteResult(w, api.ServiceTry(func() (CurrentResponse, error) {
-		sub, err := GetActiveSubscriptionHelper(r.Context(), h.Pool, h.Store, schoolID)
-		if err != nil {
-			return CurrentResponse{}, err
-		}
-
-		studentsUsed := h.countActiveStudents(schoolID)
-		rates := superadmin.GetPlatformSettings().PackageRates
-		selected := []string{}
-		trialWarning := ""
-		builderRequired := false
-
-		// If owner does not have a school-level subscription, provide 14-day owner account trial
-		if sub == nil && ctx != nil && ctx.Role == "owner" {
-			var userCreatedAt time.Time
-			if h.Pool != nil {
-				_ = h.Pool.QueryRow(r.Context(), `SELECT created_at FROM users WHERE id = $1`, ctx.UserID).Scan(&userCreatedAt)
-			}
-			if userCreatedAt.IsZero() && h.Store != nil {
-				h.Store.RLock()
-				for _, u := range h.Store.Users {
-					if u.ID == ctx.UserID || u.Email == ctx.ActorEmail {
-						userCreatedAt = u.CreatedAt
-						break
-					}
-				}
-				h.Store.RUnlock()
-			}
-			if userCreatedAt.IsZero() {
-				userCreatedAt = time.Now()
-			}
-
-			trialEnd := userCreatedAt.AddDate(0, 0, 14)
-			remaining := time.Until(trialEnd)
-			if remaining > 0 {
-				sub = &Subscription{
-					ID:           "sub_trial_" + ctx.UserID,
-					SchoolID:     "owner",
-					PlanName:     "trial",
-					StudentLimit: 500,
-					Price:        0,
-					Currency:     "PKR",
-					StartDate:    userCreatedAt,
-					EndDate:      trialEnd,
-					Status:       "trial",
-					IsTrial:      true,
-					TrialUsed:    true,
-					CreatedAt:    userCreatedAt,
-					UpdatedAt:    userCreatedAt,
-				}
-			} else {
-				sub = &Subscription{
-					ID:           "sub_trial_" + ctx.UserID,
-					SchoolID:     "owner",
-					PlanName:     "trial",
-					StudentLimit: 500,
-					Price:        0,
-					Currency:     "PKR",
-					StartDate:    userCreatedAt,
-					EndDate:      trialEnd,
-					Status:       "expired",
-					IsTrial:      true,
-					TrialUsed:    true,
-					CreatedAt:    userCreatedAt,
-					UpdatedAt:    userCreatedAt,
-				}
-			}
-		}
-
-		// Ensure any active trial is strictly named 'trial' so paid plans are not flagged as active
-		if sub != nil && (sub.Status == "trial" || sub.IsTrial) {
-			sub.PlanName = "trial"
-		}
-
-		// Check if trial already used in DB or MemStore
-		canTrial, err := IsTrialAvailable(r.Context(), h.Pool, h.Store, schoolID)
-		if err != nil {
-			return CurrentResponse{}, err
-		}
-
-		// canTrial is only true if they also don't have an active subscription or trial
-		if sub != nil && (sub.Status == "active" || sub.Status == "trial") {
-			canTrial = false
-		}
-
-		daysRemaining := 0
-		isExpired := true
-		if sub != nil {
-			selected = ParseSelectedPackages(sub.PlanName, nil)
-			remaining := time.Until(sub.EndDate)
-			if remaining > 0 {
-				daysRemaining = int(remaining.Hours() / 24)
-				if daysRemaining <= 0 {
-					daysRemaining = 1
-				}
-				isExpired = false
-				if sub.Status == "trial" {
-					elapsedDays := int(time.Since(sub.StartDate).Hours() / 24)
-					if elapsedDays >= 13 {
-						trialWarning = "urgent"
-					} else if elapsedDays >= 10 {
-						trialWarning = "warning"
-					}
-				}
-			} else {
-				// Auto-expire
-				h.expireSubscription(r.Context(), sub.ID)
-				sub.Status = "expired"
-			}
-		}
-
-		limit := 0
-		if sub != nil {
-			limit = sub.StudentLimit
-		}
-
-		var pendingPay *PaymentRequest
 		if h.Pool != nil {
-			var p PaymentRequest
-			err := h.Pool.QueryRow(r.Context(), `
-				SELECT id, school_id, plan_id, COALESCE(payment_method_id,''), COALESCE(screenshot_url,''),
-				       transaction_id, amount, status, submitted_at, COALESCE(notes,'')
-				FROM payment_requests
-				WHERE (school_id = $1 OR school_id = $2) AND status = 'pending'
-				ORDER BY submitted_at DESC LIMIT 1
-			`, schoolID, ctx.UserID).Scan(
-				&p.ID, &p.SchoolID, &p.PlanID, &p.PaymentMethodID, &p.ScreenshotURL,
-				&p.TransactionID, &p.Amount, &p.Status, &p.SubmittedAt, &p.Notes,
-			)
-			if err == nil {
-				pendingPay = &p
-			}
-		} else if h.Store != nil {
-			h.Store.RLock()
-			for _, t := range h.Store.Transactions {
-				if (t.SchoolID == schoolID || t.SchoolID == ctx.UserID) && t.Status == "pending" {
-					pendingPay = &PaymentRequest{
-						ID:            t.ID,
-						SchoolID:      t.SchoolID,
-						PlanID:        t.PackageID,
-						TransactionID: t.ReferenceNo,
-						Amount:        int(t.Amount),
-						Status:        t.Status,
-						SubmittedAt:   t.CreatedAt,
-						Notes:         t.Notes,
-					}
-					break
-				}
-			}
-			h.Store.RUnlock()
+			return h.getCurrentPG(r, ctx, schoolID)
 		}
-
-		return CurrentResponse{
-			Subscription:           sub,
-			StudentsUsed:           studentsUsed,
-			StudentsLimit:          limit,
-			ActiveStudents:         studentsUsed,
-			DaysRemaining:          daysRemaining,
-			IsExpired:              isExpired,
-			CanTrial:               canTrial,
-			SelectedPackages:       selected,
-			AvailablePackages:      PackageCatalog(rates),
-			AllowedModules:         PackageModules(selected),
-			MonthlyCost:            MonthlyEstimate(studentsUsed, selected, rates),
-			MinimumMonthlyBill:     500,
-			TrialWarning:           trialWarning,
-			PackageBuilderRequired: builderRequired,
-			PendingPayment:         pendingPay,
-		}, nil
+		return h.getCurrentStore(r, ctx, schoolID)
 	}))
+}
+
+// getCurrentPG builds the authoritative subscription snapshot straight from
+// the database. All dates, remaining days, phases, and payment state come
+// from here — the frontend renders them as-is.
+func (h *Handler) getCurrentPG(r *http.Request, ctx *api.RequestContext, schoolID string) (CurrentResponse, error) {
+	var scope OwnerScope
+	var err error
+	if ctx != nil && ctx.Role == "owner" {
+		scope, err = ResolveOwnerScopeByUser(r.Context(), h.Pool, ctx.UserID)
+	} else {
+		scope, err = ResolveOwnerScope(r.Context(), h.Pool, schoolID)
+	}
+	if err != nil {
+		return CurrentResponse{}, err
+	}
+
+	// New owners (no subscription row yet) get their real, DB-backed trial.
+	if ctx != nil && ctx.Role == "owner" {
+		_ = EnsureOwnerTrial(r.Context(), h.Pool, ctx.UserID)
+		scope, _ = ResolveOwnerScopeByUser(r.Context(), h.Pool, ctx.UserID)
+	}
+
+	// Advance state lazily (expiry → grace → suspension; approved payment → active).
+	if err := ReconcileScope(r.Context(), h.Pool, scope); err != nil {
+		log.Printf("[subscription] reconcile failed: %v", err)
+	}
+
+	sub, err := GetOwnerSubscription(r.Context(), h.Pool, scope)
+	if err != nil {
+		return CurrentResponse{}, err
+	}
+	if sub != nil && (sub.Status == "trial" || sub.IsTrial) {
+		sub.PlanName = "trial"
+	}
+
+	studentsUsed, err := CountActiveStudentsInScope(r.Context(), h.Pool, scope)
+	if err != nil {
+		return CurrentResponse{}, err
+	}
+
+	rates := superadmin.GetPlatformSettings().PackageRates
+	selected := []string{}
+	trialWarning := ""
+	if sub != nil {
+		selected = ParseSelectedPackages(sub.PlanName, nil)
+	}
+
+	phase := DerivePhase(sub)
+	daysRemaining := 0
+	if sub != nil {
+		daysRemaining = ceilDaysUntil(sub.EndDate)
+		if phase == PhaseTrialActive || phase == PhaseTrialExpiring {
+			// Trial countdown is anchored to the authoritative trial end.
+			if sub.TrialEndDate != nil {
+				daysRemaining = ceilDaysUntil(*sub.TrialEndDate)
+			}
+			elapsed := int(time.Since(sub.StartDate).Hours() / 24)
+			if elapsed >= 13 {
+				trialWarning = "urgent"
+			} else if elapsed >= 10 {
+				trialWarning = "warning"
+			}
+		}
+	}
+
+	isExpired := phase == PhaseExpired || phase == PhaseGrace || phase == PhaseSuspended || phase == PhaseTrialExpired
+	canTrial, err := IsTrialAvailable(r.Context(), h.Pool, h.Store, scope.PrimarySchool())
+	if err != nil {
+		canTrial = false
+	}
+	if sub != nil && (sub.Status == "active" || sub.Status == "trial") {
+		canTrial = false
+	}
+
+	// Payment state: pending + approved-but-not-applied are separate concepts.
+	var pendingPay *PaymentRequest
+	if h.Pool != nil {
+		var p PaymentRequest
+		err := h.Pool.QueryRow(r.Context(), `
+			SELECT id, school_id, plan_id, COALESCE(payment_method_id,''), COALESCE(screenshot_url,''),
+			       transaction_id, amount, status, submitted_at, COALESCE(notes,'')
+			FROM payment_requests
+			WHERE (school_id = ANY($1) OR school_id = $2) AND status = 'pending'
+			ORDER BY submitted_at DESC LIMIT 1
+		`, scope.SchoolIDs, scope.OwnerUserID).Scan(
+			&p.ID, &p.SchoolID, &p.PlanID, &p.PaymentMethodID, &p.ScreenshotURL,
+			&p.TransactionID, &p.Amount, &p.Status, &p.SubmittedAt, &p.Notes,
+		)
+		if err == nil {
+			pendingPay = &p
+		}
+	}
+
+	approvedPay, err := LatestApprovedPayment(r.Context(), h.Pool, scope)
+	if err != nil {
+		return CurrentResponse{}, err
+	}
+
+	paymentStatus := "none"
+	var nextPlan string
+	var nextPlanStart *time.Time
+	if pendingPay != nil {
+		paymentStatus = "pending"
+		nextPlan = pendingPay.PlanID
+	} else if approvedPay != nil {
+		paymentStatus = "approved"
+		nextPlan = approvedPay.PlanID
+		start := time.Now()
+		if sub != nil && (sub.Status == "trial") {
+			start = sub.EndDate
+		}
+		nextPlanStart = &start
+	}
+
+	var graceEndsAt, suspendsAt, renewsAt, trialEndsAt *time.Time
+	if sub != nil {
+		if sub.GraceEndsAt != nil {
+			g := *sub.GraceEndsAt
+			graceEndsAt = &g
+			s := g
+			suspendsAt = &s
+		}
+		r := sub.EndDate
+		renewsAt = &r
+		if sub.TrialEndDate != nil {
+			t := *sub.TrialEndDate
+			trialEndsAt = &t
+		}
+	}
+
+	limit := 0
+	if sub != nil {
+		limit = sub.StudentLimit
+	}
+
+	canUpgrade := sub != nil && sub.Status == "active" && phase == PhaseActive
+	canRenew := sub != nil && (phase == PhaseExpired || phase == PhaseGrace || phase == PhaseSuspended || phase == PhaseTrialExpired || phase == PhaseExpiring)
+
+	return CurrentResponse{
+		Subscription:           sub,
+		StudentsUsed:           studentsUsed,
+		StudentsLimit:          limit,
+		ActiveStudents:         studentsUsed,
+		DaysRemaining:          daysRemaining,
+		IsExpired:              isExpired,
+		CanTrial:               canTrial,
+		SelectedPackages:       selected,
+		AvailablePackages:      PackageCatalog(rates),
+		AllowedModules:         PackageModules(selected),
+		MonthlyCost:            MonthlyEstimate(studentsUsed, selected, rates),
+		MinimumMonthlyBill:     500,
+		TrialWarning:           trialWarning,
+		PackageBuilderRequired: false,
+		PendingPayment:         pendingPay,
+		Phase:                  phase,
+		PaymentStatus:          paymentStatus,
+		NextPlan:               nextPlan,
+		NextPlanStartAt:        nextPlanStart,
+		GraceEndsAt:            graceEndsAt,
+		SuspendsAt:             suspendsAt,
+		RenewsAt:               renewsAt,
+		TrialEndsAt:            trialEndsAt,
+		ApprovedPayment:        approvedPay,
+		IsSuspended:            phase == PhaseSuspended,
+		InGracePeriod:          phase == PhaseGrace || phase == PhaseTrialExpired,
+		CanUpgrade:             canUpgrade,
+		CanRenew:               canRenew,
+	}, nil
+}
+
+// getCurrentStore is the in-memory fallback (dev/tests). Keeps the previous
+// behavior but never invents a fresh trial from NOW(): the store's existing
+// trial rows (hydrated from PG) are authoritative.
+func (h *Handler) getCurrentStore(r *http.Request, ctx *api.RequestContext, schoolID string) (CurrentResponse, error) {
+	sub, err := GetActiveSubscriptionHelper(r.Context(), h.Pool, h.Store, schoolID)
+	if err != nil {
+		return CurrentResponse{}, err
+	}
+
+	studentsUsed := h.countActiveStudents(schoolID)
+	rates := superadmin.GetPlatformSettings().PackageRates
+	selected := []string{}
+	trialWarning := ""
+
+	if sub != nil {
+		selected = ParseSelectedPackages(sub.PlanName, nil)
+	}
+
+	phase := DerivePhase(sub)
+	daysRemaining := 0
+	isExpired := true
+	if sub != nil {
+		daysRemaining = ceilDaysUntil(sub.EndDate)
+		isExpired = phase == PhaseExpired || phase == PhaseGrace || phase == PhaseSuspended || phase == PhaseTrialExpired
+		if phase == PhaseTrialActive || phase == PhaseTrialExpiring {
+			elapsed := int(time.Since(sub.StartDate).Hours() / 24)
+			if elapsed >= 13 {
+				trialWarning = "urgent"
+			} else if elapsed >= 10 {
+				trialWarning = "warning"
+			}
+		}
+	}
+
+	canTrial, err := IsTrialAvailable(r.Context(), h.Pool, h.Store, schoolID)
+	if err != nil {
+		canTrial = false
+	}
+	if sub != nil && (sub.Status == "active" || sub.Status == "trial") {
+		canTrial = false
+	}
+
+	limit := 0
+	if sub != nil {
+		limit = sub.StudentLimit
+	}
+
+	var pendingPay *PaymentRequest
+	if h.Store != nil {
+		h.Store.RLock()
+		for _, t := range h.Store.Transactions {
+			if (t.SchoolID == schoolID || t.SchoolID == ctx.UserID) && t.Status == "pending" {
+				pendingPay = &PaymentRequest{
+					ID:            t.ID,
+					SchoolID:      t.SchoolID,
+					PlanID:        t.PackageID,
+					TransactionID: t.ReferenceNo,
+					Amount:        int(t.Amount),
+					Status:        t.Status,
+					SubmittedAt:   t.CreatedAt,
+					Notes:         t.Notes,
+				}
+				break
+			}
+		}
+		h.Store.RUnlock()
+	}
+
+	paymentStatus := "none"
+	if pendingPay != nil {
+		paymentStatus = "pending"
+	}
+
+	canUpgrade := sub != nil && sub.Status == "active" && phase == PhaseActive
+	canRenew := sub != nil && (phase == PhaseExpired || phase == PhaseGrace || phase == PhaseSuspended || phase == PhaseTrialExpired || phase == PhaseExpiring)
+
+	return CurrentResponse{
+		Subscription:           sub,
+		StudentsUsed:           studentsUsed,
+		StudentsLimit:          limit,
+		ActiveStudents:         studentsUsed,
+		DaysRemaining:          daysRemaining,
+		IsExpired:              isExpired,
+		CanTrial:               canTrial,
+		SelectedPackages:       selected,
+		AvailablePackages:      PackageCatalog(rates),
+		AllowedModules:         PackageModules(selected),
+		MonthlyCost:            MonthlyEstimate(studentsUsed, selected, rates),
+		MinimumMonthlyBill:     500,
+		TrialWarning:           trialWarning,
+		PackageBuilderRequired: false,
+		PendingPayment:         pendingPay,
+		Phase:                  phase,
+		PaymentStatus:          paymentStatus,
+		IsSuspended:            phase == PhaseSuspended,
+		InGracePeriod:          phase == PhaseGrace || phase == PhaseTrialExpired,
+		CanUpgrade:             canUpgrade,
+		CanRenew:               canRenew,
+	}, nil
 }
 
 // ─── GET /api/subscription/plans ─────────────────────────────────────────
@@ -513,10 +635,7 @@ func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 
 		// Create trial subscription (all features included, student limit based on plan)
 		now := time.Now()
-		trialDays := superadmin.GetPlatformSettings().TrialDays
-		if trialDays <= 0 {
-			trialDays = 14
-		}
+		trialDays := TrialDaysFromSettings()
 		trialEnd := now.Add(time.Duration(trialDays) * 24 * time.Hour)
 		id := store.NewID("sub")
 
@@ -532,9 +651,15 @@ func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 			studentLimit = 1200
 		}
 
+		ownerID := ""
+		if ctx != nil {
+			ownerID = ctx.UserID
+		}
+
 		sub := &Subscription{
 			ID:             id,
 			SchoolID:       schoolID,
+			OwnerUserID:    ownerID,
 			PlanName:       planName,
 			StudentLimit:   studentLimit,
 			Price:          0,
@@ -552,9 +677,9 @@ func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 
 		if h.Pool != nil {
 			_, err := h.Pool.Exec(r.Context(), `
-				INSERT INTO subscriptions (id, school_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, trial_start_date, trial_end_date, created_at, updated_at)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-			`, sub.ID, sub.SchoolID, sub.PlanName, sub.StudentLimit, sub.Price, sub.Currency,
+				INSERT INTO subscriptions (id, school_id, owner_user_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, trial_start_date, trial_end_date, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+			`, sub.ID, sub.SchoolID, sub.OwnerUserID, sub.PlanName, sub.StudentLimit, sub.Price, sub.Currency,
 				sub.StartDate, sub.EndDate, sub.Status, sub.IsTrial, sub.TrialUsed,
 				sub.TrialStartDate, sub.TrialEndDate, sub.CreatedAt, sub.UpdatedAt)
 			if err != nil {
@@ -563,7 +688,7 @@ func (h *Handler) StartTrial(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Record in history
-		h.recordHistory(r.Context(), ctx.SchoolID, sub.PlanName, sub.StudentLimit, 0, "paid", now, trialEnd, "trial")
+		h.recordHistory(r.Context(), schoolID, sub.PlanName, sub.StudentLimit, 0, "paid", now, trialEnd, "trial")
 
 		// Also update the MemStore to keep it in sync during runtime without restart
 		if h.Store != nil {
@@ -752,12 +877,27 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 			price = body.StudentLimit * 15
 		}
 
+		// Safe downgrade guard: never silently shrink capacity below current usage.
+		if h.Pool != nil {
+			scope, err := ResolveOwnerScope(r.Context(), h.Pool, schoolID)
+			if err == nil {
+				used, err := CountActiveStudentsInScope(r.Context(), h.Pool, scope)
+				if err == nil && used > studentLimit {
+					return nil, api.NewControlledError("CAPACITY_CONFLICT",
+						fmt.Sprintf("Cannot switch to %s: your current student count (%d) exceeds this plan's capacity (%d). Please reduce enrolled students first or choose a higher plan.", plan.DisplayName, used, studentLimit),
+						409,
+						map[string]any{"current_students": used, "plan_limit": studentLimit},
+					)
+				}
+			}
+		}
+
 		if h.Pool != nil {
 			// Deactivate current subscription
 			_, _ = h.Pool.Exec(r.Context(), `
 				UPDATE subscriptions SET status = 'cancelled', updated_at = NOW()
-				WHERE school_id = $1 AND status IN ('active', 'trial')
-			`, schoolID)
+				WHERE (school_id = $1 OR owner_user_id = $2) AND status IN ('active', 'trial')
+			`, schoolID, ctx.UserID)
 		}
 
 		// Create new subscription (1 month)
@@ -776,6 +916,7 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 		sub := &Subscription{
 			ID:           id,
 			SchoolID:     schoolID,
+			OwnerUserID:  ctx.UserID,
 			PlanName:     plan.Name,
 			StudentLimit: studentLimit,
 			Price:        price,
@@ -791,9 +932,9 @@ func (h *Handler) Upgrade(w http.ResponseWriter, r *http.Request) {
 
 		if h.Pool != nil {
 			_, err := h.Pool.Exec(r.Context(), `
-				INSERT INTO subscriptions (id, school_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
-				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-			`, sub.ID, sub.SchoolID, sub.PlanName, sub.StudentLimit, sub.Price, sub.Currency,
+				INSERT INTO subscriptions (id, school_id, owner_user_id, plan_name, student_limit, price, currency, start_date, end_date, status, is_trial, trial_used, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			`, sub.ID, sub.SchoolID, sub.OwnerUserID, sub.PlanName, sub.StudentLimit, sub.Price, sub.Currency,
 				sub.StartDate, sub.EndDate, sub.Status, sub.IsTrial, sub.TrialUsed,
 				sub.CreatedAt, sub.UpdatedAt)
 			if err != nil {
@@ -886,52 +1027,7 @@ func (h *Handler) GetHistory(w http.ResponseWriter, r *http.Request) {
 }
 
 // ─── STUDENT LIMIT CHECK (called by students handler) ────────────────────
-
-// CheckStudentLimit validates that the school hasn't exceeded their student limit.
-// Returns nil if OK, or a ControlledError if limit is reached.
-// This is the CRITICAL enforcement point — called before every student creation.
-func (h *Handler) CheckStudentLimit(ctx context.Context, schoolID string) error {
-	sub, err := GetActiveSubscriptionHelper(ctx, h.Pool, h.Store, schoolID)
-	if err != nil {
-		// If we can't check, allow (don't block on DB errors)
-		log.Printf("[subscription] limit check error for %s: %v (allowing)", schoolID, err)
-		return nil
-	}
-
-	if sub == nil {
-		return api.NewControlledError("SUBSCRIPTION_REQUIRED",
-			"No active subscription found. Please contact your school owner to activate the subscription.", 403, nil)
-	}
-
-	// Check if subscription is expired
-	if time.Now().After(sub.EndDate) {
-		return api.NewControlledError("SUBSCRIPTION_EXPIRED",
-			"Your school subscription has expired. Please contact your school owner to renew.", 403, nil)
-	}
-
-	// Count current active students
-	activeStudents := h.countActiveStudents(schoolID)
-
-	if len(ParseSelectedPackages(sub.PlanName, nil)) > 0 {
-		return nil
-	}
-
-	if activeStudents >= sub.StudentLimit {
-		return api.NewControlledError("STUDENT_LIMIT_REACHED",
-			fmt.Sprintf("You have reached your subscription student limit (%d students). Please contact your school owner to upgrade the subscription plan.", sub.StudentLimit),
-			403,
-			map[string]any{
-				"current_count": activeStudents,
-				"limit":         sub.StudentLimit,
-				"plan":          sub.PlanName,
-			},
-		)
-	}
-
-	return nil
-}
-
-
+// Implemented in lifecycle.go (owner-wide aggregation + advisory lock).
 
 func (h *Handler) countActiveStudents(schoolID string) int {
 	// Try PG first
@@ -955,15 +1051,6 @@ func (h *Handler) countActiveStudents(schoolID string) int {
 		}
 	}
 	return count
-}
-
-func (h *Handler) expireSubscription(ctx context.Context, subID string) {
-	if h.Pool == nil {
-		return
-	}
-	_, _ = h.Pool.Exec(ctx, `
-		UPDATE subscriptions SET status = 'expired', updated_at = NOW() WHERE id = $1
-	`, subID)
 }
 
 func (h *Handler) recordHistory(ctx context.Context, schoolID, planName string, studentLimit, amount int, paymentStatus string, start, end time.Time, action string) {

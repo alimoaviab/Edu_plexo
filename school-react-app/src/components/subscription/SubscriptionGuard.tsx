@@ -7,6 +7,11 @@ interface SubscriptionGuardProps {
   children: React.ReactNode;
 }
 
+/**
+ * SubscriptionGuard gates the app on the BACKEND-derived subscription state
+ * (`phase`). Grace periods stay operational (strong warning); suspension
+ * shows the lock screen with a recovery path for owners.
+ */
 export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const { current, isLoading } = useSubscription();
   const { user } = useAuth();
@@ -14,8 +19,8 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const pathname = location.pathname;
 
   // Exempt auth routes, subscription setup routes, and school onboarding routes
-  const isExempt = 
-    pathname.startsWith("/auth") || 
+  const isExempt =
+    pathname.startsWith("/auth") ||
     pathname.startsWith("/owner/subscription") ||
     pathname.startsWith("/admin/subscription") ||
     pathname.startsWith("/owner/schools");
@@ -30,14 +35,13 @@ export function SubscriptionGuard({ children }: SubscriptionGuardProps) {
     );
   }
 
-  const sub = current?.subscription;
-  const isActive = sub?.status === "active";
-  const isTrial = sub?.status === "trial";
+  const phase = current?.phase ?? (current?.subscription?.status === "trial" ? "trial_active" : current?.subscription?.status);
+  // Open: active, trial, expiring, grace (warning banner shown separately).
+  const isOpen = phase === "active" || phase === "trial_active" || phase === "trial_expiring" || phase === "expiring" || phase === "grace";
+  // Locked: expired (outside grace), suspended, no subscription at all.
+  const isLocked = !isOpen && phase !== undefined && phase !== "";
 
-  // Lock screen is shown when subscription is neither active nor trial, unless super_admin or on exempt route
-  const showLockScreen = !isSuperAdmin && !isExempt && !isActive && !isTrial;
-
-  if (showLockScreen) {
+  if (!isSuperAdmin && !isExempt && isLocked) {
     return <SubscriptionRequired current={current} />;
   }
 
