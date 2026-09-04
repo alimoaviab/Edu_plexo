@@ -38,48 +38,15 @@ function resolveRoleRoute(role?: string): string {
   return ROLE_ROUTES[normalizedRole] || "/admin/dashboard";
 }
 
-// Tab → roles allowed on that tab. Mirrors the backend mapping in
-// auth.go's allowedRolesForTab — keep them in sync.
-const TAB_TO_ROLES: Record<Role, string[]> = {
-  owner: ["owner"],
-  admin: ["admin", "super_admin"],
-  teacher: ["teacher"],
-  student: ["student", "parent"],
-};
-
-function roleBelongsOnTab(role: string, tab: Role): boolean {
-  return TAB_TO_ROLES[tab]?.includes(role) ?? false;
-}
 
 function suggestedTabForRole(role: string): Role {
   const r = role.toLowerCase();
+  if (r === "owner") return "owner";
   if (r === "teacher") return "teacher";
   if (r === "student" || r === "parent") return "student";
   return "admin";
 }
 
-function labelForTab(tab: Role): string {
-  return tab.charAt(0).toUpperCase() + tab.slice(1);
-}
-
-function prettyRoleLabel(role: string): string {
-  switch (role.toLowerCase()) {
-    case "owner":
-      return "a School Owner";
-    case "super_admin":
-      return "a Super Admin";
-    case "admin":
-      return "an Admin";
-    case "teacher":
-      return "a Teacher";
-    case "student":
-      return "a Student";
-    case "parent":
-      return "a Parent";
-    default:
-      return role || "an unknown role";
-  }
-}
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -157,36 +124,34 @@ export function LoginPage() {
       const payload = result?.data && typeof result.data === "object" ? result.data : result;
 
       if (!response.ok) {
-        // Role-mismatch: backend tells us the suggested tab. Switch to it
-        // automatically so the user can retry without re-typing.
+        let message = result?.message || "Invalid email or password.";
         const errCode = result?.error?.code as string | undefined;
-        const suggestedTab = (result?.error?.suggested_tab as string | undefined)?.toLowerCase();
-        if (
-          response.status === 403 &&
-          errCode === "ROLE_MISMATCH" &&
-          suggestedTab &&
-          (suggestedTab === "owner" || suggestedTab === "admin" || suggestedTab === "teacher" || suggestedTab === "student")
-        ) {
-          setSelectedRole(suggestedTab as Role);
+        const isSuspended = errCode === "ACCOUNT_SUSPENDED" || errCode === "SUBSCRIPTION_SUSPENDED";
+        
+        // Security: Never reveal internal roles or account existence in error messages (OWASP CWE-209)
+        if (!isSuspended) {
+          if (
+            response.status === 401 ||
+            response.status === 403 ||
+            /registered as/i.test(message) ||
+            /tab to sign in/i.test(message) ||
+            errCode === "ROLE_MISMATCH"
+          ) {
+            message = "Invalid email or password.";
+          }
         }
-
-        const message =
-          result?.message ||
-          `Sign in failed (${response.status}). Please try again.`;
         throw new Error(message);
       }
 
-      // Defensive front-end check: if the payload role still doesn't
-      // belong on the selected tab, surface a friendly error rather than
-      // landing the user on the wrong portal.
+      // Smoothly sync selected tab if role differs, without interrupting login
       const actualRole = (payload?.role as string | undefined)?.toLowerCase() || "";
-      if (actualRole && !roleBelongsOnTab(actualRole, selectedRole)) {
-        const suggested = suggestedTabForRole(actualRole);
-        setSelectedRole(suggested);
-        throw new Error(
-          `This account is registered as ${prettyRoleLabel(actualRole)}. Please use the ${labelForTab(suggested)} tab to sign in.`
-        );
+      if (actualRole) {
+        const matchingTab = suggestedTabForRole(actualRole);
+        if (matchingTab !== selectedRole) {
+          setSelectedRole(matchingTab);
+        }
       }
+
 
       setSuccess(true);
       if (payload?.token) {
