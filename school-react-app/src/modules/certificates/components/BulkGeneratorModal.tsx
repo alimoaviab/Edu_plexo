@@ -14,6 +14,7 @@ import {
   Users
 } from "lucide-react";
 import { showToast } from "@/utils/toast";
+import { escapeHtml } from "@/utils/escapeHtml";
 
 interface BulkGeneratorModalProps {
   isOpen: boolean;
@@ -367,7 +368,7 @@ export function BulkGeneratorModal({
           <!DOCTYPE html>
           <html>
           <head>
-            <title>Print Bulk ${activeType}</title>
+            <title>Print Bulk ${escapeHtml(activeType)}</title>
             <style>
               body { margin: 0; padding: 0; background-color: #ffffff; }
               .print-page { page-break-after: always; width: 100%; text-align: center; }

@@ -10,6 +10,23 @@
  *     ServiceResult so the UI can never crash on `undefined` fields.
  *   - On 401 responses, clear the stale token and redirect to /auth/login.
  *
+ * Transient-failure resilience:
+ *   - Reads (GET/HEAD) are retried up to 3 attempts with short backoff on
+ *     transport-level errors and HTTP 502/503/504, so short backend outages
+ *     (restart, deploy, cold start) recover automatically on first load.
+ *   - Reads have a client-side timeout (20s, override via options.timeoutMs;
+ *     options.timeoutMs: 0 disables the timer for long-running reads).
+ *   - Failures are classified into distinct categories (network / timeout /
+ *     server unavailable / auth / cancellation) with accurate messages
+ *     instead of a blanket "check your internet connection".
+ *
+ * Retry contract:
+ *   - The `retries` parameter is honoured. An explicit retries=0 means "single
+ *     attempt only" (e.g. callers that must not wait). Omitted/positive
+ *     values keep the resilience defaults: reads get at least 2 retries so
+ *     first-load flakiness recovers automatically, mutations keep the
+ *     historical single transport-level retry.
+ *
  * URL behaviour:
  *   - When VITE_API_URL is set (production), it's prepended to /api/* paths.
  *     This is needed when the frontend (Vercel) and backend (separate host)
@@ -106,6 +123,81 @@ function handleUnauthorized() {
   window.location.replace("/auth/login");
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Transient-failure policy
+// ─────────────────────────────────────────────────────────────────────────
+// Reads (GET/HEAD) are retried a bounded number of times with short backoff
+// when the failure is transient:
+//   - transport-level errors (fetch rejected — connection reset, backend
+//     restarting, proxy hiccup) and
+//   - HTTP 502/503/504 (upstream/proxy temporarily unavailable).
+// Mutations keep the historical single transport-level retry but are never
+// retried on HTTP error statuses (avoids duplicate side effects) and never
+// after a timeout.
+//
+// Reads also get a client-side timeout so a hung connection (e.g. upstream
+// restart mid-flight) surfaces as a clear "took too long" error instead of
+// spinning forever — nginx kills such requests after 60s anyway.
+const DEFAULT_READ_TIMEOUT_MS = 20_000;
+const RETRY_BASE_DELAY_MS = 400;
+const TRANSIENT_SERVER_STATUSES = new Set([502, 503, 504]);
+
+function isReadRequest(method: string): boolean {
+  return method === "GET" || method === "HEAD";
+}
+
+function isOffline(): boolean {
+  return typeof navigator !== "undefined" && navigator.onLine === false;
+}
+
+function isAbortError(error: unknown): error is DOMException {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Marks a read that was aborted by our own timeout (as opposed to a
+ * caller-initiated cancellation, which surfaces as a plain AbortError).
+ */
+class ReadTimeoutError extends Error {
+  name = "ReadTimeoutError";
+}
+
+/**
+ * fetch() wrapper that applies the read timeout. Caller-provided signals are
+ * always respected and disable the internal timeout; mutations are never
+ * timed out (long-running uploads/imports must not be cut off). An explicit
+ * options.timeoutMs of 0 also disables the internal timeout.
+ */
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  method: string
+): Promise<Response> {
+  if (init.signal || !isReadRequest(method)) {
+    return fetch(input, init);
+  }
+  const opts = init as RequestInit & { timeoutMs?: number };
+  if (typeof opts.timeoutMs === "number" && opts.timeoutMs <= 0) {
+    return fetch(input, init);
+  }
+  const timeoutMs =
+    typeof opts.timeoutMs === "number" ? opts.timeoutMs : DEFAULT_READ_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (isAbortError(error)) {
+      throw new ReadTimeoutError(`Request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // In-flight request deduplication map for idempotent GET requests.
 // Prevents duplicate simultaneous network requests when multiple components
 // mount or request the same resource concurrently.
@@ -152,24 +244,51 @@ async function executeServiceRequest<T>(
   options: RequestInit = {},
   retries = 1
 ): Promise<ServiceResult<T>> {
+  const method = (options.method || "GET").toUpperCase();
+  const idempotent = isReadRequest(method);
+
+  // Reads get a minimum of 2 retries (3 attempts total) unless the caller
+  // explicitly passed retries=0, which means "single attempt only" (one-shot
+  // reads like /api/schedules must not be silently upgraded into retries).
+  // Mutations keep the historical single retry (2 attempts total), and only
+  // for transport-level failures.
+  const maxAttempts = idempotent
+    ? retries === 0
+      ? 1
+      : Math.max(retries, 2) + 1
+    : retries + 1;
 
   let lastError: unknown;
 
-  for (let attempt = 0; attempt <= retries; attempt += 1) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
+      // The browser reports being offline — don't burn retry attempts.
+      if (isOffline()) {
+        return {
+          ok: false,
+          success: false,
+          message: NETWORK_ERROR_MESSAGE,
+          error: { code: "NETWORK_ERROR", message: NETWORK_ERROR_MESSAGE, status: 503 },
+        };
+      }
+
       const token = readToken();
-      const response = await fetch(resolveUrl(url), {
-        ...options,
-        credentials: "include",
-        headers: {
-          "content-type": "application/json",
-          "x-academic-year-id": readAcademicYearId(),
-          "x-school-id": readActiveSchoolId(),
-          "x-branch-id": readActiveBranchId(),
-          ...(token ? { authorization: `Bearer ${token}` } : {}),
-          ...(options.headers ?? {}),
+      const response = await fetchWithTimeout(
+        resolveUrl(url),
+        {
+          ...options,
+          credentials: "include",
+          headers: {
+            "content-type": "application/json",
+            "x-academic-year-id": readAcademicYearId(),
+            "x-school-id": readActiveSchoolId(),
+            "x-branch-id": readActiveBranchId(),
+            ...(token ? { authorization: `Bearer ${token}` } : {}),
+            ...(options.headers ?? {}),
+          },
         },
-      });
+        method
+      );
 
       const text = await response.text();
       let payload: unknown = null;
@@ -231,6 +350,19 @@ async function executeServiceRequest<T>(
         };
       }
 
+      // Transient upstream/proxy failures (502/503/504): for idempotent
+      // reads, wait briefly and try again — a backend restart or deploy
+      // usually clears within seconds. All other statuses return immediately.
+      if (
+        idempotent &&
+        TRANSIENT_SERVER_STATUSES.has(response.status) &&
+        attempt < maxAttempts - 1
+      ) {
+        lastError = new Error(`HTTP ${response.status}`);
+        await sleep(RETRY_BASE_DELAY_MS * Math.pow(2, attempt));
+        continue;
+      }
+
       const fallbackByStatus =
         response.status === 404
           ? "The requested resource was not found. It may have been deleted or moved."
@@ -242,9 +374,11 @@ async function executeServiceRequest<T>(
                 ? "Too many requests. Please wait a moment before trying again."
                 : response.status === 403
                   ? "You don't have permission to perform this action. Contact your administrator if you need access."
-                  : response.status >= 500
-                    ? "The server encountered an unexpected error. Please try again in a few moments."
-                    : "The request could not be completed. Please check your input and try again.";
+                  : response.status === 502 || response.status === 503 || response.status === 504
+                    ? "The server is temporarily unavailable. Please try again in a few moments."
+                    : response.status >= 500
+                      ? "The server encountered an unexpected error. Please try again in a few moments."
+                      : "The request could not be completed. Please check your input and try again.";
 
       const p = payload as Record<string, unknown> | null;
       const errorObj = p?.error as Record<string, unknown> | undefined;
@@ -270,23 +404,50 @@ async function executeServiceRequest<T>(
       };
     } catch (error) {
       lastError = error;
+
+      // Our own read timeout — the server may still be processing; surface
+      // a clear message instead of retrying into another long wait.
+      if (error instanceof ReadTimeoutError) {
+        return {
+          ok: false,
+          success: false,
+          message: TIMEOUT_MESSAGE,
+          error: { code: "TIMEOUT", message: TIMEOUT_MESSAGE, status: 504 },
+        };
+      }
+
+      // Caller-initiated cancellation (e.g. component unmount) — never
+      // retry a request the caller no longer wants.
+      if (isAbortError(error)) {
+        return {
+          ok: false,
+          success: false,
+          message: "The request was cancelled.",
+          error: { code: "CANCELLED", message: "The request was cancelled.", status: 0 },
+        };
+      }
+
+      // Transport-level failure — retry, bounded by maxAttempts.
     }
   }
 
   return {
     ok: false,
     success: false,
-    message:
-      "Unable to reach the server. Please check your internet connection and try again.",
+    message: NETWORK_ERROR_MESSAGE,
     error: {
       code: "NETWORK_ERROR",
-      message:
-        "Unable to reach the server. Please check your internet connection and try again.",
+      message: NETWORK_ERROR_MESSAGE,
       status: 503,
       details: lastError,
     },
   };
 }
+
+const NETWORK_ERROR_MESSAGE =
+  "Unable to reach the server. Please check your internet connection and try again.";
+const TIMEOUT_MESSAGE =
+  "The server took too long to respond. Please try again in a moment.";
 
 /**
  * Convenience helper for callers that expect a plain `{ ok, data }` payload.

@@ -12,8 +12,26 @@ import { useGeneratedCertificates } from "../hooks/useCertificates";
 import * as service from "../services/certificate.service";
 import { CERTIFICATE_TYPE_LABELS, type CertificateTemplate } from "../types/certificate.types";
 import { showToast } from "@/utils/toast";
+import { escapeHtml } from "@/utils/escapeHtml";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 import { getThemeLayoutHTML } from "../utils/themeHelper";
+
+/**
+ * Only allow http(s)/data-image/blob image URLs into an <img src> attribute.
+ * Prevents javascript:/quote-breakout values and HTML-escapes the attribute.
+ */
+function safeCertificateImageSrc(url: string): string {
+  const trimmed = (url || "").trim().toLowerCase();
+  if (
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("data:image/") ||
+    trimmed.startsWith("blob:")
+  ) {
+    return escapeHtml(url);
+  }
+  return "";
+}
 
 interface StudentRow {
   _id: string;
@@ -297,9 +315,12 @@ export function CertificateGeneratePage() {
                 }
 
                 const certType = CERTIFICATE_TYPE_LABELS[template.type as keyof typeof CERTIFICATE_TYPE_LABELS] || template.type.replace("_", " ");
+                // All values embedded in the printed HTML document are escaped
+                // (student/class/school names, certificate text). The logo URL
+                // additionally must pass an image-scheme allowlist.
                 const logoHtml = logoUrl
-                  ? `<img src="${logoUrl}" alt="Logo" style="height: 50px; max-width: 120px; object-fit: contain; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;" />`
-                  : `<div style="height: 48px; width: 48px; border-radius: 50%; background-color: ${styles.titleColor}; color: #fff; font-family: sans-serif; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; box-shadow: 0 3px 6px rgba(0,0,0,0.1);">${schoolName.charAt(0).toUpperCase()}</div>`;
+                  ? `<img src="${safeCertificateImageSrc(logoUrl)}" alt="Logo" style="height: 50px; max-width: 120px; object-fit: contain; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;" />`
+                  : `<div style="height: 48px; width: 48px; border-radius: 50%; background-color: ${styles.titleColor}; color: #fff; font-family: sans-serif; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; box-shadow: 0 3px 6px rgba(0,0,0,0.1);">${escapeHtml(schoolName.charAt(0).toUpperCase())}</div>`;
 
                 const getPrintLayoutHTML = (layout: string, colors: typeof styles) => getThemeLayoutHTML(layout, colors);
 
@@ -312,19 +333,19 @@ export function CertificateGeneratePage() {
                   let body = template.body_text || "This is to certify that {{student_name}} of Class {{class}} has been a student of {{school_name}}.";
                   
                   const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-                  const studentSpan = `<span style="font-family: '${styles.recipientFont}', cursive; font-size: 1.5em; color: ${styles.titleColor}; display: inline-block; font-weight: normal; line-height: 1; vertical-align: middle;">${stu.first_name} ${stu.last_name}</span>`;
+                  const studentSpan = `<span style="font-family: '${styles.recipientFont}', cursive; font-size: 1.5em; color: ${styles.titleColor}; display: inline-block; font-weight: normal; line-height: 1; vertical-align: middle;">${escapeHtml(stu.first_name)} ${escapeHtml(stu.last_name)}</span>`;
                   
                   const meta: Record<string, string> = {
                     student_name: studentSpan,
-                    class: className,
-                    class_name: className,
-                    school_name: schoolName,
-                    certificate_type: certType,
+                    class: escapeHtml(className),
+                    class_name: escapeHtml(className),
+                    school_name: escapeHtml(schoolName),
+                    certificate_type: escapeHtml(certType),
                     issue_date: dateStr,
                     year: String(new Date().getFullYear()),
                     certificate_no: certNo,
-                    admission_no: stu.admission_no || "",
-                    registration_no: stu.admission_no || "",
+                    admission_no: escapeHtml(stu.admission_no || ""),
+                    registration_no: escapeHtml(stu.admission_no || ""),
                   };
                   
                   Object.entries(meta).forEach(([key, val]) => {
@@ -335,9 +356,9 @@ export function CertificateGeneratePage() {
                     <div class="cert ${idx > 0 ? 'page-break' : ''}">
                       ${getPrintLayoutHTML(styles.themeLayout, styles)}
                       ${logoHtml}
-                      <p class="school">${schoolName}</p>
+                      <p class="school">${escapeHtml(schoolName)}</p>
                       <div class="divider"></div>
-                      <h1 class="title">${certType}</h1>
+                      <h1 class="title">${escapeHtml(certType)}</h1>
                       <div class="divider"></div>
                       <p class="body">${body}</p>
                       <div class="footer">
