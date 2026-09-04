@@ -4,11 +4,13 @@
 package superadmin
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/eduplexo/backend-go/internal/api"
@@ -35,7 +37,11 @@ func NewPG(s *store.MemStore, save func(string, any), pool *pgxpool.Pool) *Handl
 	if save == nil {
 		save = func(string, any) {}
 	}
-	return &Handler{Store: s, Persist: save, Pool: pool}
+	h := &Handler{Store: s, Persist: save, Pool: pool}
+	if pool != nil {
+		h.initPlatformSettings()
+	}
+	return h
 }
 
 func requireSuperAdmin(w http.ResponseWriter, r *http.Request) (*api.RequestContext, bool) {
@@ -1310,26 +1316,88 @@ type PlatformSettings struct {
 	AutoApproveSchools bool           `json:"auto_approve_schools"`
 	DefaultPackageID   string         `json:"default_package_id"`
 	TrialDays          int            `json:"trial_days"`
+	SkipOTP            bool           `json:"skip_otp"`
 	PackageRates       map[string]int `json:"package_rates"`
 }
 
-var platformSettings = PlatformSettings{
-	AutoApproveSchools: true,
-	DefaultPackageID:   "",
-	TrialDays:          14,
-	PackageRates: map[string]int{
-		"academic":       5,
-		"learning":       4,
-		"administration": 4,
-		"finance":        4,
-		"communication":  2,
-		"premium":        1,
-	},
-}
+var (
+	settingsMu       sync.RWMutex
+	platformSettings = PlatformSettings{
+		AutoApproveSchools: true,
+		DefaultPackageID:   "",
+		TrialDays:          14,
+		SkipOTP:            false,
+		PackageRates: map[string]int{
+			"academic":       5,
+			"learning":       4,
+			"administration": 4,
+			"finance":        4,
+			"communication":  2,
+			"premium":        1,
+		},
+	}
+)
 
 // GetPlatformSettings returns the current platform settings (exported for use by other packages).
 func GetPlatformSettings() PlatformSettings {
+	settingsMu.RLock()
+	defer settingsMu.RUnlock()
 	return platformSettings
+}
+
+// SetPlatformSettings allows overriding platform settings (used in tests and internal initialization).
+func SetPlatformSettings(s PlatformSettings) {
+	settingsMu.Lock()
+	defer settingsMu.Unlock()
+	platformSettings = s
+}
+
+// initPlatformSettings loads platform settings from Postgres if available.
+func (h *Handler) initPlatformSettings() {
+	if h.Pool == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, _ = h.Pool.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS platform_settings (
+			id                   TEXT PRIMARY KEY DEFAULT 'default',
+			auto_approve_schools BOOLEAN NOT NULL DEFAULT TRUE,
+			default_package_id   TEXT NOT NULL DEFAULT '',
+			trial_days           INT NOT NULL DEFAULT 14,
+			skip_otp             BOOLEAN NOT NULL DEFAULT FALSE,
+			package_rates        JSONB NOT NULL DEFAULT '{}',
+			updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
+	`)
+
+	var autoApprove bool
+	var defaultPkg string
+	var trialDays int
+	var skipOTP bool
+	var ratesJSON []byte
+
+	err := h.Pool.QueryRow(ctx, `
+		SELECT auto_approve_schools, default_package_id, trial_days, skip_otp, package_rates
+		FROM platform_settings
+		WHERE id = 'default'
+	`).Scan(&autoApprove, &defaultPkg, &trialDays, &skipOTP, &ratesJSON)
+
+	if err == nil {
+		settingsMu.Lock()
+		platformSettings.AutoApproveSchools = autoApprove
+		platformSettings.DefaultPackageID = defaultPkg
+		platformSettings.TrialDays = trialDays
+		platformSettings.SkipOTP = skipOTP
+		if len(ratesJSON) > 0 {
+			var rates map[string]int
+			if jsonErr := json.Unmarshal(ratesJSON, &rates); jsonErr == nil && rates != nil {
+				platformSettings.PackageRates = rates
+			}
+		}
+		settingsMu.Unlock()
+	}
 }
 
 // GetSettings returns platform-wide settings.
@@ -1340,7 +1408,10 @@ func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
 		api.WriteResult(w, api.Fail("FORBIDDEN", "Super admin access required.", 403, nil))
 		return
 	}
-	api.WriteResult(w, api.Ok(platformSettings))
+	settingsMu.RLock()
+	current := platformSettings
+	settingsMu.RUnlock()
+	api.WriteResult(w, api.Ok(current))
 }
 
 // UpdateSettings updates platform-wide settings.
@@ -1358,9 +1429,11 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	settingsMu.Lock()
 	platformSettings.AutoApproveSchools = body.AutoApproveSchools
 	platformSettings.DefaultPackageID = body.DefaultPackageID
 	platformSettings.TrialDays = body.TrialDays
+	platformSettings.SkipOTP = body.SkipOTP
 	if body.PackageRates != nil {
 		if platformSettings.PackageRates == nil {
 			platformSettings.PackageRates = map[string]int{}
@@ -1371,6 +1444,28 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	currentSettings := platformSettings
+	settingsMu.Unlock()
 
-	api.WriteResult(w, api.Ok(map[string]any{"success": true, "settings": platformSettings}))
+	// Persist to Postgres asynchronously
+	if h.Pool != nil {
+		go func(s PlatformSettings) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			ratesJSON, _ := json.Marshal(s.PackageRates)
+			_, _ = h.Pool.Exec(ctx, `
+				INSERT INTO platform_settings (id, auto_approve_schools, default_package_id, trial_days, skip_otp, package_rates, updated_at)
+				VALUES ('default', $1, $2, $3, $4, $5, NOW())
+				ON CONFLICT (id) DO UPDATE SET
+					auto_approve_schools = EXCLUDED.auto_approve_schools,
+					default_package_id   = EXCLUDED.default_package_id,
+					trial_days           = EXCLUDED.trial_days,
+					skip_otp             = EXCLUDED.skip_otp,
+					package_rates        = EXCLUDED.package_rates,
+					updated_at           = NOW();
+			`, s.AutoApproveSchools, s.DefaultPackageID, s.TrialDays, s.SkipOTP, ratesJSON)
+		}(currentSettings)
+	}
+
+	api.WriteResult(w, api.Ok(map[string]any{"success": true, "settings": currentSettings}))
 }

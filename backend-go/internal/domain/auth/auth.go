@@ -16,6 +16,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/api"
 	authpkg "github.com/eduplexo/backend-go/internal/auth"
 	"github.com/eduplexo/backend-go/internal/config"
+	"github.com/eduplexo/backend-go/internal/domain/superadmin"
 	"github.com/eduplexo/backend-go/internal/email"
 	"github.com/eduplexo/backend-go/internal/session"
 	"github.com/eduplexo/backend-go/internal/store"
@@ -479,6 +480,78 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		schoolID = school.SchoolID
+	}
+
+	// ─── Super Admin Bypass: Skip OTP Direct Account Creation ──────────
+	if superadmin.GetPlatformSettings().SkipOTP {
+		userID := store.NewID("usr")
+		permissions := []string{"*"}
+		if role != "admin" && role != "owner" {
+			permissions = []string{}
+		}
+
+		newUser := &store.User{
+			ID:           userID,
+			SchoolID:     schoolID,
+			Email:        email,
+			PasswordHash: hash,
+			Role:         role,
+			Permissions:  permissions,
+			Profile: store.UserProfile{
+				FirstName: firstWord(fullName),
+				LastName:  remainingWords(fullName),
+				Phone:     body.Phone,
+			},
+			Status:    "active",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		h.Store.Lock()
+		for _, u := range h.Store.Users {
+			if strings.EqualFold(u.Email, email) {
+				h.Store.Unlock()
+				api.WriteJSON(w, http.StatusConflict, signupErr("This email is already registered in the system."))
+				return
+			}
+		}
+		h.Store.Users = append(h.Store.Users, newUser)
+		h.Store.Unlock()
+
+		h.Persist("users", newUser)
+
+		// Generate authenticated JWT session
+		claims := authpkg.Claims{
+			SchoolID:             schoolID,
+			Role:                 newUser.Role,
+			Permissions:          newUser.Permissions,
+			ActiveAcademicYearID: "",
+			SessionID:            "sess_" + randomID(),
+			App:                  h.Cfg.AppName,
+			ActorEmail:           newUser.Email,
+		}
+		claims.Subject = newUser.ID
+		token, err := authpkg.SignToken(h.Cfg.JWTSecret, h.Cfg.AppName, claims, 8760*time.Hour)
+		if err == nil {
+			h.setSessionCookie(w, token, true)
+		}
+
+		api.WriteJSON(w, http.StatusCreated, map[string]any{
+			"ok":          true,
+			"success":     true,
+			"skipped_otp": true,
+			"message":     "Account created successfully! Welcome to EduPlexo.",
+			"data": map[string]any{
+				"status":                  "active",
+				"school_id":               schoolID,
+				"token":                   token,
+				"role":                    newUser.Role,
+				"email":                   newUser.Email,
+				"user_id":                 newUser.ID,
+				"active_academic_year_id": "",
+			},
+		})
+		return
 	}
 
 	// ─── Phase: Secure 6-Digit Email OTP Verification ──────────────────

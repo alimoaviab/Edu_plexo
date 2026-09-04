@@ -157,6 +157,35 @@ export function SignupPage() {
       }
 
       const data = result?.data;
+
+      // ─── Super Admin Bypass: Direct Login when Skip OTP is active ───
+      if (data?.token) {
+        sessionStorage.removeItem(STORAGE_KEY);
+        setSuccessMessage("Account created successfully! Redirecting to your dashboard...");
+
+        localStorage.removeItem("active_school_id");
+        localStorage.removeItem("active_branch_id");
+        localStorage.removeItem("academic_year_id");
+        localStorage.removeItem("last_school_id");
+        localStorage.removeItem("profile_id");
+        localStorage.removeItem("class_id");
+        localStorage.removeItem("student_id");
+
+        localStorage.setItem("token", data.token);
+        if (data.role !== "owner" && data.school_id && data.school_id !== "system") {
+          localStorage.setItem("active_school_id", data.school_id);
+        }
+        window.dispatchEvent(new Event("auth-changed"));
+        setTimeout(() => {
+          if (data.role === "owner") {
+            navigate("/owner/dashboard", { replace: true });
+          } else {
+            navigate("/admin/dashboard", { replace: true });
+          }
+        }, 800);
+        return;
+      }
+
       if (!data?.pending_id) {
         throw new Error("Invalid response received from authentication server.");
       }
