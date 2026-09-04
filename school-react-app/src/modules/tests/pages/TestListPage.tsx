@@ -32,7 +32,6 @@ import { useQueryParams } from "@/hooks/useQueryParams";
 
 export function TestListPage({ filters }: { filters?: { class_id?: string; subject?: string } }) {
   const pathname = useLocation().pathname;
-  const isParent = pathname.includes("/parent");
   const isTeacher = pathname.includes("/teacher");
   const marksBase = isTeacher ? "/teacher/tests/marks" : "/admin/tests/marks";
   const testsCreatePath = isTeacher ? "/teacher/tests/create" : "/admin/tests/create";
@@ -119,18 +118,16 @@ export function TestListPage({ filters }: { filters?: { class_id?: string; subje
     },
   ];
 
-  const rowActions: RowAction<TestRow>[] = isParent
-    ? []
-    : [
-        {
-          icon: "edit_note",
-          label: "Enter Marks",
-          variant: "primary",
-          onClick: (row) => {
-            window.location.assign(`${marksBase}?test_id=${encodeURIComponent(row._id)}`);
-          },
-        },
-      ];
+  const rowActions: RowAction<TestRow>[] = [
+    {
+      icon: "edit_note",
+      label: "Enter Marks",
+      variant: "primary",
+      onClick: (row) => {
+        window.location.assign(`${marksBase}?test_id=${encodeURIComponent(row._id)}`);
+      },
+    },
+  ];
 
   // ─── Loading ───────────────────────────────────────────────────────────
 
@@ -247,15 +244,13 @@ export function TestListPage({ filters }: { filters?: { class_id?: string; subje
           </div>
 
           {/* Create CTA */}
-          {!isParent && (
-            <Link
-              to={withQuery(testsCreatePath)}
-              className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg bg-blue-600 text-white text-[12px] font-bold shadow-sm shadow-blue-600/15 hover:bg-blue-700 transition-colors active:scale-[0.98]"
-            >
-              <AppIcon name="Plus" size={16} />
-              New test
-            </Link>
-          )}
+          <Link
+            to={withQuery(testsCreatePath)}
+            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg bg-blue-600 text-white text-[12px] font-bold shadow-sm shadow-blue-600/15 hover:bg-blue-700 transition-colors active:scale-[0.98]"
+          >
+            <AppIcon name="Plus" size={16} />
+            New test
+          </Link>
         </div>
       </div>
 
@@ -268,7 +263,7 @@ export function TestListPage({ filters }: { filters?: { class_id?: string; subje
             setStatusFilter("all");
             updateQuery({ search: "", status: "all" });
           }}
-          createPath={isParent ? undefined : withQuery(testsCreatePath)}
+          createPath={withQuery(testsCreatePath)}
         />
       ) : viewMode === "grid" ? (
         <EntityGrid>
@@ -277,7 +272,6 @@ export function TestListPage({ filters }: { filters?: { class_id?: string; subje
               key={test._id}
               test={test}
               marksBase={marksBase}
-              isParent={isParent}
             />
           ))}
         </EntityGrid>
@@ -295,11 +289,9 @@ export function TestListPage({ filters }: { filters?: { class_id?: string; subje
 function TestCard({
   test,
   marksBase,
-  isParent,
 }: {
   test: TestRow;
   marksBase: string;
-  isParent: boolean;
 }) {
   const accent =
     test.status === "completed"
@@ -319,19 +311,15 @@ function TestCard({
         { label: "Date", value: test.starts_at || "—" },
         { label: "Max Marks", value: `${test.max_marks} pts`, tone: "text-slate-800" },
       ]}
-      actions={
-        isParent
-          ? []
-          : [
-              {
-                label: "Enter Marks",
-                icon: "edit_note",
-                to: `${marksBase}?test_id=${encodeURIComponent(test._id)}`,
-                accent: "blue",
-                primary: true,
-              },
-            ]
-      }
+      actions={[
+        {
+          label: "Enter Marks",
+          icon: "edit_note",
+          to: `${marksBase}?test_id=${encodeURIComponent(test._id)}`,
+          accent: "blue",
+          primary: true,
+        },
+      ]}
     />
   );
 }

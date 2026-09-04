@@ -101,8 +101,9 @@ Every check was run against the Dockerized stack with fresh PostgreSQL.
 | Fees — invoicing | generate (monthly), list, ledger dashboard |
 | Fees — adjustments | list, create, delete (active discount/penalty applied at due_at) |
 | Fees — payments | record (FIFO across components), list, daily collection |
-| Fees — visibility | parent/student ledger with per-month rows + due_notices |
-| Parent portal | student-info, dashboard stats, attendance, results, homework, announcements, performance chart |
+| Fees — visibility | student ledger with per-month rows + due_notices |
+| Student portal | `/api/student/info`, `/api/student/dashboard/stats`, `/api/student/attendance`, `/api/student/results`, `/api/student/homework`, `/api/student/announcements` (student-scoped) |
+| Owner ERP | `/api/owner/dashboard`, `/api/owner/schools` (+ create/update/delete), `/api/owner/campuses`, `/api/owner/admins`, `/api/owner/subscriptions`, `/api/owner/analytics` (ownership-checked) |
 
 ### Tenant + RBAC + academic-year isolation
 

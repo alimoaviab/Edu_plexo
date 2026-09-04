@@ -8,7 +8,6 @@ import type { EventListFilters } from "../services/events.service";
 
 export default function EventListPage({ filters }: { filters?: EventListFilters } = {}) {
   const pathname = useLocation().pathname;
-  const isParent = pathname.includes("/parent");
   const navigate = useNavigate();
   const { state, deleteEvent } = useEvents(filters);
 
@@ -95,7 +94,6 @@ export default function EventListPage({ filters }: { filters?: EventListFilters 
   ], []);
 
   const rowActions: RowAction<EventRecordRow>[] = useMemo(() => {
-    if (isParent) return [];
     return [
         {
           icon: "edit",
@@ -113,7 +111,7 @@ export default function EventListPage({ filters }: { filters?: EventListFilters 
           onClick: (row) => deleteEvent(row._id),
         },
       ];
-  }, [isParent, deleteEvent, pathname]);
+  }, [deleteEvent, pathname]);
 
   if (state.status === "loading" && !state.data) {
     return <TableSkeleton />;
@@ -181,15 +179,13 @@ export default function EventListPage({ filters }: { filters?: EventListFilters 
             </button>
           </div>
 
-          {!isParent && (
-            <Link
+          <Link
               to={createPath}
               className="h-9 inline-flex items-center gap-2 px-5 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-md shadow-blue-600/10 active:scale-95"
             >
               <AppIcon name="Plus" size={16} />
               Add Event
             </Link>
-          )}
         </div>
       </div>
 
@@ -235,16 +231,14 @@ export default function EventListPage({ filters }: { filters?: EventListFilters 
                         <AppIcon name="MapPin" size={14} />
                         <span className="text-[9px] font-black uppercase tracking-tighter truncate max-w-[120px]">{row.location || "Global"}</span>
                      </div>
-                     {!isParent && (
-                        <div className="flex items-center gap-1">
-                          <Link to={editPath(row._id)} className="h-7 w-7 flex items-center justify-center rounded text-slate-300 hover:text-blue-600 transition-all">
-                             <AppIcon name="SquarePen" size={18} />
-                          </Link>
-                          <button onClick={() => deleteEvent(row._id)} className="h-7 w-7 flex items-center justify-center rounded text-slate-300 hover:text-rose-600 transition-all">
-                             <AppIcon name="Trash2" size={18} />
-                          </button>
-                        </div>
-                     )}
+                     <div className="flex items-center gap-1">
+                        <Link to={editPath(row._id)} className="h-7 w-7 flex items-center justify-center rounded text-slate-300 hover:text-blue-600 transition-all">
+                           <AppIcon name="SquarePen" size={18} />
+                        </Link>
+                        <button onClick={() => deleteEvent(row._id)} className="h-7 w-7 flex items-center justify-center rounded text-slate-300 hover:text-rose-600 transition-all">
+                           <AppIcon name="Trash2" size={18} />
+                        </button>
+                     </div>
                   </div>
                 </div>
               ))}

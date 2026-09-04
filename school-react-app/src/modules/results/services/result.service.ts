@@ -14,11 +14,9 @@ export function listResults(filters?: { exam_id?: string; student_id?: string; c
   
   const query = params.toString();
   
-  // Detect if we should use parent portal API
-  const isParentPortal = typeof window !== 'undefined' && window.location.pathname.includes('/parent');
-  const endpoint = isParentPortal ? `/api/parent/student-results` : `/api/results`;
-  
-  return serviceRequest<any>(`${endpoint}${query ? `?${query}` : ""}`);
+  // The Parent portal alias (/api/parent/student-results) was removed with
+  // the obsolete Parent role; results always come from /api/results.
+  return serviceRequest<any>(`/api/results${query ? `?${query}` : ""}`);
 }
 
 export function getResult(id: string) {

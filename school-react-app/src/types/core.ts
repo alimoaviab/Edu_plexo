@@ -6,7 +6,9 @@
  * service must produce the same `ServiceResult<T>` envelope.
  */
 
-export type Role = "owner" | "super_admin" | "admin" | "teacher" | "parent" | "student";
+// Parent is an obsolete role and was removed from the application. Legacy
+// parent accounts cannot sign in and have no routes or navigation.
+export type Role = "owner" | "super_admin" | "admin" | "teacher" | "student";
 
 export type AppName = "school" | "super_admin";
 
@@ -27,8 +29,7 @@ export type EntityType =
   | "timetable"
   | "behavior"
   | "leave"
-  | "event"
-  | "parent";
+  | "event";
 
 export type PermissionAction = "view" | "create" | "update" | "delete" | "manage";
 

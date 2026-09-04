@@ -28,16 +28,16 @@ import (
 
 // CompositeResponse is the all-in-one dashboard response.
 type CompositeResponse struct {
-	Overview        compositeOverview `json:"overview"`
-	Attendance      attendanceSummary `json:"attendance"`
-	Fees            feeSummary       `json:"fees"`
-	PendingLeaves   int              `json:"pendingLeaves"`
-	Activities      []map[string]any `json:"activities"`
-	UpcomingEvents        []map[string]any       `json:"upcomingEvents"`
-	ClassAttendance       []map[string]any       `json:"classAttendance"`
-	TeacherAttTrends      []AttendanceTrendData  `json:"teacherAttTrends"`
-	StudentAttTrends      []AttendanceTrendData  `json:"studentAttTrends"`
-	FeeTrends             []FeeTrendData         `json:"feeTrends"`
+	Overview         compositeOverview     `json:"overview"`
+	Attendance       attendanceSummary     `json:"attendance"`
+	Fees             feeSummary            `json:"fees"`
+	PendingLeaves    int                   `json:"pendingLeaves"`
+	Activities       []map[string]any      `json:"activities"`
+	UpcomingEvents   []map[string]any      `json:"upcomingEvents"`
+	ClassAttendance  []map[string]any      `json:"classAttendance"`
+	TeacherAttTrends []AttendanceTrendData `json:"teacherAttTrends"`
+	StudentAttTrends []AttendanceTrendData `json:"studentAttTrends"`
+	FeeTrends        []FeeTrendData        `json:"feeTrends"`
 }
 
 type AttendanceTrendData struct {
@@ -104,6 +104,12 @@ func NewComposite(s *store.MemStore, c *cache.Client) *CompositeHandler {
 // Get implements GET /api/dashboard/composite.
 func (h *CompositeHandler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	// Composite school dashboard is consumed by the admin portal only. The
+	// Owner role has its own /api/owner/* analytics and must not read this.
+	if ctx == nil || (ctx.Role != "admin" && ctx.Role != "super_admin") {
+		api.WriteResult(w, api.Fail("FORBIDDEN", "You do not have permission to view school analytics.", 403, nil))
+		return
+	}
 	yearID := tenant.ResolveAcademicYearID(h.Store, ctx, r.URL.Query().Get("academic_year_id"))
 	cacheKey := fmt.Sprintf("composite:%s:%s", ctx.SchoolID, yearID)
 
@@ -175,7 +181,7 @@ func (h *CompositeHandler) compute(ctx *api.RequestContext, yearID string) Compo
 
 	// Attendance today & Trends
 	todayStart, todayEnd := api.DayBounds(time.Now())
-	
+
 	// Pre-generate last 7 days buckets for trends
 	studentAttTrendMap := make(map[string]*AttendanceTrendData)
 	teacherAttTrendMap := make(map[string]*AttendanceTrendData)
@@ -210,7 +216,7 @@ func (h *CompositeHandler) compute(ctx *api.RequestContext, yearID string) Compo
 			late++
 			present++
 		}
-		
+
 		// Fill trends
 		dStr := a.Date.Format("2006-01-02")
 		if trend, ok := studentAttTrendMap[dStr]; ok {
@@ -231,7 +237,7 @@ func (h *CompositeHandler) compute(ctx *api.RequestContext, yearID string) Compo
 		if yearID != "" && ta.AcademicYearID != "" && ta.AcademicYearID != yearID {
 			continue
 		}
-		
+
 		// Today's summary
 		if !ta.Date.Before(todayStart) && !ta.Date.After(todayEnd) {
 			if ta.Status == "present" || ta.Status == "excused" || ta.Status == "late" {

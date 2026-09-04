@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/eduplexo/backend-go/internal/api"
+	"github.com/eduplexo/backend-go/internal/auth"
 	"github.com/eduplexo/backend-go/internal/cache"
 	"github.com/eduplexo/backend-go/internal/domain/dashboard"
 	"github.com/eduplexo/backend-go/internal/domain/tenant"
@@ -75,6 +76,10 @@ func genID(prefix string) string {
 // List implements GET /api/expenses.
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := auth.AssertPermission(ctx, "expenses", auth.ActionView); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 	q := r.URL.Query()
 
 	search := strings.ToLower(strings.TrimSpace(q.Get("search")))
@@ -182,6 +187,10 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 // GetStats implements GET /api/expenses/stats.
 func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := auth.AssertPermission(ctx, "expenses", auth.ActionView); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 	yearID := strings.TrimSpace(r.URL.Query().Get("academic_year_id"))
 	if yearID == "" {
 		yearID = tenant.ResolveAcademicYearID(h.Store, ctx, "")
@@ -246,6 +255,10 @@ func (h *Handler) GetStats(w http.ResponseWriter, r *http.Request) {
 // GetByID implements GET /api/expenses/{id}.
 func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := auth.AssertPermission(ctx, "expenses", auth.ActionView); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	h.Store.RLock()
@@ -264,6 +277,10 @@ func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 // Create implements POST /api/expenses.
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := auth.AssertPermission(ctx, "expenses", auth.ActionCreate); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 
 	var in ExpenseInput
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
@@ -363,6 +380,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 // Update implements PATCH /api/expenses/{id}.
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := auth.AssertPermission(ctx, "expenses", auth.ActionUpdate); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	var in ExpenseInput
@@ -441,6 +462,10 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 // Delete implements DELETE /api/expenses/{id}.
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := auth.AssertPermission(ctx, "expenses", auth.ActionDelete); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	h.Store.Lock()

@@ -123,12 +123,10 @@ export function invalidateStudentQueries(): Promise<unknown> {
   ]);
 }
 
-/** Invalidate attendance queries, parent attendance, and dashboard */
+/** Invalidate attendance queries and dashboard */
 export function invalidateAttendanceQueries(): Promise<unknown> {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: ["attendance"] }),
-    queryClient.invalidateQueries({ queryKey: ["parent-attendance"] }),
-    queryClient.invalidateQueries({ queryKey: ["parent-student-attendance"] }),
     queryClient.invalidateQueries({ queryKey: ["attendance-summary"] }),
     queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
   ]);
@@ -138,7 +136,7 @@ export function invalidateAttendanceQueries(): Promise<unknown> {
 export function invalidateFeeQueries(): Promise<unknown> {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: ["fees"] }),
-    queryClient.invalidateQueries({ queryKey: ["parent-fees"] }),
+
     queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
   ]);
 }

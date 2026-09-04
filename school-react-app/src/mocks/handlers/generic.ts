@@ -128,24 +128,8 @@ export const genericHandlers = [
     })
   ),
 
-  // Parent portal
-  http.get("/api/parent/student-info", () =>
-    okOne({
-      students: db.students.map((s) => ({
-        id: s._id,
-        name: `${s.first_name} ${s.last_name}`,
-        roll_no: s.admission_no,
-        class_id: s.class_id,
-        class: "Grade 5",
-        section: s.section,
-        academic_year: "2025-26",
-        status: s.status,
-      })),
-    })
-  ),
-  http.get("/api/parent/children", () =>
-    okOne({ students: db.students.map((s) => ({ id: s._id })) })
-  ),
+  // Guardian email existence check used by the student-creation form
+  // (shared admin/teacher flow — kept even though the Parent role is gone).
   http.get("/api/parents/check-email", () =>
     okOne({ exists: false })
   ),

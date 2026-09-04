@@ -12,8 +12,8 @@ import { AppIcon } from "shared/ui/AppIcon";
  * Both helpers live in @/utils/fee-receipt and mirror the marksheet
  * utility so school-branded documents feel like a single family.
  *
- * The data fetch contract is unchanged — same `/api/parent/fees` endpoint
- * the previous student fees page used.
+ * The data fetch contract is unchanged — the student-scoped `/api/student/fees`
+ * endpoint (the Parent portal alias was removed with the Parent role).
  */
 
 import { useEffect, useMemo } from "react";
@@ -67,7 +67,7 @@ type FeesResponse = {
 async function resolveStudentId(studentId?: string) {
   if (studentId) return studentId;
   const result = await serviceRequest<{ students: Array<{ id: string }> }>(
-    "/api/parent/student-info",
+    "/api/student/info",
   );
   return result.ok ? result.data.students?.[0]?.id ?? "" : "";
 }
@@ -97,7 +97,7 @@ export function StudentFeesPage() {
       const studentId = await resolveStudentId(user?.studentId);
       if (!studentId) throw new Error("No linked student found.");
       const result = await serviceRequest<FeesResponse>(
-        `/api/parent/fees?student_id=${studentId}`,
+        `/api/student/fees?student_id=${studentId}`,
       );
       if (!result.ok) throw new Error(result.error.message || "Failed to load fees");
       return result.data;

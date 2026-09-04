@@ -19,7 +19,9 @@ import (
 // BEFORE a job is enqueued. The job queue here is backed by a nil Redis
 // client: if authorization were missing, the handler would try to enqueue and
 // fail with 500; with the gate in place it must return 403 for student /
-// teacher / parent and only reach the enqueue path for admin/owner/super_admin.
+// teacher / parent / owner and only reach the enqueue path for admin and
+// super_admin. Owner is deliberately denied: fee invoicing is operational
+// school management, not an ownership-level action.
 func TestFeeGenerateAsync_RejectsUnauthorizedRoles(t *testing.T) {
 	queue := realtime.NewJobQueue(nil)
 	h := realtime.FeeGenerateAsyncHandler(queue)
@@ -28,8 +30,8 @@ func TestFeeGenerateAsync_RejectsUnauthorizedRoles(t *testing.T) {
 		"student":     http.StatusForbidden,
 		"teacher":     http.StatusForbidden,
 		"parent":      http.StatusForbidden,
+		"owner":       http.StatusForbidden, // owner is not an operator
 		"admin":       http.StatusInternalServerError, // passes authz, enqueue fails (nil redis) -> 500, never 403
-		"owner":       http.StatusInternalServerError,
 		"super_admin": http.StatusInternalServerError, // granted via Permissions ["*"] as in production JWTs
 	}
 	for role, want := range roles {

@@ -20,7 +20,7 @@ type AnnouncementsResponse = {
 
 async function resolveStudentId(studentId?: string) {
     if (studentId) return studentId;
-    const result = await serviceRequest<{ students: Array<{ id: string }> }>("/api/parent/student-info");
+    const result = await serviceRequest<{ students: Array<{ id: string }> }>("/api/student/info");
     return result.ok ? result.data.students?.[0]?.id ?? "" : "";
 }
 
@@ -33,7 +33,7 @@ export function StudentAnnouncementsPage() {
             const studentId = await resolveStudentId(user?.studentId);
             if (!studentId) throw new Error("No linked student found.");
 
-            const result = await serviceRequest<AnnouncementsResponse>(`/api/parent/child/announcements?student_id=${studentId}`);
+            const result = await serviceRequest<AnnouncementsResponse>(`/api/student/announcements?student_id=${studentId}`);
             if (!result.ok) throw new Error(result.error.message || "Failed to load announcements");
             return result.data;
         }).catch(() => {
@@ -43,7 +43,7 @@ export function StudentAnnouncementsPage() {
 
     if (state.status === "idle" || state.status === "loading") {
         return (
-            <SchoolShell eyebrow="Parent Portal" title="Announcements">
+            <SchoolShell eyebrow="Student Portal" title="Announcements">
                 <div className="space-y-4">
                     <Skeleton className="h-24 w-full" />
                     <Skeleton className="h-44 w-full" />
@@ -54,14 +54,14 @@ export function StudentAnnouncementsPage() {
 
     if (state.status === "error") {
         return (
-            <SchoolShell eyebrow="Parent Portal" title="Announcements">
+            <SchoolShell eyebrow="Student Portal" title="Announcements">
                 <DataState variant="error" title="Announcements unavailable" message={state.error} />
             </SchoolShell>
         );
     }
 
     return (
-        <SchoolShell eyebrow="Parent Portal" title="Announcements">
+        <SchoolShell eyebrow="Student Portal" title="Announcements">
             <div className="space-y-4">
                 {state.data.announcements.map((announcement) => (
                     <Card key={announcement.id} className="space-y-3">

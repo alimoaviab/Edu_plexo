@@ -24,7 +24,6 @@ const ROLE_HOME: Record<Role, string> = {
   super_admin: "/admin/dashboard",
   admin: "/admin/dashboard",
   teacher: "/teacher/dashboard",
-  parent: "/parent/dashboard",
   student: "/student/dashboard",
 };
 

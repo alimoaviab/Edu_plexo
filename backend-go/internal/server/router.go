@@ -31,7 +31,6 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/notifications"
 	"github.com/eduplexo/backend-go/internal/domain/owner"
 	"github.com/eduplexo/backend-go/internal/domain/packages"
-	"github.com/eduplexo/backend-go/internal/domain/parent"
 	"github.com/eduplexo/backend-go/internal/domain/questionpapers"
 	"github.com/eduplexo/backend-go/internal/domain/results"
 	"github.com/eduplexo/backend-go/internal/domain/schedule"
@@ -39,6 +38,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/domain/sections"
 	"github.com/eduplexo/backend-go/internal/domain/seo"
 	"github.com/eduplexo/backend-go/internal/domain/settings"
+	"github.com/eduplexo/backend-go/internal/domain/studentportal"
 	"github.com/eduplexo/backend-go/internal/domain/students"
 	"github.com/eduplexo/backend-go/internal/domain/subjects"
 	"github.com/eduplexo/backend-go/internal/domain/subscription"
@@ -377,6 +377,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Delete("/certificates/templates/{id}", certH.DeleteTemplate)
 			r.Post("/certificates/templates/{id}/duplicate", certH.DuplicateTemplate)
 			r.Get("/certificates", certH.ListCertificates)
+			r.Get("/students/me/certificates", certH.ListCertificates) // student's own certificates
 			r.Post("/certificates/generate", certH.Generate)
 			r.Post("/certificates/{id}/revoke", certH.Revoke)
 			r.Get("/certificates/verify/{code}", certH.Verify)
@@ -614,29 +615,27 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 			r.Get("/super-admin/global-bank/import-logs", saH.ListImportLogs)
 			r.Get("/super-admin/global-bank/import-logs/{id}/download-failed", saH.DownloadFailedRows)
 
-			// Parents — admin/teacher use these to link students to
-			// existing parent accounts during student creation. The
-			// real linkage write happens inside the students.Create
-			// handler when `link_parent_user_id` (or a matching email)
-			// is detected.
+			// Legacy parent-linking helper — still used by the admin/teacher
+			// student-creation form (shared flow) to detect an existing
+			// guardian email before provisioning. Parent accounts can no
+			// longer sign in; the endpoint only answers existence checks.
 			r.Get("/parents/check-email", stH.CheckParentEmail)
 			r.Post("/parents/check-email", stH.CheckParentEmail)
-			r.Post("/parents/link-student", stubs.NotImplemented(""))
 
-			// Parent portal
-			pH := parent.NewWithCache(s, rdb)
-			r.Get("/parent/student-info", pH.StudentInfo)
-			r.Get("/parent/children", pH.Children)
-			r.Get("/parent/dashboard/stats", pH.DashboardStats)
-			r.Get("/parent/student-results", pH.StudentResults)
-			r.Get("/parent/student-attendance", pH.StudentAttendance)
-			r.Get("/parent/attendance", pH.StudentAttendance)
-			r.Get("/parent/fees", fH.StudentFees)
+			// ─── Student portal (formerly mounted under /api/parent/* —
+			// re-homed and re-scoped when the Parent role was removed).
+			// Every handler resolves the student from the authenticated
+			// user's OWN student record; ?student_id tampering is rejected.
+			spH := studentportal.NewWithCache(s, rdb)
+			r.Get("/student/info", spH.Info)
+			r.Get("/student/dashboard/stats", spH.DashboardStats)
+			r.Get("/student/results", spH.Results)
+			r.Get("/student/attendance", spH.Attendance)
+			r.Get("/student/homework", spH.Homework)
+			r.Get("/student/announcements", spH.Announcements)
+
+			// Student fee ledger (already student-scoped in the fees domain).
 			r.Get("/student/fees", fH.StudentFees)
-			r.Get("/parent/child/homework", pH.ChildHomework)
-			r.Get("/parent/child/announcements", pH.ChildAnnouncements)
-			r.Get("/parent/performance-chart", pH.PerformanceChart)
-			r.Get("/parent/live-classes", pH.LiveClasses)
 			r.Get("/school/my-classes", clH.List)
 
 			// ─── Messaging / Chat ────────────────────────────────────────

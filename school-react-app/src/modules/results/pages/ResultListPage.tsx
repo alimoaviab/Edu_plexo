@@ -41,7 +41,6 @@ export function ResultListPage({
 }) {
   const pathname = useLocation().pathname;
   const navigate = useNavigate();
-  const isParent = pathname.includes("/parent");
   const { currentParams, updateQuery, withQuery } = useQueryParams();
   const { state: classState } = useClasses();
 
@@ -276,11 +275,7 @@ export function ResultListPage({
         label: "View",
         variant: "ghost",
         onClick: (row) => {
-          const base = isParent
-            ? "/parent"
-            : pathname.includes("/teacher")
-            ? "/teacher"
-            : "/admin";
+          const base = pathname.includes("/teacher") ? "/teacher" : "/admin";
           navigate(`${base}/results/${row._id}`);
         },
       },
@@ -332,8 +327,7 @@ export function ResultListPage({
         ]}
       />
 
-      {!isParent && (
-        <div className="bg-white p-2 rounded-xl border border-slate-100 shadow-sm flex flex-wrap items-center gap-3">
+      <div className="bg-white p-2 rounded-xl border border-slate-100 shadow-sm flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[200px]">
             <AppIcon name="Search" size={18} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -408,7 +402,6 @@ export function ResultListPage({
             </button>
           )}
         </div>
-      )}
 
       <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
         <DataTable

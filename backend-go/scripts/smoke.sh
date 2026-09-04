@@ -30,10 +30,7 @@ for ep in \
   /api/attendance /api/exams /api/results /api/homework \
   /api/timetable /api/announcements /api/behavior /api/events \
   /api/leave /api/live/classes /api/notifications /api/settings \
-  /api/parent/student-info /api/parent/dashboard/stats \
-  /api/parent/student-attendance /api/parent/student-results \
-  /api/parent/child/homework /api/parent/child/announcements \
-  /api/parent/performance-chart /api/parent/fees \
+  /api/student/fees \
   /api/school/fees/dashboard-stats /api/domain/status \
   /api/analytics/dashboard
 do
@@ -103,9 +100,9 @@ CODE=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/students")
 [ "$CODE" = "401" ] && ok "401 enforced"
 
 # ─── Permission guard ─────────────────────────────────────────────────────
-step "Parent dashboard renders"
-curl -s -H "authorization: Bearer $TOKEN" "$BASE/api/parent/dashboard/stats" \
-  | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['ok']; print('  attendance:', d['data']['attendance'])"
-ok "parent dashboard ok"
+step "Student fee ledger renders"
+curl -s -H "authorization: Bearer $TOKEN" "$BASE/api/student/fees" \
+  | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['ok']; print('  rows:', len(d['data']['rows']))"
+ok "student fee ledger ok"
 
 printf '\n\033[1;32mAll Phase 2.1 smoke checks passed.\033[0m\n'

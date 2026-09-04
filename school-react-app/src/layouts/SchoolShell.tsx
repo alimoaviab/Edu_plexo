@@ -9,11 +9,11 @@ import { AppIcon } from "shared/ui/AppIcon";
  *   - AIAssistant placeholder rendered as a no-op until AI subsystem is ported
  *
  * Business logic preserved:
- *   - Role-driven nav groups (admin/teacher/parent/student)
+ *   - Role-driven nav groups (owner/admin/teacher/student)
  *   - Academic-year selector that calls POST /api/academic-years/switch and
  *     re-issues the JWT
  *   - Cross-tenant guard relies on useAuth (already ported)
- *   - SelectedChildProvider wraps the parent role
+
  *   - Sidebar collapse + group expansion persisted to localStorage
  */
 
@@ -27,8 +27,6 @@ import {
 } from "@/services/academic-year-context";
 import { useAuth, type Role } from "@/hooks/useAuth";
 import { useSchoolBranding } from "@/hooks/useSchoolBranding";
-import { ChildSwitcher } from "@/components/parent/ChildSwitcher";
-import { OwnerSchoolSwitcher } from "@/components/owner/OwnerSchoolSwitcher";
 import { GlobalSearch } from "shared/components/GlobalSearch";
 import { SubscriptionGuard } from "@/components/subscription/SubscriptionGuard";
 import { useSubscription } from "@/modules/subscription/hooks/useSubscription";
@@ -55,6 +53,10 @@ const ownerNavGroups: NavGroup[] = [
       { label: "Dashboard", href: "/owner/dashboard", icon: "dashboard" },
       { label: "My Schools", href: "/owner/schools", icon: "domain" },
     ],
+  },
+  {
+    label: "Billing",
+    items: [{ label: "Subscription", href: "/owner/subscription", icon: "card_membership" }],
   },
 ];
 
@@ -164,37 +166,6 @@ const teacherNavGroups: NavGroup[] = [
   },
 ];
 
-const parentNavGroups: NavGroup[] = [
-  {
-    label: "Dashboard",
-    items: [{ label: "My Dashboard", href: "/parent/dashboard", icon: "dashboard" }],
-  },
-  {
-    label: "Academic",
-    items: [
-      { label: "Timetable", href: "/parent/timetable", icon: "schedule" },
-      { label: "Exams", href: "/parent/exams", icon: "quiz" },
-      { label: "Results", href: "/parent/results", icon: "leaderboard" },
-      { label: "Attendance", href: "/parent/attendance", icon: "fact_check" },
-      { label: "Homework", href: "/parent/homework", icon: "assignment" },
-      { label: "Live Classes", href: "/parent/live-classes", icon: "videocam" },
-      { label: "Fee Ledger", href: "/parent/fees", icon: "receipt_long" },
-    ],
-  },
-  {
-    label: "Requests",
-    items: [{ label: "Leave", href: "/parent/leave", icon: "event_busy" }],
-  },
-  {
-    label: "Communication",
-    items: [{ label: "Conversations", href: "/parent/messages", icon: "chat" }],
-  },
-  {
-    label: "School",
-    items: [{ label: "Announcements", href: "/parent/announcements", icon: "campaign" }],
-  },
-];
-
 const studentNavGroups: NavGroup[] = [
   {
     label: "Parent Portal",
@@ -234,24 +205,11 @@ const studentNavGroups: NavGroup[] = [
 
 function navGroupsForRole(role: Role | undefined): NavGroup[] {
   if (!role) return [];
-  if (role === "owner") {
-    // Map the admin routes to /owner/ for the owner role
-    const ownerMappedAdminGroups = adminNavGroups.map(group => ({
-      ...group,
-      items: (group.items || [])
-        .filter(Boolean)
-        .filter(item => item && item.href && item.href !== "/admin/dashboard")
-        .map(item => ({
-          ...item,
-          href: item.href.replace("/admin", "/owner")
-        }))
-    })).filter(group => Array.isArray(group.items) && group.items.length > 0); // Remove empty groups like Reports
-
-    return [...ownerNavGroups, ...ownerMappedAdminGroups];
-  }
+  // Owner gets ONLY the Owner navigation — Dashboard, My Schools, Subscription.
+  // Admin modules are never mapped into the Owner sidebar.
+  if (role === "owner") return ownerNavGroups;
   if (role === "admin" || role === "super_admin") return adminNavGroups;
   if (role === "teacher") return teacherNavGroups;
-  if (role === "parent") return parentNavGroups;
   if (role === "student") return studentNavGroups;
   return [];
 }
@@ -367,18 +325,6 @@ const routeToModuleMap: Record<string, string> = {
   "/teacher/behavior": "behavior",
   "/teacher/schedule": "schedule",
   "/teacher/messages": "conversations",
-  
-  "/parent/dashboard": "dashboard",
-  "/parent/timetable": "timetable",
-  "/parent/exams": "exams",
-  "/parent/results": "results",
-  "/parent/attendance": "attendance",
-  "/parent/homework": "homework",
-  "/parent/live-classes": "live-classes",
-  "/parent/fees": "fee",
-  "/parent/leave": "leave",
-  "/parent/messages": "conversations",
-  "/parent/announcements": "announcements",
   
   "/student/dashboard": "dashboard",
   "/student/profile": "dashboard",
@@ -558,15 +504,14 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
 
     if (user) {
       const path = pathname;
-      if (path.startsWith("/admin")) {
-        if (user.role === "owner") {
-          navigate(path.replace(/^\/admin/, "/owner"), { replace: true });
-        } else if (user.role !== "admin" && user.role !== "super_admin") {
-          navigate(`/${user.role}/dashboard`, { replace: true });
-        }
-      } else if (path.startsWith("/teacher") && user.role !== "teacher") {
+      // The router-level ProtectedRoute already blocks cross-role route
+      // access. This effect is a second, layout-level guard for the app
+      // shell: an Owner (or any mismatched role) landing on an operational
+      // /admin|/teacher|/student route is sent to their OWN dashboard —
+      // never remapped into another role's area.
+      if (path.startsWith("/admin") && user.role !== "admin" && user.role !== "super_admin") {
         navigate(`/${user.role}/dashboard`, { replace: true });
-      } else if (path.startsWith("/parent") && user.role !== "parent") {
+      } else if (path.startsWith("/teacher") && user.role !== "teacher") {
         navigate(`/${user.role}/dashboard`, { replace: true });
       } else if (path.startsWith("/student") && user.role !== "student") {
         navigate(`/${user.role}/dashboard`, { replace: true });
@@ -803,8 +748,8 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
           </div>
 
           <div className="flex items-center gap-3 relative z-[100] overflow-visible">
-            {user.role === "owner" && <OwnerSchoolSwitcher />}
-            {user.role === "parent" && <ChildSwitcher />}
+            {/* No school-context switcher for Owner: the Owner stays an Owner
+                everywhere and selects schools read-only from /owner/schools. */}
 
             {user.role === "admin" && (
             <div className="hidden sm:flex items-center gap-2 rounded-md border border-border bg-surface px-2 py-1">
@@ -845,7 +790,7 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
             )}
 
             <div className="flex items-center gap-2">
-              {(user.role === "admin" || user.role === "owner") && (
+              {user.role === "admin" && (
                 <AdminActions 
                   allowedModules={allowedModules} 
                   subscription={subscription} 
@@ -869,11 +814,6 @@ export function SchoolShell({ children, title, eyebrow, description, actions }: 
       </main>
     </div>
   );
-
-  // SelectedChildProvider lives at the router layer (ParentLayout) so
-  // every parent page is already inside the provider before SchoolShell
-  // renders. Wrapping again here would create a stale inner context
-  // that masks the outer one.
 
   // Suppress unused-import warning for Breadcrumb until module pages opt in.
   void Breadcrumb;

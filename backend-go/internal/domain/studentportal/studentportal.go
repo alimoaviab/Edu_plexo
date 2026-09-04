@@ -1,27 +1,18 @@
-// Package parent serves the /api/parent/* tree consumed by the parent
-// portal pages. Mirrors old-app/shared/services/parent-portal.service.ts —
-// each endpoint preserves the original response shape exactly so the React
-// parent pages render unchanged.
+// Package studentportal serves the /api/student/* tree consumed by the
+// student portal pages (dashboard, attendance, results, homework,
+// announcements, profile).
 //
-// Caching:
+// History: these endpoints were previously mounted under /api/parent/* and
+// were powered by the obsolete Parent role (Student pages called them, which
+// made Parent secretly power Student). With the Parent role removed, the
+// handlers are re-homed under /api/student/* and re-scoped: a student can
+// ONLY ever resolve their OWN student record (store.Student.UserID ==
+// authenticated user). Any ?student_id that is not the caller's own id is
+// treated as not-found, so ID tampering cannot leak another student's data.
 //
-//	The parent portal is the most-hit area of the platform per
-//	authenticated session — every page mount triggers a fan-out of
-//	heavy slice scans (Attendance, Results, Exams, Homework, Fees).
-//	Phase 3 adds an optional Redis read-through cache, scoped per
-//	(school, student), so repeat reads inside a short window become
-//	microsecond responses instead of multi-millisecond scans.
-//
-//	Invalidation strategy is purely TTL-based: 60 seconds for stats
-//	that change frequently (attendance, results), 5 minutes for
-//	slow-moving lists (homework). This avoids touching any write
-//	handler — staleness is bounded and acceptable for a parent
-//	dashboard that polls/refreshes naturally on navigation.
-//
-//	Graceful degrade: a nil/unavailable cache makes every cache
-//	helper a no-op. The handler then runs the original code path
-//	identically. Behaviour is wire-byte-equivalent on cache miss.
-package parent
+// Caching: optional Redis read-through, scoped per (school, student) so
+// cross-tenant cache leaks are impossible by construction.
+package studentportal
 
 import (
 	"encoding/json"
@@ -32,17 +23,15 @@ import (
 
 	"github.com/eduplexo/backend-go/internal/api"
 	"github.com/eduplexo/backend-go/internal/cache"
+	"github.com/eduplexo/backend-go/internal/domain/access"
 	"github.com/eduplexo/backend-go/internal/store"
 )
 
-// Cache TTLs — frequent data uses a 60-second window so the parent's
-// own writes (homework submissions, etc.) are visible quickly.
 const (
-	parentDashTTL       = 60 * time.Second
-	parentResultsTTL    = 60 * time.Second
-	parentAttendanceTTL = 60 * time.Second
-	parentHomeworkTTL   = 5 * time.Minute
-	parentChartTTL      = 60 * time.Second
+	portalDashTTL       = 60 * time.Second
+	portalResultsTTL    = 60 * time.Second
+	portalAttendanceTTL = 60 * time.Second
+	portalHomeworkTTL   = 5 * time.Minute
 )
 
 type Handler struct {
@@ -50,27 +39,16 @@ type Handler struct {
 	Cache *cache.Client
 }
 
-// New keeps the original signature for callers that don't pass cache
-// (graceful degrade: no caching, identical behaviour).
 func New(s *store.MemStore) *Handler { return &Handler{Store: s} }
 
-// NewWithCache attaches a Redis client. Pass nil to opt out.
 func NewWithCache(s *store.MemStore, c *cache.Client) *Handler {
 	return &Handler{Store: s, Cache: c}
 }
 
-// serveCached is a small helper that turns a "build the ServiceResult"
-// function into a cached HTTP handler. It hits Redis first; on miss it
-// runs the build, marshals the envelope once, ships the bytes, and
-// stores the same bytes for next time.
-//
-// The cached envelope is the FULL ServiceResult (matches what
-// api.WriteResult would produce), so consumers can't tell whether they
-// got a hit or a miss based on the body alone — the X-Cache header is
-// the only signal.
-//
-// On Redis failure or when the cache is nil, this falls through to the
-// original code path with no observable behaviour change.
+// serveCached turns a "build the ServiceResult" function into a cached HTTP
+// handler. Hits Redis first; on miss it runs the build, marshals the
+// envelope once, ships the bytes, and stores the same bytes for next time.
+// On Redis failure or nil cache it falls through with no behaviour change.
 func (h *Handler) serveCached(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -108,42 +86,45 @@ func (h *Handler) serveCached(
 	}
 	_, _ = w.Write(bytes)
 
-	// Only cache successful responses so a transient backend hiccup
-	// doesn't get pinned for the entire TTL window.
 	if h.Cache != nil && h.Cache.Available() && cacheKey != "" {
 		_ = h.Cache.Set(r.Context(), cacheKey, bytes, ttl)
 	}
 }
 
-// parentCacheKey produces a stable key for a (school, student, scope)
-// triple. We always include the school_id so cross-tenant cache leaks
-// are impossible by construction.
-func parentCacheKey(scope, schoolID, studentID string) string {
-	return fmt.Sprintf("parent:%s:%s:%s", scope, schoolID, studentID)
+func portalCacheKey(scope, schoolID, studentID string) string {
+	return fmt.Sprintf("student:%s:%s:%s", scope, schoolID, studentID)
 }
 
-// resolveStudent returns only a student explicitly linked to this parent.
+// studentOnly is the authorization gate for the whole portal: unauthenticated
+// → 401, any non-student role → 403. A student may only ever reach their own
+// data.
+func studentOnly(w http.ResponseWriter, r *http.Request) *api.RequestContext {
+	ctx := api.FromRequest(r)
+	if ctx == nil {
+		api.WriteResult(w, api.Fail("UNAUTHENTICATED", "Authentication required.", 401, nil))
+		return nil
+	}
+	if ctx.Role != "student" {
+		api.WriteResult(w, api.Fail("FORBIDDEN", "You do not have permission to access the student portal.", 403, nil))
+		return nil
+	}
+	return ctx
+}
+
+// resolveStudent returns the authenticated student's OWN record. A
+// `requested` id that differs from the caller's own record resolves to nil —
+// IDOR protection: a student can never view another student's data.
 func (h *Handler) resolveStudent(ctx *api.RequestContext, requested string) *store.Student {
 	h.Store.RLock()
 	defer h.Store.RUnlock()
-	allowed := map[string]bool{}
-	for _, link := range h.Store.StudentParents {
-		if link.SchoolID == ctx.SchoolID && link.ParentUserID == ctx.UserID {
-			allowed[link.StudentID] = true
-		}
-	}
-	if requested != "" && !allowed[requested] {
+	self := access.StudentProfileLocked(h.Store, ctx)
+	if self == nil {
 		return nil
 	}
-	for _, s := range h.Store.Students {
-		if s.SchoolID != ctx.SchoolID || !allowed[s.ID] {
-			continue
-		}
-		if requested == "" || s.ID == requested {
-			return s
-		}
+	if requested != "" && requested != self.ID {
+		return nil
 	}
-	return nil
+	return self
 }
 
 func (h *Handler) studentSummary(s *store.Student) map[string]any {
@@ -178,78 +159,71 @@ func (h *Handler) studentSummary(s *store.Student) map[string]any {
 	}
 }
 
-// StudentInfo implements GET /api/parent/student-info. With no
-// `student_id`, returns the list of linked students; with one, returns
-// detailed info for that student.
-func (h *Handler) StudentInfo(w http.ResponseWriter, r *http.Request) {
-	ctx := api.FromRequest(r)
-	q := r.URL.Query()
-	studentID := q.Get("student_id")
+// Info implements GET /api/student/info. Without ?student_id it returns the
+// caller's own student record list ({students:[...]}); with ?student_id it
+// returns the detailed record — only when the id is the caller's own.
+func (h *Handler) Info(w http.ResponseWriter, r *http.Request) {
+	ctx := studentOnly(w, r)
+	if ctx == nil {
+		return
+	}
+	studentID := r.URL.Query().Get("student_id")
 
 	api.WriteResult(w, api.ServiceTry(func() (any, error) {
-		if studentID == "" {
-			h.Store.RLock()
-			out := make([]map[string]any, 0)
-			seen := map[string]bool{}
-			// First: explicit student↔parent links.
-			for _, link := range h.Store.StudentParents {
-				if link.SchoolID == ctx.SchoolID && link.ParentUserID == ctx.UserID {
-					for _, s := range h.Store.Students {
-						if s.ID == link.StudentID && !seen[s.ID] {
-							out = append(out, h.studentSummary(s))
-							seen[s.ID] = true
-						}
-					}
-				}
-			}
-			// Security invariant: a parent may ONLY ever see students linked
-			// to their account (student_parents). There is deliberately no
-			// fallback here that enumerates the tenant's student body — an
-			// unlinked parent must receive an empty child list, never a
-			// directory of other children's names/roll numbers/classes.
-			h.Store.RUnlock()
-			return map[string]any{"students": out}, nil
-		}
 		s := h.resolveStudent(ctx, studentID)
 		if s == nil {
-			return nil, api.NewControlledError("NOT_FOUND", "Student not found.", 404, nil)
+			if studentID != "" {
+				return nil, api.NewControlledError("NOT_FOUND", "Student not found.", 404, nil)
+			}
+			return map[string]any{"students": []map[string]any{}}, nil
 		}
-		return h.studentSummary(s), nil
+		if studentID == "" {
+			return map[string]any{"students": []map[string]any{h.studentSummary(s)}}, nil
+		}
+
+		// Detailed profile shape consumed by the student profile/dashboard
+		// pages (normalizeStudentInfo): student + guardian + subjects.
+		return map[string]any{
+			"student": h.studentSummary(s),
+			"guardian": map[string]any{
+				"name":  s.Guardian.Name,
+				"phone": s.Guardian.Phone,
+				"email": s.Guardian.Email,
+			},
+			"enrolled_subjects": h.enrolledSubjects(ctx, s),
+		}, nil
 	}))
 }
 
-// Children implements GET /api/parent/children — same as StudentInfo without
-// a student_id.
-func (h *Handler) Children(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	q.Del("student_id")
-	r.URL.RawQuery = q.Encode()
-	h.StudentInfo(w, r)
+func (h *Handler) enrolledSubjects(ctx *api.RequestContext, s *store.Student) []map[string]any {
+	if s == nil {
+		return []map[string]any{}
+	}
+	h.Store.RLock()
+	defer h.Store.RUnlock()
+	out := make([]map[string]any, 0)
+	for _, sub := range h.Store.Subjects {
+		if sub.SchoolID != ctx.SchoolID || sub.ClassID == "" || (sub.ClassID != s.ClassID) {
+			continue
+		}
+		out = append(out, map[string]any{
+			"id":   sub.ID,
+			"name": sub.Name,
+			"code": sub.Code,
+		})
+	}
+	return out
 }
 
-// DashboardStats implements GET /api/parent/dashboard/stats.
-//
-// Response shape — matches the parent dashboard page's expectation:
-//
-//	{
-//	  dashboard: {
-//	    children_overview: [
-//	      {
-//	        student_id, name, class, current_grade,
-//	        attendance_percentage, pending_fees, pending_assignments
-//	      }
-//	    ]
-//	  },
-//	  // The legacy fields below are still emitted for any older
-//	  // consumer that hasn't migrated to children_overview yet.
-//	  attendance, upcomingExams, recentResults, feeDue
-//	}
+// DashboardStats implements GET /api/student/dashboard/stats.
+// Response shape matches the student dashboard page: children_overview for
+// the caller's own record plus legacy flat fields.
 func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
-	ctx := api.FromRequest(r)
+	ctx := studentOnly(w, r)
+	if ctx == nil {
+		return
+	}
 	studentID := r.URL.Query().Get("student_id")
-	// Resolve the student outside the cache key so the parent flow
-	// without an explicit student_id still caches by the resolved ID
-	// (otherwise the same parent would miss every other request).
 	resolved := h.resolveStudent(ctx, studentID)
 	cacheStudent := studentID
 	if cacheStudent == "" && resolved != nil {
@@ -257,18 +231,17 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 	}
 	key := ""
 	if cacheStudent != "" {
-		key = parentCacheKey("dash", ctx.SchoolID, cacheStudent)
+		key = portalCacheKey("dash", ctx.SchoolID, cacheStudent)
 	}
 
-	h.serveCached(w, r, key, parentDashTTL, func() api.ServiceResult {
+	h.serveCached(w, r, key, portalDashTTL, func() api.ServiceResult {
 		return api.ServiceTry(func() (any, error) {
 			s := resolved
 			attendance := map[string]any{"present": 0, "total": 0, "percentage": 0}
 			exams := []map[string]any{}
 			results := []map[string]any{}
 			feeDue := map[string]any{"amount": 0, "due_date": nil}
-
-			emptyOverview := map[string]any{
+			overview := map[string]any{
 				"student_id":            "",
 				"name":                  "",
 				"class":                 "",
@@ -280,7 +253,13 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 			if s == nil {
 				return map[string]any{
 					"dashboard": map[string]any{
-						"children_overview": []map[string]any{emptyOverview},
+						"total_children":    0,
+						"children_overview": []map[string]any{overview},
+						"summary": map[string]any{
+							"total_pending_fees":        0,
+							"total_assignments_pending": 0,
+							"alerts_count":              0,
+						},
 					},
 					"attendance":    attendance,
 					"upcomingExams": exams,
@@ -290,7 +269,6 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 			}
 
 			h.Store.RLock()
-			// Attendance percentage for the active year.
 			var present, total int
 			for _, a := range h.Store.Attendance {
 				if a.SchoolID == ctx.SchoolID && a.StudentID == s.ID {
@@ -300,21 +278,18 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-			// Upcoming exams (next 5).
 			exRows := make([]*store.Exam, 0)
 			for _, e := range h.Store.Exams {
 				if e.SchoolID == ctx.SchoolID && e.ClassID == s.ClassID {
 					exRows = append(exRows, e)
 				}
 			}
-			// Recent results (last 5 graded).
 			resRows := make([]*store.Result, 0)
 			for _, r := range h.Store.Results {
 				if r.SchoolID == ctx.SchoolID && r.StudentID == s.ID {
 					resRows = append(resRows, r)
 				}
 			}
-			// Outstanding fees for the student.
 			var pendingFees float64
 			for _, f := range h.Store.Fees {
 				if f.SchoolID != ctx.SchoolID || f.StudentID != s.ID {
@@ -326,8 +301,6 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 					pendingFees += out
 				}
 			}
-			// Pending homework: assigned to the student's class & section
-			// and not in draft.
 			pendingHomework := 0
 			for _, hw := range h.Store.Homework {
 				if hw.SchoolID != ctx.SchoolID || hw.ClassID != s.ClassID {
@@ -339,7 +312,6 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 				if hw.Status == "draft" {
 					continue
 				}
-				// Count if the student hasn't submitted yet.
 				submitted := false
 				for _, sub := range hw.Submissions {
 					if sub.StudentID == s.ID && (sub.Status == "submitted" || sub.Status == "graded") {
@@ -351,7 +323,6 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 					pendingHomework++
 				}
 			}
-			// Class name for the overview card.
 			className := ""
 			for _, c := range h.Store.Classes {
 				if c.ID == s.ClassID {
@@ -378,9 +349,6 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 			if len(resRows) > 5 {
 				resRows = resRows[:5]
 			}
-			// Most recent grade letter from the latest result, derived from
-			// the per-exam max-marks. Falls back to "—" when the student
-			// has no graded results yet.
 			currentGrade := "—"
 			if len(resRows) > 0 {
 				latest := resRows[0]
@@ -428,7 +396,7 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 			attendance = map[string]any{"present": present, "total": total, "percentage": percentage}
 			feeDue = map[string]any{"amount": pendingFees, "due_date": nil}
 
-			overview := map[string]any{
+			overview = map[string]any{
 				"student_id":            s.ID,
 				"name":                  s.FirstName + " " + s.LastName,
 				"class":                 className,
@@ -436,11 +404,18 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 				"attendance_percentage": percentage,
 				"pending_fees":          pendingFees,
 				"pending_assignments":   pendingHomework,
+				"academic_year":         s.AcademicYearID,
 			}
 
 			return map[string]any{
 				"dashboard": map[string]any{
+					"total_children":    1,
 					"children_overview": []map[string]any{overview},
+					"summary": map[string]any{
+						"total_pending_fees":        pendingFees,
+						"total_assignments_pending": pendingHomework,
+						"alerts_count":              0,
+					},
 				},
 				"attendance":    attendance,
 				"upcomingExams": exams,
@@ -451,9 +426,13 @@ func (h *Handler) DashboardStats(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// StudentResults implements GET /api/parent/student-results.
-func (h *Handler) StudentResults(w http.ResponseWriter, r *http.Request) {
-	ctx := api.FromRequest(r)
+// Results implements GET /api/student/results — only the caller's own graded
+// results, with per-subject breakdowns.
+func (h *Handler) Results(w http.ResponseWriter, r *http.Request) {
+	ctx := studentOnly(w, r)
+	if ctx == nil {
+		return
+	}
 	studentID := r.URL.Query().Get("student_id")
 	resolved := h.resolveStudent(ctx, studentID)
 	cacheStudent := studentID
@@ -462,10 +441,10 @@ func (h *Handler) StudentResults(w http.ResponseWriter, r *http.Request) {
 	}
 	key := ""
 	if cacheStudent != "" {
-		key = parentCacheKey("results", ctx.SchoolID, cacheStudent)
+		key = portalCacheKey("results", ctx.SchoolID, cacheStudent)
 	}
 
-	h.serveCached(w, r, key, parentResultsTTL, func() api.ServiceResult {
+	h.serveCached(w, r, key, portalResultsTTL, func() api.ServiceResult {
 		return api.ServiceTry(func() (any, error) {
 			s := resolved
 			if s == nil {
@@ -488,13 +467,10 @@ func (h *Handler) StudentResults(w http.ResponseWriter, r *http.Request) {
 				subjectsOut := make([]map[string]any, 0)
 				if ex != nil {
 					title = ex.Title
-					// New architecture: aggregate max from exam.Subjects[],
-					// fall back to legacy MaxMarks for older rows.
 					if len(ex.Subjects) > 0 {
 						for _, s := range ex.Subjects {
 							max += s.MaxMarks
 						}
-						// Joined display string for legacy widgets.
 						for i, s := range ex.Subjects {
 							if i > 0 {
 								subject += ", "
@@ -506,9 +482,6 @@ func (h *Handler) StudentResults(w http.ResponseWriter, r *http.Request) {
 						subject = ex.Subject
 					}
 				}
-				// Per-subject breakdown — pair the result subjects with the
-				// exam's per-subject max so the parent UI can render one
-				// chip per subject just like the admin/teacher views.
 				examSubByID := map[string]store.ExamSubject{}
 				if ex != nil {
 					for _, es := range ex.Subjects {
@@ -546,24 +519,13 @@ func (h *Handler) StudentResults(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// StudentAttendance implements GET /api/parent/student-attendance.
-//
-// Response shape — matches the parent attendance page:
-//
-//	{
-//	  student, class,
-//	  attendance_summary: {
-//	    present_days, absent_days, late_days, leave_days,
-//	    total_days, attendance_percentage
-//	  },
-//	  recent_records: [{ date, status, period, note }]
-//	}
-//
-// We keep responding with a top-level object — the previous bare array
-// shape was never consumed by the frontend (the page expected
-// `recent_records` and crashed silently).
-func (h *Handler) StudentAttendance(w http.ResponseWriter, r *http.Request) {
-	ctx := api.FromRequest(r)
+// Attendance implements GET /api/student/attendance — the caller's own
+// attendance record grouped by day.
+func (h *Handler) Attendance(w http.ResponseWriter, r *http.Request) {
+	ctx := studentOnly(w, r)
+	if ctx == nil {
+		return
+	}
 	studentID := r.URL.Query().Get("student_id")
 	resolved := h.resolveStudent(ctx, studentID)
 	cacheStudent := studentID
@@ -572,10 +534,10 @@ func (h *Handler) StudentAttendance(w http.ResponseWriter, r *http.Request) {
 	}
 	key := ""
 	if cacheStudent != "" {
-		key = parentCacheKey("attendance", ctx.SchoolID, cacheStudent)
+		key = portalCacheKey("attendance", ctx.SchoolID, cacheStudent)
 	}
 
-	h.serveCached(w, r, key, parentAttendanceTTL, func() api.ServiceResult {
+	h.serveCached(w, r, key, portalAttendanceTTL, func() api.ServiceResult {
 		return api.ServiceTry(func() (any, error) {
 			s := resolved
 			empty := map[string]any{
@@ -599,8 +561,6 @@ func (h *Handler) StudentAttendance(w http.ResponseWriter, r *http.Request) {
 
 			records := make([]map[string]any, 0)
 			var present, absent, late, leave int
-			// Group by date so a single school day counts as one record
-			// even when attendance was marked across multiple periods.
 			byDate := map[string][]*store.Attendance{}
 			for _, a := range h.Store.Attendance {
 				if a.SchoolID != ctx.SchoolID || a.StudentID != s.ID {
@@ -610,8 +570,6 @@ func (h *Handler) StudentAttendance(w http.ResponseWriter, r *http.Request) {
 				byDate[date] = append(byDate[date], a)
 			}
 			for date, arr := range byDate {
-				// Status priority: present > late > leave > absent. Any
-				// "present" period across the day means present.
 				status := "absent"
 				period := 0
 				note := ""
@@ -650,7 +608,6 @@ func (h *Handler) StudentAttendance(w http.ResponseWriter, r *http.Request) {
 			sort.SliceStable(records, func(i, j int) bool {
 				return records[i]["date"].(string) > records[j]["date"].(string)
 			})
-			// Cap recent records — the page only renders the latest activity.
 			recent := records
 			if len(recent) > 30 {
 				recent = recent[:30]
@@ -659,8 +616,6 @@ func (h *Handler) StudentAttendance(w http.ResponseWriter, r *http.Request) {
 			total := present + absent + late + leave
 			percentage := 0
 			if total > 0 {
-				// Late counts as half-attendance for the percentage to
-				// match the rest of the system's calculation.
 				percentage = ((present*2 + late) * 50) / total
 			}
 
@@ -692,18 +647,13 @@ func (h *Handler) StudentAttendance(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Fees implements GET /api/parent/fees — Phase 2 ships an empty ledger;
-// the page renders correctly with this shape.
-func (h *Handler) Fees(w http.ResponseWriter, _ *http.Request) {
-	api.WriteResult(w, api.Ok(map[string]any{
-		"summary": map[string]any{"total": 0, "paid": 0, "due": 0},
-		"rows":    []any{},
-	}))
-}
-
-// ChildHomework implements GET /api/parent/child/homework.
-func (h *Handler) ChildHomework(w http.ResponseWriter, r *http.Request) {
-	ctx := api.FromRequest(r)
+// Homework implements GET /api/student/homework — assignments published to the
+// caller's own class/section.
+func (h *Handler) Homework(w http.ResponseWriter, r *http.Request) {
+	ctx := studentOnly(w, r)
+	if ctx == nil {
+		return
+	}
 	studentID := r.URL.Query().Get("student_id")
 	resolved := h.resolveStudent(ctx, studentID)
 	cacheStudent := studentID
@@ -712,10 +662,10 @@ func (h *Handler) ChildHomework(w http.ResponseWriter, r *http.Request) {
 	}
 	key := ""
 	if cacheStudent != "" {
-		key = parentCacheKey("homework", ctx.SchoolID, cacheStudent)
+		key = portalCacheKey("homework", ctx.SchoolID, cacheStudent)
 	}
 
-	h.serveCached(w, r, key, parentHomeworkTTL, func() api.ServiceResult {
+	h.serveCached(w, r, key, portalHomeworkTTL, func() api.ServiceResult {
 		return api.ServiceTry(func() (any, error) {
 			s := resolved
 			if s == nil {
@@ -765,15 +715,19 @@ func (h *Handler) ChildHomework(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ChildAnnouncements implements GET /api/parent/child/announcements.
-func (h *Handler) ChildAnnouncements(w http.ResponseWriter, r *http.Request) {
-	ctx := api.FromRequest(r)
+// Announcements implements GET /api/student/announcements — announcements
+// targeted at the caller's school (all/parents/students audience).
+func (h *Handler) Announcements(w http.ResponseWriter, r *http.Request) {
+	ctx := studentOnly(w, r)
+	if ctx == nil {
+		return
+	}
 	api.WriteResult(w, api.ServiceTry(func() (any, error) {
 		h.Store.RLock()
 		defer h.Store.RUnlock()
 		out := make([]*store.Announcement, 0)
 		for _, a := range h.Store.Announcements {
-			if a.SchoolID == ctx.SchoolID && (a.Audience == "" || a.Audience == "all" || a.Audience == "parents") {
+			if a.SchoolID == ctx.SchoolID && (a.Audience == "" || a.Audience == "all" || a.Audience == "students") {
 				out = append(out, a)
 			}
 		}
@@ -782,62 +736,6 @@ func (h *Handler) ChildAnnouncements(w http.ResponseWriter, r *http.Request) {
 		})
 		return out, nil
 	}))
-}
-
-// PerformanceChart implements GET /api/parent/performance-chart — returns
-// the same `{ labels, data }` shape the chart component reads.
-func (h *Handler) PerformanceChart(w http.ResponseWriter, r *http.Request) {
-	ctx := api.FromRequest(r)
-	studentID := r.URL.Query().Get("student_id")
-	resolved := h.resolveStudent(ctx, studentID)
-	cacheStudent := studentID
-	if cacheStudent == "" && resolved != nil {
-		cacheStudent = resolved.ID
-	}
-	key := ""
-	if cacheStudent != "" {
-		key = parentCacheKey("chart", ctx.SchoolID, cacheStudent)
-	}
-
-	h.serveCached(w, r, key, parentChartTTL, func() api.ServiceResult {
-		return api.ServiceTry(func() (any, error) {
-			s := resolved
-			labels := []string{}
-			data := []float64{}
-			if s == nil {
-				return map[string]any{"labels": labels, "data": data}, nil
-			}
-			h.Store.RLock()
-			defer h.Store.RUnlock()
-			examByID := map[string]*store.Exam{}
-			for _, e := range h.Store.Exams {
-				examByID[e.ID] = e
-			}
-			rows := make([]*store.Result, 0)
-			for _, r := range h.Store.Results {
-				if r.SchoolID == ctx.SchoolID && r.StudentID == s.ID {
-					rows = append(rows, r)
-				}
-			}
-			sort.SliceStable(rows, func(i, j int) bool { return rows[i].GradedAt.Before(rows[j].GradedAt) })
-			for _, r := range rows {
-				ex := examByID[r.ExamID]
-				label := r.ExamID
-				max := 0.0
-				if ex != nil {
-					label = ex.Title
-					max = float64(ex.MaxMarks)
-				}
-				pct := 0.0
-				if max > 0 {
-					pct = r.ObtainedMarks / max * 100
-				}
-				labels = append(labels, label)
-				data = append(data, pct)
-			}
-			return map[string]any{"labels": labels, "data": data}, nil
-		})
-	})
 }
 
 func calculateGrade(obtained, max float64) string {

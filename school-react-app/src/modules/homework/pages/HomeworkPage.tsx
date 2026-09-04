@@ -20,7 +20,7 @@ import { showToast } from "@/utils/toast";
 import { bindRefresh } from "@/services/data-bus";
 
 interface HomeworkPageProps {
-  role: "ADMIN" | "TEACHER" | "STUDENT" | "PARENT";
+  role: "ADMIN" | "TEACHER" | "STUDENT";
   studentId?: string;
 }
 
@@ -42,12 +42,7 @@ export function HomeworkPage({ role, studentId }: HomeworkPageProps) {
       setLoading(true);
     }
     try {
-      const url =
-        role === "PARENT" && studentId
-          ? `/api/parent/child/homework?student_id=${studentId}`
-          : studentId
-            ? `/api/homework?student_id=${studentId}`
-            : "/api/homework";
+      const url = studentId ? `/api/homework?student_id=${studentId}` : "/api/homework";
 
       const res = await serviceRequest<any>(url);
       if (res.ok && res.data) {
@@ -113,9 +108,7 @@ export function HomeworkPage({ role, studentId }: HomeworkPageProps) {
       ? "/admin/homework"
       : role === "TEACHER"
         ? "/teacher/homework"
-        : role === "PARENT"
-          ? "/parent/homework"
-          : "/student/homework";
+        : "/student/homework";
 
   async function handleDelete() {
     if (!pendingDelete) return;

@@ -93,6 +93,12 @@ func InvalidateCacheAllYears(ctx context.Context, c *cache.Client, schoolID stri
 // Get implements GET /api/analytics/dashboard.
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	// School analytics dashboard is an operational (admin) aggregate. The
+	// Owner role has its own /api/owner/* analytics and must not read this.
+	if ctx == nil || (ctx.Role != "admin" && ctx.Role != "super_admin") {
+		api.WriteResult(w, api.Fail("FORBIDDEN", "You do not have permission to view school analytics.", 403, nil))
+		return
+	}
 	yearID := tenant.ResolveAcademicYearID(h.Store, ctx, r.URL.Query().Get("academic_year_id"))
 	cacheKey := CacheKey(ctx.SchoolID, yearID)
 

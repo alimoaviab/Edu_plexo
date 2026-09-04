@@ -62,9 +62,9 @@ step "Dashboard stats"
 curl -s -H "authorization: Bearer $TOKEN" "$BASE/api/school/fees/dashboard-stats" \
   | python3 -m json.tool
 
-step "Parent ledger for stu_1"
-curl -s -H "authorization: Bearer $TOKEN" "$BASE/api/parent/fees?student_id=stu_1" \
+step "Student ledger for stu_1"
+curl -s -H "authorization: Bearer $TOKEN" "$BASE/api/student/fees?student_id=stu_1" \
   | python3 -c "import sys,json; d=json.load(sys.stdin)['data']; print('  summary:', d['summary']); print('  rows:', len(d['rows']))"
-ok "parent ledger renders"
+ok "student ledger renders"
 
 printf '\n\033[1;32mAll fees smoke checks passed.\033[0m\n'

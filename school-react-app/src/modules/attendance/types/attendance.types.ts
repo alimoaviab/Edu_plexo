@@ -51,18 +51,3 @@ export interface TeacherAttendanceSummary {
   date: string;
   classes: AttendanceClassSummary[];
 }
-
-export interface ParentAttendanceStudent {
-  student_id: string;
-  student_name: string;
-  class_name: string;
-  total_present: number;
-  total_absent: number;
-  total_excused: number;
-  percentage: number;
-  recent_records: Array<{ date: string; status: AttendanceStatus }>;
-}
-
-export interface ParentAttendanceReport {
-  students: ParentAttendanceStudent[];
-}

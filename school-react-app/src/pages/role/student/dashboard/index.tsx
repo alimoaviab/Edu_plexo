@@ -150,7 +150,7 @@ type AnnouncementsResponse = {
 async function loadStudentId(userStudentId?: string) {
   if (userStudentId) return userStudentId;
   const result = await serviceRequest<{ students: Array<{ id: string }> }>(
-    "/api/parent/student-info"
+    "/api/student/info"
   );
   if (!result.ok) return "";
   return result.data.students?.[0]?.id ?? "";
@@ -181,20 +181,20 @@ export function StudentDashboardPage() {
 
       const [profile, stats, results, attendance, fees, homework, announcements] =
         await Promise.all([
-          serviceRequest<unknown>(`/api/parent/student-info?student_id=${studentId}`),
-          serviceRequest<DashboardStatsResponse>("/api/parent/dashboard/stats"),
+          serviceRequest<unknown>(`/api/student/info?student_id=${studentId}`),
+          serviceRequest<DashboardStatsResponse>("/api/student/dashboard/stats"),
           serviceRequest<StudentResultsResponse>(
-            `/api/parent/student-results?student_id=${studentId}`
+            `/api/student/results?student_id=${studentId}`
           ),
           serviceRequest<AttendanceResponse>(
-            `/api/parent/student-attendance?student_id=${studentId}`
+            `/api/student/attendance?student_id=${studentId}`
           ),
-          serviceRequest<FeeResponse>(`/api/parent/fees?student_id=${studentId}`),
+          serviceRequest<FeeResponse>(`/api/student/fees?student_id=${studentId}`),
           serviceRequest<HomeworkResponse>(
-            `/api/parent/child/homework?student_id=${studentId}`
+            `/api/student/homework?student_id=${studentId}`
           ),
           serviceRequest<AnnouncementsResponse>(
-            `/api/parent/child/announcements?student_id=${studentId}`
+            `/api/student/announcements?student_id=${studentId}`
           ),
         ]);
 
