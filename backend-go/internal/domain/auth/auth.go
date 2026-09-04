@@ -17,6 +17,7 @@ import (
 	authpkg "github.com/eduplexo/backend-go/internal/auth"
 	"github.com/eduplexo/backend-go/internal/config"
 	"github.com/eduplexo/backend-go/internal/email"
+	"github.com/eduplexo/backend-go/internal/session"
 	"github.com/eduplexo/backend-go/internal/store"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -28,6 +29,10 @@ type Handler struct {
 	Persist func(table string, doc any)
 	Email   email.Client
 	Pool    *pgxpool.Pool
+
+	// Revoker invalidates sessions server-side on logout (see internal/session).
+	// Nil in unit tests keeps Logout's historical no-op semantics.
+	Revoker session.Revoker
 }
 
 func defaultEmailClient(cfg config.Config) email.Client {
@@ -75,6 +80,11 @@ func NewPG(cfg config.Config, s *store.MemStore, save func(string, any), pool *p
 // SetEmailClient allows injecting a custom or mock email client for testing.
 func (h *Handler) SetEmailClient(c email.Client) {
 	h.Email = c
+}
+
+// SetRevoker injects the server-side session revocation registry (nil-safe).
+func (h *Handler) SetRevoker(rev session.Revoker) {
+	h.Revoker = rev
 }
 
 // loginRequest mirrors the body the original /api/auth/login endpoint
@@ -543,7 +553,29 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if pending != nil {
-		// Existing pending signup: invalidate old OTP immediately, set new OTP & fresh 5-min window
+		// Existing pending signup: enforce the same resend cooldown and hourly
+		// cap as ResendOTP. Without this, repeated signup POSTs for one email
+		// would re-dispatch OTP emails on every request (spam / email-bombing).
+		cooldownSec := h.Cfg.EmailOTPResendCooldownSeconds
+		if cooldownSec <= 0 {
+			cooldownSec = 60
+		}
+		if now.Sub(pending.LastSentAt) < time.Duration(cooldownSec)*time.Second {
+			h.Store.Unlock()
+			api.WriteJSON(w, http.StatusTooManyRequests, signupErr("Please wait before requesting another verification code."))
+			return
+		}
+		maxSendsPerHour := h.Cfg.EmailOTPMaxSendAttemptsPerHour
+		if maxSendsPerHour <= 0 {
+			maxSendsPerHour = 5
+		}
+		if pending.SendCountHour >= maxSendsPerHour && now.Sub(pending.CreatedAt) < time.Hour {
+			h.Store.Unlock()
+			api.WriteJSON(w, http.StatusTooManyRequests, signupErr("Maximum verification code requests reached for this hour. Please try again later."))
+			return
+		}
+
+		// Invalidate old OTP immediately, set new OTP & fresh 5-min window
 		pending.FullName = fullName
 		pending.Phone = body.Phone
 		pending.Role = role
@@ -707,7 +739,6 @@ func (h *Handler) VerifyOTP(w http.ResponseWriter, r *http.Request) {
 	if pending.Role != "admin" && pending.Role != "owner" {
 		permissions = []string{}
 	}
-
 
 	newUser := &store.User{
 		ID:           userID,
@@ -911,6 +942,28 @@ func (h *Handler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Changing the recipient address re-dispatches an OTP email — enforce the
+	// same cooldown and hourly cap as ResendOTP to prevent using this endpoint
+	// to spam arbitrary inboxes.
+	cooldownSec := h.Cfg.EmailOTPResendCooldownSeconds
+	if cooldownSec <= 0 {
+		cooldownSec = 60
+	}
+	if now.Sub(pending.LastSentAt) < time.Duration(cooldownSec)*time.Second {
+		h.Store.Unlock()
+		api.WriteJSON(w, http.StatusTooManyRequests, signupErr("Please wait before requesting another verification code."))
+		return
+	}
+	maxSendsPerHour := h.Cfg.EmailOTPMaxSendAttemptsPerHour
+	if maxSendsPerHour <= 0 {
+		maxSendsPerHour = 5
+	}
+	if pending.SendCountHour >= maxSendsPerHour && now.Sub(pending.CreatedAt) < time.Hour {
+		h.Store.Unlock()
+		api.WriteJSON(w, http.StatusTooManyRequests, signupErr("Maximum verification code requests reached for this hour. Please try again later."))
+		return
+	}
+
 	newOTP, err := authpkg.GenerateCryptoOTP(h.Cfg.EmailOTPLength)
 	if err != nil {
 		h.Store.Unlock()
@@ -928,6 +981,7 @@ func (h *Handler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 	pending.Attempts = 0
 	pending.Status = "pending"
 	pending.LastSentAt = now
+	pending.SendCountHour++
 	pending.ExpiresAt = now.Add(time.Duration(expirySec) * time.Second)
 	h.Store.Unlock()
 
@@ -940,7 +994,7 @@ func (h *Handler) ChangeEmail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	cooldownSec := h.Cfg.EmailOTPResendCooldownSeconds
+	cooldownSec = h.Cfg.EmailOTPResendCooldownSeconds
 	if cooldownSec <= 0 {
 		cooldownSec = 60
 	}
@@ -1075,9 +1129,29 @@ func (h *Handler) Session(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Logout clears the HttpOnly session cookie.
-func (h *Handler) Logout(w http.ResponseWriter, _ *http.Request) {
+// Logout clears the HttpOnly session cookie and revokes the server-side
+// session, so every outstanding copy of the token (cookie, localStorage,
+// mobile) stops working immediately instead of staying valid for up to a year.
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	h.clearSessionCookie(w)
+
+	if h.Revoker != nil {
+		token := ""
+		if authz := r.Header.Get("Authorization"); authz != "" && strings.HasPrefix(strings.ToLower(authz), "bearer ") {
+			token = strings.TrimSpace(authz[7:])
+		}
+		if token == "" {
+			if c, err := r.Cookie("session"); err == nil {
+				token = strings.TrimSpace(c.Value)
+			}
+		}
+		if token != "" {
+			if claims, err := authpkg.VerifyToken(h.Cfg.JWTSecret, h.Cfg.AppName, token); err == nil {
+				h.Revoker.Revoke(claims.SessionID)
+			}
+		}
+	}
+
 	api.WriteJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
@@ -1160,10 +1234,11 @@ func (h *Handler) setSessionCookie(w http.ResponseWriter, token string, remember
 	if h.Cfg.CookieSecure {
 		sameSite = http.SameSiteNoneMode
 	}
-	
+
 	maxAge := 60 * 60 * 24 * 365 // 1 year default
 	if rememberMe {
-		maxAge = 60 * 60 * 24 * 365 * 5 // 5 years
+		maxAge = 60 * 60 * 24 * 365 * 5 // 5 years (cookie lifetime; the JWT
+		// itself still expires after 8760h, which then prompts a fresh login)
 	}
 
 	http.SetCookie(w, &http.Cookie{
