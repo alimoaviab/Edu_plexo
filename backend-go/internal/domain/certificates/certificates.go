@@ -8,6 +8,7 @@
 package certificates
 
 import (
+	cryptorand "crypto/rand"
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/eduplexo/backend-go/internal/api"
 	"github.com/eduplexo/backend-go/internal/auth"
+	"github.com/eduplexo/backend-go/internal/domain/access"
 	"github.com/eduplexo/backend-go/internal/store"
 	"github.com/go-chi/chi/v5"
 )
@@ -36,11 +38,31 @@ func New(s *store.MemStore, save func(string, any)) *Handler {
 	return &Handler{Store: s, Save: save}
 }
 
+// requireCertsPermission enforces the certificates feature/action from the
+// RBAC matrix for the current request. Handlers return early when denied.
+//
+// super_admin is treated as implicitly privileged here (the platform role
+// manages schools/platform-wide resources) even though the RBAC matrix does
+// not enumerate the certificates feature for it.
+func requireCertsPermission(ctx *api.RequestContext, action auth.Action) error {
+	if ctx != nil && ctx.Role == "super_admin" {
+		return nil
+	}
+	return auth.AssertPermission(ctx, "certificates", action)
+}
+
+// canSelfViewCertificates reports whether a non-privileged member (student or
+// parent) may list certificates — they may only ever see certificates issued
+// to students they are linked to (see CanAccessStudentLocked).
+func canSelfViewCertificates(ctx *api.RequestContext) bool {
+	return ctx != nil && (ctx.Role == "student" || ctx.Role == "parent")
+}
+
 // ─── Templates ───────────────────────────────────────────────────────────
 
 func (h *Handler) ListTemplates(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
-	if err := auth.AssertPermission(ctx, "certificates", auth.ActionView); err != nil {
+	if err := requireCertsPermission(ctx, auth.ActionView); err != nil {
 		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
 		return
 	}
@@ -62,6 +84,10 @@ func (h *Handler) ListTemplates(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetTemplate(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := requireCertsPermission(ctx, auth.ActionView); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 	id := chi.URLParam(r, "id")
 	h.Store.RLock()
 	defer h.Store.RUnlock()
@@ -89,6 +115,10 @@ type templateInput struct {
 
 func (h *Handler) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := requireCertsPermission(ctx, auth.ActionCreate); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 	var body templateInput
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "Invalid JSON body.", 400, nil))
@@ -127,6 +157,10 @@ func (h *Handler) CreateTemplate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) UpdateTemplate(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := requireCertsPermission(ctx, auth.ActionUpdate); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 	id := chi.URLParam(r, "id")
 	body := map[string]json.RawMessage{}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -176,6 +210,10 @@ func (h *Handler) UpdateTemplate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) DeleteTemplate(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := requireCertsPermission(ctx, auth.ActionDelete); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	h.Store.Lock()
@@ -193,6 +231,10 @@ func (h *Handler) DeleteTemplate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) DuplicateTemplate(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := requireCertsPermission(ctx, auth.ActionCreate); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	h.Store.Lock()
@@ -226,6 +268,10 @@ type generateInput struct {
 
 func (h *Handler) Generate(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := requireCertsPermission(ctx, auth.ActionCreate); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 	var body generateInput
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "Invalid JSON body.", 400, nil))
@@ -312,6 +358,17 @@ func (h *Handler) Generate(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) ListCertificates(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+
+	// Students and parents may only list certificates issued to students they
+	// are linked to (their own records). Everyone else needs the certificates
+	// view permission (admin/owner) or is denied.
+	if !canSelfViewCertificates(ctx) {
+		if err := requireCertsPermission(ctx, auth.ActionView); err != nil {
+			api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+			return
+		}
+	}
+
 	q := r.URL.Query()
 	studentID := q.Get("student_id")
 	classID := q.Get("class_id")
@@ -323,6 +380,11 @@ func (h *Handler) ListCertificates(w http.ResponseWriter, r *http.Request) {
 	out := make([]map[string]any, 0)
 	for _, c := range h.Store.GeneratedCertificates {
 		if c.SchoolID != ctx.SchoolID {
+			continue
+		}
+		// Non-privileged members can never see other students' certificates,
+		// their student ids, or their verification codes.
+		if canSelfViewCertificates(ctx) && !access.CanAccessStudentLocked(h.Store, ctx, c.StudentID) {
 			continue
 		}
 		if studentID != "" && c.StudentID != studentID {
@@ -351,6 +413,10 @@ func (h *Handler) ListCertificates(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Revoke(w http.ResponseWriter, r *http.Request) {
 	ctx := api.FromRequest(r)
+	if err := requireCertsPermission(ctx, auth.ActionUpdate); err != nil {
+		api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+		return
+	}
 	id := chi.URLParam(r, "id")
 
 	h.Store.Lock()
@@ -518,10 +584,13 @@ func generateCertNo(schoolID, studentID string) string {
 	return fmt.Sprintf("CERT-%d-%s", time.Now().Year(), hash)
 }
 
+// generateVerificationCode returns a 16-char uppercase hex code from a
+// cryptographic random source. These codes back the public verification page
+// and are shown on printed certificates, so they must not be predictable.
 func generateVerificationCode() string {
-	b := make([]byte, 12)
-	rand.Read(b)
-	return strings.ToUpper(hex.EncodeToString(b)[:16])
+	b := make([]byte, 8)
+	_, _ = cryptorand.Read(b)
+	return strings.ToUpper(hex.EncodeToString(b))
 }
 
 func orDefault(val, def string) string {

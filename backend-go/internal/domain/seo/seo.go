@@ -24,20 +24,21 @@ import (
 	"sync"
 	"time"
 
+	"github.com/eduplexo/backend-go/internal/api"
 	"github.com/eduplexo/backend-go/internal/cache"
 )
 
 // ─── Configuration ───────────────────────────────────────────────────────
 
 const (
-	anthropicAPI     = "https://api.anthropic.com/v1/messages"
-	defaultModel     = "claude-sonnet-4-20250514"
-	premiumModel     = "claude-sonnet-4-20250514"
-	maxTokens        = 4096
-	cacheTTL         = 24 * time.Hour
-	rateLimitWindow  = 1 * time.Hour
-	rateLimitMax     = 10
-	systemPrompt     = "You are a world-class enterprise SEO strategist with 15+ years specializing in SaaS and EdTech. You deliver complete, actionable, Eduplexo-specific SEO strategy. Never generic advice. Every recommendation must be implementable immediately. Format output with clear markdown headers, tables where appropriate, and code blocks for technical items."
+	anthropicAPI    = "https://api.anthropic.com/v1/messages"
+	defaultModel    = "claude-sonnet-4-20250514"
+	premiumModel    = "claude-sonnet-4-20250514"
+	maxTokens       = 4096
+	cacheTTL        = 24 * time.Hour
+	rateLimitWindow = 1 * time.Hour
+	rateLimitMax    = 10
+	systemPrompt    = "You are a world-class enterprise SEO strategist with 15+ years specializing in SaaS and EdTech. You deliver complete, actionable, Eduplexo-specific SEO strategy. Never generic advice. Every recommendation must be implementable immediately. Format output with clear markdown headers, tables where appropriate, and code blocks for technical items."
 )
 
 // validBlocks prevents arbitrary prompt injection via block_id.
@@ -59,8 +60,8 @@ type rateBucket struct {
 }
 
 var (
-	rateMu      sync.Mutex
-	rateStore   = make(map[string]*rateBucket)
+	rateMu    sync.Mutex
+	rateStore = make(map[string]*rateBucket)
 )
 
 func checkRateLimit(ip string) bool {
@@ -98,12 +99,9 @@ type generateRequest struct {
 
 // Generate handles POST /api/seo/generate with SSE streaming.
 func (h *Handler) Generate(w http.ResponseWriter, r *http.Request) {
-	// Rate limit by IP
-	ip := r.Header.Get("X-Forwarded-For")
-	if ip == "" {
-		ip = r.RemoteAddr
-	}
-	ip = strings.Split(ip, ",")[0]
+	// Rate limit by IP — resolved from the trusted proxy chain, never from the
+	// client-controlled prefix of X-Forwarded-For.
+	ip := api.ClientIP(r)
 
 	if !checkRateLimit(ip) {
 		http.Error(w, `{"error":"Rate limit exceeded. Try again in an hour."}`, http.StatusTooManyRequests)

@@ -15,7 +15,6 @@
 package messaging
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"sort"
@@ -33,7 +32,7 @@ import (
 
 const (
 	messageExpiry       = 7 * 24 * time.Hour // 7 days
-	studentRateLimit    = 10                  // messages per minute
+	studentRateLimit    = 10                 // messages per minute
 	teacherRateLimit    = 30
 	adminRateLimit      = 60
 	maxMessageLength    = 2000
@@ -45,11 +44,11 @@ type Handler struct {
 	Store   *store.MemStore
 	Persist func(table string, doc any)
 	Cache   *cache.Client
-	Hub     *rt.Hub
+	Hub     rt.Notifier
 
 	// In-memory rate limiter: userID → []timestamp
-	rateMu   sync.Mutex
-	rateMap  map[string][]time.Time
+	rateMu  sync.Mutex
+	rateMap map[string][]time.Time
 }
 
 func New(s *store.MemStore, persist func(string, any), c *cache.Client, hub *rt.Hub) *Handler {
@@ -260,17 +259,17 @@ func (h *Handler) ListMessages(w http.ResponseWriter, r *http.Request) {
 		}
 
 		entry := map[string]any{
-			"_id":            msg.ID,
-			"sender_id":      msg.SenderID,
-			"text":           msg.Text,
+			"_id":             msg.ID,
+			"sender_id":       msg.SenderID,
+			"text":            msg.Text,
 			"attachment_url":  msg.AttachmentURL,
 			"attachment_type": msg.AttachmentType,
-			"reply_to_id":    msg.ReplyToID,
-			"is_seen":        !msg.SeenAt.IsZero(),
-			"delivered_at":   msg.DeliveredAt,
-			"seen_at":        msg.SeenAt,
+			"reply_to_id":     msg.ReplyToID,
+			"is_seen":         !msg.SeenAt.IsZero(),
+			"delivered_at":    msg.DeliveredAt,
+			"seen_at":         msg.SeenAt,
 			"expires_in_days": daysLeft,
-			"created_at":     msg.CreatedAt,
+			"created_at":      msg.CreatedAt,
 		}
 		messages = append(messages, entry)
 	}
@@ -552,10 +551,10 @@ func (h *Handler) SendBroadcast(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var body struct {
-		TargetGroup  string   `json:"target_group"`   // "all", "all_teachers", "all_students", "selected"
+		TargetGroup  string   `json:"target_group"` // "all", "all_teachers", "all_students", "selected"
 		Message      string   `json:"message"`
-		Type         string   `json:"type"`           // "text", "emergency", "notice"
-		RecipientIDs []string `json:"recipient_ids"`  // for "selected" target
+		Type         string   `json:"type"`          // "text", "emergency", "notice"
+		RecipientIDs []string `json:"recipient_ids"` // for "selected" target
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		api.WriteResult(w, api.Fail("VALIDATION_ERROR", "Invalid JSON body.", 400, nil))
@@ -671,7 +670,7 @@ func isConversationAllowed(role1, role2 string) bool {
 	allowed := map[string]bool{
 		"student:teacher": true, "teacher:student": true,
 		"teacher:teacher": true,
-		"parent:teacher":  true, "teacher:parent":  true,
+		"parent:teacher":  true, "teacher:parent": true,
 	}
 	return allowed[pair]
 }
@@ -806,17 +805,12 @@ func (h *Handler) notifyRecipient(ctx *api.RequestContext, convID string, msg *s
 }
 
 func (h *Handler) deliverBroadcast(schoolID string, b *store.Broadcast, recipientIDs []string) {
-	// First, notify all users about the broadcast generally (real-time notification)
-	_ = h.Hub.Publish(context.Background(), schoolID, "notifications", rt.Message{
-		Type: "broadcast_send",
-		Payload: map[string]any{
-			"broadcast_id": b.ID,
-			"message":      b.Message,
-			"type":         b.Type,
-			"target_group": b.TargetGroup,
-			"created_at":   b.CreatedAt,
-		},
-	})
+	// NOTE: No school-wide realtime push happens here. Broadcasts are delivered
+	// per-recipient below (as private conversations + message_receive), so a
+	// message targeted at teachers/a class/specific users can never leak to
+	// every connected member of the school through the WebSocket fan-out.
+	// Non-targeted users still see broadcasts via GET /api/messages/broadcasts,
+	// which filters with isBroadcastTarget.
 
 	// Get sender name
 	h.Store.RLock()
