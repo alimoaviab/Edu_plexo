@@ -28,7 +28,15 @@
 -- GRANTs use ALL TABLES / ALL SEQUENCES and ALTER DEFAULT PRIVILEGES so
 -- tables created by later migrations are covered automatically.
 
-CREATE ROLE school_runtime NOLOGIN;
+-- Ensure the role exists without erroring if rerun or already created
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'school_runtime') THEN
+        CREATE ROLE school_runtime NOLOGIN;
+    END IF;
+END
+$$;
+
 GRANT USAGE ON SCHEMA public TO school_runtime;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO school_runtime;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO school_runtime;
@@ -40,11 +48,20 @@ BEGIN
 END
 $$;
 
--- Future tables/sequences created by the migration owner stay accessible.
-ALTER DEFAULT PRIVILEGES FOR ROLE school_user IN SCHEMA public
-    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO school_runtime;
-ALTER DEFAULT PRIVILEGES FOR ROLE school_user IN SCHEMA public
-    GRANT USAGE, SELECT ON SEQUENCES TO school_runtime;
+-- Grant to current migration user dynamically (works for any POSTGRES_USER: eduplexo_app, school_user, postgres, etc.)
+DO $$
+DECLARE
+    curr_user text := current_user;
+BEGIN
+    EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO school_runtime', curr_user);
+    EXECUTE format('ALTER DEFAULT PRIVILEGES FOR ROLE %I IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO school_runtime', curr_user);
+    EXECUTE format('GRANT school_runtime TO %I', curr_user);
 
--- The bootstrap superuser can adopt the runtime role for request paths.
-GRANT school_runtime TO school_user;
+    -- Also grant to school_user if present (for local dev environments)
+    IF curr_user <> 'school_user' AND EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'school_user') THEN
+        ALTER DEFAULT PRIVILEGES FOR ROLE school_user IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO school_runtime;
+        ALTER DEFAULT PRIVILEGES FOR ROLE school_user IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO school_runtime;
+        GRANT school_runtime TO school_user;
+    END IF;
+END
+$$;
