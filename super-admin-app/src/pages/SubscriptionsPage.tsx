@@ -2,6 +2,7 @@ import { AppIcon } from "shared/ui/AppIcon";
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { apiRequest } from '@/lib/api'
+import { showToast } from '@/utils/toast'
 
 interface Subscription {
   id?: string
@@ -24,6 +25,7 @@ interface Subscription {
   approved_payments_count: number
   total_paid: number
   last_payment_at?: string
+  grace_ends_at?: string
   created_at: string
 }
 
@@ -88,7 +90,7 @@ export function SubscriptionsPage() {
     if (!res.ok) {
       // Revert on error
       setSubs(prev => prev.map(s => s._id === sub._id ? { ...s, auto_renew: sub.auto_renew } : s))
-      alert('Failed to update auto-renew status.')
+      showToast(res.message || 'Failed to update auto-renew status.', 'error')
     }
   }
 
@@ -106,9 +108,10 @@ export function SubscriptionsPage() {
       })
       if (res.ok) {
         setExtendingSub(null)
+        showToast('Subscription extended successfully.', 'success')
         await fetchSubscriptions()
       } else {
-        alert(res.message || 'Failed to extend subscription.')
+        showToast(res.message || 'Failed to extend subscription.', 'error')
       }
     } finally {
       setSubmittingExtend(false)
@@ -146,14 +149,36 @@ export function SubscriptionsPage() {
 
   const activeCount = subs.filter(s => s.status === 'active' && !s.is_trial).length
   const trialCount = subs.filter(s => s.is_trial || s.status === 'trial').length
-  const expiredCount = subs.filter(s => s.status === 'expired' || s.days_remaining <= 0).length
+  const expiredCount = subs.filter(s => s.status === 'expired' || s.status === 'cancelled' || s.status === 'suspended' || s.days_remaining <= 0).length
   const totalRevenue = subs.reduce((acc, curr) => acc + (curr.total_paid || 0), 0)
 
-  const statusBadge = (status: string, isTrial: boolean, daysRemaining: number) => {
+  const statusBadge = (status: string, isTrial: boolean, daysRemaining: number, graceEndsAt?: string) => {
+    if (status === 'suspended') {
+      return (
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-rose-100 text-rose-800 border-rose-300">
+          Suspended
+        </span>
+      )
+    }
     if (isTrial) {
       return (
         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200">
           Trial ({daysRemaining}d left)
+        </span>
+      )
+    }
+    if (status === 'expired' || status === 'cancelled') {
+      if (graceEndsAt && new Date(graceEndsAt).getTime() > Date.now()) {
+        const graceDays = Math.max(0, Math.ceil((new Date(graceEndsAt).getTime() - Date.now()) / 86400000))
+        return (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-rose-50 text-rose-700 border-rose-200">
+            Grace ({graceDays}d left)
+          </span>
+        )
+      }
+      return (
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-rose-50 text-rose-700 border-rose-200">
+          Expired
         </span>
       )
     }
@@ -222,7 +247,7 @@ export function SubscriptionsPage() {
             <AppIcon name="Award" size={16} className="text-indigo-600" />
           </div>
           <p className="text-2xl font-black text-slate-900">{trialCount}</p>
-          <span className="text-[10px] text-slate-400 font-medium">14-day evaluation accounts</span>
+          <span className="text-[10px] text-slate-400 font-medium">Free trial evaluation accounts</span>
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
@@ -352,9 +377,11 @@ export function SubscriptionsPage() {
 
                       {/* Status / Days Left */}
                       <td className="px-5 py-3.5 text-center">
-                        {statusBadge(sub.status, sub.is_trial, sub.days_remaining)}
+                        {statusBadge(sub.status, sub.is_trial, sub.days_remaining, sub.grace_ends_at)}
                         <span className="text-[10px] text-slate-400 block mt-1">
-                          Renews: {new Date(sub.end_date).toLocaleDateString()}
+                          {sub.status === 'expired' && sub.grace_ends_at && new Date(sub.grace_ends_at).getTime() > Date.now()
+                            ? `Suspends: ${new Date(sub.grace_ends_at).toLocaleDateString()}`
+                            : `Renews: ${new Date(sub.end_date).toLocaleDateString()}`}
                         </span>
                       </td>
 

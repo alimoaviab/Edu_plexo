@@ -46,7 +46,7 @@ export function useSubscription() {
     mutationFn: (planName?: string) => service.startTrial(planName),
     onSuccess: (res) => {
       if (res.ok) {
-        showToast("Your 14-day free trial has started! Enjoy all features.", "success");
+        showToast("Your free trial has started! Enjoy all features.", "success");
         queryClient.invalidateQueries({ queryKey: tenantQueryKey(["subscription"]) });
       } else {
         showToast(res.error?.message || "Could not start trial. You may have already used your trial period.", "error");

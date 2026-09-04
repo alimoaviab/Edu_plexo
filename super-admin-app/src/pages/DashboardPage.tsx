@@ -198,7 +198,7 @@ export function DashboardPage() {
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-black text-slate-900">{schools.trial || subscriptions.active}</span>
-            <span className="text-[11px] font-bold text-indigo-600">14-Day Free Access</span>
+            <span className="text-[11px] font-bold text-indigo-600">Free Trial Accounts</span>
           </div>
           <p className="text-[11px] text-slate-400 mt-2">
             {subscriptions.active} licenses actively running
@@ -273,7 +273,7 @@ export function DashboardPage() {
                       </td>
                       <td className="px-6 py-3.5">
                         <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] border border-blue-100">
-                          {s.plan || "14-Day Free Trial"}
+                          {s.plan || "Free Trial"}
                         </span>
                       </td>
                       <td className="px-6 py-3.5">

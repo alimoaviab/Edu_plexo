@@ -201,7 +201,7 @@ export function useSubscription() {
   const sub: Subscription | null = current?.subscription ?? null;
   const isTrial = sub?.status === 'trial';
   const isExpired = sub?.status === 'expired' || sub?.status === 'cancelled' || Boolean(current?.is_expired);
-  const daysRemaining = current?.days_remaining ?? (isTrial ? 14 : 0);
+  const daysRemaining = current?.days_remaining ?? 0;
   const studentsUsed = current?.students_used ?? 0;
   const studentsLimit = sub?.student_limit ?? current?.students_limit ?? 0;
   const canTrial = current?.can_trial ?? false;

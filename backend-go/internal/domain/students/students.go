@@ -71,7 +71,7 @@ type Handler struct {
 	Pool             *pgxpool.Pool
 	Cache            *cache.Client
 	repo             *repo.StudentRepo
-	LimitChecker     func(ctx context.Context, schoolID string) error // Subscription limit check
+	LimitChecker     func(ctx context.Context, schoolID string) (func(), error) // Subscription limit check (returns advisory-lock release)
 	OnStudentCreated func(ctx *api.RequestContext, s *store.Student)  // Callback hook when student is created
 }
 
@@ -376,9 +376,16 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// ─── Subscription student limit check ────────────────────────────
+		// The checker returns an optional release func: the per-owner advisory
+		// lock must stay held until the student row is inserted so two admins
+		// creating students concurrently cannot exceed the capacity.
 		if h.LimitChecker != nil {
-			if err := h.LimitChecker(r.Context(), ctx.SchoolID); err != nil {
+			releaseLimit, err := h.LimitChecker(r.Context(), ctx.SchoolID)
+			if err != nil {
 				return nil, err
+			}
+			if releaseLimit != nil {
+				defer releaseLimit()
 			}
 		}
 

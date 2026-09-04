@@ -9,20 +9,41 @@ import (
 )
 
 // SubscriptionGate returns a middleware that checks the tenant's active subscription status.
-// If the subscription is expired, it blocks all non-billing/support routes.
-// If active, it ensures the school has access to the module required by the requested API path.
+//
+//   - Suspended subscriptions block all non-billing routes for every role
+//     (owners keep billing/renewal access so they can recover).
+//   - Expired subscriptions inside the 3-day grace window remain operational
+//     (the UI shows the grace warning).
+//   - Active subscriptions additionally enforce package/module-level gating.
 func SubscriptionGate(pool *pgxpool.Pool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := api.FromRequest(r)
-			if ctx == nil || ctx.Role == "super_admin" || ctx.Role == "owner" || ctx.SchoolID == "system" || pool == nil {
+			if ctx == nil || ctx.Role == "super_admin" || ctx.SchoolID == "system" || pool == nil {
 				next.ServeHTTP(w, r)
 				return
 			}
 
 			path := r.URL.Path
 
-			// Check if subscription is active
+			// Owners are the subscribers: enforce suspension on their entire
+			// portal but always keep billing/renewal reachable.
+			if ctx.Role == "owner" {
+				suspended, err := subscription.IsOwnerSubscriptionSuspended(r.Context(), pool, ctx.UserID)
+				if err != nil {
+					next.ServeHTTP(w, r)
+					return
+				}
+				if suspended && !subscription.IsExpiredAllowedAPI(path) {
+					api.WriteResult(w, api.Fail("SUBSCRIPTION_SUSPENDED",
+						"Your subscription is suspended. Please renew your plan to restore access.", 403, nil))
+					return
+				}
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			// Admin / teacher / student: resolve the owning school's state.
 			active, err := subscription.IsSubscriptionActive(r.Context(), pool, nil, ctx.SchoolID)
 			if err != nil {
 				// Allow fallback in case of query errors to avoid hard-locking the system

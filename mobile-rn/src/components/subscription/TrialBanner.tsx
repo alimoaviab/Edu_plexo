@@ -44,12 +44,14 @@ export function TrialBanner() {
         {isExpired ? (
           <Text style={styles.expiredTitle}>Subscription Expired</Text>
         ) : (
-          <Text style={styles.trialTitle}>Free Trial Active ({daysRemaining} days remaining)</Text>
+          <Text style={styles.trialTitle}>
+            Free Trial Active{daysRemaining > 0 ? ` (${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} remaining)` : ''}
+          </Text>
         )}
         <Text style={styles.subtitle}>
           {isExpired
             ? 'Tap here to renew or upgrade your plan to unlock full access.'
-            : 'You are currently on a 14-day free trial. Tap to view plans.'}
+            : 'Your free trial is active. Tap to view plans.'}
         </Text>
       </View>
       <Icon name="chevron-right" size={16} color={isExpired ? colors.error : colors.primary} />

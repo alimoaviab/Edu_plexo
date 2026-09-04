@@ -49,6 +49,8 @@ func IsTrialActive(ctx context.Context, pool *pgxpool.Pool, s *store.MemStore, s
 }
 
 // IsSubscriptionActive checks if there is an active paid or trial subscription.
+// A subscription inside its 3-day grace window still counts as active for
+// operational access (the UI shows a strong grace warning; suspension blocks).
 func IsSubscriptionActive(ctx context.Context, pool *pgxpool.Pool, s *store.MemStore, schoolID string) (bool, error) {
 	sub, err := GetActiveSubscriptionHelper(ctx, pool, s, schoolID)
 	if err != nil {
@@ -57,7 +59,13 @@ func IsSubscriptionActive(ctx context.Context, pool *pgxpool.Pool, s *store.MemS
 	if sub == nil {
 		return false, nil
 	}
-	return (sub.Status == "active" || sub.Status == "trial") && time.Now().Before(sub.EndDate), nil
+	if (sub.Status == "active" || sub.Status == "trial") && time.Now().Before(sub.EndDate) {
+		return true, nil
+	}
+	if (sub.Status == "expired" || sub.Status == "trial") && sub.GraceEndsAt != nil && sub.GraceEndsAt.After(time.Now()) {
+		return true, nil
+	}
+	return false, nil
 }
 
 // IsSubscriptionExpired checks if the school's latest subscription is expired.
@@ -147,56 +155,60 @@ func HasFeatureAccess(ctx context.Context, pool *pgxpool.Pool, s *store.MemStore
 func GetActiveSubscriptionHelper(ctx context.Context, pool *pgxpool.Pool, s *store.MemStore, schoolID string) (*Subscription, error) {
 	if pool != nil {
 		var sub Subscription
-		var trialStart, trialEnd *time.Time
+		var trialStart, trialEnd, graceEnd *time.Time
 		err := pool.QueryRow(ctx, `
 			SELECT id, school_id, plan_name, student_limit, price, currency, start_date, end_date,
-			       status, is_trial, trial_used, trial_start_date, trial_end_date, created_at, updated_at
+			       status, is_trial, trial_used, trial_start_date, trial_end_date, grace_ends_at, created_at, updated_at
 			FROM subscriptions
 			WHERE school_id = $1 AND status IN ('active', 'trial')
 			ORDER BY created_at DESC LIMIT 1
 		`, schoolID).Scan(
 			&sub.ID, &sub.SchoolID, &sub.PlanName, &sub.StudentLimit, &sub.Price, &sub.Currency,
 			&sub.StartDate, &sub.EndDate, &sub.Status, &sub.IsTrial, &sub.TrialUsed,
-			&trialStart, &trialEnd, &sub.CreatedAt, &sub.UpdatedAt,
+			&trialStart, &trialEnd, &graceEnd, &sub.CreatedAt, &sub.UpdatedAt,
 		)
 		if err == nil {
 			sub.TrialStartDate = trialStart
 			sub.TrialEndDate = trialEnd
+			sub.GraceEndsAt = graceEnd
 			return &sub, nil
 		}
 
 		// Owner multi-school subscription inheritance query in DB
 		err = pool.QueryRow(ctx, `
 			SELECT sub.id, sub.school_id, sub.plan_name, sub.student_limit, sub.price, sub.currency, sub.start_date, sub.end_date,
-			       sub.status, sub.is_trial, sub.trial_used, sub.trial_start_date, sub.trial_end_date, sub.created_at, sub.updated_at
+			       sub.status, sub.is_trial, sub.trial_used, sub.trial_start_date, sub.trial_end_date, sub.grace_ends_at, sub.created_at, sub.updated_at
 			FROM subscriptions sub
-			JOIN schools s ON s.school_id = sub.school_id
+			LEFT JOIN schools s ON s.school_id = sub.school_id
 			WHERE (s.owner_user_id = (SELECT owner_user_id FROM schools WHERE school_id = $1 LIMIT 1)
-			       OR s.owner_email = (SELECT owner_email FROM schools WHERE school_id = $1 AND owner_email <> '' LIMIT 1))
+			       OR s.owner_email = (SELECT owner_email FROM schools WHERE school_id = $1 AND owner_email <> '' LIMIT 1)
+			       OR sub.owner_user_id = (SELECT owner_user_id FROM schools WHERE school_id = $1 LIMIT 1))
 			  AND sub.status IN ('active', 'trial')
 			ORDER BY sub.created_at DESC LIMIT 1
 		`, schoolID).Scan(
 			&sub.ID, &sub.SchoolID, &sub.PlanName, &sub.StudentLimit, &sub.Price, &sub.Currency,
 			&sub.StartDate, &sub.EndDate, &sub.Status, &sub.IsTrial, &sub.TrialUsed,
-			&trialStart, &trialEnd, &sub.CreatedAt, &sub.UpdatedAt,
+			&trialStart, &trialEnd, &graceEnd, &sub.CreatedAt, &sub.UpdatedAt,
 		)
 		if err == nil {
 			sub.TrialStartDate = trialStart
 			sub.TrialEndDate = trialEnd
+			sub.GraceEndsAt = graceEnd
 			return &sub, nil
 		}
 
-		// Check if school exists in DB and is active or owner-managed
-		var schoolExists bool
-		_ = pool.QueryRow(ctx, `
-			SELECT EXISTS (
-				SELECT 1 FROM schools 
-				WHERE school_id = $1 AND (status = 'active' OR approval_status = 'approved' OR (owner_email IS NOT NULL AND owner_email <> ''))
-			)
-		`, schoolID).Scan(&schoolExists)
-
-		if schoolExists {
-			now := time.Now()
+		// Fallback for legacy schools with NO subscription row at all: derive
+		// the trial from the school's created_at (authoritative date) instead
+		// of inventing a fresh trial from NOW(). Schools with any subscription
+		// row (including suspended/expired) never reach this branch.
+		var schoolCreatedAt time.Time
+		var schoolStatus string
+		err = pool.QueryRow(ctx, `
+			SELECT created_at, COALESCE(status, 'active') FROM schools
+			WHERE school_id = $1 OR id = $1
+		`, schoolID).Scan(&schoolCreatedAt, &schoolStatus)
+		if err == nil && (schoolStatus == "active" || schoolStatus == "approved") && !schoolCreatedAt.IsZero() {
+			trialEnd := schoolCreatedAt.AddDate(0, 0, TrialDaysFromSettings())
 			return &Subscription{
 				ID:           "sub_default_" + schoolID,
 				SchoolID:     schoolID,
@@ -204,12 +216,12 @@ func GetActiveSubscriptionHelper(ctx context.Context, pool *pgxpool.Pool, s *sto
 				StudentLimit: 500,
 				Price:        0,
 				Currency:     "PKR",
-				StartDate:    now,
-				EndDate:      now.AddDate(0, 0, 14),
+				StartDate:    schoolCreatedAt,
+				EndDate:      trialEnd,
 				Status:       "trial",
 				IsTrial:      true,
-				CreatedAt:    now,
-				UpdatedAt:    now,
+				CreatedAt:    schoolCreatedAt,
+				UpdatedAt:    schoolCreatedAt,
 			}, nil
 		}
 	}
@@ -258,26 +270,36 @@ func activeSubscriptionFromStoreHelper(s *store.MemStore, schoolID string) *Subs
 					}
 				}
 			}
-		}
-
-		// Default fallback for any active or owner-managed school
+		}		// Default fallback for any active or owner-managed school with no
+		// subscription row: derive the trial from the school's created_at so
+		// the countdown advances from a real date, never from NOW().
 		if latest == nil && (isSchoolActive || ownerUserID != "" || ownerEmail != "") {
-			now := time.Now()
-			return &Subscription{
-				ID:           "sub_default_" + schoolID,
-				SchoolID:     schoolID,
-				PlanName:     "trial",
-				StudentLimit: 500,
-				Price:        0,
-				Currency:     "PKR",
-				StartDate:    now,
-				EndDate:      now.AddDate(0, 0, 14),
-				Status:       "trial",
-				IsTrial:      true,
-				CreatedAt:    now,
-				UpdatedAt:    now,
+		var created time.Time
+		for _, sch := range s.Schools {
+			if sch.SchoolID == schoolID {
+				created = sch.CreatedAt
+				break
 			}
 		}
+		if created.IsZero() {
+			created = time.Now()
+		}
+		trialEnd := created.AddDate(0, 0, TrialDaysFromSettings())
+		return &Subscription{
+			ID:           "sub_default_" + schoolID,
+			SchoolID:     schoolID,
+			PlanName:     "trial",
+			StudentLimit: 500,
+			Price:        0,
+			Currency:     "PKR",
+			StartDate:    created,
+			EndDate:      trialEnd,
+			Status:       "trial",
+			IsTrial:      true,
+			CreatedAt:    created,
+			UpdatedAt:    created,
+		}
+	}
 	}
 
 	if latest == nil {

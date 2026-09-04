@@ -2,6 +2,7 @@ import { AppIcon } from "shared/ui/AppIcon";
 import { useEffect, useState } from 'react'
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { apiRequest, clearStoredSession } from '@/lib/api'
+import { ToastHost } from '@/utils/toast'
 
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard' },
@@ -141,6 +142,7 @@ export function Layout() {
           <Outlet />
         </div>
       </main>
+      <ToastHost />
     </div>
   )
 }

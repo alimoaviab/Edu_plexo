@@ -17,6 +17,10 @@ interface School {
   revenue: number
   expiry: string
   created_at: string
+  subscription_status?: string
+  is_trial?: boolean
+  days_remaining?: number
+  grace_ends_at?: string
 }
 
 function formatCurrency(amount: number): string {
@@ -140,9 +144,15 @@ export function SchoolsPage() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {schools.map((school) => {
-                const diff = school.expiry ? new Date(school.expiry).getTime() - Date.now() : 0
-                const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
-                const isPaidPlan = school.plan && !school.plan.toLowerCase().includes('trial') && school.plan !== 'Free'
+                // Prefer the backend-computed days_remaining; fall back to expiry math.
+                const days =
+                  typeof school.days_remaining === 'number'
+                    ? school.days_remaining
+                    : Math.ceil(((school.expiry ? new Date(school.expiry).getTime() : 0) - Date.now()) / (1000 * 60 * 60 * 24))
+                const isPaidPlan = school.plan && !school.plan.toLowerCase().includes('trial') && school.plan !== 'Free' && school.plan !== 'Free Trial'
+                const subStatus = school.subscription_status || ''
+                const isSuspended = subStatus === 'suspended'
+                const isTrial = Boolean(school.is_trial) || (school.plan || '').toLowerCase().includes('trial')
                 return (
                   <tr key={school._id} className="hover:bg-blue-50/30 transition-colors">
                     <td className="px-4 py-3">
@@ -166,11 +176,15 @@ export function SchoolsPage() {
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                           : 'bg-indigo-50 text-indigo-700 border-indigo-200'
                       }`}>
-                        {school.plan || '14-Day Free Trial'}
+                        {school.plan || 'Free Trial'}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {school.expiry ? (
+                      {isSuspended ? (
+                        <span className="text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded border border-rose-300">
+                          Suspended
+                        </span>
+                      ) : school.expiry ? (
                         <div>
                           {days <= 0 ? (
                             <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
@@ -178,15 +192,17 @@ export function SchoolsPage() {
                             </span>
                           ) : isPaidPlan ? (
                             <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                              {days} days remaining (Paid)
+                              {days} days remaining
                             </span>
                           ) : (
                             <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                              {days} days trial left
+                              {days} {days === 1 ? 'day' : 'days'} trial left
                             </span>
                           )}
                           <p className="text-[10px] text-slate-400 mt-0.5">
-                            Expires {new Date(school.expiry).toLocaleDateString()}
+                            {subStatus === 'expired' && school.grace_ends_at
+                              ? `Suspends ${new Date(school.grace_ends_at).toLocaleDateString()}`
+                              : `Expires ${new Date(school.expiry).toLocaleDateString()}`}
                           </p>
                         </div>
                       ) : (

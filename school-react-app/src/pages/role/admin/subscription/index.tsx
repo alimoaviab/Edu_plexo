@@ -14,7 +14,7 @@ export function AdminSubscriptionPage() {
   const studentsUsed = current?.students_used ?? 0;
   const isOwner = user?.role === "owner";
 
-  const isExpired = sub?.status === "expired" || sub?.status === "cancelled";
+  const isExpired = sub?.status === "expired" || sub?.status === "cancelled" || sub?.status === "suspended";
   const isActive = sub?.status === "active" || sub?.status === "trial";
 
   const allowedModulesList = useMemo(() => {
@@ -90,7 +90,7 @@ export function AdminSubscriptionPage() {
         {/* Current Plan & Student Usage Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <CurrentPlanCard subscription={sub ?? null} studentsUsed={studentsUsed} />
+            <CurrentPlanCard current={current} subscription={sub ?? null} studentsUsed={studentsUsed} />
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200/80 p-6 flex flex-col justify-center shadow-sm">

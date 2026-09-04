@@ -190,6 +190,7 @@ type AdminSubscriptionView struct {
 	ApprovedPaymentsCount int        `json:"approved_payments_count"`
 	TotalPaid             int        `json:"total_paid"`
 	LastPaymentAt         *time.Time `json:"last_payment_at,omitempty"`
+	GraceEndsAt           *time.Time `json:"grace_ends_at,omitempty"`
 	CreatedAt             time.Time  `json:"created_at"`
 }
 
@@ -266,7 +267,8 @@ func (h *Handler) AdminListSubscriptions(w http.ResponseWriter, r *http.Request)
 				s.created_at,
 				COALESCE(pay.approved_count, 0) AS approved_payments_count,
 				COALESCE(pay.total_amount, 0) AS total_paid,
-				pay.last_verified_at
+				pay.last_verified_at,
+				s.grace_ends_at
 			FROM subscriptions s
 			LEFT JOIN LATERAL (
 				SELECT sch.name, sch.admin_name, sch.contact_phone, sch.owner_email
@@ -285,8 +287,8 @@ func (h *Handler) AdminListSubscriptions(w http.ResponseWriter, r *http.Request)
 			) u ON true
 			LEFT JOIN (
 				SELECT school_id, 
-				       COUNT(*) FILTER (WHERE status = 'verified') AS approved_count,
-				       COALESCE(SUM(amount) FILTER (WHERE status = 'verified'), 0) AS total_amount,
+				       COUNT(*) FILTER (WHERE status IN ('verified', 'activated')) AS approved_count,
+				       COALESCE(SUM(amount) FILTER (WHERE status IN ('verified', 'activated')), 0) AS total_amount,
 				       MAX(verified_at) AS last_verified_at
 				FROM payment_requests
 				GROUP BY school_id
@@ -307,7 +309,7 @@ func (h *Handler) AdminListSubscriptions(w http.ResponseWriter, r *http.Request)
 				&v.ID, &v.SchoolID, &v.SchoolName, &v.OwnerName, &v.OwnerEmail, &v.Phone,
 				&v.PlanName, &v.StudentLimit, &v.Price, &v.Currency, &v.Status, &v.IsTrial,
 				&v.StartDate, &v.EndDate, &v.AutoRenew, &v.CreatedAt,
-				&v.ApprovedPaymentsCount, &v.TotalPaid, &v.LastPaymentAt,
+				&v.ApprovedPaymentsCount, &v.TotalPaid, &v.LastPaymentAt, &v.GraceEndsAt,
 			); err != nil {
 				continue
 			}

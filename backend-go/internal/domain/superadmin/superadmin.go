@@ -431,25 +431,31 @@ func (h *Handler) ListSchools(w http.ResponseWriter, r *http.Request) {
 	defer h.Store.RUnlock()
 
 	type schoolView struct {
-		ID            string    `json:"_id"`
-		SchoolID      string    `json:"school_id"`
-		Name          string    `json:"name"`
-		Code          string    `json:"code"`
-		Email         string    `json:"email"`
-		Phone         string    `json:"phone"`
-		Address       string    `json:"address"`
-		City          string    `json:"city"`
-		PrincipalName string    `json:"principal_name"`
-		Status        string    `json:"status"`
-		OwnerEmail    string    `json:"owner_email"`
-		StudentCount  int       `json:"student_count"`
-		TeacherCount  int       `json:"teacher_count"`
-		ClassCount    int       `json:"class_count"`
-		Plan          string    `json:"plan"`
-		Revenue       float64   `json:"revenue"`
-		Expiry        time.Time `json:"expiry"`
-		CreatedAt     time.Time `json:"created_at"`
-		UpdatedAt     time.Time `json:"updated_at"`
+		ID             string     `json:"_id"`
+		SchoolID       string     `json:"school_id"`
+		Name           string     `json:"name"`
+		Code           string     `json:"code"`
+		Email          string     `json:"email"`
+		Phone          string     `json:"phone"`
+		Address        string     `json:"address"`
+		City           string     `json:"city"`
+		PrincipalName  string     `json:"principal_name"`
+		Status         string     `json:"status"`
+		OwnerEmail     string     `json:"owner_email"`
+		StudentCount   int        `json:"student_count"`
+		TeacherCount   int        `json:"teacher_count"`
+		ClassCount     int        `json:"class_count"`
+		Plan           string     `json:"plan"`
+		Revenue        float64    `json:"revenue"`
+		Expiry         time.Time  `json:"expiry"`
+		CreatedAt      time.Time  `json:"created_at"`
+		UpdatedAt      time.Time  `json:"updated_at"`
+		// Real subscription state (never hardcoded)
+		SubStatus     string     `json:"subscription_status"`
+		IsTrial       bool       `json:"is_trial"`
+		DaysRemaining int        `json:"days_remaining"`
+		StudentLimit  int        `json:"student_limit"`
+		GraceEndsAt   *time.Time `json:"grace_ends_at,omitempty"`
 	}
 
 	schools := make([]schoolView, 0)
@@ -471,11 +477,18 @@ func (h *Handler) ListSchools(w http.ResponseWriter, r *http.Request) {
 				COALESCE((SELECT COUNT(*) FROM students st WHERE st.school_id = s.school_id), 0) AS student_count,
 				COALESCE((SELECT COUNT(*) FROM teachers tc WHERE tc.school_id = s.school_id), 0) AS teacher_count,
 				COALESCE((SELECT COUNT(*) FROM classes cl WHERE cl.school_id = s.school_id), 0) AS class_count,
-				COALESCE(sub.plan_name, s.plan_key, '14-Day Free Trial') AS plan,
+				COALESCE(sub.plan_name, s.plan_key, 'Free Trial') AS plan,
 				COALESCE(pay.total_paid, 0)::float8 AS revenue,
 				COALESCE(sub.end_date, s.plan_expires_at, u.created_at + INTERVAL '14 days') AS expiry,
 				u.created_at,
-				u.updated_at
+				u.updated_at,
+				COALESCE(sub.status, '') AS subscription_status,
+				COALESCE(sub.is_trial, false) AS is_trial,
+				CASE WHEN sub.end_date IS NULL THEN 0
+				     WHEN sub.end_date > NOW() THEN CEIL(EXTRACT(EPOCH FROM (sub.end_date - NOW())) / 86400.0)::int
+				     ELSE 0 END AS days_remaining,
+				COALESCE(sub.student_limit, 0) AS student_limit,
+				sub.grace_ends_at
 			FROM users u
 			LEFT JOIN LATERAL (
 				SELECT * FROM schools s 
@@ -485,15 +498,16 @@ func (h *Handler) ListSchools(w http.ResponseWriter, r *http.Request) {
 				LIMIT 1
 			) s ON true
 			LEFT JOIN LATERAL (
-				SELECT sub.plan_name, sub.end_date, sub.status, sub.is_trial
+				SELECT sub.plan_name, sub.end_date, sub.status, sub.is_trial, sub.student_limit, sub.grace_ends_at
 				FROM subscriptions sub
-				WHERE (sub.school_id = s.school_id OR sub.school_id = u.school_id OR sub.school_id = u.id OR sub.school_id = 'system')
-				  AND sub.status IN ('active', 'trial')
+				WHERE (sub.school_id = s.school_id OR sub.school_id = u.school_id OR sub.school_id = u.id
+				       OR sub.owner_user_id = u.id
+				       OR (s.school_id IS NULL AND sub.school_id = u.id))
 				ORDER BY sub.created_at DESC
 				LIMIT 1
 			) sub ON true
 			LEFT JOIN LATERAL (
-				SELECT COALESCE(SUM(amount) FILTER (WHERE status = 'verified'), 0) AS total_paid
+				SELECT COALESCE(SUM(amount) FILTER (WHERE status IN ('verified', 'activated')), 0) AS total_paid
 				FROM payment_requests pr
 				WHERE pr.school_id = s.school_id OR pr.school_id = u.school_id OR pr.school_id = u.id OR (pr.school_id = 'system' AND sub.plan_name IS NOT NULL)
 			) pay ON true
@@ -506,14 +520,17 @@ func (h *Handler) ListSchools(w http.ResponseWriter, r *http.Request) {
 			for rows.Next() {
 				var sv schoolView
 				var exp time.Time
+				var grace *time.Time
 				if err := rows.Scan(
 					&sv.ID, &sv.SchoolID, &sv.Name, &sv.Code, &sv.Email, &sv.Phone,
 					&sv.Address, &sv.City, &sv.PrincipalName, &sv.Status, &sv.OwnerEmail,
 					&sv.StudentCount, &sv.TeacherCount, &sv.ClassCount,
 					&sv.Plan, &sv.Revenue, &exp, &sv.CreatedAt, &sv.UpdatedAt,
+					&sv.SubStatus, &sv.IsTrial, &sv.DaysRemaining, &sv.StudentLimit, &grace,
 				); err == nil {
 					sv.Expiry = exp
-					if statusFilter != "" && sv.Status != statusFilter {
+					sv.GraceEndsAt = grace
+					if statusFilter != "" && sv.Status != statusFilter && sv.SubStatus != statusFilter {
 						continue
 					}
 					if search != "" && !strings.Contains(strings.ToLower(sv.Name), search) && !strings.Contains(strings.ToLower(sv.PrincipalName), search) && !strings.Contains(strings.ToLower(sv.OwnerEmail), search) {
@@ -546,21 +563,21 @@ func (h *Handler) ListSchools(w http.ResponseWriter, r *http.Request) {
 		}
 
 		schools = append(schools, schoolView{
-			ID:            u.ID,
-			SchoolID:      u.SchoolID,
-			Name:          name + "'s Institution",
-			Code:          "EP-OWNER",
-			Email:         u.Email,
-			Phone:         u.Profile.Phone,
-			PrincipalName: name,
-			Status:        u.Status,
-			OwnerEmail:    u.Email,
-			Plan:          "14-Day Free Trial",
-			Revenue:       0,
-			Expiry:        u.CreatedAt.AddDate(0, 0, 14),
-			CreatedAt:     u.CreatedAt,
-			UpdatedAt:     u.UpdatedAt,
-		})
+				ID:            u.ID,
+				SchoolID:      u.SchoolID,
+				Name:          name + "'s Institution",
+				Code:          "EP-OWNER",
+				Email:         u.Email,
+				Phone:         u.Profile.Phone,
+				PrincipalName: name,
+				Status:        u.Status,
+				OwnerEmail:    u.Email,
+				Plan:          "Free Trial",
+				Revenue:       0,
+				Expiry:        u.CreatedAt.AddDate(0, 0, 14),
+				CreatedAt:     u.CreatedAt,
+				UpdatedAt:     u.UpdatedAt,
+			})
 	}
 
 	sort.SliceStable(schools, func(i, j int) bool {
@@ -586,33 +603,115 @@ func (h *Handler) GetSchool(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := chi.URLParam(r, "id")
-	h.Store.RLock()
-	defer h.Store.RUnlock()
 
 	type schoolDetailView struct {
-		ID            string    `json:"_id"`
-		SchoolID      string    `json:"school_id"`
-		Name          string    `json:"name"`
-		Code          string    `json:"code"`
-		Email         string    `json:"email"`
-		Phone         string    `json:"phone"`
-		Address       string    `json:"address"`
-		City          string    `json:"city"`
-		PrincipalName string    `json:"principal_name"`
-		Website       string    `json:"website"`
-		Status        string    `json:"status"`
-		OwnerEmail    string    `json:"owner_email"`
-		StudentCount  int       `json:"student_count"`
-		TeacherCount  int       `json:"teacher_count"`
-		ClassCount    int       `json:"class_count"`
-		ParentCount   int       `json:"parent_count"`
-		SubjectCount  int       `json:"subject_count"`
-		Plan          string    `json:"plan"`
-		Revenue       float64   `json:"revenue"`
-		Expiry        time.Time `json:"expiry"`
-		CreatedAt     time.Time `json:"created_at"`
-		UpdatedAt     time.Time `json:"updated_at"`
+		ID            string     `json:"_id"`
+		SchoolID      string     `json:"school_id"`
+		Name          string     `json:"name"`
+		Code          string     `json:"code"`
+		Email         string     `json:"email"`
+		Phone         string     `json:"phone"`
+		Address       string     `json:"address"`
+		City          string     `json:"city"`
+		PrincipalName string     `json:"principal_name"`
+		Website       string     `json:"website"`
+		Status        string     `json:"status"`
+		OwnerEmail    string     `json:"owner_email"`
+		StudentCount  int        `json:"student_count"`
+		TeacherCount  int        `json:"teacher_count"`
+		ClassCount    int        `json:"class_count"`
+		ParentCount   int        `json:"parent_count"`
+		SubjectCount  int        `json:"subject_count"`
+		Plan          string     `json:"plan"`
+		Revenue       float64    `json:"revenue"`
+		Expiry        time.Time  `json:"expiry"`
+		CreatedAt     time.Time  `json:"created_at"`
+		UpdatedAt     time.Time  `json:"updated_at"`
+		// Real subscription state
+		SubStatus     string     `json:"subscription_status"`
+		IsTrial       bool       `json:"is_trial"`
+		DaysRemaining int        `json:"days_remaining"`
+		StudentLimit  int        `json:"student_limit"`
+		GraceEndsAt   *time.Time `json:"grace_ends_at,omitempty"`
 	}
+
+	// PG-first: the route id may be an owner user id, an owner email, a
+	// school row id, or a school_id — resolve all of them against the real
+	// tables so "View" never returns "School not found" for valid rows.
+	if h.Pool != nil {
+		var sv schoolDetailView
+		var grace *time.Time
+		err := h.Pool.QueryRow(r.Context(), `
+			SELECT
+				COALESCE(s.id, u.id) AS id,
+				COALESCE(s.school_id, u.school_id, u.id) AS school_id,
+				COALESCE(s.name, NULLIF(TRIM(u.profile_first || ' ' || u.profile_last), '') || '''s Institution', 'Owner Campus') AS name,
+				COALESCE(s.code, '') AS code,
+				u.email AS email,
+				COALESCE(u.profile_phone, s.contact_phone, '') AS phone,
+				COALESCE(s.address, '') AS address,
+				COALESCE(s.city, '') AS city,
+				COALESCE(NULLIF(TRIM(u.profile_first || ' ' || u.profile_last), ''), s.admin_name, 'School Owner') AS principal_name,
+				COALESCE(s.website, '') AS website,
+				COALESCE(u.status, s.status, 'active') AS status,
+				u.email AS owner_email,
+				COALESCE((SELECT COUNT(*) FROM students st WHERE st.school_id = s.school_id), 0) AS student_count,
+				COALESCE((SELECT COUNT(*) FROM teachers tc WHERE tc.school_id = s.school_id), 0) AS teacher_count,
+				COALESCE((SELECT COUNT(*) FROM classes cl WHERE cl.school_id = s.school_id), 0) AS class_count,
+				0 AS parent_count,
+				COALESCE((SELECT COUNT(*) FROM subjects sb WHERE sb.school_id = s.school_id), 0) AS subject_count,
+				COALESCE(sub.plan_name, 'Free Trial') AS plan,
+				COALESCE(pay.total_paid, 0)::float8 AS revenue,
+				COALESCE(sub.end_date, u.created_at + INTERVAL '14 days') AS expiry,
+				u.created_at,
+				u.updated_at,
+				COALESCE(sub.status, '') AS subscription_status,
+				COALESCE(sub.is_trial, false) AS is_trial,
+				CASE WHEN sub.end_date IS NULL THEN 0
+				     WHEN sub.end_date > NOW() THEN CEIL(EXTRACT(EPOCH FROM (sub.end_date - NOW())) / 86400.0)::int
+				     ELSE 0 END AS days_remaining,
+				COALESCE(sub.student_limit, 0) AS student_limit,
+				sub.grace_ends_at
+			FROM users u
+			LEFT JOIN LATERAL (
+				SELECT * FROM schools s
+				WHERE (s.owner_email = u.email OR s.owner_user_id = u.id
+				       OR s.school_id = u.school_id OR s.id = u.school_id)
+				  AND s.school_id NOT IN ('system', '__global__')
+				ORDER BY s.created_at ASC LIMIT 1
+			) s ON true
+			LEFT JOIN LATERAL (
+				SELECT sub.plan_name, sub.end_date, sub.status, sub.is_trial, sub.student_limit, sub.grace_ends_at
+				FROM subscriptions sub
+				WHERE (sub.school_id = s.school_id OR sub.school_id = u.school_id OR sub.school_id = u.id
+				       OR sub.owner_user_id = u.id)
+				ORDER BY sub.created_at DESC LIMIT 1
+			) sub ON true
+			LEFT JOIN LATERAL (
+				SELECT COALESCE(SUM(amount) FILTER (WHERE status IN ('verified', 'activated')), 0) AS total_paid
+				FROM payment_requests pr
+				WHERE pr.school_id = s.school_id OR pr.school_id = u.school_id OR pr.school_id = u.id
+			) pay ON true
+			WHERE u.role = 'owner'
+			  AND (u.id = $1 OR u.email = $1 OR u.school_id = $1
+			       OR s.school_id = $1 OR s.id = $1)
+			LIMIT 1
+		`, id).Scan(
+			&sv.ID, &sv.SchoolID, &sv.Name, &sv.Code, &sv.Email, &sv.Phone,
+			&sv.Address, &sv.City, &sv.PrincipalName, &sv.Website, &sv.Status, &sv.OwnerEmail,
+			&sv.StudentCount, &sv.TeacherCount, &sv.ClassCount, &sv.ParentCount, &sv.SubjectCount,
+			&sv.Plan, &sv.Revenue, &sv.Expiry, &sv.CreatedAt, &sv.UpdatedAt,
+			&sv.SubStatus, &sv.IsTrial, &sv.DaysRemaining, &sv.StudentLimit, &grace,
+		)
+		if err == nil {
+			sv.GraceEndsAt = grace
+			api.WriteResult(w, api.Ok(sv))
+			return
+		}
+	}
+
+	h.Store.RLock()
+	defer h.Store.RUnlock()
 
 	for _, s := range h.Store.Schools {
 		if s.ID == id || s.SchoolID == id {
@@ -654,11 +753,33 @@ func (h *Handler) GetSchool(w http.ResponseWriter, r *http.Request) {
 			plan := "Free"
 			revenue := 0.0
 			expiry := time.Time{}
+			subStatus := ""
+			isTrial := false
+			daysRem := 0
+			studentLimit := 0
 			for _, pkg := range h.Store.SchoolPackages {
 				if pkg.SchoolID == s.SchoolID && pkg.IsActive {
 					plan = pkg.PackageName
 					revenue = pkg.Price
 					expiry = pkg.ExpiryDate
+					break
+				}
+			}
+			for _, sub := range h.Store.Subscriptions {
+				if sub.SchoolID == s.SchoolID {
+					subStatus = sub.Status
+					isTrial = sub.Status == "trial"
+					studentLimit = sub.StudentLimit
+					if !sub.NextRenewal.IsZero() {
+						expiry = sub.NextRenewal
+						daysRem = int(sub.NextRenewal.Sub(time.Now()).Hours() / 24)
+						if daysRem < 0 {
+							daysRem = 0
+						}
+					}
+					if sub.PackageID != "" {
+						plan = sub.PackageID
+					}
 					break
 				}
 			}
@@ -686,6 +807,10 @@ func (h *Handler) GetSchool(w http.ResponseWriter, r *http.Request) {
 				Expiry:        expiry,
 				CreatedAt:     s.CreatedAt,
 				UpdatedAt:     s.UpdatedAt,
+				SubStatus:     subStatus,
+				IsTrial:       isTrial,
+				DaysRemaining: daysRem,
+				StudentLimit:  studentLimit,
 			}))
 			return
 		}
@@ -720,14 +845,32 @@ func (h *Handler) UpdateSchoolStatus(w http.ResponseWriter, r *http.Request) {
 	defer h.Store.Unlock()
 
 	if h.Pool != nil {
-		_, _ = h.Pool.Exec(r.Context(), `UPDATE users SET status = $1 WHERE school_id = $2 OR id = $2`, body.Status, id)
+		// Owner accounts stay active so they can reach billing/renewal; the
+		// subscription state is the authoritative gate.
+		_, _ = h.Pool.Exec(r.Context(), `UPDATE users SET status = $1 WHERE (school_id = $2 OR id = $2) AND role != 'owner'`, body.Status, id)
 		_, _ = h.Pool.Exec(r.Context(), `UPDATE schools SET status = $1 WHERE id = $2 OR school_id = $2`, body.Status, id)
+		if body.Status == "suspended" {
+			_, _ = h.Pool.Exec(r.Context(), `
+				UPDATE subscriptions SET status = 'suspended', updated_at = NOW()
+				WHERE (school_id = $1
+				       OR school_id IN (SELECT school_id FROM schools WHERE id = $1 OR school_id = $1)
+				       OR owner_user_id = $1
+				       OR school_id IN (SELECT id FROM users WHERE id = $1))
+				  AND status NOT IN ('cancelled')
+			`, id)
+		}
 		if body.Status == "active" {
 			_, _ = h.Pool.Exec(r.Context(), `
 				UPDATE subscriptions 
-				SET end_date = GREATEST(end_date, NOW() + INTERVAL '1 day'), status = 'active', updated_at = NOW()
-				WHERE (school_id = $1 OR school_id IN (SELECT school_id FROM schools WHERE id = $1 OR school_id = $1))
-				  AND end_date <= NOW()
+				SET end_date = GREATEST(end_date, NOW() + INTERVAL '1 day'),
+				    status = 'active',
+				    grace_ends_at = NULL,
+				    updated_at = NOW()
+				WHERE (school_id = $1
+				       OR school_id IN (SELECT school_id FROM schools WHERE id = $1 OR school_id = $1)
+				       OR owner_user_id = $1
+				       OR school_id IN (SELECT id FROM users WHERE id = $1))
+				  AND status IN ('suspended', 'expired')
 			`, id)
 		}
 	}
@@ -840,6 +983,35 @@ func (h *Handler) SuspendSchool(w http.ResponseWriter, r *http.Request) {
 	h.Store.Lock()
 	defer h.Store.Unlock()
 
+	// Authoritative subscription suspension (PG). The subscription row is the
+	// single source of truth the SubscriptionGate middleware enforces.
+	if h.Pool != nil {
+		tag, err := h.Pool.Exec(r.Context(), `
+			UPDATE subscriptions SET status = 'suspended', updated_at = NOW()
+			WHERE (school_id = $1
+			       OR school_id IN (SELECT school_id FROM schools WHERE id = $1 OR school_id = $1)
+			       OR owner_user_id = $1
+			       OR school_id IN (SELECT id FROM users WHERE id = $1))
+			  AND status NOT IN ('cancelled')
+		`, id)
+		if err != nil {
+			api.WriteResult(w, api.Fail("INTERNAL", "Failed to suspend subscription.", 500, nil))
+			return
+		}
+		// Non-owner users are suspended too (owner keeps billing access).
+		_, _ = h.Pool.Exec(r.Context(), `UPDATE users SET status = 'suspended' WHERE (school_id = $1 OR id = $1) AND role != 'owner'`, id)
+		_, _ = h.Pool.Exec(r.Context(), `UPDATE schools SET status = 'suspended' WHERE id = $1 OR school_id = $1`, id)
+		if tag.RowsAffected() > 0 {
+			api.WriteResult(w, api.Ok(map[string]any{
+				"success":     true,
+				"message":     "School subscription suspended. Protected access is now blocked; the Owner can still renew via billing.",
+				"reason":      body.Reason,
+				"subscriptions_updated": tag.RowsAffected(),
+			}))
+			return
+		}
+	}
+
 	for _, s := range h.Store.Schools {
 		if s.ID == id || s.SchoolID == id {
 			s.Status = "suspended"
@@ -847,7 +1019,7 @@ func (h *Handler) SuspendSchool(w http.ResponseWriter, r *http.Request) {
 
 			targetSchoolID := s.SchoolID
 			for _, u := range h.Store.Users {
-				if u.SchoolID == targetSchoolID {
+				if u.SchoolID == targetSchoolID && u.Role != "owner" {
 					u.Status = "suspended"
 					h.Persist("users", u)
 				}

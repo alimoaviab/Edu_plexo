@@ -38,7 +38,8 @@ export function CurrentPlanCard({
   const isExpired =
     subscription?.status === 'expired' ||
     subscription?.status === 'cancelled' ||
-    subscription?.status === 'canceled';
+    subscription?.status === 'canceled' ||
+    subscription?.status === 'suspended';
 
   const limit = subscription?.student_limit ?? studentsLimit ?? 0;
   const planName = subscription?.plan_name ?? '';
@@ -60,10 +61,12 @@ export function CurrentPlanCard({
       >
         <View style={styles.headerRow}>
           <View style={styles.titleWrap}>
-            <Text style={styles.trialTitle}>14-Day Free Trial</Text>
+            <Text style={styles.trialTitle}>Free Trial</Text>
             <View style={styles.trialBadge}>
               <Icon name="sparkles" size={12} color="#FBBF24" />
-              <Text style={styles.trialBadgeText}>Active Trial</Text>
+              <Text style={styles.trialBadgeText}>
+                {daysRemaining != null && daysRemaining > 0 ? `${daysRemaining}d remaining` : 'Active Trial'}
+              </Text>
             </View>
           </View>
           <View style={styles.iconCircle}>
@@ -77,7 +80,8 @@ export function CurrentPlanCard({
 
         {subscription?.end_date ? (
           <Text style={styles.trialExpiry}>
-            Trial ends: {formatDate(subscription.end_date)} ({daysRemaining ?? 14} days left)
+            Trial ends: {formatDate(subscription.end_date)}
+            {daysRemaining != null && daysRemaining > 0 ? ` (${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} left)` : ''}
           </Text>
         ) : null}
 
@@ -167,7 +171,7 @@ export function CurrentPlanCard({
         </View>
       ) : (
         <Text style={styles.noPlanSubtitle}>
-          Subscribe to a plan or start your 14-day free trial to manage your school seamlessly.
+          Subscribe to a plan or start your free trial to manage your school seamlessly.
         </Text>
       )}
 

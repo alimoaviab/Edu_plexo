@@ -251,7 +251,7 @@ export function SchoolDetailPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
                   <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Active Plan</span>
-                  <span className="text-sm font-black text-blue-700">{school.plan || '14-Day Free Trial'}</span>
+                  <span className="text-sm font-black text-blue-700">{school.plan || 'Free Trial'}</span>
                 </div>
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
                   <span className="text-[10px] font-bold text-slate-500 uppercase block mb-0.5">Approved Payments</span>

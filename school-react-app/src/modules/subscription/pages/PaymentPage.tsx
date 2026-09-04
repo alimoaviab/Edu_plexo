@@ -8,12 +8,13 @@
  *   4. Instant audit logging and SLA confirmation
  */
 
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import { AppIcon } from "shared/ui/AppIcon";
 import { showToast } from "@/utils/toast";
 import * as service from "../services/subscription.service";
+import { useSubscription } from "../hooks/useSubscription";
 import type { Plan } from "../services/subscription.service";
 
 function CopyButton({ value, label }: { value: string; label: string }) {
@@ -83,7 +84,24 @@ function AccountRow({ label, value, highlight }: AccountRowProps) {
 export function PaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const plan = location.state?.plan as Plan;
+  const { current, plans } = useSubscription();
+
+  // Renewal flows arrive without a plan in navigation state — fall back to
+  // the Owner's current plan so "Renew Plan" never dead-ends.
+  const statePlan = location.state?.plan as Plan | undefined;
+  const fallbackPlan = useMemo(() => {
+    const sub = current?.subscription;
+    if (!sub || !sub.plan_name || sub.plan_name === "trial") return undefined;
+    const match = (plans || []).find(
+      (p) =>
+        p.id === sub.plan_name ||
+        p.name === sub.plan_name ||
+        p.name === `plan_${sub.plan_name}` ||
+        sub.plan_name.includes(p.name.toLowerCase())
+    );
+    return match;
+  }, [current, plans]);
+  const plan = statePlan ?? fallbackPlan;
 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -224,7 +242,7 @@ export function PaymentPage() {
                 <span className="text-xs font-semibold text-slate-400">· Manual Invoice Settlement</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Upgrade to {plan.display_name}
+                {statePlan ? `Upgrade to ${plan.display_name}` : `Renew ${plan.display_name}`}
               </h1>
             </div>
           </div>

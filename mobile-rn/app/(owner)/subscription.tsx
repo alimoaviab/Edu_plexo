@@ -50,7 +50,7 @@ export default function OwnerSubscriptionScreen() {
 
   const handleStartTrial = async (plan: Plan) => {
     Alert.alert(
-      'Start 14-Day Free Trial',
+      'Start Free Trial',
       `Activate free trial for ${plan.display_name} with all premium modules unlocked?`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -59,7 +59,7 @@ export default function OwnerSubscriptionScreen() {
           onPress: async () => {
             const success = await startTrial(plan.name);
             if (success) {
-              Alert.alert('Trial Activated!', 'Your 14-day free trial has been activated successfully.');
+              Alert.alert('Trial Activated!', 'Your free trial has been activated successfully.');
             } else {
               Alert.alert('Error', 'Failed to start trial. Please try again.');
             }
