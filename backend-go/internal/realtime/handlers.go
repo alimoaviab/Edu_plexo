@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/eduplexo/backend-go/internal/api"
+	"github.com/eduplexo/backend-go/internal/auth"
 	"github.com/eduplexo/backend-go/internal/store"
 	"github.com/go-chi/chi/v5"
 )
@@ -39,6 +40,16 @@ func FeeGenerateAsyncHandler(queue *JobQueue) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := api.FromRequest(r)
 
+		// Fee generation creates monthly invoices for every student in a class
+		// — a privileged billing operation. Require the same permission as the
+		// synchronous generate endpoint (fees:create → admin/owner) BEFORE a
+		// job is enqueued so an unauthorized user can never trigger the side
+		// effect, even asynchronously.
+		if err := auth.AssertPermission(ctx, "fees", auth.ActionCreate); err != nil {
+			api.WriteResult(w, api.Fail("FORBIDDEN", err.Error(), 403, nil))
+			return
+		}
+
 		var body json.RawMessage
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 			api.WriteResult(w, api.Fail("VALIDATION_ERROR", "Invalid JSON body.", 400, nil))
@@ -50,10 +61,10 @@ func FeeGenerateAsyncHandler(queue *JobQueue) http.HandlerFunc {
 
 		// Wrap payload with school context
 		payload := map[string]any{
-			"school_id":       ctx.SchoolID,
+			"school_id":        ctx.SchoolID,
 			"academic_year_id": ctx.ActiveAcademicYearID,
-			"user_id":         ctx.UserID,
-			"body":            body,
+			"user_id":          ctx.UserID,
+			"body":             body,
 		}
 
 		if err := queue.Submit(r.Context(), "fee-generation", jobID, payload); err != nil {

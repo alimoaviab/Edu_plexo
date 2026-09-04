@@ -1,8 +1,9 @@
 // Package realtime provides a WebSocket hub with Redis Pub/Sub fan-out.
 //
 // Architecture:
-//   Client → WS /ws → Hub.ServeWS() → registers connection
-//   Redis Pub/Sub → Hub.subscribeSchool() → fan-out to all school's connections
+//
+//	Client → WS /ws → Hub.ServeWS() → registers connection
+//	Redis Pub/Sub → Hub.subscribeSchool() → fan-out to all school's connections
 //
 // Thread safety: sync.RWMutex protects the connections map.
 // Keepalive: ping/pong every 30s, 45s read deadline.
@@ -14,6 +15,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,20 +32,47 @@ const (
 	maxMessageSize = 4096
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		// In production, validate against allowed origins.
-		// For now, allow all (CORS middleware handles origin checks).
-		return true
-	},
+// newUpgrader builds a WebSocket upgrader that only accepts handshakes from
+// trusted origins. Cross-site WebSocket hijacking is otherwise possible: a
+// malicious page can open a socket to this endpoint and the browser silently
+// attaches the victim's session cookies (SameSite=None), letting the attacker
+// receive the victim's realtime stream. Browsers always send an Origin header
+// on WebSocket handshakes, so validating it closes that hole. Requests with no
+// Origin (server-side clients, tests) are allowed — they cannot carry cookies
+// cross-site.
+func newUpgrader(allowedOrigins []string) websocket.Upgrader {
+	allowed := make(map[string]bool, len(allowedOrigins))
+	for _, o := range allowedOrigins {
+		if o := strings.TrimSpace(o); o != "" {
+			allowed[strings.ToLower(o)] = true
+		}
+	}
+	return websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			origin := strings.TrimSpace(r.Header.Get("Origin"))
+			if origin == "" {
+				return true
+			}
+			return allowed[strings.ToLower(origin)]
+		},
+	}
 }
 
 // Message is the envelope sent over WebSocket to clients.
 type Message struct {
 	Type    string `json:"type"`    // "notification", "attendance", "fee_update", "job_progress"
 	Payload any    `json:"payload"` // Event-specific data
+}
+
+// Notifier is the subset of Hub behaviour domain packages rely on for
+// user-targeted realtime delivery. It exists so tests can substitute a
+// recording fake instead of a live WebSocket hub.
+type Notifier interface {
+	// SendToUser delivers msg to a single connected user (no-op when the user
+	// is offline or on another instance).
+	SendToUser(schoolID, userID string, msg Message)
 }
 
 // conn wraps a WebSocket connection with metadata.
@@ -70,17 +99,23 @@ type Hub struct {
 	// Context for graceful shutdown
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	// upgrader validates handshake Origins against the configured allowlist.
+	upgrader websocket.Upgrader
 }
 
-// NewHub creates a WebSocket hub with Redis Pub/Sub integration.
-func NewHub(rdb *redis.Client) *Hub {
+// NewHub creates a WebSocket hub with Redis Pub/Sub integration. Only
+// handshakes whose Origin is listed in allowedOrigins are accepted (see
+// newUpgrader); pass the deployment's ALLOWED_ORIGINS.
+func NewHub(rdb *redis.Client, allowedOrigins []string) *Hub {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Hub{
-		conns:  make(map[string]map[string]*conn),
-		rdb:    rdb,
-		subs:   make(map[string]*redis.PubSub),
-		ctx:    ctx,
-		cancel: cancel,
+		conns:    make(map[string]map[string]*conn),
+		rdb:      rdb,
+		subs:     make(map[string]*redis.PubSub),
+		ctx:      ctx,
+		cancel:   cancel,
+		upgrader: newUpgrader(allowedOrigins),
 	}
 }
 
@@ -116,7 +151,7 @@ func (h *Hub) ServeWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wsConn, err := upgrader.Upgrade(w, r, nil)
+	wsConn, err := h.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("[ws] upgrade failed: %v", err)
 		return

@@ -486,13 +486,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				Phone: body.Guardian.Phone,
 				Email: defaultStr(body.Guardian.Email, body.Email),
 			},
-			Status:         defaultStr(body.Status, "active"),
-			RollNo:         body.RollNo,
-			DateOfBirth:    body.DateOfBirth,
-			Gender:         body.Gender,
-			EnrolledAt:     now,
-			CreatedAt:      now,
-			UpdatedAt:      now,
+			Status:      defaultStr(body.Status, "active"),
+			RollNo:      body.RollNo,
+			DateOfBirth: body.DateOfBirth,
+			Gender:      body.Gender,
+			EnrolledAt:  now,
+			CreatedAt:   now,
+			UpdatedAt:   now,
 		}
 
 		h.Store.Lock()
@@ -553,7 +553,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 					VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 					ON CONFLICT DO NOTHING
 				`, parentUser.ID, parentUser.SchoolID, parentUser.Email, parentUser.PasswordHash, parentUser.Role, parentUser.Status, parentUser.Profile.FirstName, parentUser.Profile.LastName, parentUser.Profile.Phone, parentUser.CreatedAt, parentUser.UpdatedAt)
-				
+
 				_, _ = h.Pool.Exec(r.Context(), `
 					INSERT INTO parents (id, school_id, user_id, name, phone, email, created_at, updated_at)
 					VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
@@ -734,32 +734,51 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 
 		before := *target
-		if body.FirstName != nil {
-			target.FirstName = *body.FirstName
-		}
-		if body.LastName != nil {
-			target.LastName = *body.LastName
-		}
-		if body.ClassID != nil {
-			target.ClassID = *body.ClassID
-		}
-		if body.Section != nil {
-			target.Section = *body.Section
-		}
-		if body.Subjects != nil {
-			target.Subjects = *body.Subjects
-		}
-		if body.Guardian != nil {
-			target.Guardian = *body.Guardian
-		}
-		if body.Status != nil {
-			target.Status = *body.Status
-		}
-		if body.RollNo != nil {
-			target.RollNo = *body.RollNo
-		}
-		if body.Gender != nil {
-			target.Gender = *body.Gender
+
+		// Students may update their own record, but ONLY profile fields they
+		// legitimately own (name/gender). Everything else (class/section/
+		// subjects, guardian relationship, status, roll number) is school-owned:
+		// allowing self-service writes would let a student migrate classes,
+		// rewrite academic structure, or detach/relink parents — a
+		// mass-assignment / data-integrity issue.
+		if isSelfUpdate {
+			if body.FirstName != nil {
+				target.FirstName = *body.FirstName
+			}
+			if body.LastName != nil {
+				target.LastName = *body.LastName
+			}
+			if body.Gender != nil {
+				target.Gender = *body.Gender
+			}
+		} else {
+			if body.FirstName != nil {
+				target.FirstName = *body.FirstName
+			}
+			if body.LastName != nil {
+				target.LastName = *body.LastName
+			}
+			if body.ClassID != nil {
+				target.ClassID = *body.ClassID
+			}
+			if body.Section != nil {
+				target.Section = *body.Section
+			}
+			if body.Subjects != nil {
+				target.Subjects = *body.Subjects
+			}
+			if body.Guardian != nil {
+				target.Guardian = *body.Guardian
+			}
+			if body.Status != nil {
+				target.Status = *body.Status
+			}
+			if body.RollNo != nil {
+				target.RollNo = *body.RollNo
+			}
+			if body.Gender != nil {
+				target.Gender = *body.Gender
+			}
 		}
 		target.UpdatedAt = time.Now()
 

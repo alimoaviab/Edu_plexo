@@ -50,6 +50,7 @@ import (
 	"github.com/eduplexo/backend-go/internal/persistence"
 	"github.com/eduplexo/backend-go/internal/realtime"
 	rt "github.com/eduplexo/backend-go/internal/realtime"
+	"github.com/eduplexo/backend-go/internal/session"
 	"github.com/eduplexo/backend-go/internal/store"
 	"github.com/eduplexo/backend-go/internal/stubs"
 	"github.com/go-chi/chi/v5"
@@ -68,11 +69,18 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 	var wsHub *rt.Hub
 	var jobQueue *rt.JobQueue
 	if rdb != nil && rdb.Available() {
-		wsHub = rt.NewHub(rdb.Raw())
+		wsHub = rt.NewHub(rdb.Raw(), cfg.AllowedOrigins)
 		jobQueue = rt.NewJobQueue(rdb.Raw())
 	} else {
-		wsHub = rt.NewHub(nil)
+		wsHub = rt.NewHub(nil, cfg.AllowedOrigins)
 		jobQueue = rt.NewJobQueue(nil)
+	}
+
+	// Server-side session revocation registry (shared with the auth middleware
+	// and the auth domain handlers so logout invalidates live tokens).
+	var revoker session.Revoker = session.New(nil)
+	if rdb != nil {
+		revoker = session.New(rdb.Raw())
 	}
 
 	r.Use(chimw.RequestID)
@@ -110,10 +118,11 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 	}
 
 	authH := authdomain.NewPG(cfg, s, saveFn, pg.Pool())
+	authH.SetRevoker(revoker)
 
 	// ─── WebSocket endpoint (requires auth) ──────────────────────────────
 	r.Group(func(r chi.Router) {
-		r.Use(middleware.Authenticator(cfg, s))
+		r.Use(middleware.Authenticator(cfg, s, revoker))
 		r.Get("/ws", wsHub.ServeWS)
 	})
 
@@ -138,7 +147,7 @@ func Router(cfg config.Config, s *store.MemStore, pg *persistence.Persister, rdb
 		r.Post("/seo/generate", seoH.Generate)
 
 		r.Group(func(r chi.Router) {
-			r.Use(middleware.Authenticator(cfg, s))
+			r.Use(middleware.Authenticator(cfg, s, revoker))
 			if pg != nil {
 				r.Use(middleware.SubscriptionGate(pg.Pool()))
 			}
