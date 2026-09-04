@@ -6,72 +6,108 @@ import { Seo } from '@/components/Seo';
 import { PageShell } from '@/components/PageShell';
 import { LegalSection, LegalList } from '@/components/LegalSection';
 
-const LAST_UPDATED = 'May 17, 2026';
+const LAST_UPDATED = 'September 4, 2026';
 
 export function CookiesPage() {
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: 'Cookie Policy — EduPlexo School Management System',
+    description:
+      'EduPlexo cookie policy: how we use cookies and similar technologies in our school management system and ERP platform.',
+    url: 'https://www.eduplexo.com/cookies',
+    dateModified: '2026-09-04',
+    publisher: {
+      '@type': 'Organization',
+      name: 'EduPlexo Technologies',
+      url: 'https://www.eduplexo.com',
+      logo: 'https://www.eduplexo.com/logo.jpeg',
+    },
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'Home',
+          item: 'https://www.eduplexo.com/',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Cookie Policy',
+          item: 'https://www.eduplexo.com/cookies',
+        },
+      ],
+    },
+  };
+
   return (
     <PageShell
       eyebrow="Cookie Policy"
       title="How EduPlexo Uses Cookies."
-      description="We use a small number of cookies to keep you signed in, remember your preferences, and understand how the school management platform is used."
+      description="We use a small number of essential and preference cookies to keep you signed in, remember your settings, and maintain the security of our school management platform."
     >
       <Seo
         title="Cookie Policy — EduPlexo School Management System"
         description="EduPlexo cookie policy: how we use cookies and similar technologies in our school management system and ERP platform."
         keywords="EduPlexo cookie policy, school software cookies, education platform tracking, school ERP cookies"
         canonical="https://www.eduplexo.com/cookies"
-        noindex
+        schema={[schema]}
       />
-      <p className="text-sm text-slate-500 mb-10">Last updated: {LAST_UPDATED}</p>
+      <div className="flex items-center justify-between pb-6 mb-8 border-b border-slate-200/80 text-sm text-slate-500">
+        <span>Last updated: {LAST_UPDATED}</span>
+        <span className="font-medium text-slate-700">Zero third-party advertising cookies</span>
+      </div>
 
       <LegalSection number={1} title="What cookies are">
         <p>
-          Cookies are small text files placed on your device when you visit a
-          website. EduPlexo also uses similar technologies such as
-          local-storage entries, which we treat the same way as cookies for
-          this policy.
+          Cookies are small text files placed on your device when you visit a website. EduPlexo also
+          uses similar browser storage technologies such as local storage and session storage tokens,
+          which are treated under the scope of this policy.
         </p>
       </LegalSection>
 
       <LegalSection number={2} title="Categories we use">
         <LegalList
           items={[
-            'Strictly necessary — authentication, session continuity, security. These cannot be disabled without breaking the platform.',
-            'Preferences — remembers UI choices like the active academic year and theme.',
-            'Analytics — aggregated, de-identified usage signals so we can improve the product.',
+            'Strictly necessary: Essential for authentication, session continuity, CSRF security, and multi-tenant routing. These cannot be disabled without breaking the platform.',
+            'Preferences: Remembers UI choices such as active academic year, campus selection, language, and theme preferences.',
+            'Operational analytics: Aggregated, de-identified usage telemetry that helps our engineering team measure latency, detect errors, and enhance platform responsiveness.',
           ]}
         />
       </LegalSection>
 
       <LegalSection number={3} title="Third-party cookies">
         <p>
-          We avoid third-party advertising cookies entirely. The only external
-          domains that may set cookies via EduPlexo are core infrastructure
-          providers (CDN, fonts) — never marketing or data-broker networks.
+          We do not allow third-party behavioral advertising cookies, data brokers, or marketing
+          retargeting pixels on the EduPlexo platform. Any external domains setting cookies via
+          EduPlexo are restricted strictly to essential core infrastructure providers (such as CDNs,
+          fonts, and payment gateways).
         </p>
       </LegalSection>
 
       <LegalSection number={4} title="Managing cookies">
         <p>
-          You can clear or block cookies in your browser settings. Note that
-          blocking strictly necessary cookies will prevent you from staying
-          signed in to EduPlexo.
+          You can clear or block cookies at any time through your browser settings. Please note that
+          disabling strictly necessary cookies will prevent you from signing in and using your EduPlexo
+          account securely.
         </p>
       </LegalSection>
 
       <LegalSection number={5} title="Updates">
         <p>
-          We may update this policy when our cookie usage changes. Significant
-          changes will be announced via the platform or by email.
+          We may update this policy when our technology or statutory requirements evolve. Substantive
+          updates will be reflected on this page with an updated modification date.
         </p>
       </LegalSection>
 
       <LegalSection number={6} title="Contact">
         <p>
-          For questions about cookies or tracking technologies, email{' '}
+          For questions about cookies or tracking technologies, please contact our compliance desk at{' '}
           <a
             href="mailto:plexotecnologies@gmail.com"
-            className="text-blue-600 hover:text-blue-700 font-medium"
+            className="text-blue-600 hover:text-blue-700 font-medium underline underline-offset-2"
           >
             plexotecnologies@gmail.com
           </a>
