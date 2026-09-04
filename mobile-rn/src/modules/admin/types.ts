@@ -101,7 +101,7 @@ export interface AdminRowAction {
 export interface AdminModuleDefinition {
   /**
    * Stable module key. Admin keys come from {@link AdminModuleKey}; teacher,
-   * parent and student registries reuse the same engine with their own keys,
+   * student and teacher registries reuse the same engine with their own keys,
    * so the type is widened to `string` here while the admin config keeps the
    * documented union via the {@link AdminModuleKey} alias.
    */
@@ -125,8 +125,8 @@ export interface AdminModuleDefinition {
   requiredFilters?: string[];
   filters?: AdminFilterField[];
   /**
-   * Map injected scope keys (e.g. a parent's selected `student_id`) onto
-   * create/update payload fields. Example for parent leave:
+   * Map injected scope keys (e.g. a student's own `student_id`) onto
+   * create/update payload fields. Example for student leave:
    *   { student_id: 'requester_id' }
    * The engine fills the target field from scope when the user leaves it blank.
    */

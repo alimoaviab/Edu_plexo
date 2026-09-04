@@ -3,7 +3,7 @@
  * mobile app and web app speak to the same backend identically.
  */
 
-export type Role = 'owner' | 'super_admin' | 'admin' | 'teacher' | 'parent' | 'student';
+export type Role = 'owner' | 'super_admin' | 'admin' | 'teacher' | 'student';
 
 /** UI tabs offer these options including owner. */
 export type LoginRole = 'owner' | 'admin' | 'teacher' | 'student';

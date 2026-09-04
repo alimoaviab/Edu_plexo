@@ -2,10 +2,10 @@
  * Dashboard response types — mirror the Go backend payloads exactly so the
  * mobile dashboards render the same numbers the web dashboards show.
  *
- *   • Admin  → GET /api/dashboard/composite   (dashboard/composite.go)
- *   • Teacher→ GET /api/teachers/session       (teachers.getTeacherPortalData)
- *   • Parent → GET /api/parent/dashboard/stats (parent.DashboardStats)
- *             + GET /api/parent/children
+ *   • Admin   → GET /api/dashboard/composite (dashboard/composite.go)
+ *   • Teacher → GET /api/teachers/session     (teachers.getTeacherPortalData)
+ *   • Owner   → GET /api/owner/dashboard      (owner.DashboardStats)
+ *   • Student → GET /api/student/dashboard/stats (studentportal.DashboardStats)
  */
 
 // ─── Admin: /dashboard/composite ──────────────────────────────────────────
@@ -107,23 +107,26 @@ export interface TeacherPortal {
   announcements?: { id: string; title: string; message: string; date: string }[];
 }
 
-// ─── Parent: /parent/dashboard/stats + /parent/children ────────────────────
+// ─── Owner: /owner/dashboard ────────────────────────────────────────────────
 
-export interface ParentChild {
-  student_id: string;
-  id?: string;
-  name: string;
-  first_name?: string;
-  last_name?: string;
-  class?: string;
-  class_id?: string;
-  class_name?: string;
-  section?: string;
-  roll_no?: string;
-  admission_no?: string;
+export interface OwnerDashboard {
+  total_schools: number;
+  total_campuses: number;
+  total_students: number;
+  total_teachers: number;
+  total_staff: number;
+  active_subscriptions: number;
+  expiring_subscriptions: number;
+  schools?: {
+    school_id: string;
+    name: string;
+    status?: string;
+  }[];
 }
 
-export interface ParentChildOverview {
+// ─── Student: /student/dashboard/stats + /student/info ─────────────────────
+
+export interface StudentOverview {
   student_id: string;
   name: string;
   class: string;
@@ -133,10 +136,26 @@ export interface ParentChildOverview {
   pending_assignments: number;
 }
 
-export interface ParentDashboardStats {
-  dashboard?: { children_overview?: ParentChildOverview[] };
+export interface StudentDashboardStats {
+  dashboard?: { children_overview?: StudentOverview[] };
   attendance?: { present?: number; total?: number; percentage?: number };
   upcomingExams?: { _id: string; title: string; subject?: string; starts_at?: string }[];
   recentResults?: { _id: string; exam_id?: string; obtained_marks?: number }[];
   feeDue?: { amount?: number; due_date?: string | null };
+}
+
+export interface StudentInfo {
+  id: string;
+  name: string;
+  first_name?: string;
+  last_name?: string;
+  roll_no: string;
+  admission_no?: string;
+  email?: string;
+  phone?: string;
+  class: string;
+  class_name?: string;
+  section: string;
+  academic_year?: string;
+  status: string;
 }

@@ -1,8 +1,7 @@
 /**
- * Role-tab selector matching the web Login experience exactly: Admin /
- * Teacher / Parent Portal. Submitting "student" still sends `role: "student"`
- * to the backend — the existing login endpoint is what understands the
- * Parent/Student split per the web flow.
+ * Role-tab selector matching the web Login experience exactly: Owner /
+ * Admin / Teacher / Student. The backend re-validates the requested role
+ * against the authenticated account, so the tab is only a convenience.
  */
 
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -21,7 +20,7 @@ const ROLES: RoleOption[] = [
   { value: 'owner', label: 'Owner', icon: 'building' },
   { value: 'admin', label: 'Admin', icon: 'shield' },
   { value: 'teacher', label: 'Teacher', icon: 'graduation' },
-  { value: 'student', label: 'Parent Portal', icon: 'family' },
+  { value: 'student', label: 'Student', icon: 'graduation' },
 ];
 
 interface RoleTabsProps {

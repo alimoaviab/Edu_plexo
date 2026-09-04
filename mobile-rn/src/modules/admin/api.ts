@@ -10,9 +10,10 @@ interface ListArgs {
   search?: string;
   filters?: Record<string, string>;
   /**
-   * Caller-injected scope params (e.g. a parent's selected `student_id`).
-   * Merged into the effective filters so they satisfy `:param` path slots,
-   * `requiredFilters`, and query params — exactly like a user-set filter.
+   * Caller-injected scope params (e.g. a student's own `student_id` for
+   * shared endpoints). Merged into the effective filters so they satisfy
+   * `:param` path slots, `requiredFilters`, and query params — exactly like
+   * a user-set filter.
    */
   scope?: Record<string, string | undefined>;
 }

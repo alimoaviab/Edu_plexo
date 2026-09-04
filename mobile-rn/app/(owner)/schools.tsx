@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -10,8 +10,7 @@ import {
   View,
   Clipboard,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 import { Header } from '@/components/layout/Header';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
@@ -19,8 +18,6 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Icon } from '@/components/ui/Icon';
 import { api } from '@/api/client';
-import { useAuthStore } from '@/store/auth-store';
-import { prefStorage, StorageKeys } from '@/utils/secure-storage';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 
 interface School {
@@ -51,11 +48,6 @@ interface School {
 }
 
 export default function SchoolsScreen() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const user = useAuthStore((s) => s.user);
-  const hydrateAuth = useAuthStore((s) => s.hydrate);
-
   // Onboard Modal State
   const [onboardModalVisible, setOnboardModalVisible] = useState(false);
   const [name, setName] = useState('');
@@ -84,26 +76,9 @@ export default function SchoolsScreen() {
     },
   });
 
-  // Switch active school / Impersonation
-  const switchSchoolMutation = useMutation({
-    mutationFn: async (schoolId: string) => {
-      await prefStorage.set(StorageKeys.activeSchoolId, schoolId);
-      await hydrateAuth();
-    },
-    onSuccess: () => {
-      queryClient.clear();
-      Alert.alert('Campus Switched', 'Active campus has been updated successfully.', [
-        { text: 'OK', onPress: () => router.replace('/(owner)' as never) },
-      ]);
-    },
-    onError: (err: any) => {
-      Alert.alert('Error', err.message ?? 'Failed to switch campus.');
-    },
-  });
-
-
-
   // Create/Onboard new school campus
+  // (Owners stay in the Owner portal — there is no "Switch Campus" action;
+  // school detail is opened read-only via the details modal below.)
   const onboardMutation = useMutation({
     mutationFn: async () => {
       const result = await api.post<any, any>('/owner/schools/create', {
@@ -130,20 +105,6 @@ export default function SchoolsScreen() {
       setFormError(err.message ?? 'Failed to onboard campus.');
     },
   });
-
-  const activeSchoolId = user?.activeSchoolId || user?.schoolId;
-
-  // Set default active school on load if not set
-  useEffect(() => {
-    if (schoolsQuery.data && schoolsQuery.data.length > 0 && !user?.activeSchoolId) {
-      const firstActive = schoolsQuery.data.find((s) => s.status === 'active') || schoolsQuery.data[0];
-      if (firstActive) {
-        prefStorage.set(StorageKeys.activeSchoolId, firstActive.school_id).then(() => {
-          hydrateAuth();
-        });
-      }
-    }
-  }, [schoolsQuery.data, user?.activeSchoolId, hydrateAuth]);
 
   function resetForm() {
     setName('');
@@ -211,13 +172,12 @@ export default function SchoolsScreen() {
             </View>
           ) : (
             schoolsQuery.data?.map((school) => {
-              const isActive = school.school_id === activeSchoolId;
               return (
                 <View key={school._id || school.school_id} style={[styles.card, shadows.card]}>
                   {/* Header */}
                   <View style={styles.cardHeader}>
                     <View style={styles.cardTitleWrap}>
-                      <Icon name="building" size={18} color={isActive ? colors.primary : colors.gray500} />
+                      <Icon name="building" size={18} color={colors.gray500} />
                       <Text style={styles.cardTitle} numberOfLines={1}>{school.name}</Text>
                     </View>
                     <View style={[styles.badge, school.status === 'active' ? styles.badgeActive : styles.badgeInactive]}>
@@ -259,7 +219,8 @@ export default function SchoolsScreen() {
                     </View>
                   </View>
 
-                  {/* Card Actions */}
+                  {/* Card Action — opens the read-only school analytics modal.
+                      Owners never switch context or enter an Admin session. */}
                   <View style={styles.actions}>
                     <Pressable
                       onPress={() => {
@@ -271,21 +232,6 @@ export default function SchoolsScreen() {
                       <Icon name="eye" size={14} color={colors.primary} />
                       <Text style={styles.btnDetailsText}>View Details</Text>
                     </Pressable>
-
-                    {isActive ? (
-                      <View style={styles.activeLabel}>
-                        <Icon name="check-circle" size={16} color={colors.success} />
-                        <Text style={styles.activeLabelText}>Active Campus</Text>
-                      </View>
-                    ) : (
-                      <Button
-                        label="Switch Campus"
-                        size="sm"
-                        variant="secondary"
-                        onPress={() => switchSchoolMutation.mutate(school.school_id)}
-                        loading={switchSchoolMutation.isPending && switchSchoolMutation.variables === school.school_id}
-                      />
-                    )}
                   </View>
                 </View>
               );
@@ -333,7 +279,9 @@ export default function SchoolsScreen() {
                   </View>
                 </View>
 
-                {/* Admin Credentials Box */}
+                {/* Admin Credentials Box — shown only when the backend
+                    actually returned them (never fabricated). */}
+                {selectedSchool.admin_email || selectedSchool.email || selectedSchool.admin_password ? (
                 <View style={styles.credentialsCard}>
                   <View style={styles.credHeader}>
                     <View style={styles.credIconBox}>
@@ -351,13 +299,13 @@ export default function SchoolsScreen() {
                       <View style={styles.credRowText}>
                         <Text style={styles.credRowLabel}>Admin Email</Text>
                         <Text style={styles.credRowVal} numberOfLines={1}>
-                          {selectedSchool.admin_email || selectedSchool.email || 'admin@school.com'}
+                          {selectedSchool.admin_email || selectedSchool.email || '—'}
                         </Text>
                       </View>
                       <Pressable
                         onPress={() =>
                           handleCopy(
-                            selectedSchool.admin_email || selectedSchool.email || 'admin@school.com',
+                            selectedSchool.admin_email || selectedSchool.email || '',
                             'email',
                           )
                         }
@@ -376,7 +324,7 @@ export default function SchoolsScreen() {
                       <View style={styles.credRowText}>
                         <Text style={styles.credRowLabel}>Admin Password</Text>
                         <Text style={[styles.credRowVal, styles.credPass]}>
-                          {showPassword ? (selectedSchool.admin_password || 'Test@123') : '••••••••••••'}
+                          {showPassword ? (selectedSchool.admin_password || '—') : '••••••••••••'}
                         </Text>
                       </View>
                       <View style={styles.credActionsRow}>
@@ -388,7 +336,7 @@ export default function SchoolsScreen() {
                         </Pressable>
                         <Pressable
                           onPress={() =>
-                            handleCopy(selectedSchool.admin_password || 'Test@123', 'password')
+                            handleCopy(selectedSchool.admin_password || '', 'password')
                           }
                           style={({ pressed }) => [styles.credCopyBtn, pressed && styles.pressed]}
                         >
@@ -402,6 +350,7 @@ export default function SchoolsScreen() {
                     </View>
                   </View>
                 </View>
+                ) : null}
 
                 {/* Class Breakdown if any */}
                 {selectedSchool.classes_breakdown && selectedSchool.classes_breakdown.length > 0 ? (

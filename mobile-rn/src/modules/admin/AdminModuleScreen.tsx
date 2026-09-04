@@ -82,16 +82,16 @@ function friendlyPlaceholder(placeholder: string | undefined, label?: string): s
 
 /**
  * Generic config-driven CRUD screen. Defaults to the admin module registry,
- * but any role (teacher / parent / student) can pass its own registry so the
- * same engine powers every portal — identical list / search / filter /
- * pagination / detail / create / update / delete / row-action behaviour.
+ * but any role (teacher / student) can pass its own registry so the same
+ * engine powers every portal — identical list / search / filter / pagination
+ * / detail / create / update / delete / row-action behaviour.
  */
 export function AdminModuleScreen({
   registry = ADMIN_MODULE_BY_KEY,
   scope,
 }: {
   registry?: ModuleRegistry;
-  /** Caller-injected scope (e.g. a parent's selected student_id). */
+  /** Caller-injected scope (e.g. a student's own student_id for shared endpoints). */
   scope?: Record<string, string | undefined>;
 }) {
   const router = useRouter();
@@ -732,7 +732,7 @@ function visibleForMode(field: AdminFormField, mode: FormMode): boolean {
 }
 
 /**
- * Inject scoped values (e.g. a parent's selected student_id) into the payload
+ * Inject scoped values (e.g. a student's own student_id) into the payload
  * for create/update, mapping scope keys onto target fields via
  * `definition.scopeToPayload`. Existing user-entered values win.
  */
