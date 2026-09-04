@@ -1,7 +1,6 @@
 # EduPlexo — AI-Powered School Management System & School ERP
 # Website: https://eduplexo.com
-# App: https://app.eduplexo.com
-# Admin: https://admin.eduplexo.com
+# App: https://app.eduplexo.com\
 
 # Allow all crawlers
 User-agent: *
