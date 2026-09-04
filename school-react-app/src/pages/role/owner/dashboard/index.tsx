@@ -1,19 +1,15 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AppIcon } from "shared/ui/AppIcon";
 import { serviceRequest } from "@/services/service-client";
 import { SchoolShell } from "@/layouts/SchoolShell";
 import { STALE_TIME_DASHBOARD } from "@/lib/query-client";
-import { useTenantContext } from "@/hooks/useTenantContext";
-import { toast } from "@/utils/toast";
 
 export default function OwnerDashboardPage() {
-  const { schoolId } = useTenantContext();
-  const navigate = useNavigate();
 
   // 1. Fetch dashboard top-level stats
   const { data: stats, isLoading: statsLoading } = useQuery<any>({
-    queryKey: ["dashboard", "owner", schoolId],
+    queryKey: ["dashboard", "owner"],
     queryFn: async () => {
       const res = await serviceRequest<any>("/api/owner/dashboard");
       if (!res.ok) {
@@ -56,17 +52,6 @@ export default function OwnerDashboardPage() {
   const totalTeachers = stats?.total_teachers || schools.reduce((sum: number, s: any) => sum + (Number(s.teacher_count) || 0), 0);
   const totalStaff = stats?.total_staff || 0;
   const activeSubs = stats?.active_subscriptions ?? (schools.length > 0 ? schools.length : 0);
-
-  const handleSwitchToCampus = (school: any) => {
-    const sId = school.school_id || school._id || school.id;
-    if (sId) {
-      localStorage.setItem("active_school_id", sId);
-      localStorage.setItem("active_branch_id", `cmp_${sId}`);
-      window.dispatchEvent(new Event("auth-changed"));
-      toast.success(`Switched active context to ${school.name}`);
-      navigate("/admin/dashboard");
-    }
-  };
 
   if (loading) {
     return (
@@ -225,7 +210,7 @@ export default function OwnerDashboardPage() {
                   Campus Branches & Health Metrics
                 </h2>
                 <p className="text-xs text-slate-500 font-medium">
-                  Direct operational status and quick administrative workspace switching.
+                  Read-only operational status across your portfolio. Select a campus for detailed analytics.
                 </p>
               </div>
             </div>
@@ -339,19 +324,13 @@ export default function OwnerDashboardPage() {
 
                     {/* Action Buttons */}
                     <div className="pt-2 border-t border-slate-100 flex items-center gap-2">
-                      <button
-                        onClick={() => handleSwitchToCampus(school)}
-                        className="flex-1 py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition-all active:scale-95 flex items-center justify-center gap-1.5"
-                      >
-                        <AppIcon name="ExternalLink" size={14} />
-                        <span>Open Workspace</span>
-                      </button>
                       <Link
                         to="/owner/schools"
-                        className="py-2.5 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition"
-                        title="View Full Details"
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                        title="View read-only school analytics"
                       >
-                        Details
+                        <AppIcon name="ChartBar" size={14} />
+                        <span>View Analytics</span>
                       </Link>
                     </div>
                   </div>

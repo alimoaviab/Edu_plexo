@@ -153,6 +153,18 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The Parent role is obsolete and no longer an active application role.
+	// Legacy parent accounts must not be able to sign in (their credentials
+	// remain stored for historical compatibility only). Respond with the
+	// generic message so account existence is not revealed.
+	if user.Role == "parent" {
+		api.WriteJSON(w, http.StatusUnauthorized, map[string]any{
+			"ok":      false,
+			"message": "Invalid email or password",
+		})
+		return
+	}
+
 	if !authpkg.VerifyPassword(body.Password, user.PasswordHash) {
 		api.WriteJSON(w, http.StatusUnauthorized, map[string]any{
 			"ok":      false,
@@ -201,7 +213,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
 
 	// Check school status for non-super_admin users — same logic as the
 	// original: only admin/teacher/parent/student users care about school
@@ -422,13 +433,14 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 
 	// Self-service role policy (security invariant):
 	//   - owner        → new platform customer; creates their own school
-	//   - teacher/student/parent → join an existing school via its code
+	//   - teacher/student → join an existing school via its code
 	//   - admin        → must be provisioned by an owner or super-admin
 	//                    (owner.CreateAdmin / owner.CreateSchool). Admin
 	//                    self-registration is never allowed: it would let
 	//                    anyone mint a wildcard-permission tenant admin.
 	//   - super_admin  → fully denied (never in the allowlist).
-	if role != "teacher" && role != "student" && role != "parent" && role != "owner" {
+	//   - parent       → obsolete role; no longer accepted anywhere.
+	if role != "teacher" && role != "student" && role != "owner" {
 		api.WriteJSON(w, http.StatusBadRequest, signupErr("Invalid role selected"))
 		return
 	}
@@ -1340,7 +1352,7 @@ func (h *Handler) tokenTTLForRequest(r *http.Request) time.Duration {
 			remaining := time.Until(claims.ExpiresAt.Time)
 			if remaining > 0 {
 				return remaining
-		}
+			}
 		}
 	}
 	return defaultTokenTTL

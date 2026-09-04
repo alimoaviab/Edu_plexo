@@ -264,29 +264,6 @@ export const teacherRoutes: RouteObject[] = [
   { path: "/teacher/schedule", element: lazyPage(() => import("@/pages/role/shared/schedule")) },
 ];
 
-// ─── Parent Routes (lazy-loaded) ─────────────────────────────────────────
-
-export const parentRoutes: RouteObject[] = [
-  { path: "/parent/dashboard", element: lazyPage(() => import("@/pages/role/parent/dashboard"), "ParentDashboardPage") },
-  { path: "/parent/announcements", element: lazyPage(() => import("@/pages/role/parent/announcements"), "ParentAnnouncementsPage") },
-  { path: "/parent/attendance", element: lazyPage(() => import("@/pages/role/parent/attendance"), "ParentAttendancePage") },
-  { path: "/parent/behavior", element: lazyPage(() => import("@/pages/role/parent/behavior"), "ParentBehaviorPage") },
-  { path: "/parent/behavior/:id", element: lazyPage(() => import("@/pages/role/parent/behavior/Param_id"), "ParentBehaviorDetailPage") },
-  { path: "/parent/events", element: lazyPage(() => import("@/pages/role/parent/events"), "ParentEventsPage") },
-  { path: "/parent/exams", element: lazyPage(() => import("@/pages/role/parent/exams"), "ParentExamsPage") },
-  { path: "/parent/fees", element: lazyPage(() => import("@/pages/role/parent/fees"), "ParentFeesPage") },
-  { path: "/parent/homework", element: lazyPage(() => import("@/pages/role/parent/homework"), "ParentHomeworkPage") },
-  { path: "/parent/homework/:id", element: lazyPage(() => import("@/pages/role/parent/homework/Param_id"), "ParentHomeworkViewPage") },
-  { path: "/parent/live-classes", element: lazyPage(() => import("@/pages/role/parent/live-classes"), "ParentLiveClassesPage") },
-  { path: "/parent/profile", element: lazyPage(() => import("@/pages/role/parent/profile"), "ParentStudentProfilePage") },
-  { path: "/parent/results", element: lazyPage(() => import("@/pages/role/parent/results"), "ParentResultsPage") },
-  { path: "/parent/results/:id", element: lazyPage(() => import("@/pages/role/parent/results/Param_id"), "ParentResultDetailPage") },
-  { path: "/parent/student-attendance", element: lazyPage(() => import("@/pages/role/parent/student-attendance"), "ParentStudentAttendancePage") },
-  { path: "/parent/timetable", element: lazyPage(() => import("@/pages/role/parent/timetable"), "ParentTimetablePage") },
-  { path: "/parent/leave", element: lazyPage(() => import("@/pages/role/parent/leave"), "ParentLeaveRoute") },
-  { path: "/parent/messages", element: lazyPage(() => import("@/pages/role/shared/messages"), "MessagesPage") },
-];
-
 // ─── Student Routes (lazy-loaded) ────────────────────────────────────────
 
 export const studentRoutes: RouteObject[] = [

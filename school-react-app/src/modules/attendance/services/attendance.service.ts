@@ -5,7 +5,6 @@ import {
   AttendanceBulkResult,
   AttendanceFormInput,
   AttendanceRecordRow,
-  ParentAttendanceReport,
   TeacherAttendanceSummary
 } from "../types/attendance.types";
 
@@ -55,10 +54,3 @@ export function getTeacherAttendanceSummary(date?: string) {
   return serviceRequest<TeacherAttendanceSummary>(`/api/attendance/summary${query}`);
 }
 
-export function getParentAttendance() {
-  return serviceRequest<ParentAttendanceReport>("/api/parent/attendance");
-}
-
-export function getParentStudentAttendanceReport() {
-  return serviceRequest<ParentAttendanceReport>("/api/parent/student-attendance");
-}

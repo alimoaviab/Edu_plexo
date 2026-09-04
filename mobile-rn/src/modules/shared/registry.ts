@@ -7,10 +7,10 @@
  * keyed registry with {@link buildRegistry}. The matching `module/[module]`
  * route then resolves the active definition from that registry.
  *
- * Because teacher CRUD endpoints are identical to admin endpoints (the Go
+ * Because teacher/student endpoints frequently mirror admin ones (the Go
  * backend scopes every list/read/write by the authenticated user's role and
- * profile), teacher/student configs frequently reuse admin definitions
- * verbatim — see pickModules / withOverrides below.
+ * profile), those configs reuse admin definitions or student-portal
+ * definitions — see pickModules / withOverrides below.
  */
 
 import type { AdminModuleDefinition } from '@/modules/admin/types';

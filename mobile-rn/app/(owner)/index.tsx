@@ -1,3 +1,13 @@
+/**
+ * Owner Dashboard — executive portfolio overview, NOT an Admin workspace.
+ *
+ * Data comes from GET /api/owner/dashboard (owner-only). The owner is a
+ * multi-school owner/governance user: they see portfolio KPIs, quick links
+ * to My Schools / Onboard Campus / Subscription, and can never switch into
+ * an Admin context. Every school-level metric here is aggregated server-side
+ * across the schools the authenticated owner actually owns.
+ */
+
 import { useState, useRef } from 'react';
 import {
   Pressable,
@@ -24,25 +34,20 @@ import {
   SectionHeader,
   type ListRow,
 } from '@/components/dashboard/widgets';
-import { fetchAdminComposite } from '@/modules/dashboard/api';
-import type { AdminComposite } from '@/modules/dashboard/types';
-import { listAdminRecords } from '@/modules/admin/api';
-import { ADMIN_MODULE_BY_KEY } from '@/modules/admin/config';
-import type { AdminRecord } from '@/modules/admin/types';
-import { readRecordPath } from '@/modules/admin/record-utils';
+import { Card } from '@/components/ui/Card';
+import { fetchOwnerDashboard } from '@/modules/dashboard/api';
+import type { OwnerDashboard } from '@/modules/dashboard/types';
 import { useAuthStore } from '@/store/auth-store';
-import { compactNumber, formatDate, titleCase } from '@/utils/format';
-import { TrialBanner } from '@/components/subscription/TrialBanner';
+import { compactNumber, titleCase } from '@/utils/format';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.78;
 
 const QUICK_ACTIONS: { key: string; label: string; icon: IconName; href: string }[] = [
-  { key: 'student', label: 'Add Student', icon: 'plus', href: '/(owner)/module/students' },
-  { key: 'attendance', label: 'Take Attendance', icon: 'check-circle', href: '/(owner)/attendance' },
-  { key: 'fees', label: 'Generate Fees', icon: 'wallet', href: '/(owner)/module/fees' },
-  { key: 'announce', label: 'Announcements', icon: 'megaphone', href: '/(owner)/module/announcements' },
+  { key: 'schools', label: 'My Schools', icon: 'building', href: '/(owner)/schools' },
+  { key: 'onboard', label: 'Onboard Campus', icon: 'plus', href: '/(owner)/schools' },
+  { key: 'subscription', label: 'Subscription', icon: 'wallet', href: '/(owner)/subscription' },
 ];
 
 type Accent = 'primary' | 'success' | 'warning' | 'error' | 'neutral';
@@ -62,17 +67,14 @@ interface ProfileSection {
   items: ProfileItem[];
 }
 
-export default function AdminHome() {
+export default function OwnerDashboardScreen() {
   const router = useRouter();
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
-  const dashboardQuery = useQuery({ queryKey: ['admin-composite'], queryFn: fetchAdminComposite });
-  const settingsQuery = useQuery({
-    queryKey: ['admin-settings-summary'],
-    queryFn: async () => {
-      const result = await listAdminRecords(ADMIN_MODULE_BY_KEY.settings, { page: 1 });
-      return result.items[0] as AdminRecord | undefined;
-    },
+
+  const dashboardQuery = useQuery({
+    queryKey: ['owner-dashboard'],
+    queryFn: fetchOwnerDashboard,
   });
 
   const [sidebarVisible, setSidebarVisible] = useState(false);
@@ -82,31 +84,15 @@ export default function AdminHome() {
   const openSidebar = () => {
     setSidebarVisible(true);
     Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 250,
-        useNativeDriver: true,
-      }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
     ]).start();
   };
 
   const closeSidebar = () => {
     Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: -SIDEBAR_WIDTH,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 220,
-        useNativeDriver: true,
-      }),
+      Animated.timing(slideAnim, { toValue: -SIDEBAR_WIDTH, duration: 220, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 0, duration: 220, useNativeDriver: true }),
     ]).start(() => {
       setSidebarVisible(false);
     });
@@ -115,10 +101,14 @@ export default function AdminHome() {
   function confirmLogout() {
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: () => {
-        closeSidebar();
-        logout();
-      }},
+      {
+        text: 'Sign out',
+        style: 'destructive',
+        onPress: () => {
+          closeSidebar();
+          logout();
+        },
+      },
     ]);
   }
 
@@ -126,66 +116,8 @@ export default function AdminHome() {
     {
       title: 'Owner Portal',
       items: [
-        { key: 'schools', label: 'My Schools', description: 'Portfolio and branch switcher', icon: 'building', accent: 'primary', href: '/(owner)/schools' },
-      ],
-    },
-    {
-      title: 'Academic Setup',
-      items: [
-        { key: 'academic-years', label: 'Academic years', description: 'School sessions', icon: 'calendar', accent: 'success', href: '/(owner)/module/academic-years' },
-        { key: 'classes', label: 'Classes', description: 'Sections and classroom setup', icon: 'graduation', accent: 'primary', href: '/(owner)/module/classes' },
-      ],
-    },
-    {
-      title: 'Staff',
-      items: [
-        { key: 'leave', label: 'Leave', description: 'Teacher leave applications', icon: 'clock', accent: 'warning', href: '/(owner)/module/leave' },
-      ],
-    },
-    {
-      title: 'Students',
-      items: [
-        { key: 'behavior', label: 'Behavior', description: 'Discipline and merit notes', icon: 'shield', accent: 'warning', href: '/(owner)/module/behavior' },
-      ],
-    },
-    {
-      title: 'Academics',
-      items: [
-        { key: 'timetable', label: 'Timetable', description: 'Class and teacher schedules', icon: 'calendar', accent: 'success', href: '/(owner)/module/timetable' },
-        { key: 'homework', label: 'Homework', description: 'Assignments and submissions', icon: 'book', accent: 'primary', href: '/(owner)/module/homework' },
-        { key: 'exams', label: 'Exams', description: 'Term exams and schedules', icon: 'clipboard', accent: 'warning', href: '/(owner)/module/exams' },
-        { key: 'tests', label: 'Tests', description: 'Class tests and quizzes', icon: 'clipboard', accent: 'warning', href: '/(owner)/module/tests' },
-        { key: 'results', label: 'Results', description: 'Marks and transcripts', icon: 'star', accent: 'success', href: '/(owner)/module/results' },
-        { key: 'question-papers', label: 'Question Papers', description: 'Generated question papers', icon: 'clipboard', accent: 'warning', href: '/(owner)/module/question-papers' },
-        { key: 'live-classes', label: 'Live classes', description: 'Online sessions', icon: 'video', accent: 'primary', href: '/(owner)/module/live-classes' },
-      ],
-    },
-    {
-      title: 'Operations',
-      items: [
-        { key: 'announcements', label: 'Announcements', description: 'School notices', icon: 'megaphone', accent: 'primary', href: '/(owner)/module/announcements' },
-        { key: 'certificates', label: 'Certificates', description: 'Issued certificates', icon: 'star', accent: 'success', href: '/(owner)/module/certificates' },
-        { key: 'certificate-templates', label: 'Template Designer', description: 'Certificate layout designer', icon: 'sparkles', accent: 'success', href: '/(owner)/module/certificate-templates' },
-      ],
-    },
-    {
-      title: 'Finance',
-      items: [
-        { key: 'fees', label: 'Fee', description: 'Vouchers and student fees', icon: 'wallet', accent: 'success', href: '/(owner)/module/fees' },
-      ],
-    },
-    {
-      title: 'Subscription',
-      items: [
-        { key: 'subscription', label: 'Subscription', description: 'Plan limits and billing', icon: 'wallet', accent: 'primary', href: '/(owner)/subscription' },
-      ],
-    },
-    {
-      title: 'Settings',
-      items: [
-        { key: 'schedules', label: 'Schedule', description: 'Reminders and meetings', icon: 'calendar', accent: 'success', href: '/(owner)/module/schedules' },
-        { key: 'messages', label: 'Conversations', description: 'Conversations', icon: 'mail', accent: 'primary', href: '/(owner)/module/messages' },
-        { key: 'settings', label: 'Settings', description: 'System configuration', icon: 'settings', accent: 'neutral', href: '/(owner)/settings' },
+        { key: 'schools', label: 'My Schools', description: 'Portfolio overview', icon: 'building', accent: 'primary', href: '/(owner)/schools' },
+        { key: 'subscription', label: 'Subscription', description: 'Plan & billing', icon: 'wallet', accent: 'success', href: '/(owner)/subscription' },
       ],
     },
     {
@@ -196,12 +128,9 @@ export default function AdminHome() {
     },
   ];
 
-  const schoolName =
-    String(
-      readRecordPath(settingsQuery.data, 'profile.schoolName') ??
-        readRecordPath(settingsQuery.data, 'schoolName') ??
-        '',
-    ).trim() || 'School Dashboard';
+  const data = dashboardQuery.data;
+  const loading = dashboardQuery.isLoading;
+  const dash = (value?: number) => (loading ? '-' : compactNumber(value ?? 0));
 
   return (
     <ScreenContainer flush>
@@ -220,69 +149,75 @@ export default function AdminHome() {
         <View style={styles.padded}>
           <Header
             greeting="Owner Portal"
-            title={schoolName}
-            subtitle="Executive Campus Dashboard"
+            title={user?.email ? 'Executive Dashboard' : 'Owner Portal'}
+            subtitle="Portfolio overview"
             showMenu={true}
             onMenuPress={openSidebar}
-            right={<NotificationBell />}
           />
 
-          <TrialBanner />
-
           {dashboardQuery.isError ? (
-            <ErrorBanner message={(dashboardQuery.error as Error).message} onRetry={() => dashboardQuery.refetch()} />
+            <Card style={styles.errorCard}>
+              <Text style={styles.errorText}>{(dashboardQuery.error as Error).message}</Text>
+              <Text style={styles.retryText} onPress={() => dashboardQuery.refetch()}>Tap to retry</Text>
+            </Card>
           ) : null}
 
-          <CompactStats data={dashboardQuery.data} loading={dashboardQuery.isLoading} />
+          <View style={styles.statsGrid}>
+            <Metric label="Schools" value={dash(data?.total_schools)} icon="building" accent="primary" href="/(owner)/schools" />
+            <Metric label="Campuses" value={dash(data?.total_campuses)} icon="building" accent="success" href="/(owner)/schools" />
+            <Metric label="Students" value={dash(data?.total_students)} icon="graduation" accent="primary" href="/(owner)/schools" />
+            <Metric label="Teachers" value={dash(data?.total_teachers)} icon="users" accent="success" href="/(owner)/schools" />
+            <Metric label="Active Subs" value={dash(data?.active_subscriptions)} icon="wallet" accent="primary" href="/(owner)/subscription" />
+          </View>
+
+          {!loading && (data?.expiring_subscriptions ?? 0) > 0 ? (
+            <Card style={styles.alertCard}>
+              <Icon name="bell" size={16} color={colors.warning} />
+              <Text style={styles.alertText}>
+                {data!.expiring_subscriptions} subscription{data!.expiring_subscriptions === 1 ? '' : 's'} renewing within 15 days.
+              </Text>
+            </Card>
+          ) : null}
 
           <SectionHeader title="Quick Actions" />
           <QuickActions actions={QUICK_ACTIONS} />
 
-          <SectionHeader title="Recent Activity" />
-          <ListCard rows={toActivityRows(dashboardQuery.data)} emptyText="No recent activity." />
+          <SectionHeader title="My Schools" subtitle="Tap to open the portfolio" />
+          <ListCard rows={toSchoolRows(data)} emptyText="No schools yet — onboard your first campus." />
 
-          <SectionHeader title="Upcoming" />
-          <ListCard rows={toEventRows(dashboardQuery.data)} emptyText="No upcoming events." />
+          {!loading && !data?.total_schools ? (
+            <Pressable onPress={() => router.push('/(owner)/schools' as never)} style={({ pressed }) => [styles.onboardCta, pressed && styles.pressed]}>
+              <Icon name="plus" size={18} color={colors.white} />
+              <Text style={styles.onboardCtaText}>Onboard Your First Campus</Text>
+            </Pressable>
+          ) : null}
         </View>
       </ScrollView>
 
-      {/* Dynamic Animated Sidebar Drawer */}
-      <Modal
-        transparent
-        visible={sidebarVisible}
-        onRequestClose={closeSidebar}
-        animationType="none"
-      >
+      {/* Sidebar Drawer */}
+      <Modal transparent visible={sidebarVisible} onRequestClose={closeSidebar} animationType="none">
         <View style={styles.sidebarContainer}>
-          {/* Backdrop Touch Mask */}
           <Pressable style={StyleSheet.absoluteFill} onPress={closeSidebar}>
             <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]} />
           </Pressable>
 
-          {/* Sidebar Drawer Panel */}
           <Animated.View
-            style={[
-              styles.sidebarPanel,
-              {
-                transform: [{ translateX: slideAnim }],
-              },
-            ]}
+            style={[styles.sidebarPanel, { transform: [{ translateX: slideAnim }] }]}
           >
             <SafeAreaView style={styles.sidebarInner} edges={['top', 'left', 'bottom']}>
-              {/* Sidebar Profile Card Header */}
               <View style={styles.sidebarHeader}>
                 <View style={styles.sidebarUserSection}>
                   <View style={styles.avatarCircle}>
                     <Text style={styles.avatarText}>
-                      {user?.email ? user.email.charAt(0).toUpperCase() : 'A'}
+                      {user?.email ? user.email.charAt(0).toUpperCase() : 'O'}
                     </Text>
                   </View>
                   <View style={styles.userTextContainer}>
                     <Text style={styles.userNameText} numberOfLines={1}>
-                      Admin Account
+                      Owner Account
                     </Text>
                     <Text style={styles.userEmailText} numberOfLines={1}>
-                      {user?.email ?? 'admin@eduplexo.com'}
+                      {user?.email ?? 'owner@eduplexo.com'}
                     </Text>
                   </View>
                 </View>
@@ -291,7 +226,6 @@ export default function AdminHome() {
                 </Pressable>
               </View>
 
-              {/* Scrollable List of Admin Modules */}
               <ScrollView
                 style={styles.sidebarScroll}
                 contentContainerStyle={styles.sidebarScrollContent}
@@ -367,161 +301,49 @@ const tintMap = {
   neutral: { bg: colors.gray100, fg: colors.gray700 },
 } as const;
 
-function CompactStats({ data, loading }: { data?: AdminComposite; loading: boolean }) {
-  const overview = data?.overview;
-  const attendance = data?.attendance;
-  const fees = data?.fees;
-  const dash = (value?: number) => (loading || !overview ? '-' : compactNumber(value ?? 0));
-  const money = (value?: number) => (loading || !overview ? '-' : `Rs ${compactNumber(value ?? 0)}`);
-  const percent = attendance ? `${attendance.percent ?? 0}%` : loading ? '-' : '0%';
-  const teacherAtt = overview
-    ? overview.totalTeachers > 0
-      ? `${Math.round((overview.presentToday / overview.totalTeachers) * 100)}%`
-      : '0%'
-    : loading
-    ? '-'
-    : '0%';
-
-  const metrics: StatMetric[] = [
-    { key: 'students', label: 'Student', value: dash(overview?.totalStudents), icon: 'users', accent: colors.primary, href: '/(owner)/module/students' },
-    { key: 'teachers', label: 'Teacher', value: dash(overview?.totalTeachers), icon: 'graduation', accent: colors.success, href: '/(owner)/module/teachers' },
-    { key: 'feesToday', label: 'Fee', value: money(fees?.totalPaid ?? overview?.collectedFees), icon: 'wallet', accent: colors.success, href: '/(owner)/module/fees' },
-    { key: 'pendingFees', label: 'Pending Fee', value: compactNumber(fees?.pendingCount ?? overview?.pendingFees ?? 0), icon: 'wallet', accent: colors.error, href: '/(owner)/module/fees' },
-    { key: 'teacherAttendance', label: 'Teacher Attendance', value: teacherAtt, icon: 'check-circle', accent: colors.success, href: '/(owner)/teacher-attendance' },
-    { key: 'studentAttendance', label: 'Student Attendance', value: percent, icon: 'check-circle', accent: colors.primary, href: '/(owner)/attendance' },
-  ];
-
-  return (
-    <View style={styles.statsGrid}>
-      {metrics.map((metric) => (
-        <MetricTile key={metric.key} metric={metric} />
-      ))}
-    </View>
-  );
-}
-
-interface StatMetric {
-  key: string;
+interface MetricProps {
   label: string;
   value: string;
   icon: IconName;
-  accent: string;
-  href?: string;
+  accent: 'primary' | 'success';
+  href: string;
 }
 
-function MetricTile({ metric }: { metric: StatMetric }) {
+function Metric({ label, value, icon, accent, href }: MetricProps) {
   const router = useRouter();
-  const content = (
-    <>
-      <View style={[styles.metricIcon, { backgroundColor: tint(metric.accent) }]}>
-        <Icon name={metric.icon} size={15} color={metric.accent} />
-      </View>
-      <Text style={styles.metricValue} numberOfLines={1}>
-        {metric.value}
-      </Text>
-      <Text style={styles.metricLabel} numberOfLines={1}>
-        {metric.label}
-      </Text>
-    </>
-  );
-
-  if (metric.href) {
-    return (
-      <Pressable
-        onPress={() => router.push(metric.href as never)}
-        style={({ pressed }) => [styles.metric, shadows.card, pressed && styles.pressed]}
-        android_ripple={{ color: colors.gray100 }}
-      >
-        {content}
-      </Pressable>
-    );
-  }
-
-  return (
-    <View style={[styles.metric, shadows.card]}>
-      {content}
-    </View>
-  );
-}
-
-function NotificationBell() {
-  const router = useRouter();
+  const fg = accent === 'primary' ? colors.primary : colors.success;
+  const bg = accent === 'primary' ? colors.primaryLight : colors.successLight;
   return (
     <Pressable
-      onPress={() => router.push('/(owner)/module/notifications' as never)}
-      style={({ pressed }) => [styles.bell, pressed && styles.pressed]}
+      onPress={() => router.push(href as never)}
+      style={({ pressed }) => [styles.metric, shadows.card, pressed && styles.pressed]}
+      android_ripple={{ color: colors.gray100 }}
     >
-      <Icon name="bell" size={20} color={colors.gray700} />
-      <View style={styles.bellDot} />
+      <View style={[styles.metricIcon, { backgroundColor: bg }]}>
+        <Icon name={icon} size={15} color={fg} />
+      </View>
+      <Text style={styles.metricValue} numberOfLines={1}>{value}</Text>
+      <Text style={styles.metricLabel} numberOfLines={1}>{label}</Text>
     </Pressable>
   );
 }
 
-function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <Pressable onPress={onRetry} style={styles.errorBanner}>
-      <Icon name="bell" size={16} color={colors.error} />
-      <Text style={styles.errorText} numberOfLines={2}>{message} · Tap to retry</Text>
-    </Pressable>
-  );
-}
-
-function toEventRows(data?: AdminComposite): ListRow[] {
-  return (data?.upcomingEvents ?? []).slice(0, 4).map((raw, index) => {
-    const event = raw as Record<string, unknown>;
-    const date = (event.starts_at ?? event.date ?? event.start_date ?? event.event_date) as string | undefined;
-    return {
-      key: String(event._id ?? event.id ?? index),
-      title: String(event.title ?? event.name ?? 'Event'),
-      subtitle: event.location ? String(event.location) : event.type ? titleCase(String(event.type)) : undefined,
-      meta: date ? formatDate(date) : undefined,
-      icon: event.type === 'exam' ? 'clipboard' : event.type === 'meeting' ? 'users' : 'calendar',
-      accent: event.type === 'holiday' ? 'warning' : 'primary',
-    };
+function toSchoolRows(data?: OwnerDashboard): ListRow[] {
+  const school = (raw: Record<string, unknown>, index: number): ListRow => ({
+    key: String(raw.school_id ?? raw.id ?? raw._id ?? index),
+    title: String(raw.name ?? 'School'),
+    subtitle: raw.city ? `Branch ${String(raw.code ?? raw.school_id ?? '')} · ${String(raw.city)}` : `Branch ${String(raw.code ?? raw.school_id ?? '')}`,
+    meta: raw.status ? titleCase(String(raw.status)) : undefined,
+    icon: 'building',
+    accent: raw.status === 'active' ? 'success' : 'neutral',
   });
-}
-
-function toActivityRows(data?: AdminComposite): ListRow[] {
-  return (data?.activities ?? []).slice(0, 4).map((raw, index) => {
-    const activity = raw as Record<string, unknown>;
-    const when = (activity.created_at ?? activity.date ?? activity.timestamp) as string | undefined;
-    const type = String(activity.type ?? activity.action ?? 'update');
-    return {
-      key: String(activity._id ?? activity.id ?? index),
-      title: String(activity.title ?? activity.message ?? activity.description ?? titleCase(type)),
-      subtitle: titleCase(type),
-      meta: when ? formatDate(when) : undefined,
-      icon: activityIcon(type),
-      accent: type.includes('fee') ? 'success' : type.includes('attendance') ? 'warning' : 'primary',
-    };
-  });
-}
-
-function activityIcon(type: string): IconName {
-  const lower = type.toLowerCase();
-  if (lower.includes('student')) return 'graduation';
-  if (lower.includes('fee') || lower.includes('payment')) return 'wallet';
-  if (lower.includes('attendance')) return 'check-circle';
-  if (lower.includes('announce')) return 'megaphone';
-  return 'sparkles';
-}
-
-function tint(color: string): string {
-  if (color === colors.success) return colors.successLight;
-  if (color === colors.warning) return colors.warningLight;
-  if (color === colors.error) return colors.errorLight;
-  if (color === colors.primary) return colors.primaryLight;
-  return colors.gray100;
+  return (data?.schools ?? []).slice(0, 5).map((raw, index) => school(raw as Record<string, unknown>, index));
 }
 
 const styles = StyleSheet.create({
   scroll: { paddingBottom: spacing.xl3 },
   padded: { paddingHorizontal: spacing.base, paddingBottom: spacing.xl },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm },
   metric: {
     width: '31.5%',
     minHeight: 78,
@@ -542,44 +364,33 @@ const styles = StyleSheet.create({
   },
   metricValue: { ...typography.bodyLg, color: colors.gray900, fontWeight: '800' },
   metricLabel: { ...typography.caption, color: colors.gray500, fontWeight: '700' },
-  bell: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.full,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-  },
-  bellDot: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.error,
-  },
-  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
-  errorBanner: {
+  errorCard: { marginBottom: spacing.md, gap: 4, backgroundColor: colors.errorLight, borderColor: colors.errorLight },
+  errorText: { ...typography.bodySm, color: colors.error, fontWeight: '600' },
+  retryText: { ...typography.bodySm, color: colors.error, fontWeight: '800' },
+  alertCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.errorLight,
+    backgroundColor: colors.warningLight,
+    borderColor: colors.warningLight,
     marginBottom: spacing.md,
+    padding: spacing.md,
   },
-  errorText: { ...typography.bodySm, color: colors.error, flex: 1, fontWeight: '700' },
-  sidebarContainer: {
-    flex: 1,
+  alertText: { ...typography.bodySm, color: colors.warning, fontWeight: '700', flex: 1 },
+  onboardCta: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary,
   },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-  },
+  onboardCtaText: { ...typography.bodyMd, color: colors.white, fontWeight: '800' },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
+  sidebarContainer: { flex: 1, flexDirection: 'row' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.4)' },
   sidebarPanel: {
     width: SIDEBAR_WIDTH,
     height: '100%',
@@ -590,9 +401,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 16,
   },
-  sidebarInner: {
-    flex: 1,
-  },
+  sidebarInner: { flex: 1 },
   sidebarHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -600,12 +409,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     backgroundColor: colors.primary,
   },
-  sidebarUserSection: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
+  sidebarUserSection: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   avatarCircle: {
     width: 40,
     height: 40,
@@ -614,25 +418,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: {
-    ...typography.bodyLg,
-    color: colors.primary,
-    fontWeight: '800',
-  },
-  userTextContainer: {
-    flex: 1,
-    gap: 1,
-  },
-  userNameText: {
-    ...typography.bodyMd,
-    color: colors.white,
-    fontWeight: '700',
-  },
-  userEmailText: {
-    ...typography.caption,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500',
-  },
+  avatarText: { ...typography.bodyLg, color: colors.primary, fontWeight: '800' },
+  userTextContainer: { flex: 1, gap: 1 },
+  userNameText: { ...typography.bodyMd, color: colors.white, fontWeight: '700' },
+  userEmailText: { ...typography.caption, color: 'rgba(255, 255, 255, 0.8)', fontWeight: '500' },
   closeButton: {
     width: 36,
     height: 36,
@@ -642,17 +431,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     transform: [{ rotate: '180deg' }],
   },
-  sidebarScroll: {
-    flex: 1,
-    backgroundColor: colors.surface,
-  },
-  sidebarScrollContent: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl3,
-  },
-  sidebarSection: {
-    marginBottom: spacing.lg,
-  },
+  sidebarScroll: { flex: 1, backgroundColor: colors.surface },
+  sidebarScrollContent: { padding: spacing.md, paddingBottom: spacing.xl3 },
+  sidebarSection: { marginBottom: spacing.lg },
   sidebarSectionTitle: {
     ...typography.caption,
     color: colors.gray500,
@@ -661,9 +442,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: spacing.xs,
   },
-  sidebarList: {
-    gap: spacing.xs,
-  },
+  sidebarList: { gap: spacing.xs },
   sidebarRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -674,24 +453,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
   },
-  sidebarIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sidebarRowText: {
-    flex: 1,
-    gap: 1,
-  },
-  sidebarRowTitle: {
-    ...typography.bodySm,
-    color: colors.gray900,
-    fontWeight: '700',
-  },
-  sidebarRowDescription: {
-    fontSize: 10,
-    color: colors.gray500,
-  },
+  sidebarIconWrap: { width: 32, height: 32, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  sidebarRowText: { flex: 1, gap: 1 },
+  sidebarRowTitle: { ...typography.bodySm, color: colors.gray900, fontWeight: '700' },
+  sidebarRowDescription: { fontSize: 10, color: colors.gray500 },
 });

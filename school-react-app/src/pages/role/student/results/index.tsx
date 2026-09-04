@@ -36,7 +36,7 @@ import { useSchoolBranding } from "@/hooks/useSchoolBranding";
 async function resolveStudentId(studentId?: string) {
   if (studentId) return studentId;
   const result = await serviceRequest<{ students: Array<{ id: string }> }>(
-    "/api/parent/student-info",
+    "/api/student/info",
   );
   return result.ok ? result.data.students?.[0]?.id ?? "" : "";
 }

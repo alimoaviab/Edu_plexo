@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppIcon } from "shared/ui/AppIcon";
 import { serviceRequest } from "@/services/service-client";
@@ -8,7 +7,6 @@ import { toast } from "@/utils/toast";
 
 export default function OwnerSchoolsPage() {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   
   const { data: schoolsData, isLoading: loading } = useQuery<any[]>({
     queryKey: ["owner-schools"],
@@ -37,7 +35,6 @@ export default function OwnerSchoolsPage() {
 
   // Details Modal State
   const [selectedSchool, setSelectedSchool] = useState<any | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
 
   const handleCreateSchool = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,17 +92,6 @@ export default function OwnerSchoolsPage() {
       toast.error(err?.message || "Failed to delete campus.");
     } finally {
       setDeleting(false);
-    }
-  };
-
-  const handleSwitchToCampus = (school: any) => {
-    const sId = school.school_id || school._id || school.id;
-    if (sId) {
-      localStorage.setItem("active_school_id", sId);
-      localStorage.setItem("active_branch_id", `cmp_${sId}`);
-      window.dispatchEvent(new Event("auth-changed"));
-      toast.success(`Active campus switched to ${school.name}`);
-      navigate("/admin/dashboard");
     }
   };
 
@@ -181,20 +167,12 @@ export default function OwnerSchoolsPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleSwitchToCampus(school)}
-                          className="text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-bold px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors shadow-sm flex items-center gap-1.5"
-                          title="Open campus admin workspace"
-                        >
-                          <AppIcon name="ExternalLink" size={13} />
-                          <span>Switch Context</span>
-                        </button>
                         <button 
                           onClick={() => {
                             setSelectedSchool(school);
-                            setShowPassword(false);
                           }}
                           className="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 font-bold px-3.5 py-1.5 rounded-lg border border-blue-200 transition-colors shadow-sm"
+                          title="Open read-only analytics"
                         >
                           View Details
                         </button>
@@ -267,8 +245,8 @@ export default function OwnerSchoolsPage() {
                   <AppIcon name="Key" size={18} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">School Admin Login Credentials</h3>
-                  <p className="text-[11px] text-slate-500">Use these credentials to sign in as School Admin for this campus.</p>
+                  <h3 className="text-sm font-bold text-slate-900">School Admin Contact</h3>
+                  <p className="text-[11px] text-slate-500">The provisioned administrator for this campus. This view is read-only.</p>
                 </div>
               </div>
 
@@ -290,38 +268,12 @@ export default function OwnerSchoolsPage() {
                   </button>
                 </div>
 
-                {/* Password Box */}
-                <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center justify-between">
-                  <div>
-                    <span className="text-slate-500 block font-medium">Admin Password</span>
-                    <span className="font-mono font-bold text-emerald-600 text-sm select-all mt-0.5 block">
-                      {showPassword
-                        ? (selectedSchool.admin_password || "Configured on campus creation")
-                        : "••••••••••••"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button 
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="p-2 text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
-                      title={showPassword ? "Hide Password" : "Show Password"}
-                    >
-                      <AppIcon name={showPassword ? "EyeOff" : "Eye"} size={16} />
-                    </button>
-                    <button 
-                      onClick={() => {
-                        if (selectedSchool.admin_password) {
-                          copyToClipboard(selectedSchool.admin_password, "Admin Password");
-                        } else {
-                          toast.info("Password was configured during campus creation.");
-                        }
-                      }}
-                      className="p-2 text-slate-400 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 rounded-lg transition-colors shadow-sm"
-                      title="Copy Password"
-                    >
-                      <AppIcon name="Copy" size={16} />
-                    </button>
-                  </div>
+                {/* Password Box (read-only status — never returned by the API) */}
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                  <span className="text-slate-500 block font-medium">Admin Password</span>
+                  <span className="font-mono font-bold text-emerald-600 text-sm mt-0.5 block">
+                    Configured on campus creation
+                  </span>
                 </div>
               </div>
             </div>

@@ -27,8 +27,8 @@ import {
   SectionHeader,
   type ListRow,
 } from '@/components/dashboard/widgets';
-import { fetchParentStats } from '@/modules/dashboard/api';
-import type { ParentChildOverview, ParentDashboardStats } from '@/modules/dashboard/types';
+import { fetchStudentStats } from '@/modules/dashboard/api';
+import type { StudentDashboardStats, StudentOverview } from '@/modules/dashboard/types';
 import { useAuthStore } from '@/store/auth-store';
 import { compactNumber, formatCurrency, formatDate } from '@/utils/format';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
@@ -72,7 +72,7 @@ export default function StudentDashboard() {
 
   const statsQuery = useQuery({
     queryKey: ['student-stats', studentId ?? 'self'],
-    queryFn: () => fetchParentStats(studentId),
+    queryFn: fetchStudentStats,
   });
 
   const overview = pickOverview(statsQuery.data);
@@ -351,7 +351,7 @@ const tintMap = {
   neutral: { bg: colors.gray100, fg: colors.gray700 },
 } as const;
 
-function AttendanceCard({ stats }: { stats?: ParentDashboardStats }) {
+function AttendanceCard({ stats }: { stats?: StudentDashboardStats }) {
   const a = stats?.attendance;
   const percent = a?.percentage ?? 0;
   return (
@@ -370,14 +370,14 @@ function AttendanceCard({ stats }: { stats?: ParentDashboardStats }) {
   );
 }
 
-function pickOverview(data?: ParentDashboardStats): ParentChildOverview | undefined {
+function pickOverview(data?: StudentDashboardStats): StudentOverview | undefined {
   if (!data) return undefined;
   // Dashboard endpoint wraps either in `.overview` or directly in keys depending on version
   const raw = data as any;
   return raw.overview || raw.child || raw;
 }
 
-function toExamRows(data?: ParentDashboardStats): ListRow[] {
+function toExamRows(data?: StudentDashboardStats): ListRow[] {
   return (data?.upcomingExams ?? []).slice(0, 3).map((raw: any, index: number) => {
     const exam = raw as Record<string, unknown>;
     const date = (exam.starts_at ?? exam.date ?? exam.start_date) as string | undefined;
@@ -392,7 +392,7 @@ function toExamRows(data?: ParentDashboardStats): ListRow[] {
   });
 }
 
-function toResultRows(data?: ParentDashboardStats): ListRow[] {
+function toResultRows(data?: StudentDashboardStats): ListRow[] {
   return (data?.recentResults ?? []).slice(0, 3).map((raw: any, index: number) => {
     const result = raw as Record<string, unknown>;
     return {

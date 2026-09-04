@@ -34,7 +34,6 @@ export function ExamListPage({
   filters?: { class_id?: string; subject?: string };
 }) {
   const pathname = useLocation().pathname;
-  const isParent = pathname.includes("/parent");
   const isTeacher = pathname.includes("/teacher");
   const marksBase = isTeacher ? "/teacher/exams/marks" : "/admin/exams/marks";
   const examsCreatePath = isTeacher ? "/teacher/exams/create" : "/admin/exams/create";
@@ -137,17 +136,15 @@ export function ExamListPage({
     },
   ];
 
-  const rowActions: RowAction<ExamRow>[] = isParent
-    ? []
-    : [
-        {
-          icon: "edit_note",
-          label: "Add marks",
-          variant: "primary",
-          onClick: (row) => {
-            window.location.assign(`${marksBase}?exam_id=${encodeURIComponent(row._id)}`);
-          },
-        },
+  const rowActions: RowAction<ExamRow>[] = [
+    {
+      icon: "edit_note",
+      label: "Add marks",
+      variant: "primary",
+      onClick: (row) => {
+        window.location.assign(`${marksBase}?exam_id=${encodeURIComponent(row._id)}`);
+      },
+    },
         ...(isTeacher ? [] : [
           {
             icon: "edit",
@@ -300,15 +297,13 @@ export function ExamListPage({
             </button>
           </div>
 
-          {!isParent && (
-            <Link
-              to={withQuery(examsCreatePath)}
-              className="h-9 inline-flex items-center gap-2 px-4 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all"
-            >
-              <AppIcon name="Plus" size={16} />
-              Add exam
-            </Link>
-          )}
+          <Link
+            to={withQuery(examsCreatePath)}
+            className="h-9 inline-flex items-center gap-2 px-4 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm active:scale-95 transition-all"
+          >
+            <AppIcon name="Plus" size={16} />
+            Add exam
+          </Link>
         </div>
       </div>
 
@@ -326,7 +321,6 @@ export function ExamListPage({
               key={exam._id}
               exam={exam}
               marksBase={marksBase}
-              isParent={isParent}
             />
           ))}
         </div>
@@ -363,11 +357,9 @@ export function ExamListPage({
 function ExamCard({
   exam,
   marksBase,
-  isParent,
 }: {
   exam: ExamRow;
   marksBase: string;
-  isParent: boolean;
 }) {
   const subjects = exam.subjects || [];
   const subjectCount = exam.subject_count || subjects.length;
@@ -428,15 +420,13 @@ function ExamCard({
         </div>
       </div>
 
-      {!isParent && (
-        <Link
-          to={`${marksBase}?exam_id=${encodeURIComponent(exam._id)}`}
-          className="mt-3 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 active:scale-95 transition-all"
-        >
-          <AppIcon name="FileText" size={14} />
-          Add marks
-        </Link>
-      )}
+      <Link
+        to={`${marksBase}?exam_id=${encodeURIComponent(exam._id)}`}
+        className="mt-3 inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 active:scale-95 transition-all"
+      >
+        <AppIcon name="FileText" size={14} />
+        Add marks
+      </Link>
     </div>
   );
 }

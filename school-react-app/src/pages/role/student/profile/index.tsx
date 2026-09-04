@@ -8,7 +8,7 @@ import { normalizeStudentInfo, type StudentProfileData } from "../student-info";
 
 async function resolveStudentId(studentId?: string) {
     if (studentId) return studentId;
-    const result = await serviceRequest<{ students: Array<{ id: string }> }>("/api/parent/student-info");
+    const result = await serviceRequest<{ students: Array<{ id: string }> }>("/api/student/info");
     return result.ok ? result.data.students?.[0]?.id ?? "" : "";
 }
 
@@ -21,7 +21,7 @@ export function StudentProfilePage() {
             const studentId = await resolveStudentId(user?.studentId);
             if (!studentId) throw new Error("No linked student found.");
 
-            const result = await serviceRequest<unknown>(`/api/parent/student-info?student_id=${studentId}`);
+            const result = await serviceRequest<unknown>(`/api/student/info?student_id=${studentId}`);
             if (!result.ok) throw new Error(result.error.message || "Failed to load profile");
             const normalizedProfile = normalizeStudentInfo(result.data);
             if (!normalizedProfile) throw new Error("Failed to load profile");
@@ -33,7 +33,7 @@ export function StudentProfilePage() {
 
     if (state.status === "idle" || state.status === "loading") {
         return (
-            <SchoolShell eyebrow="Parent Portal" title="Child Profile">
+            <SchoolShell eyebrow="Student Portal" title="Profile">
                 <div className="space-y-4">
                     <Skeleton className="h-28 w-full" />
                     <Skeleton className="h-44 w-full" />
@@ -44,7 +44,7 @@ export function StudentProfilePage() {
 
     if (state.status === "error") {
         return (
-            <SchoolShell eyebrow="Parent Portal" title="Child Profile">
+            <SchoolShell eyebrow="Student Portal" title="Profile">
                 <DataState variant="error" title="Profile unavailable" message={state.error} />
             </SchoolShell>
         );
@@ -53,7 +53,7 @@ export function StudentProfilePage() {
     const profile = state.data;
 
     return (
-        <SchoolShell eyebrow="Parent Portal" title="Child Profile">
+        <SchoolShell eyebrow="Student Portal" title="Profile">
             <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
                 <Card>
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">

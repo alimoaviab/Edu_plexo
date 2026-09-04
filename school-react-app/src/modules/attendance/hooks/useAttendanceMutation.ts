@@ -164,9 +164,7 @@ export function useAttendanceMutation(opts: UseAttendanceMutationOptions) {
       // to ensure cross-portal consistency
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
 
-      // Invalidate parent attendance queries
-      queryClient.invalidateQueries({ queryKey: ["parent-attendance"] });
-      queryClient.invalidateQueries({ queryKey: ["parent-student-attendance"] });
+
 
       // Invalidate dashboard and summary stats
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });

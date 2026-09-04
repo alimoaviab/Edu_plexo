@@ -8,7 +8,7 @@ import { AppIcon } from "shared/ui/AppIcon";
  *                       the current path is under /admin.
  *   /teacher/behavior → existing teacher dashboard, unchanged. Teacher
  *                       still gets the create CTA so reports keep flowing.
- *   /parent/behavior  → read-only summary, unchanged.
+ *   (The obsolete /parent/behavior portal was removed with the Parent role.)
  *
  * Filters:
  *   - status, severity, category, class, teacher  (server-side via
@@ -52,12 +52,7 @@ export function BehaviorListPage({
   const navigate = useNavigate();
   const isAdmin = pathname.startsWith("/admin");
   const isTeacher = pathname.startsWith("/teacher");
-  const isParent = pathname.startsWith("/parent");
-  const detailBase = isAdmin
-    ? "/admin/behavior"
-    : isTeacher
-      ? "/teacher/behavior"
-      : "/parent/behavior";
+  const detailBase = isTeacher ? "/teacher/behavior" : "/admin/behavior";
 
   const { currentParams, updateQuery, withQuery } = useQueryParams();
   const { state, deleteBehavior, updateBehavior } = useBehavior(filters);
@@ -206,28 +201,28 @@ export function BehaviorListPage({
       {
         icon: "play_arrow",
         label: "Review",
-        showIf: (row: BehaviorRecordRow) => row.status === "open" && !isParent,
+        showIf: (row: BehaviorRecordRow) => row.status === "open",
         onClick: (row) => handleStatusUpdate(row._id, "reviewing"),
       },
       {
         icon: "check_circle",
         label: "Resolve",
         variant: "primary",
-        showIf: (row: BehaviorRecordRow) => row.status === "reviewing" && !isParent,
+        showIf: (row: BehaviorRecordRow) => row.status === "reviewing",
         onClick: (row) => handleStatusUpdate(row._id, "resolved"),
       },
       {
         icon: "trending_up",
         label: "Escalate",
         variant: "primary",
-        showIf: (row: BehaviorRecordRow) => row.status === "reviewing" && !isParent,
+        showIf: (row: BehaviorRecordRow) => row.status === "reviewing",
         onClick: (row) => handleStatusUpdate(row._id, "escalated"),
       },
       {
         icon: "cancel",
         label: "Dismiss",
         variant: "ghost",
-        showIf: (row: BehaviorRecordRow) => row.status === "reviewing" && !isParent,
+        showIf: (row: BehaviorRecordRow) => row.status === "reviewing",
         onClick: (row) => handleStatusUpdate(row._id, "dismissed"),
       },
       {
@@ -239,7 +234,7 @@ export function BehaviorListPage({
         onClick: (row) => deleteBehavior(row._id),
       },
     ],
-    [navigate, detailBase, isAdmin, isParent, deleteBehavior]
+    [navigate, detailBase, isAdmin, deleteBehavior]
   );
 
   const filteredRows = useMemo(() => {
@@ -597,7 +592,7 @@ export function BehaviorListPage({
                     View
                   </button>
 
-                  {row.status === "open" && !isParent && (
+                  {row.status === "open" && (
                     <button
                       type="button"
                       onClick={() => handleStatusUpdate(row._id, "reviewing")}
@@ -607,7 +602,7 @@ export function BehaviorListPage({
                       <AppIcon name="Play" size={14} />
                     </button>
                   )}
-                  {row.status === "reviewing" && !isParent && (
+                  {row.status === "reviewing" && (
                     <div className="flex gap-1">
                       <button
                         type="button"
@@ -646,7 +641,7 @@ export function BehaviorListPage({
               sortable
               paginated={10}
               rowActions={
-                isParent ? rowActions.filter((a) => a.label === "View") : rowActions
+                rowActions
               }
             />
           </div>

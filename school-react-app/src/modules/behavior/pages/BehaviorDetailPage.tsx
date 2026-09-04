@@ -18,7 +18,7 @@ import { BehaviorRecordRow } from "../types/behavior.types";
 import * as service from "../services/behavior.service";
 
 interface Props {
-  role?: "admin" | "teacher" | "parent";
+  role?: "admin" | "teacher";
 }
 
 export function BehaviorDetailPage({ role = "admin" }: Props) {
@@ -84,14 +84,9 @@ export function BehaviorDetailPage({ role = "admin" }: Props) {
   }
 
   const row = state.data!;
-  const backTo =
-    role === "teacher"
-      ? "/teacher/behavior"
-      : role === "parent"
-        ? "/parent/behavior"
-        : "/admin/behavior";
+  const backTo = role === "teacher" ? "/teacher/behavior" : "/admin/behavior";
 
-  const canModerate = role !== "parent";
+  const canModerate = true;
 
   return (
     <div className="space-y-4 pb-10">

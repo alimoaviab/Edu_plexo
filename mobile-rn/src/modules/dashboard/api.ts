@@ -8,8 +8,9 @@
 import { api } from '@/api/client';
 import type {
   AdminComposite,
-  ParentChild,
-  ParentDashboardStats,
+  OwnerDashboard,
+  StudentDashboardStats,
+  StudentInfo,
   TeacherPortal,
 } from '@/modules/dashboard/types';
 
@@ -18,6 +19,15 @@ export async function fetchAdminComposite(): Promise<AdminComposite> {
   const result = await api.get<AdminComposite>('/dashboard/composite');
   if (!result.ok || !result.data) {
     throw new Error(result.message ?? 'Unable to load the dashboard.');
+  }
+  return result.data;
+}
+
+/** GET /api/owner/dashboard — owner-level portfolio stats (owner-only). */
+export async function fetchOwnerDashboard(): Promise<OwnerDashboard> {
+  const result = await api.get<OwnerDashboard>('/owner/dashboard');
+  if (!result.ok || !result.data) {
+    throw new Error(result.message ?? 'Unable to load the portfolio.');
   }
   return result.data;
 }
@@ -31,61 +41,51 @@ export async function fetchTeacherPortal(): Promise<TeacherPortal> {
   return result.data;
 }
 
-/** GET /api/parent/children — children linked to the signed-in parent. */
-export async function fetchParentChildren(): Promise<ParentChild[]> {
-  const result = await api.get<unknown>('/parent/children');
-  if (!result.ok) {
-    throw new Error(result.message ?? 'Unable to load your children.');
-  }
-  return normalizeChildren(result.data);
-}
-
-/** GET /api/parent/dashboard/stats — per-child dashboard stats. */
-export async function fetchParentStats(studentId?: string): Promise<ParentDashboardStats> {
-  const result = await api.get<ParentDashboardStats>('/parent/dashboard/stats', {
-    query: studentId ? { student_id: studentId } : undefined,
-  });
+/** GET /api/student/dashboard/stats — the signed-in student's own stats. */
+export async function fetchStudentStats(): Promise<StudentDashboardStats> {
+  const result = await api.get<StudentDashboardStats>('/student/dashboard/stats');
   if (!result.ok || !result.data) {
     throw new Error(result.message ?? 'Unable to load the dashboard.');
   }
   return result.data;
 }
 
-// ─── helpers ────────────────────────────────────────────────────────────────
-
-function normalizeChildren(payload: unknown): ParentChild[] {
-  const list = extractArray(payload);
-  return list.map((raw) => {
-    const child = (raw ?? {}) as Record<string, unknown>;
-    const first = String(child.first_name ?? '');
-    const last = String(child.last_name ?? '');
-    const composed = `${first} ${last}`.trim();
-    return {
-      student_id: String(child.student_id ?? child.id ?? child._id ?? ''),
-      id: child.id ? String(child.id) : undefined,
-      name: String(child.name ?? composed ?? '').trim() || 'Student',
-      first_name: first || undefined,
-      last_name: last || undefined,
-      class: child.class ? String(child.class) : undefined,
-      class_id: child.class_id ? String(child.class_id) : undefined,
-      class_name: child.class_name ? String(child.class_name) : undefined,
-      section: child.section ? String(child.section) : undefined,
-      roll_no: child.roll_no ? String(child.roll_no) : undefined,
-      admission_no: child.admission_no ? String(child.admission_no) : undefined,
-    };
-  });
+/** GET /api/student/info — the signed-in student's own profile record. */
+export async function fetchStudentInfo(): Promise<StudentInfo> {
+  const result = await api.get<unknown>('/student/info');
+  if (!result.ok) {
+    throw new Error(result.message ?? 'Unable to load your profile.');
+  }
+  return normalizeStudentInfo(result.data);
 }
 
-function extractArray(payload: unknown): unknown[] {
-  if (Array.isArray(payload)) return payload;
-  if (payload && typeof payload === 'object') {
-    const obj = payload as Record<string, unknown>;
-    for (const key of ['children', 'students', 'items', 'data', 'results']) {
-      if (Array.isArray(obj[key])) return obj[key] as unknown[];
-    }
-    // Single student-info object → wrap as a one-element list.
-    if (obj.student && typeof obj.student === 'object') return [obj.student];
-    if (obj.student_id || obj.id || obj._id) return [obj];
+// ─── helpers ────────────────────────────────────────────────────────────────
+
+/** Extract the student record from the /student/info envelope. */
+function normalizeStudentInfo(payload: unknown): StudentInfo {
+  if (!payload || typeof payload !== 'object') {
+    return { id: '', name: '', roll_no: '', class: '', section: '', status: '' };
   }
-  return [];
+  const obj = payload as Record<string, unknown>;
+  const student =
+    obj.student && typeof obj.student === 'object'
+      ? (obj.student as Record<string, unknown>)
+      : obj.students && Array.isArray(obj.students)
+        ? ((obj.students[0] ?? {}) as Record<string, unknown>)
+        : obj;
+  return {
+    id: String(student.id ?? student._id ?? ''),
+    name: String(student.name ?? ''),
+    first_name: student.first_name ? String(student.first_name) : undefined,
+    last_name: student.last_name ? String(student.last_name) : undefined,
+    roll_no: String(student.roll_no ?? student.admission_no ?? ''),
+    admission_no: student.admission_no ? String(student.admission_no) : undefined,
+    email: student.email ? String(student.email) : undefined,
+    phone: student.phone ? String(student.phone) : undefined,
+    class: String(student.class ?? student.class_name ?? ''),
+    class_name: student.class_name ? String(student.class_name) : undefined,
+    section: student.section ? String(student.section) : '',
+    academic_year: student.academic_year ? String(student.academic_year) : undefined,
+    status: student.status ? String(student.status) : 'active',
+  };
 }

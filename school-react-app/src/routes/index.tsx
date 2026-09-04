@@ -13,11 +13,9 @@ import { createBrowserRouter, Navigate, useRouteError } from "react-router-dom";
 import { App } from "@/App";
 import { PageLoader } from "@/components/PageLoader";
 import { ProtectedRoute } from "./ProtectedRoute";
-import { ParentLayout } from "./ParentLayout";
 import {
   adminRoutes,
   teacherRoutes,
-  parentRoutes,
   studentRoutes,
   ownerRoutes,
 } from "./generated-routes";
@@ -148,26 +146,24 @@ export const router = createBrowserRouter([
       },
 
       // ─── Owner ─────────────────────────────────────────────────────────
+      // The Owner role has its OWN independent route tree. Admin routes are
+      // never mapped into /owner/* — Owner is a governance role, not an
+      // operator, and /admin/* is unreachable for it both here and in the
+      // backend authorization layer.
       {
         element: <ProtectedRoute allowedRoles={["owner"]} />,
         children: [
           { path: "/owner", element: <Navigate to="/owner/dashboard" replace /> },
           ...ownerRoutes,
-          ...adminRoutes
-            .filter(route => route.path !== "/admin/dashboard" && !route.path?.startsWith("/admin/subscription"))
-            .map(route => ({
-              ...route,
-              path: (route.path || "").replace("/admin", "/owner")
-            })),
-          { path: "/owner/tests", element: suspense(AdminTestsPage) },
-          { path: "/owner/tests/create", element: suspense(AdminTestCreatePage) },
-          { path: "/owner/tests/marks", element: suspense(AdminTestMarksPage) },
         ],
       },
 
       // ─── Admin ─────────────────────────────────────────────────────────
+      // Owner is deliberately NOT in the allow-list: an Owner manually
+      // entering /admin/* is bounced to their own dashboard by
+      // ProtectedRoute, and every Admin API rejects the Owner role with 403.
       {
-        element: <ProtectedRoute allowedRoles={["admin", "super_admin", "owner"]} />,
+        element: <ProtectedRoute allowedRoles={["admin", "super_admin"]} />,
         children: [
           { path: "/admin", element: <Navigate to="/admin/dashboard" replace /> },
           ...adminRoutes,
@@ -186,24 +182,6 @@ export const router = createBrowserRouter([
           { path: "/teacher/tests", element: suspense(TeacherTestsPage) },
           { path: "/teacher/tests/create", element: suspense(TeacherTestCreatePage) },
           { path: "/teacher/tests/marks", element: suspense(TeacherTestMarksPage) },
-        ],
-      },
-
-      // ─── Parent ────────────────────────────────────────────────────────
-      {
-        element: <ProtectedRoute allowedRoles={["parent"]} />,
-        children: [
-          {
-            // Hoists SelectedChildProvider above every parent page so
-            // useSelectedChild() works at the top of each component
-            // (it used to live inside SchoolShell, which mounted too
-            // late).
-            element: <ParentLayout />,
-            children: [
-              { path: "/parent", element: <Navigate to="/parent/dashboard" replace /> },
-              ...parentRoutes,
-            ],
-          },
         ],
       },
 

@@ -22,7 +22,7 @@ type AttendanceResponse = {
 
 async function resolveStudentId(studentId?: string) {
     if (studentId) return studentId;
-    const result = await serviceRequest<{ students: Array<{ id: string }> }>("/api/parent/student-info");
+    const result = await serviceRequest<{ students: Array<{ id: string }> }>("/api/student/info");
     return result.ok ? result.data.students?.[0]?.id ?? "" : "";
 }
 
@@ -35,7 +35,7 @@ export function StudentAttendancePage() {
             const studentId = await resolveStudentId(user?.studentId);
             if (!studentId) throw new Error("No linked student found.");
 
-            const result = await serviceRequest<AttendanceResponse>(`/api/parent/student-attendance?student_id=${studentId}`);
+            const result = await serviceRequest<AttendanceResponse>(`/api/student/attendance?student_id=${studentId}`);
             if (!result.ok) throw new Error(result.error.message || "Failed to load attendance");
             return result.data;
         }).catch(() => {
@@ -45,7 +45,7 @@ export function StudentAttendancePage() {
 
     if (state.status === "idle" || state.status === "loading") {
         return (
-            <SchoolShell eyebrow="Parent Portal" title="Attendance">
+            <SchoolShell eyebrow="Student Portal" title="Attendance">
                 <div className="space-y-4">
                     <Skeleton className="h-24 w-full" />
                     <Skeleton className="h-44 w-full" />
@@ -56,7 +56,7 @@ export function StudentAttendancePage() {
 
     if (state.status === "error") {
         return (
-            <SchoolShell eyebrow="Parent Portal" title="Attendance">
+            <SchoolShell eyebrow="Student Portal" title="Attendance">
                 <DataState variant="error" title="Attendance unavailable" message={state.error} />
             </SchoolShell>
         );
@@ -65,7 +65,7 @@ export function StudentAttendancePage() {
     const report = state.data;
 
     return (
-        <SchoolShell eyebrow="Parent Portal" title="Attendance">
+        <SchoolShell eyebrow="Student Portal" title="Attendance">
             <div className="space-y-6">
                 <Card>
                     <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">

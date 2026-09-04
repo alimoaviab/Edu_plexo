@@ -15,8 +15,7 @@ export default function StudentProfile() {
   }
 
   const items: ModuleListItem[] = [
-    { key: 'profile', label: user?.email ?? 'Account', description: 'Profile & preferences', icon: 'shield', accent: 'primary' },
-    { key: 'children', label: 'Linked Children', description: 'Switch active child', icon: 'family', accent: 'primary' },
+    { key: 'profile', label: user?.email ?? 'Account', description: 'Student account', icon: 'shield', accent: 'primary' },
     { key: 'notifications', label: 'Notifications', description: 'Email, SMS, push', icon: 'bell', accent: 'warning' },
     { key: 'logout', label: 'Sign Out', description: 'End your session', icon: 'logout', accent: 'error', onPress: confirmLogout },
   ];

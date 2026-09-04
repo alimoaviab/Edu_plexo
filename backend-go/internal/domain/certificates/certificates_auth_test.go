@@ -49,8 +49,10 @@ func decodeStatus(t *testing.T, rec *httptest.ResponseRecorder) int {
 func TestCertificates_GenerateRoleMatrix(t *testing.T) {
 	body := `{"template_id":"ctpl_1","student_ids":["stu_self"]}`
 
-	// Unauthorized roles must be rejected before any side effect.
-	for _, role := range []string{"student", "parent", "teacher"} {
+	// Unauthorized roles must be rejected before any side effect. Owner is
+	// included: certificate generation is operational school management and
+	// the Owner role must not perform it.
+	for _, role := range []string{"student", "parent", "teacher", "owner"} {
 		h := New(certTestStore(), func(string, any) {})
 		rec := httptest.NewRecorder()
 		h.Generate(rec, certRequest(role, "user_"+role, body))
@@ -60,7 +62,7 @@ func TestCertificates_GenerateRoleMatrix(t *testing.T) {
 	}
 
 	// Authorized roles keep working (template exists → 200).
-	for _, role := range []string{"admin", "owner", "super_admin"} {
+	for _, role := range []string{"admin", "super_admin"} {
 		h := New(certTestStore(), func(string, any) {})
 		rec := httptest.NewRecorder()
 		h.Generate(rec, certRequest(role, "user_"+role, body))

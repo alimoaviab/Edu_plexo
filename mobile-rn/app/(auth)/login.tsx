@@ -2,7 +2,7 @@
  * Mobile login screen — matches the web Login experience.
  *
  * Flow:
- *   1. Pick a role tab (Admin / Teacher / Parent Portal).
+ *   1. Pick a role tab (Owner / Admin / Teacher / Student).
  *   2. Submit email + password to POST /api/auth/login.
  *   3. On success, the auth store decodes the JWT and the root router
  *      redirects to the role-specific home screen.
@@ -38,7 +38,6 @@ const ROLE_HOME: Record<Role, string> = {
   admin: '/(admin)',
   super_admin: '/(admin)',
   teacher: '/(teacher)',
-  parent: '/(parent)',
   student: '/(student)',
 };
 

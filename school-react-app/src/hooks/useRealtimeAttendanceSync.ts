@@ -41,8 +41,6 @@ export function useRealtimeAttendanceSync(
     const pollTimer = setInterval(() => {
       // Invalidate all attendance queries to trigger refetch
       queryClient.invalidateQueries({ queryKey: ["attendance"] });
-      queryClient.invalidateQueries({ queryKey: ["parent-attendance"] });
-      queryClient.invalidateQueries({ queryKey: ["parent-student-attendance"] });
       queryClient.invalidateQueries({ queryKey: ["attendance-summary"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     }, pollIntervalMs);

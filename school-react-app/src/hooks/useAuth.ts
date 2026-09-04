@@ -82,8 +82,12 @@ export function useAuth() {
           }
         }
 
-        const effectiveSchoolId = payload.role === "owner" 
-          ? (localStorage.getItem("active_school_id") || payload.school_id)
+        // Owners are never school-scoped: their tenant context always comes
+        // from the token (sentinel "system"), never from localStorage
+        // (which could carry a stale school from a previous session or the
+        // removed context switcher).
+        const effectiveSchoolId = payload.role === "owner"
+          ? (payload.school_id || "system")
           : payload.school_id;
 
         const scopedKey = `academic_year_id:${effectiveSchoolId}`;

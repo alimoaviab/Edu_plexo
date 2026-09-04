@@ -38,15 +38,10 @@ export default function ProfileScreen() {
 
   const sections: ProfileSection[] = [
     {
-      title: 'Profile',
+      title: 'Owner',
       items: [
-        { key: 'my-profile', label: 'My Profile', description: user?.email ?? 'Owner account', icon: 'shield', accent: 'primary', href: '/(owner)/module/settings' },
-        { key: 'owner-portfolio', label: 'My Schools', description: 'Portfolio and branch switcher', icon: 'building', accent: 'primary', href: '/(owner)/schools' },
-        { key: 'academic-year', label: 'Academic Year', description: 'Sessions and active year', icon: 'calendar', accent: 'success', href: '/(owner)/module/academic-years' },
-        { key: 'school-profile', label: 'School Profile', description: 'School identity and contact info', icon: 'graduation', accent: 'primary', href: '/(owner)/module/settings' },
-        { key: 'subscription', label: 'Subscription', description: 'Plan, limits and billing', icon: 'wallet', accent: 'success', href: '/(owner)/module/subscription' },
-        { key: 'preferences', label: 'Preferences', description: 'Workspace preferences', icon: 'settings', accent: 'neutral', href: '/(owner)/module/settings' },
-        { key: 'settings', label: 'Settings', description: 'System configuration', icon: 'settings', accent: 'neutral', href: '/(owner)/module/settings' },
+        { key: 'my-schools', label: 'My Schools', description: 'Portfolio overview', icon: 'building', accent: 'primary', href: '/(owner)/schools' },
+        { key: 'subscription', label: 'Subscription', description: 'Plan, limits and billing', icon: 'wallet', accent: 'success', href: '/(owner)/subscription' },
         { key: 'logout', label: 'Sign Out', description: 'End this session', icon: 'logout', accent: 'error', onPress: confirmLogout },
       ],
     },
@@ -54,7 +49,7 @@ export default function ProfileScreen() {
 
   return (
     <ScreenContainer scroll>
-      <Header greeting="Account" title="Profile" subtitle={user?.email ?? 'Admin'} />
+      <Header greeting="Owner Account" title="Profile" subtitle={user?.email ?? 'Owner'} />
       {sections.map((section) => (
         <View key={section.title} style={styles.section}>
           <Text style={styles.sectionTitle}>{section.title}</Text>

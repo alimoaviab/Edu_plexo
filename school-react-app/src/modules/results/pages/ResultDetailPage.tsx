@@ -23,12 +23,7 @@ export function ResultDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { pathname } = useLocation();
   const isTeacher = pathname.includes("/teacher");
-  const isParent = pathname.includes("/parent");
-  const backPath = isParent 
-    ? "/parent/results" 
-    : isTeacher 
-      ? "/teacher/results" 
-      : "/admin/results";
+  const backPath = isTeacher ? "/teacher/results" : "/admin/results";
   
   const { state } = useResult(id);
   const { schoolName, logoUrl } = useSchoolBranding();

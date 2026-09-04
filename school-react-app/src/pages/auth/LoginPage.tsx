@@ -29,7 +29,6 @@ const ROLE_ROUTES: Record<string, string> = {
   admin: "/admin/dashboard",
   super_admin: "/admin/dashboard",
   teacher: "/teacher/dashboard",
-  parent: "/parent/dashboard",
   student: "/student/dashboard",
 };
 
@@ -43,7 +42,7 @@ function suggestedTabForRole(role: string): Role {
   const r = role.toLowerCase();
   if (r === "owner") return "owner";
   if (r === "teacher") return "teacher";
-  if (r === "student" || r === "parent") return "student";
+  if (r === "student") return "student";
   return "admin";
 }
 
