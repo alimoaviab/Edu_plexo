@@ -43,7 +43,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/seo-engine" element={<SeoEnginePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
-      <ChatWidget />
+      {/* AI Chatbot widget temporarily disabled */}
+      {/* <ChatWidget /> */}
     </BrowserRouter>
   </React.StrictMode>,
 );
