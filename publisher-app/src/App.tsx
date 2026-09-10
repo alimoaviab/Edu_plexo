@@ -62,7 +62,7 @@ export default function App() {
       setDashboard(res.data)
     } else if (res.status === 401 || res.status === 403) {
       handleLogout()
-      setLoginError('Your session has expired. Please sign in again.')
+      setLoginError('Your session has expired. Please sign in again .')
     } else {
       setLoginError(res.message || 'Failed to load partner dashboard')
     }
@@ -167,7 +167,7 @@ export default function App() {
     setNewPasswordValue(pwd)
   }
 
-  
+
   const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedSchool || !token) return
