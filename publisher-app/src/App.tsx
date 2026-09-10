@@ -167,6 +167,7 @@ export default function App() {
     setNewPasswordValue(pwd)
   }
 
+  
   const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedSchool || !token) return
