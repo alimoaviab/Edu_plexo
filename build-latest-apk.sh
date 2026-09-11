@@ -12,7 +12,15 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -d "$SCRIPT_DIR/mobile-rn" ]]; then
+  ROOT_DIR="$SCRIPT_DIR"
+elif [[ -d "$SCRIPT_DIR/../mobile-rn" ]]; then
+  ROOT_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+else
+  echo "Could not locate the EduPlexo repository from: $SCRIPT_DIR" >&2
+  exit 1
+fi
 MOBILE_DIR="$ROOT_DIR/mobile-rn"
 APK_SOURCE="$MOBILE_DIR/android/app/build/outputs/apk/release/app-release.apk"
 APK_DEST="$ROOT_DIR/eduplexo-latest.apk"
