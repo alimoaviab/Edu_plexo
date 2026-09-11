@@ -1,21 +1,18 @@
 import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 
 import { Header } from '@/components/layout/Header';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { CurrentPlanCard } from '@/components/subscription/CurrentPlanCard';
 import { Icon } from '@/components/ui/Icon';
 import { useSubscription } from '@/modules/subscription/useSubscription';
-import { useAuthStore } from '@/store/auth-store';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 
 const CORE_MODULES = [
@@ -34,10 +31,6 @@ const CORE_MODULES = [
 ];
 
 export default function AdminSubscriptionScreen() {
-  const router = useRouter();
-  const user = useAuthStore((s) => s.user);
-  const isOwner = user?.role === 'owner';
-
   const {
     current,
     subscription,
@@ -112,15 +105,6 @@ export default function AdminSubscriptionScreen() {
                 School Owner or administrator.
               </Text>
 
-              {isOwner ? (
-                <Pressable
-                  onPress={() => router.push('/(owner)/subscription' as never)}
-                  style={({ pressed }) => [styles.btnOwnerManage, pressed && styles.pressed]}
-                >
-                  <Text style={styles.btnOwnerManageText}>Manage Billing as Owner</Text>
-                  <Icon name="chevron-right" size={14} color={colors.primary} />
-                </Pressable>
-              ) : null}
             </View>
           </View>
 
