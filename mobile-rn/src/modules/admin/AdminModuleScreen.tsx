@@ -974,6 +974,8 @@ function getFieldLabel(fieldKey: string, definition: AdminModuleDefinition): str
     class_ids: 'Classes',
     teacher_ids: 'Teachers',
     subject_ids: 'Subjects',
+    assigned_classes: 'Assigned Classes',
+    today_schedule: "Today's Schedule",
     admission_no: 'Admission No',
   };
 

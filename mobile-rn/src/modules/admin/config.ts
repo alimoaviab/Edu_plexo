@@ -128,7 +128,8 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
       'phone',
       'qualification',
       'subjects',
-      'class_ids',
+      'assigned_classes',
+      'today_schedule',
       'status',
     ],
     fields: [

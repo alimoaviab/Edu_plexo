@@ -83,7 +83,59 @@ export async function getAdminRecord(
   if (!result.ok) {
     throw new Error(result.message ?? 'Unable to load record.');
   }
-  return normalizeRecord(result.data);
+  return unwrapDetailRecord(normalizeRecord(result.data), record);
+}
+
+/**
+ * Some detail endpoints return a portal-style envelope rather than a plain
+ * record — e.g. GET /teachers/:id returns `{ teacher, classes,
+ * todaySchedule, school }`, the same payload the web details panel renders.
+ * Flatten it into one record: the entity's own fields at the top level plus
+ * the relation sections as display-ready string arrays, so detail screens
+ * show the same information as the web product.
+ */
+function unwrapDetailRecord(payload: AdminRecord, fallback: AdminRecord): AdminRecord {
+  const entityKey = ['teacher', 'student'].find((key) => {
+    const nested = payload[key];
+    return !!nested && typeof nested === 'object' && !Array.isArray(nested);
+  });
+  if (!entityKey) return payload;
+
+  const entity = payload[entityKey] as AdminRecord;
+  const merged: AdminRecord = { ...fallback, ...entity };
+
+  const classes = payload.classes;
+  if (Array.isArray(classes) && classes.length) {
+    merged.assigned_classes = classes.map((raw) => {
+      const c = (raw ?? {}) as Record<string, unknown>;
+      const name = [c.name, c.section].filter(Boolean).join(' ');
+      const students = Number(c.studentCount ?? c.student_count ?? 0) || 0;
+      return students ? `${name} — ${students} students` : name;
+    });
+  }
+
+  const schedule = payload.todaySchedule ?? payload.today_schedule;
+  if (Array.isArray(schedule) && schedule.length) {
+    merged.today_schedule = schedule.map((raw) => {
+      const s = (raw ?? {}) as Record<string, unknown>;
+      return [
+        `${s.start_time ?? ''}–${s.end_time ?? ''}`,
+        s.class_name,
+        s.subject_name,
+        s.room,
+      ]
+        .filter((part) => part !== undefined && part !== null && String(part).trim() !== '')
+        .join(' · ');
+    });
+  }
+
+  const school = payload.school;
+  if (school && typeof school === 'object' && !Array.isArray(school)) {
+    const schoolName = (school as Record<string, unknown>).name;
+    if (schoolName) merged.school_name = String(schoolName);
+  }
+
+  return merged;
 }
 
 export async function saveAdminRecord({
