@@ -1,10 +1,8 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ui/Icon';
 import type { CurrentSubscription } from '@/modules/subscription/types';
-import { useAuthStore } from '@/store/auth-store';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 
 interface SubscriptionRequiredProps {
@@ -12,34 +10,14 @@ interface SubscriptionRequiredProps {
 }
 
 export function SubscriptionRequired({ current }: SubscriptionRequiredProps) {
-  const router = useRouter();
-  const user = useAuthStore((s) => s.user);
-
   const sub = current?.subscription;
   const isExpired = sub?.status === 'expired' || sub?.status === 'cancelled' || sub?.status === 'canceled';
-  const isOwner = user?.role === 'owner';
 
-  const title = isOwner
-    ? isExpired
-      ? 'Your Subscription Has Expired'
-      : 'Please Choose Your Subscription Plan'
-    : isExpired
+  const title = isExpired
     ? 'Subscription Expired'
     : 'Subscription Inactive';
 
-  const description = isOwner
-    ? isExpired
-      ? 'Your institution subscription has ended. Please renew or upgrade your plan to restore full access across all your campuses.'
-      : 'You have not activated your Free Trial or Subscription. Please choose a plan to continue managing your institution.'
-    : "Your school's subscription plan is currently inactive or has expired. Please contact your School Owner to renew or activate the plan.";
-
-  const handleAction = () => {
-    if (isOwner) {
-      router.push('/(owner)/subscription' as never);
-    } else {
-      router.push('/(admin)/subscription' as never);
-    }
-  };
+  const description = "Your school's subscription plan is currently inactive or has expired. Please contact your School Owner to renew or activate the plan.";
 
   return (
     <View style={styles.container}>
@@ -60,23 +38,13 @@ export function SubscriptionRequired({ current }: SubscriptionRequiredProps) {
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.description}>{description}</Text>
 
-        {isOwner ? (
-          <Pressable
-            onPress={handleAction}
-            style={({ pressed }) => [styles.btnAction, pressed && styles.pressed]}
-          >
-            <Text style={styles.btnActionText}>Manage Subscription</Text>
-            <Icon name="chevron-right" size={16} color={colors.white} />
-          </Pressable>
-        ) : (
-          <View style={styles.adminNotice}>
-            <Icon name="lock" size={14} color={colors.gray500} />
-            <Text style={styles.adminNoticeText}>
-              Please contact your <Text style={styles.bold}>School Owner</Text> to renew or activate
-              the subscription.
-            </Text>
-          </View>
-        )}
+        <View style={styles.adminNotice}>
+          <Icon name="lock" size={14} color={colors.gray500} />
+          <Text style={styles.adminNoticeText}>
+            Please contact your <Text style={styles.bold}>School Owner</Text> to renew or activate
+            the subscription.
+          </Text>
+        </View>
       </View>
     </View>
   );
