@@ -12,7 +12,7 @@
  * active tab indicator instead. (Implemented in RoleTabs.)
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -52,9 +52,17 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Reset any stale error left over from a previous attempt when the user
+  // returns to the login screen, so the form always starts clean.
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
+
   const errorMessage = localError ?? storeError;
 
   async function handleSubmit() {
+    if (loading) return; // one controlled auth flow — no duplicate submits
+
     setLocalError(null);
     clearError();
 

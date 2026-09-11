@@ -118,8 +118,60 @@ function fallbackForStatus(status: number): string {
   return "The request couldn't be completed. Please try again.";
 }
 
+/**
+ * Network failure classification.
+ *
+ * The backend logs show login failures that never reach the server — the
+ * classic "first attempt fails, subsequent attempts succeed" pattern caused
+ * by connection-level flaps (cold DNS/TLS on mobile networks, radio
+ * hand-offs, captive portals). axios surfaces these as requests with NO
+ * response and a cause/code, so we classify them instead of guessing.
+ */
+type NetworkFailureKind = 'timeout' | 'aborted' | 'unreachable';
+
+function classifyNetworkFailure(error: AxiosError): NetworkFailureKind | null {
+  if (error.response) return null; // server answered — not a network failure
+
+  const code = String((error as { code?: string }).code ?? '');
+  const causeCode = String(
+    (error.cause as { code?: string } | undefined)?.code ?? '',
+  );
+  const message = String(error.message ?? '').toLowerCase();
+
+  if (code === 'ECONNABORTED' || causeCode === 'ETIMEDOUT' || message.includes('timeout')) {
+    return 'timeout';
+  }
+  if (code === 'ERR_CANCELED' || causeCode === 'ECANCELED' || message.includes('canceled')) {
+    return 'aborted';
+  }
+  return 'unreachable'; // ENOTFOUND / ECONNREFUSED / DNS / TLS / offline
+}
+
+/** Human-friendly message per failure kind — no axios internals shown. */
+function networkFailureMessage(kind: NetworkFailureKind): string {
+  if (kind === 'timeout') {
+    return 'The server took too long to respond. Please try again.';
+  }
+  if (kind === 'aborted') {
+    return 'The request was interrupted. Please try again.';
+  }
+  return "Couldn't reach the server. Please check your internet connection and try again.";
+}
+
 // In-flight request deduplication map for idempotent GET requests.
 const inFlightRequests = new Map<string, Promise<ServiceResult<any>>>();
+
+// ONE bounded automatic retry for connection-level failures only. The backend
+// log evidence shows the FIRST connection to a cold host can fail while every
+// subsequent one succeeds; a single immediate follow-up removes the need for
+// the user to tap Login multiple times. HTTP error responses (4xx/5xx) are
+// NEVER retried, and aborted requests are never retried.
+const NETWORK_RETRY_DELAY_MS = 600;
+const NETWORK_MAX_RETRIES = 1;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function request<TData, TBody = unknown>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
@@ -133,7 +185,7 @@ async function request<TData, TBody = unknown>(
     return inFlightRequests.get(dedupKey)! as Promise<ServiceResult<TData>>;
   }
 
-  const executionPromise = executeRequest<TData, TBody>(method, url, options);
+  const executionPromise = executeRequestWithRetry<TData, TBody>(method, url, options);
 
   if (dedupKey) {
     inFlightRequests.set(dedupKey, executionPromise);
@@ -143,6 +195,31 @@ async function request<TData, TBody = unknown>(
   }
 
   return executionPromise;
+}
+
+async function executeRequestWithRetry<TData, TBody = unknown>(
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  url: string,
+  options: RequestOptions<TBody> = {},
+  attempt = 0,
+): Promise<ServiceResult<TData>> {
+  const result = await executeRequest<TData, TBody>(method, url, options);
+
+  // Retry only connection-level failures, only once, never aborted calls.
+  if (
+    !result.ok &&
+    result.error?.code === 'NETWORK_ERROR' &&
+    result.error.kind !== 'aborted' &&
+    attempt < NETWORK_MAX_RETRIES
+  ) {
+    console.warn(
+      `[HTTP RETRY] ${method} ${url} failed (${result.error.kind}) — retrying once`,
+    );
+    await wait(NETWORK_RETRY_DELAY_MS);
+    return executeRequestWithRetry<TData, TBody>(method, url, options, attempt + 1);
+  }
+
+  return result;
 }
 
 async function executeRequest<TData, TBody = unknown>(
@@ -160,9 +237,9 @@ async function executeRequest<TData, TBody = unknown>(
 
   const fullUrl = `${http.defaults.baseURL ?? ''}${config.url}`;
   console.log(`[HTTP REQUEST] ${method} ${fullUrl}`);
-  if (options.body) {
-    console.log(`[HTTP REQUEST BODY]`, JSON.stringify(options.body, null, 2));
-  }
+  // NOTE: request bodies are intentionally NOT logged — they contain
+  // credentials (login), personal data (students, guardians) and must not
+  // leak into device/Metro logs.
 
   try {
     const response = await http.request<unknown>(config);
@@ -189,25 +266,23 @@ async function executeRequest<TData, TBody = unknown>(
     }>;
 
     console.error(`[HTTP ERROR] ${method} ${fullUrl} failed: ${error.message}`);
-    if (error.config) {
-      console.error(`[HTTP ERROR DETAILS] Headers:`, JSON.stringify(error.config.headers, null, 2));
-    }
+    // Header dumps removed: they carried Authorization tokens into logs.
 
     // Network / timeout / no response.
     if (!error.response) {
-      console.error(`[HTTP ERROR NO RESPONSE] The request was sent but no response was received. Check that:
-1. Your backend container is running (run 'docker ps' to check).
-2. If using ADB reverse, check if port forwarding is active ('adb reverse list').
-3. Verify your Mac's firewall/network settings or try running: 'adb reverse tcp:8080 tcp:8080'`);
+      const kind = classifyNetworkFailure(error);
+      console.error(
+        `[HTTP ERROR NO RESPONSE] ${method} ${fullUrl} (${kind ?? 'unknown'}) — ${error.message}`,
+      );
       return {
         ok: false,
         success: false,
-        message:
-          "Couldn't reach the server. Please check your internet connection and try again.",
+        message: networkFailureMessage(kind ?? 'unreachable'),
         error: {
           code: 'NETWORK_ERROR',
           message: error.message || 'Network error',
           status: 503,
+          kind: kind ?? undefined,
         },
       };
     }
