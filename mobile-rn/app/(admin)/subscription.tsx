@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
+  Linking,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -13,6 +15,7 @@ import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { CurrentPlanCard } from '@/components/subscription/CurrentPlanCard';
 import { Icon } from '@/components/ui/Icon';
 import { useSubscription } from '@/modules/subscription/useSubscription';
+import { env } from '@/config/env';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 
 const CORE_MODULES = [
@@ -49,6 +52,16 @@ export default function AdminSubscriptionScreen() {
       .map(([mod]) => mod);
     return list.length > 0 ? list : CORE_MODULES;
   }, [current?.allowed_modules]);
+
+  // Opens the configured web portal (env.webPortalUrl — never hardcoded in
+  // components). No tokens are appended; the user signs in there themselves.
+  const openWebPortal = () => {
+    Linking.openURL(env.webPortalUrl).catch(() => {
+      // Linking.openURL only rejects if no app can handle https links —
+      // effectively unreachable, but never crash the screen over it.
+      console.warn('No handler available for web portal URL:', env.webPortalUrl);
+    });
+  };
 
   if (isLoading) {
     return (
@@ -115,6 +128,29 @@ export default function AdminSubscriptionScreen() {
             studentsLimit={studentsLimit}
             daysRemaining={daysRemaining}
           />
+
+          {/* Payments & upgrades happen on the web portal — link out instead
+              of duplicating the payment flow in the app. */}
+          <View style={[styles.paymentCard, shadows.card]}>
+            <View style={styles.paymentIconBox}>
+              <Icon name="wallet" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.paymentContent}>
+              <Text style={styles.paymentTitle}>Payments & Upgrade</Text>
+              <Text style={styles.paymentDescription}>
+                To upgrade, renew, or complete payment, open the Eduplex web portal and sign in with
+                your school account.
+              </Text>
+              <Pressable
+                onPress={openWebPortal}
+                style={({ pressed }) => [styles.webButton, pressed && styles.pressed]}
+                android_ripple={{ color: 'rgba(37, 99, 235, 0.15)' }}
+              >
+                <Icon name="shield" size={16} color={colors.white} />
+                <Text style={styles.webButtonText}>Open Eduplex Web</Text>
+              </Pressable>
+            </View>
+          </View>
 
           {/* Included Features & Active Modules */}
           <View style={styles.sectionHeader}>
@@ -290,5 +326,54 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.8,
+  },
+  paymentCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: colors.white,
+    borderRadius: radius.xl2,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  paymentIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paymentContent: {
+    flex: 1,
+    gap: 6,
+  },
+  paymentTitle: {
+    ...typography.bodySm,
+    color: colors.gray900,
+    fontWeight: '800',
+  },
+  paymentDescription: {
+    ...typography.caption,
+    color: colors.gray600,
+    lineHeight: 16,
+  },
+  webButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: radius.lg,
+    marginTop: 4,
+  },
+  webButtonText: {
+    ...typography.bodySm,
+    color: colors.white,
+    fontWeight: '800',
   },
 });

@@ -52,26 +52,8 @@ function friendlyPlaceholder(placeholder: string | undefined, label?: string): s
     return 'Select Date (YYYY-MM-DD)';
   }
 
-  if (lower === 'class_id' || lower === 'required class_id') {
-    return 'Enter Class ID...';
-  }
-  if (lower === 'student_id' || lower === 'required student_id') {
-    return 'Enter Student ID...';
-  }
-  if (lower === 'teacher_id' || lower === 'required teacher_id') {
-    return 'Enter Teacher ID...';
-  }
-  if (lower === 'subject_id' || lower === 'required subject_id') {
-    return 'Enter Subject ID...';
-  }
-  if (lower === 'exam_id' || lower === 'required exam_id') {
-    return 'Enter Exam ID...';
-  }
-
-  if (lower.endsWith('_id')) {
-    const term = lower.slice(0, -3).replace(/_/g, ' ');
-    return `Enter ${term.charAt(0).toUpperCase() + term.slice(1)} ID...`;
-  }
+  // Relational *_id fields render through RelationSelector (name pickers),
+  // so they never fall through to "Enter ... ID" placeholders.
 
   if (lower === 'type') {
     return 'Enter type...';
@@ -277,6 +259,13 @@ function AdminModuleContent({
                     })}
                   </ScrollView>
                 </View>
+              ) : getRelationModuleKey(filter.key) ? (
+                <RelationFilter
+                  key={filter.key}
+                  filter={filter}
+                  value={filters[filter.key]}
+                  onChange={(value) => updateFilter(filter.key, value)}
+                />
               ) : (
                 <Input
                   key={filter.key}
@@ -391,10 +380,10 @@ function RecordCard({
   record: AdminRecord;
   onPress: () => void;
 }) {
-  const title = firstValue(record, definition.displayFields) || getRecordId(record) || definition.title;
+  const title = recordTitle(record, definition) || definition.title;
   const fields = definition.displayFields
     .filter((field) => String(readPath(record, field) ?? '').trim() !== String(title).trim())
-    .slice(0, 5);
+    .slice(0, 2);
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [styles.record, shadows.card, pressed && styles.pressed]}>
@@ -442,14 +431,17 @@ function DetailModal({
           showBack
           onBack={onClose}
           greeting={definition.title}
-          title={record ? firstValue(record, definition.displayFields) || getRecordId(record) || 'Details' : 'Details'}
-          subtitle={loading ? 'Refreshing from API' : 'Live backend record'}
+          title={record ? recordTitle(record, definition) || 'Details' : 'Details'}
+          subtitle={loading ? 'Refreshing…' : definition.subtitle}
         />
 
         {record ? (
           <Card style={styles.detailCard}>
             {definition.detailFields
-              .filter((field) => !shouldHideField(field, readPath(record, field)))
+              .filter((field) => {
+                const value = readPath(record, field);
+                return !shouldHideField(field, value) && formatValue(value, field) !== '-';
+              })
               .map((field) => (
                 <View key={field} style={styles.detailRow}>
                   <Text style={styles.detailLabel}>{getFieldLabel(field, definition)}</Text>
@@ -536,9 +528,13 @@ function AdminFormModal({
           <Header
             showBack
             onBack={onClose}
-            greeting={state?.mode === 'edit' ? 'Edit Record' : 'Create Record'}
+            greeting={state?.mode === 'edit' ? 'Edit Record' : 'New Record'}
             title={definition.title}
-            subtitle="Submits directly to the backend API"
+            subtitle={
+              state?.mode === 'edit'
+                ? 'Update this record'
+                : `Add a new ${definition.title.toLowerCase().replace(/s$/, '')} record`
+            }
           />
 
           {error ? <Text style={styles.formError}>{error}</Text> : null}
@@ -647,7 +643,7 @@ function LoadingState() {
   return (
     <Card style={styles.stateCard}>
       <ActivityIndicator color={colors.primary} />
-      <Text style={styles.stateText}>Loading real data...</Text>
+      <Text style={styles.stateText}>Loading…</Text>
     </Card>
   );
 }
@@ -665,8 +661,10 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 function EmptyState() {
   return (
     <Card style={styles.stateCard}>
-      <Text style={styles.errorTitle}>No records</Text>
-      <Text style={styles.stateText}>The backend returned an empty result for this module.</Text>
+      <Text style={styles.errorTitle}>Nothing here yet</Text>
+      <Text style={styles.stateText}>
+        No records to show. Tap Refresh or create one with the + button.
+      </Text>
     </Card>
   );
 }
@@ -799,6 +797,21 @@ function firstValue(record: AdminRecord, fields: string[]): string {
   return '';
 }
 
+/**
+ * Human card title. Joins the first two display fields (e.g. first_name +
+ * last_name → "Abdul Rehman") and never falls back to a record ID — internal
+ * identifiers must not become visible titles.
+ */
+function recordTitle(record: AdminRecord, definition: AdminModuleDefinition): string {
+  const fields = definition.displayFields;
+  if (fields.length >= 2) {
+    const a = String(readPath(record, fields[0]) ?? '').trim();
+    const b = String(readPath(record, fields[1]) ?? '').trim();
+    if (a && b) return `${a} ${b}`;
+  }
+  return firstValue(record, fields);
+}
+
 function formatValue(value: unknown, key?: string): string {
   if (value === null || value === undefined || value === '') return '-';
   if (typeof value === 'boolean') return value ? 'Yes' : 'No';
@@ -918,6 +931,13 @@ function getFieldLabel(fieldKey: string, definition: AdminModuleDefinition): str
   const lastPartLower = lastPart.toLowerCase();
   if (overrides[lastPartLower]) return overrides[lastPartLower];
 
+  // Final guard: any residual relational id (e.g. fee_type_id inside a
+  // detail list) is labelled by its entity, never "Fee Type Id".
+  if (lastPartLower.endsWith('_id') || lastPartLower.endsWith('_ids')) {
+    const entity = lastPartLower.replace(/_ids?$/, '').replace(/_/g, ' ');
+    return `${entity.charAt(0).toUpperCase()}${entity.slice(1)}`;
+  }
+
   return labelize(fieldKey);
 }
 
@@ -952,35 +972,10 @@ function RelationSelector({
   registry: ModuleRegistry;
 }) {
   const [modalVisible, setModalVisible] = useState(false);
-  const [records, setRecords] = useState<AdminRecord[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  
   const targetModuleKey = getRelationModuleKey(field.key);
   const targetDefinition = targetModuleKey
     ? registry[targetModuleKey] || ADMIN_MODULE_BY_KEY[targetModuleKey]
     : undefined;
-
-  useEffect(() => {
-    if (!modalVisible || !targetDefinition) return;
-    
-    async function loadOptions() {
-      setLoading(true);
-      try {
-        const result = await listAdminRecords(targetDefinition!, {
-          page: 1,
-          search: searchQuery,
-        });
-        setRecords(result.items || []);
-      } catch (err) {
-        console.error('Failed to load relation records:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    
-    loadOptions();
-  }, [modalVisible, targetDefinition, searchQuery]);
 
   if (!targetDefinition) {
     return (
@@ -996,78 +991,35 @@ function RelationSelector({
     );
   }
 
-  const getRecordLabel = (record: AdminRecord) => {
-    if (targetModuleKey === 'classes') {
-      return record.section ? `${record.name} (${record.section})` : String(record.name);
-    }
-    if (targetModuleKey === 'students' || targetModuleKey === 'teachers') {
-      return `${record.first_name || ''} ${record.last_name || ''}`.trim() || String(record.email || getRecordId(record));
-    }
-    if (targetModuleKey === 'exams') {
-      return String(record.title);
-    }
-    if (targetModuleKey === 'subjects') {
-      return String(record.name);
-    }
-    if (targetModuleKey === 'certificate-templates') {
-      return String(record.name);
-    }
-    if (targetModuleKey === 'fees') {
-      return record.invoice_no ? `${record.invoice_no} (${record.student_name || ''})` : getRecordId(record);
-    }
-    if (targetModuleKey === 'academic-years') {
-      return String(record.year);
-    }
-    if (targetModuleKey === 'chapters') {
-      return record.chapter_number ? `Ch ${record.chapter_number}: ${record.title}` : String(record.title);
-    }
-    if (targetModuleKey === 'fee-types') {
-      return String(record.name);
-    }
-    return String(record.name ?? record.title ?? getRecordId(record));
-  };
+  const isMultiSelect =
+    field.key.endsWith('_ids') ||
+    (field.type === 'csv' && getRelationModuleKey(field.key) !== null);
 
-  const isMultiSelect = field.key.endsWith('_ids') || (field.type === 'csv' && getRelationModuleKey(field.key) !== null);
+  const selectedIds = String(value ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
-  const displayValue = (() => {
-    if (!value) return '';
-    const ids = String(value).split(',').map((s) => s.trim()).filter(Boolean);
-    const labels = ids.map((id) => {
-      const found = records.find((r) => getRecordId(r) === id);
-      return found ? getRecordLabel(found) : id;
-    });
-    return labels.join(', ');
-  })();
-
-  const handleItemPress = (id: string) => {
+  const handlePick = (id: string) => {
     if (isMultiSelect) {
-      const ids = String(value || '').split(',').map((s) => s.trim()).filter(Boolean);
-      let nextIds: string[];
-      if (ids.includes(id)) {
-        nextIds = ids.filter((x) => x !== id);
-      } else {
-        nextIds = [...ids, id];
-      }
-      onChange(nextIds.join(', '));
+      const next = selectedIds.includes(id)
+        ? selectedIds.filter((x) => x !== id)
+        : [...selectedIds, id];
+      onChange(next.join(', '));
     } else {
       onChange(id);
       setModalVisible(false);
     }
   };
 
-  const isSelected = (id: string) => {
-    if (isMultiSelect) {
-      return String(value || '').split(',').map((s) => s.trim()).filter(Boolean).includes(id);
-    }
-    return String(value) === id;
-  };
-
   return (
     <View style={styles.inputWrap}>
       <Text style={styles.fieldLabel}>{field.label}{field.required ? ' *' : ''}</Text>
       <Pressable onPress={() => setModalVisible(true)} style={styles.selectorPressable}>
-        <Text style={[styles.selectorText, !value && styles.selectorPlaceholder]} numberOfLines={1}>
-          {displayValue || `Select ${field.label}`}
+        <Text style={[styles.selectorText, selectedIds.length === 0 && styles.selectorPlaceholder]} numberOfLines={1}>
+          {selectedIds.length > 0
+            ? idListToLabels(selectedIds, targetModuleKey)
+            : `Select ${field.label}`}
         </Text>
         <View style={{ transform: [{ rotate: '90deg' }] }}>
           <Icon name="chevron-right" size={18} color={colors.gray500} />
@@ -1075,71 +1027,271 @@ function RelationSelector({
       </Pressable>
       {field.helper ? <Text style={styles.helper}>{field.helper}</Text> : null}
 
-      <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
-        <ScreenContainer scroll>
-          <Header
-            showBack
-            onBack={() => setModalVisible(false)}
-            greeting="Select Relation"
-            title={targetDefinition.title}
-            subtitle={`Choose ${isMultiSelect ? 'one or more' : 'a'} ${field.label}`}
-          />
-          <View style={styles.selectorSearchWrap}>
-            <Input
-              label="Search"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder={`Search ${targetDefinition.title}...`}
-            />
-          </View>
-          {loading ? (
-            <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: spacing.lg }} />
-          ) : (
-            <View style={styles.selectorList}>
-              {!field.required && !isMultiSelect && (
-                <Pressable
-                  onPress={() => {
-                    onChange('');
-                    setModalVisible(false);
-                  }}
-                  style={[styles.selectorItem, !value && styles.selectorItemActive]}
-                >
-                  <Text style={[styles.selectorItemText, !value && styles.selectorItemTextActive]}>
-                    (Unassigned / None)
-                  </Text>
-                  {!value && <Icon name="check-circle" size={18} color={colors.primary} />}
-                </Pressable>
-              )}
-              {records.map((record) => {
-                const id = getRecordId(record);
-                const label = getRecordLabel(record);
-                const active = isSelected(id);
-                return (
-                  <Pressable
-                    key={id}
-                    onPress={() => handleItemPress(id)}
-                    style={[styles.selectorItem, active && styles.selectorItemActive]}
-                  >
-                    <Text style={[styles.selectorItemText, active && styles.selectorItemTextActive]}>
-                      {label}
-                    </Text>
-                    {active && <Icon name="check-circle" size={18} color={colors.primary} />}
-                  </Pressable>
-                );
-              })}
-              {records.length === 0 && (
-                <Text style={styles.selectorEmptyText}>No records found.</Text>
-              )}
-            </View>
-          )}
-          <View style={styles.actions}>
-            <Button label="Cancel" variant="secondary" onPress={() => setModalVisible(false)} />
-            {isMultiSelect && <Button label="Done" onPress={() => setModalVisible(false)} />}
-          </View>
-        </ScreenContainer>
-      </Modal>
+      <RelationPickerModal
+        visible={modalVisible}
+        targetDefinition={targetDefinition}
+        targetModuleKey={targetModuleKey}
+        multi={isMultiSelect}
+        selectedIds={selectedIds}
+        onPick={handlePick}
+        onClear={!field.required && !isMultiSelect ? () => onChange('') : undefined}
+        onClose={() => setModalVisible(false)}
+      />
     </View>
   );
+}
+
+/**
+ * Filter control for relational *_id filters — renders a name picker instead
+ * of a "Filter by class ID" text input, so users filter by the names they
+ * already know. The API still receives the underlying ID.
+ */
+function RelationFilter({
+  filter,
+  value,
+  onChange,
+}: {
+  filter: { key: string; label: string; placeholder?: string };
+  value: string | undefined;
+  onChange: (value: string) => void;
+}) {
+  const [modalVisible, setModalVisible] = useState(false);
+  const targetModuleKey = getRelationModuleKey(filter.key) ?? '';
+  const targetDefinition =
+    (ADMIN_MODULE_BY_KEY[targetModuleKey] as AdminModuleDefinition | undefined) ?? null;
+
+  if (!targetDefinition) {
+    return (
+      <Input
+        label={filter.label}
+        value={value ?? ''}
+        onChangeText={onChange}
+        placeholder={friendlyPlaceholder(filter.placeholder, filter.label)}
+      />
+    );
+  }
+
+  return (
+    <View style={styles.inputWrap}>
+      <Text style={styles.fieldLabel}>{filter.label}</Text>
+      <Pressable onPress={() => setModalVisible(true)} style={styles.selectorPressable}>
+        <Text style={[styles.selectorText, !value && styles.selectorPlaceholder]} numberOfLines={1}>
+          {value
+            ? idListToLabels([value], targetModuleKey)
+            : `All ${filter.label.toLowerCase()}s`}
+        </Text>
+        <View style={{ transform: [{ rotate: '90deg' }] }}>
+          <Icon name="chevron-right" size={18} color={colors.gray500} />
+        </View>
+      </Pressable>
+
+      <RelationPickerModal
+        visible={modalVisible}
+        targetDefinition={targetDefinition}
+        targetModuleKey={targetModuleKey}
+        multi={false}
+        selectedIds={value ? [value] : []}
+        onPick={(id) => {
+          onChange(id);
+          setModalVisible(false);
+        }}
+        onClear={value ? () => onChange('') : undefined}
+        onClose={() => setModalVisible(false)}
+      />
+    </View>
+  );
+}
+
+/**
+ * Shared record-picker sheet used by form selectors and filters. Loads the
+ * target module's records server-side (with search) and shows human labels.
+ */
+function RelationPickerModal({
+  visible,
+  targetDefinition,
+  targetModuleKey,
+  multi,
+  selectedIds,
+  onPick,
+  onClear,
+  onClose,
+}: {
+  visible: boolean;
+  targetDefinition: AdminModuleDefinition;
+  targetModuleKey: string | null;
+  multi: boolean;
+  selectedIds: string[];
+  onPick: (id: string) => void;
+  onClear?: () => void;
+  onClose: () => void;
+}) {
+  const [records, setRecords] = useState<AdminRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (!visible) return;
+    setSearchQuery('');
+
+    let cancelled = false;
+    async function loadOptions() {
+      setLoading(true);
+      try {
+        const result = await listAdminRecords(targetDefinition, {
+          page: 1,
+          search: searchQuery,
+        });
+        if (!cancelled) setRecords(result.items || []);
+      } catch (err) {
+        console.error('Failed to load relation records:', err);
+        if (!cancelled) setRecords([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadOptions();
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, targetDefinition, searchQuery]);
+
+  const isSelected = (id: string) => selectedIds.includes(id);
+
+  // remember labels so previously-selected values render as names
+  useEffect(() => {
+    if (!visible) return;
+    cacheRelationLabels(records, targetModuleKey);
+  }, [visible, records, targetModuleKey]);
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <ScreenContainer scroll>
+        <Header
+          showBack
+          onBack={onClose}
+          greeting="Select"
+          title={targetDefinition.title}
+          subtitle={`Choose ${multi ? 'one or more' : 'a'} ${targetDefinition.title.toLowerCase().replace(/s$/, '')}`}
+        />
+        <View style={styles.selectorSearchWrap}>
+          <Input
+            label="Search"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={`Search ${targetDefinition.title}...`}
+          />
+        </View>
+        {loading ? (
+          <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: spacing.lg }} />
+        ) : (
+          <View style={styles.selectorList}>
+            {onClear ? (
+              <Pressable
+                onPress={() => {
+                  onClear();
+                  onClose();
+                }}
+                style={[styles.selectorItem, selectedIds.length === 0 && styles.selectorItemActive]}
+              >
+                <Text style={[styles.selectorItemText, selectedIds.length === 0 && styles.selectorItemTextActive]}>
+                  (None)
+                </Text>
+                {selectedIds.length === 0 && <Icon name="check-circle" size={18} color={colors.primary} />}
+              </Pressable>
+            ) : null}
+            {records.map((record) => {
+              const id = getRecordId(record);
+              const label = relationRecordLabel(record, targetModuleKey);
+              const active = isSelected(id);
+              return (
+                <Pressable
+                  key={id}
+                  onPress={() => onPick(id)}
+                  style={[styles.selectorItem, active && styles.selectorItemActive]}
+                >
+                  <Text style={[styles.selectorItemText, active && styles.selectorItemTextActive]} numberOfLines={1}>
+                    {label}
+                  </Text>
+                  {active && <Icon name="check-circle" size={18} color={colors.primary} />}
+                </Pressable>
+              );
+            })}
+            {records.length === 0 && (
+              <Text style={styles.selectorEmptyText}>No matching records found.</Text>
+            )}
+          </View>
+        )}
+        <View style={styles.actions}>
+          <Button label="Cancel" variant="secondary" onPress={onClose} />
+          {multi && <Button label="Done" onPress={onClose} />}
+        </View>
+      </ScreenContainer>
+    </Modal>
+  );
+}
+
+/** Human label for a relation record, per target module. */
+function relationRecordLabel(record: AdminRecord, targetModuleKey: string | null | undefined): string {
+  switch (targetModuleKey) {
+    case 'classes':
+      return record.section ? `${record.name} (${record.section})` : String(record.name);
+    case 'students':
+    case 'teachers': {
+      const name = `${record.first_name ?? ''} ${record.last_name ?? ''}`.trim();
+      if (name) return name;
+      return String(record.email ?? '');
+    }
+    case 'exams':
+      return String(record.title ?? '');
+    case 'subjects':
+    case 'fee-types':
+      return String(record.name ?? '');
+    case 'certificate-templates':
+      return String(record.name ?? '');
+    case 'fees':
+      return record.invoice_no
+        ? `${record.invoice_no}${record.student_name ? ` — ${record.student_name}` : ''}`
+        : '';
+    case 'academic-years':
+      return String(record.year ?? '');
+    case 'chapters':
+      return record.chapter_number ? `Ch ${record.chapter_number}: ${record.title}` : String(record.title ?? '');
+    default:
+      return String(record.name ?? record.title ?? record.year ?? record.invoice_no ?? '');
+  }
+}
+
+/** Resolve a list of IDs to human labels; unresolved IDs stay hidden. */
+function idListToLabels(
+  ids: string[],
+  targetModuleKey: string | null | undefined,
+): string {
+  // Labels for persisted IDs can only be resolved if the records were loaded
+  // in this session (via the picker); otherwise show a count instead of raw IDs.
+  const labels = ids.map((id) => relationLabelCache.get(id) ?? null);
+
+  const resolved = labels.filter(Boolean) as string[];
+  if (resolved.length === ids.length && resolved.length > 0) {
+    return resolved.join(', ');
+  }
+  if (resolved.length > 0) return resolved.join(', ');
+  return `${ids.length} selected`; // never leak raw IDs into the UI
+}
+
+// Small session cache so selected values render as names after the picker
+// closes. Populated by RelationPickerModal whenever records load.
+const relationLabelCache = new Map<string, string>();
+
+function cacheRelationLabels(
+  records: AdminRecord[],
+  targetModuleKey: string | null | undefined,
+) {
+  for (const record of records) {
+    const id = getRecordId(record);
+    const label = relationRecordLabel(record, targetModuleKey);
+    if (id && label) relationLabelCache.set(id, label);
+  }
 }
 
 const styles = StyleSheet.create({
