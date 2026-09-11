@@ -365,6 +365,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		}
 		date, _ = api.DayBounds(date)
 
+		// The daily sheet and dashboard read period=1; a record stored at
+		// period=0 would be invisible to every reader and diverge from the
+		// POST /api/attendance/mark upsert uniqueness, so fold it to 1.
+		period := body.Period
+		if period <= 0 {
+			period = 1
+		}
+
 		h.Store.Lock()
 		defer h.Store.Unlock()
 
@@ -410,7 +418,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			StudentID:      body.StudentID,
 			ClassID:        body.ClassID,
 			Date:           date,
-			Period:         body.Period,
+			Period:         period,
 			Status:         body.Status,
 			MarkedBy:       ctx.UserID,
 			Source:         "manual",
