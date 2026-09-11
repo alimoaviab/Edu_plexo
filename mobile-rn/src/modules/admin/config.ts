@@ -291,7 +291,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
   {
     key: 'attendance-sheet',
     title: 'Attendance Sheet',
-    subtitle: 'Class attendance sheet from the backend join endpoint',
+    subtitle: 'Class attendance sheet for a date',
     icon: 'check-circle',
     listPath: '/attendance/sheet',
     filters: [
@@ -1163,7 +1163,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
   {
     key: 'domain-status',
     title: 'Domain Status',
-    subtitle: 'Connected domain state reported by the backend',
+    subtitle: 'Connected website domain status',
     icon: 'settings',
     listPath: '/domain/status',
     singleton: true,
@@ -1203,7 +1203,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
   {
     key: 'broadcasts',
     title: 'Broadcasts',
-    subtitle: 'Admin broadcasts delivered through the messaging backend',
+    subtitle: 'School-wide and targeted messages',
     icon: 'megaphone',
     listPath: '/messages/broadcasts',
     createPath: '/messages/broadcast',

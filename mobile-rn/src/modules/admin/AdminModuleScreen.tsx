@@ -184,7 +184,7 @@ function AdminModuleContent({
   }
 
   function confirmDelete(record: AdminRecord) {
-    Alert.alert('Delete record', 'This will delete the record through the backend API.', [
+    Alert.alert('Delete record', 'This record will be permanently removed.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => deleteMutation.mutate(record) },
     ]);
@@ -214,7 +214,7 @@ function AdminModuleContent({
     <>
       <Stack.Screen options={{ title: definition.title }} />
       <ScreenContainer scroll>
-        <Header showBack greeting="Admin Module" title={definition.title} subtitle={definition.subtitle} />
+        <Header showBack greeting="School Manager" title={definition.title} subtitle={definition.subtitle} />
 
         <View style={styles.toolbar}>
           <View style={styles.searchBox}>
@@ -888,19 +888,44 @@ function labelize(path: string): string {
 
 function shouldHideField(key: string, value: unknown): boolean {
   const keyLower = key.toLowerCase();
-  
-  if (keyLower === '_id' || keyLower === 'id' || keyLower === 'password' || keyLower === 'password_hash') {
+  const lastPart = keyLower.split('.').pop() ?? keyLower;
+
+  if (
+    lastPart === 'password' ||
+    lastPart === 'password_hash' ||
+    lastPart.includes('token') ||
+    lastPart.includes('secret')
+  ) {
     return true;
   }
-  
-  if (keyLower.endsWith('_id') || keyLower.endsWith('_ids')) {
+
+  // Internal identifiers and foreign keys never render; relations are shown
+  // through their human-readable *_name fields instead.
+  if (
+    lastPart === '_id' ||
+    lastPart === 'id' ||
+    lastPart === 'uuid' ||
+    lastPart.endsWith('_id') ||
+    lastPart.endsWith('_ids')
+  ) {
     return true;
   }
-  
+
+  // Audit metadata is not part of the user-facing information hierarchy.
+  if (
+    lastPart === 'created_at' ||
+    lastPart === 'updated_at' ||
+    lastPart === 'deleted_at' ||
+    lastPart === 'created_by' ||
+    lastPart === 'updated_by'
+  ) {
+    return true;
+  }
+
   if (typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value)) {
     return true;
   }
-  
+
   return false;
 }
 
