@@ -80,6 +80,7 @@ export default function SignupScreen() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [changingEmail, setChangingEmail] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -110,6 +111,7 @@ export default function SignupScreen() {
       return 'Password must be at least 8 characters with uppercase, lowercase, number, and special character.';
     }
     if (form.password !== form.confirmPassword) return 'Passwords do not match.';
+    if (!acceptedTerms) return 'You must accept the Terms & Conditions to continue.';
     return null;
   }
 
@@ -321,14 +323,14 @@ export default function SignupScreen() {
                 autoComplete="password-new"
                 textContentType="newPassword"
               />
-              <View style={styles.termsRow}>
-                <View style={styles.checkbox}>
-                  <Icon name="check" size={14} color={colors.primary} />
+              <Pressable style={styles.termsRow} onPress={() => setAcceptedTerms((value) => !value)}>
+                <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
+                  {acceptedTerms ? <Icon name="check" size={14} color={colors.white} /> : null}
                 </View>
                 <Text style={styles.termsText}>
                   By continuing, you agree to the EduPlexo Terms & Conditions and Privacy Policy.
                 </Text>
-              </View>
+              </Pressable>
               <Button
                 label={loading ? 'Sending Verification Code…' : 'Create Account'}
                 onPress={handleSignup}
@@ -462,6 +464,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 1,
   },
+  checkboxChecked: { backgroundColor: colors.primary },
   termsText: { flex: 1, ...typography.caption, color: colors.gray600, lineHeight: 17 },
   noticeBox: {
     flexDirection: 'row',
