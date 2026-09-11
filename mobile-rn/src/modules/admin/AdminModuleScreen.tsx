@@ -131,7 +131,11 @@ function AdminModuleContent({
     onSuccess: async () => {
       setFormState(null);
       setSelected(null);
-      await queryClient.invalidateQueries({ queryKey: ['admin-module', definition.key] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['admin-module', definition.key] }),
+        // Dashboard tiles count these records — keep them honest.
+        queryClient.invalidateQueries({ queryKey: ['admin-composite'] }),
+      ]);
     },
     onError: (error) => {
       const msg = error.message?.toLowerCase() || '';
@@ -148,7 +152,10 @@ function AdminModuleContent({
     mutationFn: (record: AdminRecord) => deleteAdminRecord(definition, record),
     onSuccess: async () => {
       setSelected(null);
-      await queryClient.invalidateQueries({ queryKey: ['admin-module', definition.key] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['admin-module', definition.key] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-composite'] }),
+      ]);
     },
     onError: (error) => Alert.alert('Delete failed', error.message),
   });
