@@ -12,6 +12,11 @@ expo-env.d.ts
 android/
 ios/
 
+# Release signing material — never commit
+android/keystore.properties
+android/app/*.keystore
+!android/app/debug.keystore
+
 # Node
 node_modules/
 npm-debug.*
