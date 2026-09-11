@@ -149,7 +149,16 @@ export default function AdminHome() {
         { key: 'homework', label: 'Homework', description: 'Assignments and submissions', icon: 'book', accent: 'primary', href: '/(admin)/module/homework' },
         { key: 'exams', label: 'Exams', description: 'Term exams and schedules', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/exams' },
         { key: 'tests', label: 'Tests', description: 'Class tests and quizzes', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/tests' },
+        { key: 'results', label: 'Results', description: 'Marks, grades and remarks', icon: 'star', accent: 'success', href: '/(admin)/module/results' },
         { key: 'live-classes', label: 'Live Classes', description: 'Online sessions', icon: 'video', accent: 'primary', href: '/(admin)/module/live-classes' },
+      ],
+    },
+    {
+      title: 'Content',
+      items: [
+        { key: 'question-bank', label: 'Question Bank', description: 'Questions and moderation', icon: 'book', accent: 'primary', href: '/(admin)/module/question-bank' },
+        { key: 'question-papers', label: 'Question Papers', description: 'Saved and generated papers', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/question-papers' },
+        { key: 'chapters', label: 'Chapters', description: 'Syllabus chapter catalog', icon: 'book', accent: 'primary', href: '/(admin)/module/chapters' },
       ],
     },
     {
@@ -169,7 +178,11 @@ export default function AdminHome() {
         { key: 'fee-payments', label: 'Fee Payments', description: 'Payment history', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-payments' },
         { key: 'fee-dashboard', label: 'Fee Dashboard', description: 'Collection overview', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-dashboard' },
         { key: 'fee-types', label: 'Fee Types', description: 'Fee categories', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-types' },
+        { key: 'fee-adjustments', label: 'Fee Adjustments', description: 'Penalties, discounts and waivers', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-adjustments' },
+        { key: 'fee-discounts', label: 'Fee Discounts', description: 'Invoice discounts', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-discounts' },
         { key: 'scholarships', label: 'Scholarships', description: 'Student scholarships', icon: 'star', accent: 'success', href: '/(admin)/module/scholarships' },
+        { key: 'wallet-transactions', label: 'Student Wallet', description: 'Wallet balances and history', icon: 'wallet', accent: 'success', href: '/(admin)/module/wallet-transactions' },
+        { key: 'payment-methods', label: 'Payment Methods', description: 'School payment channels', icon: 'wallet', accent: 'success', href: '/(admin)/module/payment-methods' },
       ],
     },
     {
@@ -180,6 +193,7 @@ export default function AdminHome() {
         { key: 'schedules', label: 'Schedule', description: 'Reminders and meetings', icon: 'calendar', accent: 'success', href: '/(admin)/module/schedules' },
         { key: 'events', label: 'Events', description: 'Calendar and activities', icon: 'calendar', accent: 'primary', href: '/(admin)/module/events' },
         { key: 'subscription', label: 'Subscription', description: 'Plan limits and billing', icon: 'wallet', accent: 'primary', href: '/(admin)/subscription' },
+        { key: 'subscription-history', label: 'Subscription History', description: 'Plan changes and renewals', icon: 'wallet', accent: 'neutral', href: '/(admin)/module/subscription-history' },
         { key: 'settings', label: 'Settings', description: 'System configuration', icon: 'settings', accent: 'neutral', href: '/(admin)/settings' },
       ],
     },

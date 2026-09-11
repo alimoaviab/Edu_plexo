@@ -509,7 +509,16 @@ function AdminFormModal({
   }, [fields, state]);
 
   function setField(key: string, value: string | boolean) {
-    setValues((current) => ({ ...current, [key]: value }));
+    setValues((current) => {
+      const next = { ...current, [key]: value };
+      // The leave requester picker depends on the selected requester type —
+      // a stored id from the other entity would be rejected by the backend,
+      // so clear it when the type changes.
+      if (key === 'requester_type' && current.requester_type !== value) {
+        next.requester_id = '';
+      }
+      return next;
+    });
   }
 
   function submit() {
@@ -545,6 +554,7 @@ function AdminFormModal({
                 key={field.key}
                 field={field}
                 value={values[field.key]}
+                values={values}
                 onChange={(value) => setField(field.key, value)}
                 registry={registry}
               />
@@ -564,15 +574,33 @@ function AdminFormModal({
 function FieldControl({
   field,
   value,
+  values,
   onChange,
   registry,
 }: {
   field: AdminFormField;
   value: string | boolean | undefined;
+  /** Sibling field values — lets dependent selectors (e.g. leave requester)
+   *  resolve their target entity from another field's current value. */
+  values: Record<string, string | boolean>;
   onChange: (value: string | boolean) => void;
   registry: ModuleRegistry;
 }) {
   const type = field.type ?? 'text';
+
+  if (field.key === 'requester_id') {
+    const requesterType = String(values.requester_type ?? 'teacher');
+    const targetModuleKey = requesterType === 'student' ? 'students' : 'teachers';
+    return (
+      <RelationSelector
+        field={{ ...field, label: requesterType === 'student' ? 'Student' : 'Teacher' }}
+        value={value}
+        onChange={onChange as (value: string) => void}
+        registry={registry}
+        targetModuleKeyOverride={targetModuleKey}
+      />
+    );
+  }
 
   const relationModuleKey = getRelationModuleKey(field.key);
   if (relationModuleKey) {
@@ -990,14 +1018,18 @@ function RelationSelector({
   value,
   onChange,
   registry,
+  targetModuleKeyOverride,
 }: {
   field: AdminFormField;
   value: string | boolean | undefined;
   onChange: (value: string) => void;
   registry: ModuleRegistry;
+  /** Forces the picker's source module (e.g. leave requester → students or
+   *  teachers depending on the selected requester type). */
+  targetModuleKeyOverride?: string;
 }) {
   const [modalVisible, setModalVisible] = useState(false);
-  const targetModuleKey = getRelationModuleKey(field.key);
+  const targetModuleKey = targetModuleKeyOverride ?? getRelationModuleKey(field.key);
   const targetDefinition = targetModuleKey
     ? registry[targetModuleKey] || ADMIN_MODULE_BY_KEY[targetModuleKey]
     : undefined;

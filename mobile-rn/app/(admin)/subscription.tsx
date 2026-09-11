@@ -40,6 +40,7 @@ export default function AdminSubscriptionScreen() {
     isLoading,
     isRefreshing,
     refetch,
+    error,
     studentsUsed,
     studentsLimit,
     daysRemaining,
@@ -97,29 +98,18 @@ export default function AdminSubscriptionScreen() {
             subtitle="View current plan status, student seat allocation, and enabled modules"
           />
 
-          {/* Centralized Owner Governance Notice */}
-          <View style={[styles.governanceNotice, shadows.card]}>
-            <View style={styles.govIconBox}>
-              <Icon name="shield" size={22} color={colors.white} />
-            </View>
-            <View style={styles.govContent}>
-              <View style={styles.govTitleRow}>
-                <Text style={styles.govTitle}>Subscription Managed by School Owner</Text>
-                <View style={styles.centralizedBadge}>
-                  <Text style={styles.centralizedBadgeText}>CENTRALIZED</Text>
-                </View>
-              </View>
-              <Text style={styles.govDescription}>
-                Your school's subscription plan, student capacity limit, billing renewals, and feature
-                packages are managed centrally by the <Text style={styles.bold}>School Owner</Text>.
+          {error ? (
+            <Pressable
+              onPress={refetch}
+              style={({ pressed }) => [styles.errorBanner, pressed && styles.pressed]}
+            >
+              <Icon name="alert-triangle" size={16} color={colors.error} />
+              <Text style={styles.errorText} numberOfLines={2}>
+                {error} · Tap to retry
               </Text>
-              <Text style={styles.govSubtext}>
-                Need to add more students or unlock additional premium modules? Please contact your
-                School Owner or administrator.
-              </Text>
+            </Pressable>
+          ) : null}
 
-            </View>
-          </View>
 
           {/* Current Plan Overview Card */}
           <CurrentPlanCard
@@ -326,6 +316,21 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.8,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.errorLight,
+    marginBottom: spacing.md,
+  },
+  errorText: {
+    ...typography.bodySm,
+    color: colors.error,
+    flex: 1,
+    fontWeight: '700',
   },
   paymentCard: {
     flexDirection: 'row',
