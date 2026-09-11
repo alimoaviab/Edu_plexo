@@ -91,19 +91,9 @@ async function buildUserFromToken(token: string): Promise<AuthUser | null> {
     await prefStorage.set(StorageKeys.academicYearId, effectiveYear);
   }
 
-  const effectiveSchoolId = payload.role === 'owner'
-    ? payload.school_id
-    : activeSchoolId || payload.school_id;
+  const effectiveSchoolId = activeSchoolId || payload.school_id;
   if (effectiveSchoolId) {
     await prefStorage.set(StorageKeys.activeSchoolId, effectiveSchoolId);
-  }
-
-  // Owners never operate inside a school context: any stale active-school
-  // value left by the old "Switch Campus" feature must not leak into the
-  // session, or owner requests would be scoped to an arbitrary school.
-  if (payload.role === 'owner') {
-    await prefStorage.remove(StorageKeys.activeSchoolId);
-    await prefStorage.remove(StorageKeys.activeBranchId);
   }
 
   return {
@@ -114,7 +104,7 @@ async function buildUserFromToken(token: string): Promise<AuthUser | null> {
     ownerId: payload.owner_id,
     branchId: activeBranchId || payload.branch_id || payload.campus_id,
     campusId: activeBranchId || payload.campus_id,
-    isOwner: payload.is_owner || payload.role === 'owner',
+    isOwner: payload.is_owner,
     activeAcademicYearId: effectiveYear ?? undefined,
     profileId: profileId ?? undefined,
     classId: classId ?? undefined,
@@ -171,8 +161,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user,
       loading: false,
       error: null,
-      activeSchoolId: user?.role === 'owner' ? null : (user?.schoolId || null),
-      activeBranchId: user?.role === 'owner' ? null : (user?.branchId || null),
+      activeSchoolId: user?.schoolId || null,
+      activeBranchId: user?.branchId || null,
     });
     return { ok: true, role: data.role ?? user?.role };
   },
@@ -229,4 +219,3 @@ onUnauthorized(() => {
     useAuthStore.setState({ user: null });
   }
 });
-
