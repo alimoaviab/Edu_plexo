@@ -576,7 +576,12 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				SchoolID:     ctx.SchoolID,
 				StudentID:    newStudent.ID,
 				ParentUserID: parentUserID,
-				Relationship: defaultStr(body.Guardian.Name, "guardian"),
+				// student_parents.relationship is a DB enum
+				// (father|mother|guardian|other) — see migration 000001.
+				// The guardian's NAME must never be stored here (it previously
+				// violated student_parents_relationship_chk and wedged the
+				// persistence snapshot retries).
+				Relationship: normalizeGuardianRelationship("guardian"),
 				IsPrimary:    true,
 				CreatedAt:    now,
 			}
@@ -877,6 +882,20 @@ func defaultStr(v, fallback string) string {
 		return fallback
 	}
 	return v
+}
+
+// normalizeGuardianRelationship clamps a free-text value to the
+// student_parents.relationship enum enforced by migration 000001
+// (father | mother | guardian | other). Free-text values such as a
+// guardian's NAME would otherwise violate student_parents_relationship_chk
+// and block the persistence snapshot from ever converging.
+func normalizeGuardianRelationship(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "father", "mother", "guardian", "other":
+		return strings.ToLower(strings.TrimSpace(raw))
+	default:
+		return "guardian"
+	}
 }
 
 // firstNameOf splits a free-form guardian name into a best-effort first

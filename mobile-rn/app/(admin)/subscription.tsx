@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -8,14 +9,13 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 
 import { Header } from '@/components/layout/Header';
 import { ScreenContainer } from '@/components/layout/ScreenContainer';
 import { CurrentPlanCard } from '@/components/subscription/CurrentPlanCard';
 import { Icon } from '@/components/ui/Icon';
 import { useSubscription } from '@/modules/subscription/useSubscription';
-import { useAuthStore } from '@/store/auth-store';
+import { env } from '@/config/env';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 
 const CORE_MODULES = [
@@ -34,16 +34,13 @@ const CORE_MODULES = [
 ];
 
 export default function AdminSubscriptionScreen() {
-  const router = useRouter();
-  const user = useAuthStore((s) => s.user);
-  const isOwner = user?.role === 'owner';
-
   const {
     current,
     subscription,
     isLoading,
     isRefreshing,
     refetch,
+    error,
     studentsUsed,
     studentsLimit,
     daysRemaining,
@@ -56,6 +53,16 @@ export default function AdminSubscriptionScreen() {
       .map(([mod]) => mod);
     return list.length > 0 ? list : CORE_MODULES;
   }, [current?.allowed_modules]);
+
+  // Opens the configured web portal (env.webPortalUrl — never hardcoded in
+  // components). No tokens are appended; the user signs in there themselves.
+  const openWebPortal = () => {
+    Linking.openURL(env.webPortalUrl).catch(() => {
+      // Linking.openURL only rejects if no app can handle https links —
+      // effectively unreachable, but never crash the screen over it.
+      console.warn('No handler available for web portal URL:', env.webPortalUrl);
+    });
+  };
 
   if (isLoading) {
     return (
@@ -91,38 +98,18 @@ export default function AdminSubscriptionScreen() {
             subtitle="View current plan status, student seat allocation, and enabled modules"
           />
 
-          {/* Centralized Owner Governance Notice */}
-          <View style={[styles.governanceNotice, shadows.card]}>
-            <View style={styles.govIconBox}>
-              <Icon name="shield" size={22} color={colors.white} />
-            </View>
-            <View style={styles.govContent}>
-              <View style={styles.govTitleRow}>
-                <Text style={styles.govTitle}>Subscription Managed by School Owner</Text>
-                <View style={styles.centralizedBadge}>
-                  <Text style={styles.centralizedBadgeText}>CENTRALIZED</Text>
-                </View>
-              </View>
-              <Text style={styles.govDescription}>
-                Your school's subscription plan, student capacity limit, billing renewals, and feature
-                packages are managed centrally by the <Text style={styles.bold}>School Owner</Text>.
+          {error ? (
+            <Pressable
+              onPress={refetch}
+              style={({ pressed }) => [styles.errorBanner, pressed && styles.pressed]}
+            >
+              <Icon name="alert-triangle" size={16} color={colors.error} />
+              <Text style={styles.errorText} numberOfLines={2}>
+                {error} · Tap to retry
               </Text>
-              <Text style={styles.govSubtext}>
-                Need to add more students or unlock additional premium modules? Please contact your
-                School Owner or administrator.
-              </Text>
+            </Pressable>
+          ) : null}
 
-              {isOwner ? (
-                <Pressable
-                  onPress={() => router.push('/(owner)/subscription' as never)}
-                  style={({ pressed }) => [styles.btnOwnerManage, pressed && styles.pressed]}
-                >
-                  <Text style={styles.btnOwnerManageText}>Manage Billing as Owner</Text>
-                  <Icon name="chevron-right" size={14} color={colors.primary} />
-                </Pressable>
-              ) : null}
-            </View>
-          </View>
 
           {/* Current Plan Overview Card */}
           <CurrentPlanCard
@@ -131,6 +118,29 @@ export default function AdminSubscriptionScreen() {
             studentsLimit={studentsLimit}
             daysRemaining={daysRemaining}
           />
+
+          {/* Payments & upgrades happen on the web portal — link out instead
+              of duplicating the payment flow in the app. */}
+          <View style={[styles.paymentCard, shadows.card]}>
+            <View style={styles.paymentIconBox}>
+              <Icon name="wallet" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.paymentContent}>
+              <Text style={styles.paymentTitle}>Payments & Upgrade</Text>
+              <Text style={styles.paymentDescription}>
+                To upgrade, renew, or complete payment, open the Eduplex web portal and sign in with
+                your school account.
+              </Text>
+              <Pressable
+                onPress={openWebPortal}
+                style={({ pressed }) => [styles.webButton, pressed && styles.pressed]}
+                android_ripple={{ color: 'rgba(37, 99, 235, 0.15)' }}
+              >
+                <Icon name="shield" size={16} color={colors.white} />
+                <Text style={styles.webButtonText}>Open Eduplex Web</Text>
+              </Pressable>
+            </View>
+          </View>
 
           {/* Included Features & Active Modules */}
           <View style={styles.sectionHeader}>
@@ -306,5 +316,69 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.8,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.errorLight,
+    marginBottom: spacing.md,
+  },
+  errorText: {
+    ...typography.bodySm,
+    color: colors.error,
+    flex: 1,
+    fontWeight: '700',
+  },
+  paymentCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: colors.white,
+    borderRadius: radius.xl2,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  paymentIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  paymentContent: {
+    flex: 1,
+    gap: 6,
+  },
+  paymentTitle: {
+    ...typography.bodySm,
+    color: colors.gray900,
+    fontWeight: '800',
+  },
+  paymentDescription: {
+    ...typography.caption,
+    color: colors.gray600,
+    lineHeight: 16,
+  },
+  webButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: radius.lg,
+    marginTop: 4,
+  },
+  webButtonText: {
+    ...typography.bodySm,
+    color: colors.white,
+    fontWeight: '800',
   },
 });

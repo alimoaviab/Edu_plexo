@@ -128,7 +128,8 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
       'phone',
       'qualification',
       'subjects',
-      'class_ids',
+      'assigned_classes',
+      'today_schedule',
       'status',
     ],
     fields: [
@@ -138,7 +139,6 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
       { key: 'password', label: 'Password', type: 'password', createOnly: true },
       { key: 'phone', label: 'Phone', required: true },
       { key: 'qualification', label: 'Qualification' },
-      { key: 'subjects', label: 'Subjects', type: 'csv' },
       { key: 'subject_ids', label: 'Subjects', type: 'csv' },
       { key: 'class_ids', label: 'Classes', type: 'csv' },
       {
@@ -165,16 +165,15 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
     clientSearchKeys: ['name', 'section', 'code', 'room_number'],
     displayFields: ['name', 'section', 'code', 'student_count', 'class_teacher.name', 'status'],
     detailFields: [
-      '_id',
       'name',
       'section',
       'code',
       'grade',
       'capacity',
+      'student_count',
+      'academic_year',
+      'class_teacher.name',
       'passing_percentage',
-      'class_teacher_id',
-      'teacher_ids',
-      'subject_ids',
       'room_number',
       'description',
       'status',
@@ -293,7 +292,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
   {
     key: 'attendance-sheet',
     title: 'Attendance Sheet',
-    subtitle: 'Class attendance sheet from the backend join endpoint',
+    subtitle: 'Class attendance sheet for a date',
     icon: 'check-circle',
     listPath: '/attendance/sheet',
     filters: [
@@ -1165,7 +1164,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
   {
     key: 'domain-status',
     title: 'Domain Status',
-    subtitle: 'Connected domain state reported by the backend',
+    subtitle: 'Connected website domain status',
     icon: 'settings',
     listPath: '/domain/status',
     singleton: true,
@@ -1205,7 +1204,7 @@ export const ADMIN_MODULES: AdminModuleDefinition[] = [
   {
     key: 'broadcasts',
     title: 'Broadcasts',
-    subtitle: 'Admin broadcasts delivered through the messaging backend',
+    subtitle: 'School-wide and targeted messages',
     icon: 'megaphone',
     listPath: '/messages/broadcasts',
     createPath: '/messages/broadcast',

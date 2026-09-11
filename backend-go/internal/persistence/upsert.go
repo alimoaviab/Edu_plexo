@@ -533,6 +533,19 @@ func upsertParent(ctx context.Context, tx pgx.Tx, v *store.Parent) error {
 }
 
 func upsertStudentParent(ctx context.Context, tx pgx.Tx, v *store.StudentParent) error {
+	// student_parents.relationship is a DB enum (father|mother|guardian|other).
+	// Snapshots created before the enum was enforced can carry free-text
+	// values (e.g. a guardian's name) that violate
+	// student_parents_relationship_chk and wedge the flush/snapshot loop.
+	// Clamp defensively at the persistence boundary so a single poisoned row
+	// can never block every other entity from persisting.
+	relationship := strings.ToLower(strings.TrimSpace(v.Relationship))
+	switch relationship {
+	case "father", "mother", "guardian", "other":
+	default:
+		relationship = "guardian"
+	}
+
 	_, err := tx.Exec(ctx, `
 		INSERT INTO student_parents (id, school_id, student_id, parent_user_id,
 			relationship, is_primary, status, created_at)
@@ -541,7 +554,7 @@ func upsertStudentParent(ctx context.Context, tx pgx.Tx, v *store.StudentParent)
 			relationship=EXCLUDED.relationship, is_primary=EXCLUDED.is_primary,
 			status=EXCLUDED.status
 	`, v.ID, v.SchoolID, v.StudentID, v.ParentUserID,
-		v.Relationship, v.IsPrimary, "active", v.CreatedAt)
+		relationship, v.IsPrimary, "active", v.CreatedAt)
 	return err
 }
 

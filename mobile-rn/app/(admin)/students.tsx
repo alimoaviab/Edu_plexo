@@ -62,7 +62,7 @@ export default function StudentsScreen() {
           onBack={() => setSelectedStudent(null)}
           greeting="Student Profile"
           title={recordTitle(detail, ADMIN_MODULE_BY_KEY.students, 'Student')}
-          subtitle={selectedClass ? classTitle(selectedClass) : 'Complete backend profile'}
+          subtitle={selectedClass ? classTitle(selectedClass) : 'Complete student profile'}
           right={<ManageButton label="Manage" icon="settings" onPress={() => router.push('/(admin)/module/students' as never)} />}
         />
         {studentDetailQuery.isFetching ? <InlineLoading label="Refreshing profile" /> : null}

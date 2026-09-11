@@ -3,11 +3,16 @@
  * exactly, so the same response can be consumed by web and mobile clients.
  */
 
+/** Connection-level failure kinds produced by the HTTP client. */
+export type NetworkFailureKind = 'timeout' | 'aborted' | 'unreachable';
+
 export interface ApiError {
   code?: string;
   message?: string;
   status?: number;
   details?: unknown;
+  /** Present when code is NETWORK_ERROR — how the connection failed. */
+  kind?: NetworkFailureKind;
 }
 
 export interface ServiceResult<T = unknown> {

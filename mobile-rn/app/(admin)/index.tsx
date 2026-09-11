@@ -124,61 +124,76 @@ export default function AdminHome() {
 
   const sections: ProfileSection[] = [
     {
-      title: 'Academic Setup',
+      title: 'Main',
       items: [
+        { key: 'students', label: 'Students', description: 'Profiles and enrollment', icon: 'graduation', accent: 'primary', href: '/(admin)/module/students' },
         { key: 'academic-years', label: 'Academic years', description: 'School sessions', icon: 'calendar', accent: 'success', href: '/(admin)/module/academic-years' },
         { key: 'classes', label: 'Classes', description: 'Sections and classroom setup', icon: 'graduation', accent: 'primary', href: '/(admin)/module/classes' },
+        { key: 'subjects', label: 'Subjects', description: 'Subject catalog and marks', icon: 'book', accent: 'primary', href: '/(admin)/module/subjects' },
       ],
     },
     {
-      title: 'Staff',
+      title: 'People',
       items: [
-        { key: 'leave', label: 'Leave', description: 'Teacher leave applications', icon: 'clock', accent: 'warning', href: '/(admin)/module/leave' },
-      ],
-    },
-    {
-      title: 'Students',
-      items: [
+        { key: 'teachers', label: 'Teachers', description: 'Faculty roster', icon: 'users', accent: 'primary', href: '/(admin)/module/teachers' },
+        { key: 'leave', label: 'Leave', description: 'Leave applications', icon: 'clock', accent: 'warning', href: '/(admin)/module/leave' },
         { key: 'behavior', label: 'Behavior', description: 'Discipline and merit notes', icon: 'shield', accent: 'warning', href: '/(admin)/module/behavior' },
       ],
     },
     {
-      title: 'Academics',
+      title: 'Academic Operations',
       items: [
+        { key: 'attendance', label: 'Attendance', description: 'Daily attendance records', icon: 'check-circle', accent: 'success', href: '/(admin)/module/attendance' },
+        { key: 'attendance-sheet', label: 'Attendance Sheet', description: 'Class sheet view', icon: 'check-circle', accent: 'success', href: '/(admin)/module/attendance-sheet' },
         { key: 'timetable', label: 'Timetable', description: 'Class and teacher schedules', icon: 'calendar', accent: 'success', href: '/(admin)/module/timetable' },
         { key: 'homework', label: 'Homework', description: 'Assignments and submissions', icon: 'book', accent: 'primary', href: '/(admin)/module/homework' },
         { key: 'exams', label: 'Exams', description: 'Term exams and schedules', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/exams' },
         { key: 'tests', label: 'Tests', description: 'Class tests and quizzes', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/tests' },
-        { key: 'results', label: 'Results', description: 'Marks and transcripts', icon: 'star', accent: 'success', href: '/(admin)/module/results' },
-        { key: 'question-papers', label: 'Question Papers', description: 'Generated question papers', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/question-papers' },
-        { key: 'live-classes', label: 'Live classes', description: 'Online sessions', icon: 'video', accent: 'primary', href: '/(admin)/module/live-classes' },
+        { key: 'results', label: 'Results', description: 'Marks, grades and remarks', icon: 'star', accent: 'success', href: '/(admin)/module/results' },
+        { key: 'live-classes', label: 'Live Classes', description: 'Online sessions', icon: 'video', accent: 'primary', href: '/(admin)/module/live-classes' },
       ],
     },
     {
-      title: 'Operations',
+      title: 'Content',
+      items: [
+        { key: 'question-bank', label: 'Question Bank', description: 'Questions and moderation', icon: 'book', accent: 'primary', href: '/(admin)/module/question-bank' },
+        { key: 'question-papers', label: 'Question Papers', description: 'Saved and generated papers', icon: 'clipboard', accent: 'warning', href: '/(admin)/module/question-papers' },
+        { key: 'chapters', label: 'Chapters', description: 'Syllabus chapter catalog', icon: 'book', accent: 'primary', href: '/(admin)/module/chapters' },
+      ],
+    },
+    {
+      title: 'Communication',
       items: [
         { key: 'announcements', label: 'Announcements', description: 'School notices', icon: 'megaphone', accent: 'primary', href: '/(admin)/module/announcements' },
-        { key: 'certificates', label: 'Certificates', description: 'Issued certificates', icon: 'star', accent: 'success', href: '/(admin)/module/certificates' },
-        { key: 'certificate-templates', label: 'Template Designer', description: 'Certificate layout designer', icon: 'sparkles', accent: 'success', href: '/(admin)/module/certificate-templates' },
+        { key: 'broadcasts', label: 'Broadcasts', description: 'Targeted broadcasts', icon: 'megaphone', accent: 'primary', href: '/(admin)/module/broadcasts' },
+        { key: 'notifications', label: 'Notifications', description: 'Notification inbox', icon: 'bell', accent: 'warning', href: '/(admin)/module/notifications' },
+        { key: 'messages', label: 'Conversations', description: 'Private conversations', icon: 'mail', accent: 'primary', href: '/(admin)/module/messages' },
       ],
     },
     {
       title: 'Finance',
       items: [
         { key: 'fees', label: 'Fee', description: 'Vouchers and student fees', icon: 'wallet', accent: 'success', href: '/(admin)/module/fees' },
+        { key: 'fee-ledger', label: 'Fee Ledger', description: 'Per-student fee state', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-ledger' },
+        { key: 'fee-payments', label: 'Fee Payments', description: 'Payment history', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-payments' },
+        { key: 'fee-dashboard', label: 'Fee Dashboard', description: 'Collection overview', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-dashboard' },
+        { key: 'fee-types', label: 'Fee Types', description: 'Fee categories', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-types' },
+        { key: 'fee-adjustments', label: 'Fee Adjustments', description: 'Penalties, discounts and waivers', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-adjustments' },
+        { key: 'fee-discounts', label: 'Fee Discounts', description: 'Invoice discounts', icon: 'wallet', accent: 'success', href: '/(admin)/module/fee-discounts' },
+        { key: 'scholarships', label: 'Scholarships', description: 'Student scholarships', icon: 'star', accent: 'success', href: '/(admin)/module/scholarships' },
+        { key: 'wallet-transactions', label: 'Student Wallet', description: 'Wallet balances and history', icon: 'wallet', accent: 'success', href: '/(admin)/module/wallet-transactions' },
+        { key: 'payment-methods', label: 'Payment Methods', description: 'School payment channels', icon: 'wallet', accent: 'success', href: '/(admin)/module/payment-methods' },
       ],
     },
     {
-      title: 'Subscription',
+      title: 'Administration',
       items: [
-        { key: 'subscription', label: 'Subscription', description: 'Plan limits and billing', icon: 'wallet', accent: 'primary', href: '/(admin)/subscription' },
-      ],
-    },
-    {
-      title: 'Settings',
-      items: [
+        { key: 'certificates', label: 'Certificates', description: 'Issued certificates', icon: 'star', accent: 'success', href: '/(admin)/module/certificates' },
+        { key: 'certificate-templates', label: 'Template Designer', description: 'Certificate layout designer', icon: 'sparkles', accent: 'success', href: '/(admin)/module/certificate-templates' },
         { key: 'schedules', label: 'Schedule', description: 'Reminders and meetings', icon: 'calendar', accent: 'success', href: '/(admin)/module/schedules' },
-        { key: 'messages', label: 'Conversations', description: 'Conversations', icon: 'mail', accent: 'primary', href: '/(admin)/module/messages' },
+        { key: 'events', label: 'Events', description: 'Calendar and activities', icon: 'calendar', accent: 'primary', href: '/(admin)/module/events' },
+        { key: 'subscription', label: 'Subscription', description: 'Plan limits and billing', icon: 'wallet', accent: 'primary', href: '/(admin)/subscription' },
+        { key: 'subscription-history', label: 'Subscription History', description: 'Plan changes and renewals', icon: 'wallet', accent: 'neutral', href: '/(admin)/module/subscription-history' },
         { key: 'settings', label: 'Settings', description: 'System configuration', icon: 'settings', accent: 'neutral', href: '/(admin)/settings' },
       ],
     },

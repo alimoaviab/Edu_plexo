@@ -40,7 +40,8 @@ export function recordTitle(
   const composed = [record.first_name, record.last_name].filter(Boolean).join(' ').trim();
   return (
     String(record.name ?? record.title ?? record.full_name ?? record.email ?? composed ?? '').trim() ||
-    String(record.admission_no ?? record.employee_no ?? record._id ?? record.id ?? definition?.title ?? fallback)
+    // Never fall back to a raw record ID — show a human label instead.
+    String(record.admission_no ?? record.employee_no ?? definition?.title ?? fallback)
   );
 }
 
@@ -157,17 +158,48 @@ export function labelizeKey(path: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+/**
+ * Presentation policy for auto-generated profiles: internal identifiers,
+ * credentials and audit timestamps stay in the data layer and never render.
+ * Business numbers users actually quote (admission_no, invoice_no,
+ * receipt_no, employee_no, roll_no) remain visible.
+ */
 export function shouldHideRecordField(key: string, value: unknown): boolean {
   const keyLower = key.toLowerCase();
+  const lastPart = keyLower.split('.').pop() ?? keyLower;
+
   if (
-    keyLower.includes('password') ||
-    keyLower.includes('token') ||
-    keyLower.includes('secret') ||
-    keyLower.includes('otp')
+    lastPart.includes('password') ||
+    lastPart.includes('token') ||
+    lastPart.includes('secret') ||
+    lastPart.includes('otp')
   ) {
     return true;
   }
-  if ((keyLower === '_id' || keyLower === 'id') && typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value)) {
+
+  // Internal record identifiers and foreign keys.
+  if (
+    lastPart === '_id' ||
+    lastPart === 'id' ||
+    lastPart === 'uuid' ||
+    lastPart.endsWith('_id') ||
+    lastPart.endsWith('_ids')
+  ) {
+    return true;
+  }
+
+  // Audit metadata — available internally, not part of the user hierarchy.
+  if (
+    lastPart === 'created_at' ||
+    lastPart === 'updated_at' ||
+    lastPart === 'deleted_at' ||
+    lastPart === 'created_by' ||
+    lastPart === 'updated_by'
+  ) {
+    return true;
+  }
+
+  if (typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value)) {
     return true;
   }
   return false;

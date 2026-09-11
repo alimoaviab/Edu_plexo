@@ -3,6 +3,9 @@
  * mobile app and web app speak to the same backend identically.
  */
 
+// Keep this union aligned with the current web app and Go backend. The
+// legacy `owner` role was retired and the backend rejects both owner logins
+// and owner signups.
 export type Role = 'super_admin' | 'admin' | 'teacher' | 'student';
 
 /** UI tabs offer these options: Admin, Teacher, Student. */

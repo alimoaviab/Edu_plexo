@@ -44,7 +44,7 @@ export default function TeachersScreen() {
           onBack={() => setSelectedTeacher(null)}
           greeting="Teacher Profile"
           title={recordTitle(detail, ADMIN_MODULE_BY_KEY.teachers, 'Teacher')}
-          subtitle="Complete backend profile"
+          subtitle="Complete teacher profile"
           right={<ManageButton label="Manage" icon="settings" onPress={() => router.push('/(admin)/module/teachers' as never)} />}
         />
         {teacherDetailQuery.isFetching ? <InlineLoading label="Refreshing profile" /> : null}

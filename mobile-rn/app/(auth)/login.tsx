@@ -2,7 +2,7 @@
  * Mobile login screen — matches the web Login experience.
  *
  * Flow:
- *   1. Pick a role tab (Owner / Admin / Teacher / Student).
+ *   1. Pick a role tab (Admin / Teacher / Student).
  *   2. Submit email + password to POST /api/auth/login.
  *   3. On success, the auth store decodes the JWT and the root router
  *      redirects to the role-specific home screen.
@@ -12,7 +12,7 @@
  * active tab indicator instead. (Implemented in RoleTabs.)
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
@@ -34,7 +34,6 @@ import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 import type { LoginRole, Role } from '@/types/auth';
 
 const ROLE_HOME: Record<Role, string> = {
-  owner: '/(owner)',
   admin: '/(admin)',
   super_admin: '/(admin)',
   teacher: '/(teacher)',
@@ -53,9 +52,17 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
 
+  // Reset any stale error left over from a previous attempt when the user
+  // returns to the login screen, so the form always starts clean.
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
+
   const errorMessage = localError ?? storeError;
 
   async function handleSubmit() {
+    if (loading) return; // one controlled auth flow — no duplicate submits
+
     setLocalError(null);
     clearError();
 
