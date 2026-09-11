@@ -4,24 +4,17 @@ import { useRouter } from 'expo-router';
 
 import { Icon } from '@/components/ui/Icon';
 import { useSubscription } from '@/modules/subscription/useSubscription';
-import { useAuthStore } from '@/store/auth-store';
 import { colors, radius, spacing, typography } from '@/theme/tokens';
 
 export function TrialBanner() {
   const router = useRouter();
-  const user = useAuthStore((s) => s.user);
-  const isOwner = user?.role === 'owner';
   const { subscription, isLoading, isTrial, daysRemaining, isExpired } = useSubscription();
 
   if (isLoading || !subscription) return null;
   if (!isTrial && !isExpired) return null;
 
   const handlePress = () => {
-    if (isOwner) {
-      router.push('/(owner)/subscription' as never);
-    } else {
-      router.push('/(admin)/subscription' as never);
-    }
+    router.push('/(admin)/subscription' as never);
   };
 
   return (
