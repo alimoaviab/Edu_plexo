@@ -1,9 +1,7 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
 
 import { Icon } from '@/components/ui/Icon';
-import { useAuthStore } from '@/store/auth-store';
 import { colors, radius, shadows, spacing, typography } from '@/theme/tokens';
 
 interface StudentLimitModalProps {
@@ -21,20 +19,7 @@ export function StudentLimitModal({
   limit,
   planName,
 }: StudentLimitModalProps) {
-  const router = useRouter();
-  const user = useAuthStore((s) => s.user);
-  const isOwner = user?.role === 'owner';
-
   if (!isOpen) return null;
-
-  const handleUpgrade = () => {
-    onClose();
-    if (isOwner) {
-      router.push('/(owner)/subscription' as never);
-    } else {
-      router.push('/(admin)/subscription' as never);
-    }
-  };
 
   return (
     <Modal visible={isOpen} transparent animationType="fade" onRequestClose={onClose}>
@@ -50,9 +35,8 @@ export function StudentLimitModal({
 
           {/* Description */}
           <Text style={styles.description}>
-            {isOwner
-              ? 'You have reached your subscription student limit. Please upgrade your plan to add more students.'
-              : 'Your school has reached its subscription student limit. Please contact your School Owner to upgrade the subscription plan to add more students.'}
+            Your school has reached its subscription student limit. Please contact your School Owner
+            to upgrade the subscription plan to add more students.
           </Text>
 
           {/* Usage Stats Box */}
@@ -81,20 +65,11 @@ export function StudentLimitModal({
 
           {/* Actions */}
           <View style={styles.actions}>
-            {isOwner ? (
-              <Pressable
-                onPress={handleUpgrade}
-                style={({ pressed }) => [styles.btnUpgrade, pressed && styles.pressed]}
-              >
-                <Text style={styles.btnUpgradeText}>Upgrade Plan</Text>
-              </Pressable>
-            ) : (
-              <View style={styles.noticeBox}>
-                <Text style={styles.noticeText}>
-                  Contact your School Owner to increase student quota.
-                </Text>
-              </View>
-            )}
+            <View style={styles.noticeBox}>
+              <Text style={styles.noticeText}>
+                Contact your School Owner to increase student quota.
+              </Text>
+            </View>
 
             <Pressable
               onPress={onClose}
