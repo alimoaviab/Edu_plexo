@@ -25,7 +25,6 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 
 const ROLE_HOME: Record<string, string> = {
-  owner: '/(owner)',
   admin: '/(admin)',
   super_admin: '/(admin)',
   teacher: '/(teacher)',
