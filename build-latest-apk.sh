@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+# ./build-latest-apk.sh
 # Build the current EduPlexo mobile app from any working directory.
 # The release APK is always copied to the repository root as:
 #   eduplexo-latest.apk
